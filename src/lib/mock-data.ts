@@ -151,3 +151,14 @@ export const subscriptionDataByMonth = [
     { month: 'May', new: 22, total: 118 },
     { month: 'Jun', new: 30, total: 140 },
 ];
+
+export const sampleAds = [
+    { id: 1, imageUrl: 'https://picsum.photos/seed/ad1/300/100', alt: 'Sample Ad 1', imageHint: 'local restaurant' },
+    { id: 2, imageUrl: 'https://picsum.photos/seed/ad2/300/100', alt: 'Sample Ad 2', imageHint: 'real estate' },
+    { id: 3, imageUrl: 'https://picsum.photos/seed/ad3/300/100', alt: 'Sample Ad 3', imageHint: 'home services' },
+    { id: 4, imageUrl: 'https://picsum.photos/seed/ad4/300/100', alt: 'Sample Ad 4', imageHint: 'retail shop' },
+    { id: 5, imageUrl: 'https://picsum.photos/seed/ad5/300/100', alt: 'Sample Ad 5', imageHint: 'dentist office' },
+    { id: 6, imageUrl: 'https://picsum.photos/seed/ad6/300/100', alt: 'Sample Ad 6', imageHint: 'car dealership' },
+    { id: 7, imageUrl: 'https://picsum.photos/seed/ad7/300/100', alt: 'Sample Ad 7', imageHint: 'gym fitness' },
+    { id: 8, imageUrl: 'https://picsum.photos/seed/ad8/300/100', alt: 'Sample Ad 8', imageHint: 'flower shop' },
+];
