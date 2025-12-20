@@ -79,8 +79,22 @@ export function StatsSection() {
             setMonthVisitors(prev => prev + newVisitors);
             setYearVisitors(prev => prev + newVisitors);
             
-            // Set a random interval for the next update (e.g., between 1.5 and 4.5 seconds)
-            const randomInterval = Math.random() * 3000 + 1500;
+            // Set a random interval for the next update based on time of day
+            const currentHour = new Date().getHours();
+            let baseInterval: number;
+
+            // Peak hours (8-11 AM, 5-8 PM): updates every 1-2.5 seconds
+            if ((currentHour >= 8 && currentHour < 11) || (currentHour >= 17 && currentHour < 20)) {
+                baseInterval = 1000;
+            // Off-peak hours (10 PM - 7 AM): updates every 8-15 seconds
+            } else if (currentHour >= 22 || currentHour < 7) {
+                baseInterval = 8000;
+            // Regular hours: updates every 3-6 seconds
+            } else {
+                baseInterval = 3000;
+            }
+            
+            const randomInterval = Math.random() * (baseInterval * 0.75) + baseInterval;
             timeoutId = setTimeout(updateVisitors, randomInterval);
         };
         
