@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, BarChart } from 'lucide-react';
-import { getDayOfYear, getMonth, getYear, startOfToday } from 'date-fns';
+import { getDay, getDayOfYear, startOfToday } from 'date-fns';
 
 // Helper function to get the number of seconds elapsed today
 const getSecondsToday = () => {
@@ -11,10 +11,16 @@ const getSecondsToday = () => {
     return (now.getTime() - today.getTime()) / 1000;
 };
 
-// Realistic average visitors per second based on 1000/day
-const VISITORS_PER_DAY = 1000;
-const SECONDS_IN_A_DAY = 24 * 60 * 60;
-const AVG_VISITORS_PER_SECOND = VISITORS_PER_DAY / SECONDS_IN_A_DAY;
+// Define base daily visitor counts for each day of the week
+const dailyVisitorTargets = [
+    1000, // Sunday
+    1150, // Monday
+    1200, // Tuesday
+    1250, // Wednesday
+    1200, // Thursday
+    1350, // Friday
+    1400  // Saturday
+];
 
 export function StatsSection() {
     const [todayVisitors, setTodayVisitors] = useState(0);
@@ -25,17 +31,36 @@ export function StatsSection() {
     useEffect(() => {
         // --- Initial Calculations ---
         const now = new Date();
+        const dayOfWeek = getDay(now); // 0 (Sun) - 6 (Sat)
         const dayOfYear = getDayOfYear(now);
-        const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
         const dayOfMonth = now.getDate();
         
         const secondsToday = getSecondsToday();
+        const secondsInADay = 24 * 60 * 60;
+        
+        // Get today's target and calculate the average visitors per second for today
+        const targetToday = dailyVisitorTargets[dayOfWeek];
+        const avgVisitorsPerSecond = targetToday / secondsInADay;
+
+        // Calculate the past days' total for the current week, month, and year
+        let pastWeekTotal = 0;
+        for (let i = 0; i < dayOfWeek; i++) {
+            pastWeekTotal += dailyVisitorTargets[i];
+        }
+
+        let pastMonthTotal = 0;
+        // Approximation: Assume average daily target for past days this month
+        const avgDailyTarget = dailyVisitorTargets.reduce((a, b) => a + b, 0) / 7;
+        pastMonthTotal = (dayOfMonth - 1) * avgDailyTarget;
+        
+        let pastYearTotal = 0;
+        pastYearTotal = (dayOfYear - 1) * avgDailyTarget;
 
         // Calculate initial baseline numbers
-        const initialToday = Math.floor(secondsToday * AVG_VISITORS_PER_SECOND);
-        const initialWeek = (dayOfWeek * VISITORS_PER_DAY) + initialToday;
-        const initialMonth = ((dayOfMonth -1) * VISITORS_PER_DAY) + initialToday;
-        const initialYear = ((dayOfYear -1) * VISITORS_PER_DAY) + initialToday;
+        const initialToday = Math.floor(secondsToday * avgVisitorsPerSecond);
+        const initialWeek = Math.floor(pastWeekTotal + initialToday);
+        const initialMonth = Math.floor(pastMonthTotal + initialToday);
+        const initialYear = Math.floor(pastYearTotal + initialToday);
 
         setTodayVisitors(initialToday);
         setWeekVisitors(initialWeek);
@@ -60,7 +85,7 @@ export function StatsSection() {
         };
         
         // Start the first update after a short delay
-        timeoutId = setTimeout(updateVisitors, Math.random() * 3000 + 1500);
+        timeoutId = setTimeout(updateVisitors, Math.random() * 2000 + 1000);
 
         return () => clearTimeout(timeoutId);
     }, []);
