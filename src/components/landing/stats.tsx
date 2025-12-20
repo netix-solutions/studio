@@ -31,24 +31,26 @@ export function StatsSection() {
                             <CardTitle>Daily Website Visitors</CardTitle>
                         </CardHeader>
                         <CardContent className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={dailyVisitorsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="day" tick={{ fontSize: 12 }} tickMargin={10} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 12 }} tickMargin={10} axisLine={false} tickLine={false} />
-                                    <ChartTooltip
-                                        cursor={false}
-                                        content={<ChartTooltipContent indicator="dot" />}
-                                    />
-                                    <Area
-                                        dataKey="visitors"
-                                        type="monotone"
-                                        fill="var(--color-visitors)"
-                                        fillOpacity={0.4}
-                                        stroke="var(--color-visitors)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                            <ChartContainer config={chartConfig}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={dailyVisitorsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="day" tick={{ fontSize: 12 }} tickMargin={10} axisLine={false} tickLine={false} />
+                                        <YAxis tick={{ fontSize: 12 }} tickMargin={10} axisLine={false} tickLine={false} />
+                                        <ChartTooltip
+                                            cursor={false}
+                                            content={<ChartTooltipContent indicator="dot" />}
+                                        />
+                                        <Area
+                                            dataKey="visitors"
+                                            type="monotone"
+                                            fill="var(--color-visitors)"
+                                            fillOpacity={0.4}
+                                            stroke="var(--color-visitors)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
 
