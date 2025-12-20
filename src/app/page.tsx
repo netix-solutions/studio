@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor } from 'lucide-react';
+import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -86,9 +86,12 @@ export default function LandingPage() {
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.5 4.66a2 2 0 0 0-5 0V6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1.5V4.66Z"/><path d="M9 14h6"/><path d="M12 11v6"/></svg>
             <span className="font-headline">CommunityAds</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
-              <Link href="#examples">See Examples</Link>
+          <div className="flex items-center gap-2 sm:gap-4">
+             <Button variant="ghost" className="hidden sm:inline-flex" asChild>
+              <a href="tel:813-544-8383" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                <span>813-544-8383</span>
+              </a>
             </Button>
             <Button asChild>
               <Link href="#get-started">Get Started</Link>
@@ -256,7 +259,11 @@ export default function LandingPage() {
                 <Card className="max-w-3xl mx-auto">
                     <CardHeader className="text-center">
                         <CardTitle className="text-3xl font-bold font-headline">Get Started Today</CardTitle>
-                        <CardDescription>Fill out this form to see our pricing and plans.</CardDescription>
+                        <CardDescription>
+                            Fill out this form to see our pricing and plans.
+                            <br />
+                            Have questions? Call us at <a href="tel:813-544-8383" className="text-primary font-medium hover:underline">813-544-8383</a>.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <GetStartedForm />
@@ -306,9 +313,14 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t bg-card text-card-foreground">
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
-            <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.5 4.66a2 2 0 0 0-5 0V6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1.5V4.66Z"/><path d="M9 14h6"/><path d="M12 11v6"/></svg>
-                <span className="font-headline font-semibold">CommunityAds</span>
+            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+                <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.5 4.66a2 2 0 0 0-5 0V6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1.5V4.66Z"/><path d="M9 14h6"/><path d="M12 11v6"/></svg>
+                    <span className="font-headline font-semibold">CommunityAds</span>
+                </div>
+                 <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
+                    813-544-8383
+                </a>
             </div>
             <div className="flex gap-4">
                 <Link href="https://www.facebook.com/wesleychapelflorida" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
