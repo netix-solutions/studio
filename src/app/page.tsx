@@ -93,6 +93,9 @@ export default function LandingPage() {
                 <span>813-544-8383</span>
               </a>
             </Button>
+            <Button variant="outline" asChild>
+                <Link href="/login">Login</Link>
+            </Button>
             <Button asChild>
               <Link href="#get-started">Get Started</Link>
             </Button>
