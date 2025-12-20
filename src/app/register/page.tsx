@@ -23,22 +23,20 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useAuth } from '@/firebase';
-import { signInWithEmail } from '@/lib/firebase/auth';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { useUser } from '@/firebase';
+import { registerWithEmail } from '@/lib/firebase/auth';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -58,24 +56,24 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      await signInWithEmail(values.email, values.password);
+      await registerWithEmail(values.email, values.password);
       toast({
-        title: 'Success!',
-        description: 'You have successfully logged in.',
+        title: 'Account Created!',
+        description: 'You have been successfully registered and logged in.',
       });
-      router.push('/dashboard');
+      router.push('/thank-you');
     } catch (error: any) {
-      console.error('Login failed:', error);
+      console.error('Registration failed:', error);
       toast({
         title: 'Error',
-        description: error.message || 'There was an error logging in. Please try again.',
+        description: error.message || 'There was an error registering. Please try again.',
         variant: 'destructive',
       });
     } finally {
         setIsSubmitting(false);
     }
   }
-
+  
   if (isUserLoading || user) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -89,9 +87,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold tracking-tight font-headline">
-            Advertiser Login
+            Create Your Account
           </CardTitle>
-          <CardDescription>Access your admin panel.</CardDescription>
+          <CardDescription>Register to start advertising with us.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -126,27 +124,26 @@ export default function LoginPage() {
                  {isSubmitting ? (
                     <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing In...
+                    Registering...
                     </>
                 ) : (
-                    'Sign In'
+                    'Create Account'
                 )}
               </Button>
             </form>
           </Form>
 
-          <Separator className="my-6" />
-
-          <div className="text-center">
+           <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              Already have an account?{' '}
               <Button variant="link" className="p-0 h-auto" asChild>
-                 <Link href="/register">
-                    Register here
+                 <Link href="/login">
+                    Sign In
                 </Link>
               </Button>
             </p>
           </div>
+
         </CardContent>
       </Card>
     </main>

@@ -29,9 +29,9 @@ export default function PricingPage() {
     console.log(`Purchasing ${plan} for ${website}`);
     toast({
       title: 'Plan Selected!',
-      description: `You are now proceeding to checkout for the ${plan} plan.`,
+      description: `You are now being redirected to create an account.`,
     });
-    router.push('/thank-you');
+    router.push('/register');
   };
 
   return (
