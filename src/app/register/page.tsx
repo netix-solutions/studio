@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { registerWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -37,6 +37,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      await registerWithEmail(values.email, values.password);
+      await registerWithEmail(auth, values.email, values.password);
       toast({
         title: 'Account Created!',
         description: 'You have been successfully registered and logged in.',

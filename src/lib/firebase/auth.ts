@@ -1,21 +1,19 @@
 import {
+  Auth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { initializeFirebase } from '@/firebase';
 
-const { auth } = initializeFirebase();
-
-export const signInWithEmail = async (email: string, password: string) => {
+export const signInWithEmail = async (auth: Auth, email: string, password: string) => {
   return signInWithEmailAndPassword(auth, email, password);
 };
 
-export const registerWithEmail = async (email: string, password: string) => {
+export const registerWithEmail = async (auth: Auth, email: string, password: string) => {
     return createUserWithEmailAndPassword(auth, email, password);
 };
 
-export const signOutUser = async () => {
+export const signOutUser = async (auth: Auth) => {
   try {
     await signOut(auth);
   } catch (error) {
