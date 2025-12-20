@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { GetStartedForm } from '@/components/landing/get-started-form';
 import { Facebook, Twitter, Instagram } from 'lucide-react';
 import { sampleAds } from '@/lib/mock-data';
+import { StatsSection } from '@/components/landing/stats';
 
 export default function LandingPage() {
   const howItWorksSteps = [
@@ -172,6 +173,8 @@ export default function LandingPage() {
                 </div>
             </div>
         </section>
+
+        <StatsSection />
 
         {/* Where your ad appears section */}
         <section id="placements" className="bg-muted py-20 lg:py-24">

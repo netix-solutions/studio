@@ -162,3 +162,13 @@ export const sampleAds = [
     { id: 7, imageUrl: 'https://picsum.photos/seed/ad7/300/100', alt: 'Sample Ad 7', imageHint: 'gym fitness' },
     { id: 8, imageUrl: 'https://picsum.photos/seed/ad8/300/100', alt: 'Sample Ad 8', imageHint: 'flower shop' },
 ];
+
+export const dailyVisitorsData = [
+  { day: 'Mon', visitors: 1100 },
+  { day: 'Tue', visitors: 1250 },
+  { day: 'Wed', visitors: 1300 },
+  { day: 'Thu', visitors: 1450 },
+  { day: 'Fri', visitors: 1600 },
+  { day: 'Sat', visitors: 1800 },
+  { day: 'Sun', visitors: 1700 },
+];
