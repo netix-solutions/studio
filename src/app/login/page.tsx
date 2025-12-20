@@ -68,7 +68,7 @@ export default function LoginPage() {
       console.error('Login failed:', error);
       toast({
         title: 'Error',
-        description: error.message || 'There was an error logging in. Please try again.',
+        description: 'Invalid credentials. Please check your email and password.',
         variant: 'destructive',
       });
     } finally {

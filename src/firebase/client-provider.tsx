@@ -22,14 +22,10 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
   const [services, setServices] = useState<FirebaseServices | null>(null);
 
   useEffect(() => {
-    // initializeFirebase can return nulls on SSR, so we ensure this only runs on the client
-    // after the component has mounted.
+    // This effect ensures Firebase is initialized only on the client-side after mount.
     const { firebaseApp, auth, firestore } = initializeFirebase();
-
-    if (firebaseApp && auth && firestore) {
-      setServices({ firebaseApp, auth, firestore });
-    }
-  }, []);
+    setServices({ firebaseApp, auth, firestore });
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
   if (!services) {
     // While services are initializing, show a loading indicator.

@@ -10,27 +10,14 @@ let auth: Auth;
 let firestore: Firestore;
 
 // This function initializes and returns a SINGLETON instance of Firebase services.
-// It ensures that Firebase is initialized only once, whether on the server or client.
+// It ensures that Firebase is initialized only once.
 export function initializeFirebase() {
-  if (typeof window !== 'undefined') {
-    // Client-side initialization
-    if (!getApps().length) {
-      // Initialize with config if no apps are present.
-      // This is the standard client-side pattern.
-      firebaseApp = initializeApp(firebaseConfig);
-    } else {
-      // Use the existing app if already initialized.
-      firebaseApp = getApp();
-    }
+  if (!getApps().length) {
+    // Initialize with config if no apps are present.
+    firebaseApp = initializeApp(firebaseConfig);
   } else {
-    // Server-side initialization
-    if (!getApps().length) {
-      // On the server, we also initialize if no app exists.
-      firebaseApp = initializeApp(firebaseConfig);
-    } else {
-      // And get the existing app if it's there.
-      firebaseApp = getApp();
-    }
+    // Use the existing app if already initialized.
+    firebaseApp = getApp();
   }
 
   auth = getAuth(firebaseApp);
