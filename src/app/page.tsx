@@ -80,7 +80,7 @@ export default function LandingPage() {
   return (
     <div className="bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm border-border/50">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.5 4.66a2 2 0 0 0-5 0V6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1.5V4.66Z"/><path d="M9 14h6"/><path d="M12 11v6"/></svg>
@@ -104,7 +104,7 @@ export default function LandingPage() {
       <main>
         {/* Hero Section */}
         <section className="container mx-auto flex flex-col items-center justify-center space-y-6 px-4 py-20 text-center md:px-6 lg:py-32">
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
             Reach thousands of local readers every day.
           </h1>
           <p className="max-w-[700px] text-muted-foreground md:text-xl">
@@ -126,7 +126,7 @@ export default function LandingPage() {
         </section>
 
         {/* How it works section */}
-        <section id="how-it-works" className="bg-muted py-20 lg:py-24">
+        <section id="how-it-works" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-2xl text-center">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
@@ -138,7 +138,7 @@ export default function LandingPage() {
                 </div>
                 <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {howItWorksSteps.map((step, index) => (
-                        <Card key={index} className="flex flex-col items-center text-center p-6">
+                        <Card key={index} className="flex flex-col items-center text-center p-6 bg-card/80">
                             <div className="rounded-full bg-primary p-3 text-primary-foreground mb-4">
                                 <step.icon className="h-6 w-6" />
                             </div>
@@ -180,7 +180,7 @@ export default function LandingPage() {
         <StatsSection />
 
         {/* Where your ad appears section */}
-        <section id="placements" className="bg-muted py-20 lg:py-24">
+        <section id="placements" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center px-4 md:px-6">
                 <div className="space-y-4">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
@@ -205,8 +205,8 @@ export default function LandingPage() {
                         <Smartphone className="relative z-10 h-auto w-full text-foreground" />
                         <div className="absolute inset-[13px] sm:inset-[16px] rounded-[20px] sm:rounded-[24px] overflow-hidden bg-background">
                             <Image src="https://picsum.photos/seed/news/400/800" alt="Community News Site on Mobile" layout="fill" objectFit="cover" />
-                             <div className="absolute bottom-4 left-4 right-4 bg-gray-200 p-2 rounded-md">
-                                <p className="text-center text-xs text-black">Your Ad Here</p>
+                             <div className="absolute bottom-4 left-4 right-4 bg-gray-200/80 backdrop-blur-sm p-2 rounded-md">
+                                <p className="text-center text-xs text-black font-semibold">Your Ad Here</p>
                             </div>
                         </div>
                     </div>
@@ -239,7 +239,7 @@ export default function LandingPage() {
                         </div>
                     ))}
                 </div>
-                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-muted rounded-lg flex flex-col md:flex-row items-center gap-6">
+                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-muted/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
                     <div className="flex-shrink-0">
                         <Smartphone className="h-32 w-auto text-foreground" />
                     </div>
@@ -254,9 +254,9 @@ export default function LandingPage() {
         </section>
 
         {/* Get Started Form Section */}
-        <section id="get-started" className="bg-muted py-20 lg:py-24">
+        <section id="get-started" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                <Card className="max-w-3xl mx-auto">
+                <Card className="max-w-3xl mx-auto bg-card/80">
                     <CardHeader className="text-center">
                         <CardTitle className="text-3xl font-bold font-headline">Get Started Today</CardTitle>
                         <CardDescription>

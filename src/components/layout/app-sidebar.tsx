@@ -8,9 +8,8 @@ import {
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Tag, Percent, Settings } from 'lucide-react';
+import { LayoutDashboard, Ticket, Tag, Percent } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const menuItems = [
@@ -42,7 +41,7 @@ export function AppSidebar() {
                             size="lg"
                         >
                             <Link href={item.href}>
-                                <item.icon className="mr-2 h-5 w-5" />
+                                <item.icon className="mr-3 h-5 w-5" />
                                 {item.label}
                             </Link>
                         </Button>
