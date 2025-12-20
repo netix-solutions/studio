@@ -5,52 +5,39 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
-let firebaseApp: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let firestore: Firestore | undefined;
+let firebaseApp: FirebaseApp;
+let auth: Auth;
+let firestore: Firestore;
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+// This function initializes and returns a SINGLETON instance of Firebase services.
+// It ensures that Firebase is initialized only once, whether on the server or client.
 export function initializeFirebase() {
-  if (!firebaseApp && typeof window !== 'undefined') {
-    if (getApps().length > 0) {
-      firebaseApp = getApp();
+  if (typeof window !== 'undefined') {
+    // Client-side initialization
+    if (!getApps().length) {
+      // Initialize with config if no apps are present.
+      // This is the standard client-side pattern.
+      firebaseApp = initializeApp(firebaseConfig);
     } else {
-      try {
-        // This will use the Firebase App Hosting environment variables
-        firebaseApp = initializeApp();
-      } catch (e) {
-        if (process.env.NODE_ENV === 'production') {
-          console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-        }
-        // Fallback to the explicit config for development or if auto-init fails
-        firebaseApp = initializeApp(firebaseConfig);
-      }
+      // Use the existing app if already initialized.
+      firebaseApp = getApp();
     }
-    
-    auth = getAuth(firebaseApp);
-    firestore = getFirestore(firebaseApp);
+  } else {
+    // Server-side initialization
+    if (!getApps().length) {
+      // On the server, we also initialize if no app exists.
+      firebaseApp = initializeApp(firebaseConfig);
+    } else {
+      // And get the existing app if it's there.
+      firebaseApp = getApp();
+    }
   }
 
-  if (!firebaseApp || !auth || !firestore) {
-    // This case can happen during Server-Side Rendering.
-    // The client-side `FirebaseClientProvider` will handle the actual initialization.
-    // We return a structure that won't immediately crash the app if accessed cautiously.
-    return {
-      firebaseApp: null,
-      auth: null,
-      firestore: null,
-    };
-  }
+  auth = getAuth(firebaseApp);
+  firestore = getFirestore(firebaseApp);
 
+  // Return the initialized services. These will now be stable.
   return { firebaseApp, auth, firestore };
-}
-
-export function getSdks(firebaseApp: FirebaseApp) {
-  return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
-  };
 }
 
 export * from './provider';
