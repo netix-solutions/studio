@@ -11,7 +11,7 @@ const getSecondsToday = () => {
     return (now.getTime() - today.getTime()) / 1000;
 };
 
-// Define base daily visitor counts for each day of the week
+// Define base daily visitor targets for each day of the week
 const dailyVisitorTargets = [
     1000, // Sunday
     1150, // Monday
@@ -23,10 +23,10 @@ const dailyVisitorTargets = [
 ];
 
 export function StatsSection() {
-    const [todayVisitors, setTodayVisitors] = useState(0);
-    const [weekVisitors, setWeekVisitors] = useState(0);
-    const [monthVisitors, setMonthVisitors] = useState(0);
-    const [yearVisitors, setYearVisitors] = useState(0);
+    const [todayPageViews, setTodayPageViews] = useState(0);
+    const [weekPageViews, setWeekPageViews] = useState(0);
+    const [monthPageViews, setMonthPageViews] = useState(0);
+    const [yearPageViews, setYearPageViews] = useState(0);
 
     useEffect(() => {
         // --- Initial Calculations ---
@@ -62,22 +62,22 @@ export function StatsSection() {
         const initialMonth = Math.floor(pastMonthTotal + initialToday);
         const initialYear = Math.floor(pastYearTotal + initialToday);
 
-        setTodayVisitors(initialToday);
-        setWeekVisitors(initialWeek);
-        setMonthVisitors(initialMonth);
-        setYearVisitors(initialYear);
+        setTodayPageViews(initialToday);
+        setWeekPageViews(initialWeek);
+        setMonthPageViews(initialMonth);
+        setYearPageViews(initialYear);
 
         // --- Dynamic Updates ---
         let timeoutId: NodeJS.Timeout;
 
-        const updateVisitors = () => {
+        const updatePageViews = () => {
             // Add a small random number to make it look more realistic
-            const newVisitors = Math.floor(Math.random() * 3) + 1; // 1 to 3 new visitors
+            const newPageViews = Math.floor(Math.random() * 3) + 1; // 1 to 3 new visitors
             
-            setTodayVisitors(prev => prev + newVisitors);
-            setWeekVisitors(prev => prev + newVisitors);
-            setMonthVisitors(prev => prev + newVisitors);
-            setYearVisitors(prev => prev + newVisitors);
+            setTodayPageViews(prev => prev + newPageViews);
+            setWeekPageViews(prev => prev + newPageViews);
+            setMonthPageViews(prev => prev + newPageViews);
+            setYearPageViews(prev => prev + newPageViews);
             
             // Set a random interval for the next update based on time of day
             const currentHour = new Date().getHours();
@@ -95,11 +95,11 @@ export function StatsSection() {
             }
             
             const randomInterval = Math.random() * (baseInterval * 0.75) + baseInterval;
-            timeoutId = setTimeout(updateVisitors, randomInterval);
+            timeoutId = setTimeout(updatePageViews, randomInterval);
         };
         
         // Start the first update after a short delay
-        timeoutId = setTimeout(updateVisitors, Math.random() * 2000 + 1000);
+        timeoutId = setTimeout(updatePageViews, Math.random() * 2000 + 1000);
 
         return () => clearTimeout(timeoutId);
     }, []);
@@ -120,42 +120,42 @@ export function StatsSection() {
                 <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Visitors Today</CardTitle>
+                            <CardTitle className="text-sm font-medium">Page Views Today</CardTitle>
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{todayVisitors.toLocaleString()}</div>
-                            <p className="text-xs text-muted-foreground">Live count of daily readers</p>
+                            <div className="text-2xl font-bold">{todayPageViews.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Live count of daily page views</p>
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Visitors This Week</CardTitle>
+                            <CardTitle className="text-sm font-medium">Page Views This Week</CardTitle>
                             <BarChart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{weekVisitors.toLocaleString()}</div>
-                            <p className="text-xs text-muted-foreground">Total readers this week</p>
+                            <div className="text-2xl font-bold">{weekPageViews.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Total page views this week</p>
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Visitors This Month</CardTitle>
+                            <CardTitle className="text-sm font-medium">Page Views This Month</CardTitle>
                             <BarChart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{monthVisitors.toLocaleString()}</div>
-                            <p className="text-xs text-muted-foreground">Total readers this month</p>
+                            <div className="text-2xl font-bold">{monthPageViews.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Total page views this month</p>
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Visitors This Year</CardTitle>
+                            <CardTitle className="text-sm font-medium">Page Views This Year</CardTitle>
                             <BarChart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{yearVisitors.toLocaleString()}</div>
-                            <p className="text-xs text-muted-foreground">Total readers in {new Date().getFullYear()}</p>
+                            <div className="text-2xl font-bold">{yearPageViews.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Total page views in {new Date().getFullYear()}</p>
                         </CardContent>
                     </Card>
                 </div>
