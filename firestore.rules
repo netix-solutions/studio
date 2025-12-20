@@ -1,0 +1,182 @@
+/**
+ * Core Philosophy: This ruleset enforces a hybrid security model. User-specific data
+ * (profiles, subscriptions) is protected by a strict path-based ownership model, where users can
+ * only access their own data. Public-facing business data (websites, offers) is globally
+ * readable to support the application's functionality, but all modifications are restricted
+ * to administrators.
+ *
+ * Data Structure: User data is hierarchically organized under /users/{userId}.
+ * Global data, such as /communityWebsites and /discountOffers, is stored in top-level
+ * collections. Administrative privileges are managed via a separate /roles_admin collection,
+ * which provides a simple and secure lookup mechanism.
+ *
+ * Key Security Decisions:
+ * - User data is strictly private. Users cannot see or list other users' information.
+ * - Global collections like `communityWebsites` and `discountOffers` are publicly readable to
+ *   allow any user (signed-in or anonymous) to view them.
+ * - All write operations on global/business collections and all administrative actions are
+ *   gated by an admin role check. An admin is any user whose UID exists as a document
+ *   ID in the `/roles_admin` collection.
+ * - User self-deletion is disabled by default for data integrity and safety.
+ *
+ * Denormalization for Authorization: To ensure fast and simple authorization checks,
+ * this ruleset relies on denormalized fields. For example, an `AdSubscription` document
+ * under a user's path also contains a `userId` field. This allows rules to enforce that
+ * the data being written is consistent with its location in the database without needing
+ * extra reads, which is critical for prototyping flexibility.
+ *
+ * Structural Segregation: The separation of private user data (e.g., /users/{userId}/adSubscriptions)
+ * from public data (e.g., /communityWebsites) is a core design choice. This prevents
+ * accidental data leakage and makes security rules for list operations simple and performant,
+ * as queries do not require complex server-side filtering.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the given userId.
+     * This is the foundation of the user-ownership security model.
+     * @param userId The user ID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the authenticated user is the owner of an EXISTING document.
+     * Crucial for preventing updates or deletes on documents that don't exist.
+     * @param userId The user ID to check against the authenticated user.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Checks if the authenticated user has administrative privileges.
+     * Admin status is granted if a document with the user's UID exists
+     * in the /roles_admin collection. This is a fast and secure check.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+
+    // --------------------------------
+    // User Data Rules
+    // --------------------------------
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow (create) A new user can create their own profile document.
+     * @allow (get, update) An authenticated user can read or update their own profile.
+     * @deny (list) Listing all users is forbidden to prevent user enumeration.
+     * @deny (delete) Users cannot delete their own profile for safety.
+     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if false;
+
+      /**
+       * @description Manages a user's ad subscriptions.
+       * @path /users/{userId}/adSubscriptions/{adSubscriptionId}
+       * @allow (create, get, list, update, delete) An authenticated user can manage their own ad subscriptions.
+       * @deny (any) A user cannot access another user's ad subscriptions.
+       * @principle Enforces strict document ownership within a user's private subcollection.
+       */
+      match /adSubscriptions/{adSubscriptionId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+
+    // --------------------------------
+    // Public & Admin-Managed Rules
+    // --------------------------------
+
+    /**
+     * @description Manages community website information.
+     * @path /communityWebsites/{communityWebsiteId}
+     * @allow (get, list) Any user, including anonymous ones, can read website information.
+     * @deny (create, update, delete) Only administrators can modify website data.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern for global data.
+     */
+    match /communityWebsites/{communityWebsiteId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+
+      /**
+       * @description Manages ad campaigns for a specific community website.
+       * @path /communityWebsites/{websiteId}/adCampaigns/{adCampaignId}
+       * @allow (any) Only administrators can read or write ad campaign data.
+       * @deny (any) Regular users cannot access raw ad campaign documents.
+       * @principle Secures business logic data by restricting all access to admins.
+       */
+      match /adCampaigns/{adCampaignId} {
+        allow get: if isAdmin();
+        allow list: if isAdmin();
+        allow create: if isAdmin() && request.resource.data.websiteId == communityWebsiteId;
+        allow update: if isAdmin() && resource != null && request.resource.data.websiteId == resource.data.websiteId;
+        allow delete: if isAdmin() && resource != null;
+      }
+    }
+
+    /**
+     * @description Manages discount offers.
+     * @path /discountOffers/{discountOfferId}
+     * @allow (get, list) Any user, including anonymous ones, can read discount offer information.
+     * @deny (create, update, delete) Only administrators can create or modify discount offers.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern.
+     */
+    match /discountOffers/{discountOfferId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+
+    // --------------------------------
+    // Administrative Rules
+    // --------------------------------
+
+    /**
+     * @description Manages the collection of administrator roles.
+     * @path /roles_admin/{userId}
+     * @allow (any) Only existing administrators can view or modify the list of admins.
+     * @deny (any) Non-admins cannot read this collection to prevent enumeration of admins.
+     * @principle Secures the admin role management system itself.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+  }
+}
