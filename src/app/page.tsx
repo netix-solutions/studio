@@ -253,7 +253,7 @@ export default function LandingPage() {
                 <Card className="max-w-3xl mx-auto">
                     <CardHeader className="text-center">
                         <CardTitle className="text-3xl font-bold font-headline">Get Started Today</CardTitle>
-                        <CardDescription>Fill out the form below and we'll be in touch to get your ad campaign live.</CardDescription>
+                        <CardDescription>Fill out this form to see our pricing and plans.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <GetStartedForm />
