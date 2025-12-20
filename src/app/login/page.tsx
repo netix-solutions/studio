@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
+import { useUser } from '@/firebase';
 import { signInWithGoogle } from '@/lib/firebase/auth';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { Loader2, ArrowRight } from 'lucide-react';
@@ -15,24 +15,26 @@ import { Separator } from '@/components/ui/separator';
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
-  const { user, isUserLoading } = auth;
+  const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (user) {
+    if (!isUserLoading && user) {
       router.replace('/dashboard');
     }
-  }, [user, router]);
+  }, [user, isUserLoading, router]);
 
   const handleLogin = async () => {
-    const user = await signInWithGoogle();
-    if (user) {
-      toast({
-        title: 'Success!',
-        description: 'You have successfully logged in.',
-      });
-      router.push('/dashboard');
-    } else {
+    try {
+      const userCredential = await signInWithGoogle();
+      if (userCredential) {
+        toast({
+          title: 'Success!',
+          description: 'You have successfully logged in.',
+        });
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
       toast({
         title: 'Error',
         description: 'There was an error logging in. Please try again.',
