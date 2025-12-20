@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, BarChart } from 'lucide-react';
-import { getDayOfYear, getWeek, getMonth, getYear, startOfToday } from 'date-fns';
+import { getDayOfYear, getMonth, getYear, startOfToday } from 'date-fns';
 
 // Helper function to get the number of seconds elapsed today
 const getSecondsToday = () => {
@@ -28,9 +28,7 @@ export function StatsSection() {
         const dayOfYear = getDayOfYear(now);
         const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
         const dayOfMonth = now.getDate();
-        const currentMonth = getMonth(now);
-        const currentYear = getYear(now);
-
+        
         const secondsToday = getSecondsToday();
 
         // Calculate initial baseline numbers
@@ -45,7 +43,9 @@ export function StatsSection() {
         setYearVisitors(initialYear);
 
         // --- Dynamic Updates ---
-        const interval = setInterval(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        const updateVisitors = () => {
             // Add a small random number to make it look more realistic
             const newVisitors = Math.floor(Math.random() * 3) + 1; // 1 to 3 new visitors
             
@@ -53,10 +53,16 @@ export function StatsSection() {
             setWeekVisitors(prev => prev + newVisitors);
             setMonthVisitors(prev => prev + newVisitors);
             setYearVisitors(prev => prev + newVisitors);
+            
+            // Set a random interval for the next update (e.g., between 1.5 and 4.5 seconds)
+            const randomInterval = Math.random() * 3000 + 1500;
+            timeoutId = setTimeout(updateVisitors, randomInterval);
+        };
+        
+        // Start the first update after a short delay
+        timeoutId = setTimeout(updateVisitors, Math.random() * 3000 + 1500);
 
-        }, 3000); // Update every 3 seconds
-
-        return () => clearInterval(interval);
+        return () => clearTimeout(timeoutId);
     }, []);
 
 
