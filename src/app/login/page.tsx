@@ -51,7 +51,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold tracking-tight font-headline">
-            Community-Websites
+            Community-Websites.com
           </CardTitle>
           <CardDescription>Admin Panel</CardDescription>
         </CardHeader>

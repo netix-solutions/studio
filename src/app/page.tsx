@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone } from 'lucide-react';
+import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone, Globe } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -83,8 +83,8 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm border-border/50">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.5 4.66a2 2 0 0 0-5 0V6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1.5V4.66Z"/><path d="M9 14h6"/><path d="M12 11v6"/></svg>
-            <span className="font-headline">CommunityAds</span>
+             <Globe className="h-6 w-6 text-primary" />
+            <span className="font-headline">Community-Websites.com</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
              <Button variant="ghost" className="hidden sm:inline-flex" asChild>
@@ -315,8 +315,8 @@ export default function LandingPage() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.5 4.66a2 2 0 0 0-5 0V6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1.5V4.66Z"/><path d="M9 14h6"/><path d="M12 11v6"/></svg>
-                    <span className="font-headline font-semibold">CommunityAds</span>
+                    <Globe className="h-6 w-6 text-primary" />
+                    <span className="font-headline font-semibold">Community-Websites.com</span>
                 </div>
                  <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
                     813-544-8383
@@ -337,7 +337,7 @@ export default function LandingPage() {
                 </Link>
             </div>
             <div className="text-sm text-muted-foreground text-center md:text-left">
-                &copy; {new Date().getFullYear()} CommunityAds. All rights reserved.
+                &copy; {new Date().getFullYear()} Community-Websites.com. All rights reserved.
             </div>
         </div>
       </footer>

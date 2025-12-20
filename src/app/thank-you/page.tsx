@@ -13,7 +13,7 @@ export default function ThankYouPage() {
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
           <CardTitle className="mt-4 text-2xl font-bold">We've received your order!</CardTitle>
-          <CardDescription>Thank you for choosing CommunityAds.</CardDescription>
+          <CardDescription>Thank you for choosing Community-Websites.com.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">

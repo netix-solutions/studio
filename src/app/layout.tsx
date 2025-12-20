@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Community Websites Admin',
+  title: 'Community-Websites.com Admin',
   description: 'Admin panel for managing ads on community websites.',
 };
 
