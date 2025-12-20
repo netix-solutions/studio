@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/firebase';
 import { signInWithGoogle } from '@/lib/firebase/auth';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { Loader2, ArrowRight } from 'lucide-react';
@@ -15,7 +15,8 @@ import { Separator } from '@/components/ui/separator';
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const auth = useAuth();
+  const { user, isUserLoading } = auth;
 
   useEffect(() => {
     if (user) {
@@ -40,7 +41,7 @@ export default function LoginPage() {
     }
   };
 
-  if (loading || user) {
+  if (isUserLoading || user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

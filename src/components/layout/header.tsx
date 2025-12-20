@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { LogOut, User as UserIcon } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/firebase';
 import { signOutUser } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 import { SidebarTrigger } from '../ui/sidebar';
@@ -25,7 +25,7 @@ const pathToTitle: { [key: string]: string } = {
 
 export default function Header() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
 
   const handleSignOut = async () => {
