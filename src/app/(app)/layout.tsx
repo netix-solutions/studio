@@ -42,22 +42,6 @@ export default function ProtectedLayout({
             console.error("Error creating document in /users:", error);
           }
         }
-        
-        // --- Stripe Customer Document ---
-        // The Stripe extension listens for new documents in this collection.
-        // Creating this doc triggers the extension to create a Stripe Customer.
-        const customerDocRef = doc(firestore, 'customers', user.uid);
-        const customerDocSnap = await getDoc(customerDocRef);
-        if (!customerDocSnap.exists()) {
-            try {
-                await setDoc(customerDocRef, {
-                    email: user.email,
-                });
-                console.log("Customer document created in /customers for Stripe:", user.uid);
-            } catch (error) {
-                console.error("Error creating document in /customers:", error);
-            }
-        }
       };
 
       checkAndCreateUserDocs();
