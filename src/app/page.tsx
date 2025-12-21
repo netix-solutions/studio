@@ -100,9 +100,9 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content */}
-      <main>
+      <main className="-mt-[102px]">
         {/* Hero Section */}
-        <section className="relative container mx-auto flex flex-col items-center justify-center space-y-6 px-4 py-20 text-center md:px-6 lg:py-32 overflow-hidden">
+        <section className="relative container mx-auto flex h-screen min-h-[700px] flex-col items-center justify-center space-y-6 px-4 text-center md:px-6">
           <div className="absolute inset-0 z-0">
               <Image
                   src="/bg.png"
@@ -113,21 +113,21 @@ export default function LandingPage() {
               />
               <div className="absolute inset-0 bg-black/30"></div>
           </div>
-          <div className="relative z-10 text-white">
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
+          <div className="relative z-10 text-white drop-shadow-lg">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline [text-shadow:_0_2px_4px_rgb(0_0_0_/_50%)]">
               Reach thousands of local readers every day.
             </h1>
-            <p className="max-w-[700px] text-gray-200 md:text-xl">
+            <p className="max-w-[700px] text-gray-200 md:text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_50%)]">
               Your clickable ad runs on WesleyChapelCommunity.com and PascoCommunity.com.
             </p>
-            <div className="text-lg text-gray-200">Plans start from just $24 per month.</div>
+            <div className="text-lg text-gray-200 [text-shadow:_0_1px_2px_rgb(0_0_0_/_50%)]">Plans start from just $24 per month.</div>
             <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild>
+              <Button size="lg" asChild className="shadow-lg">
                 <Link href="#get-started">
                   Get Started <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="secondary" asChild>
+              <Button size="lg" variant="secondary" asChild className="shadow-lg">
                 <Link href="#get-started">
                   View Pricing
                 </Link>
