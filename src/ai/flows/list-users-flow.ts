@@ -4,6 +4,7 @@
  * This is a server-side flow intended for admin use.
  */
 
+import 'dotenv/config';
 import { z } from 'zod';
 import { getAuth, type UserRecord } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';

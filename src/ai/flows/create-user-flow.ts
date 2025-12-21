@@ -4,6 +4,7 @@
  * This is a server-side flow that should be called from a client component.
  */
 
+import 'dotenv/config';
 import { z } from 'zod';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
