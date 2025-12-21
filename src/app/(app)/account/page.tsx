@@ -1,10 +1,11 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
-import { Loader2, AlertCircle, Edit, Save } from 'lucide-react';
+import { Loader2, AlertCircle, Edit, Save, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -18,6 +19,8 @@ import * as z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { sendEmail } from '@/lib/firebase/email';
+import { Separator } from '@/components/ui/separator';
 
 interface Subscription {
     id: string;
@@ -36,7 +39,12 @@ const adDetailsSchema = z.object({
     adNotes: z.string().optional(),
 });
 
+const testEmailSchema = z.object({
+    recipientEmail: z.string().email("Please enter a valid email address."),
+});
+
 type AdDetailsFormData = z.infer<typeof adDetailsSchema>;
+type TestEmailFormData = z.infer<typeof testEmailSchema>;
 
 
 export default function AccountPage() {
@@ -51,8 +59,9 @@ export default function AccountPage() {
     const [subsError, setSubsError] = useState<string | null>(null);
     const { toast } = useToast();
     const [isSavingAdDetails, setIsSavingAdDetails] = useState(false);
+    const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
     
-    const { control, handleSubmit, reset, formState: { errors } } = useForm<AdDetailsFormData>({
+    const adDetailsForm = useForm<AdDetailsFormData>({
         resolver: zodResolver(adDetailsSchema),
         defaultValues: {
             businessName: '',
@@ -64,6 +73,13 @@ export default function AccountPage() {
         }
     });
 
+     const testEmailForm = useForm<TestEmailFormData>({
+        resolver: zodResolver(testEmailSchema),
+        defaultValues: {
+            recipientEmail: user?.email || '',
+        },
+    });
+
     useEffect(() => {
         if (!user || !firestore) return;
 
@@ -72,13 +88,16 @@ export default function AccountPage() {
         const unsubUser = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const userData = docSnap.data();
-                reset({
+                adDetailsForm.reset({
                     businessName: userData.businessName || '',
                     contactName: userData.contactName || '',
                     phone: userData.phone || '',
                     adWebsiteUrl: userData.adWebsiteUrl || '',
                     adText: userData.adText || '',
                     adNotes: userData.adNotes || '',
+                });
+                testEmailForm.reset({
+                    recipientEmail: user.email || '',
                 });
             }
         });
@@ -127,7 +146,7 @@ export default function AccountPage() {
             unsubAdmin();
             unsubSubs();
         };
-    }, [user, firestore, reset]);
+    }, [user, firestore, adDetailsForm.reset, testEmailForm.reset]);
     
     const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
         if (!user || !firestore) return;
@@ -185,6 +204,31 @@ export default function AccountPage() {
             });
         } finally {
             setIsSavingAdDetails(false);
+        }
+    };
+    
+    const onTestEmailSubmit = async (data: TestEmailFormData) => {
+        if (!firestore) return;
+        setIsSendingTestEmail(true);
+        try {
+            await sendEmail(firestore, {
+                to: data.recipientEmail,
+                subject: "Test Email from Community-Websites.com",
+                html: `<p>This is a test email to confirm that the Firebase Trigger Email extension is configured and working correctly.</p>`,
+            });
+            toast({
+                title: "Test Email Queued",
+                description: `An email has been queued to be sent to ${data.recipientEmail}.`,
+            });
+        } catch (error: any) {
+            console.error("Error sending test email:", error);
+            toast({
+                title: "Error Sending Email",
+                description: error.message || "Could not queue the test email for sending.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSendingTestEmail(false);
         }
     };
 
@@ -296,62 +340,62 @@ export default function AccountPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit(onAdDetailsSubmit)} className="space-y-6">
+                    <form onSubmit={adDetailsForm.handleSubmit(onAdDetailsSubmit)} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">
                              <div>
                                 <Label htmlFor="businessName">Business Name</Label>
                                 <Controller
                                     name="businessName"
-                                    control={control}
+                                    control={adDetailsForm.control}
                                     render={({ field }) => <Input id="businessName" {...field} />}
                                 />
-                                {errors.businessName && <p className="text-sm text-destructive mt-1">{errors.businessName.message}</p>}
+                                {adDetailsForm.formState.errors.businessName && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.businessName.message}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="contactName">Contact Name</Label>
                                 <Controller
                                     name="contactName"
-                                    control={control}
+                                    control={adDetailsForm.control}
                                     render={({ field }) => <Input id="contactName" {...field} />}
                                 />
-                                {errors.contactName && <p className="text-sm text-destructive mt-1">{errors.contactName.message}</p>}
+                                {adDetailsForm.formState.errors.contactName && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.contactName.message}</p>}
                             </div>
                              <div>
                                 <Label htmlFor="phone">Phone Number</Label>
                                 <Controller
                                     name="phone"
-                                    control={control}
+                                    control={adDetailsForm.control}
                                     render={({ field }) => <Input id="phone" {...field} />}
                                 />
-                                {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
+                                {adDetailsForm.formState.errors.phone && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.phone.message}</p>}
                             </div>
                              <div>
                                 <Label htmlFor="adWebsiteUrl">Ad Link URL</Label>
                                 <Controller
                                     name="adWebsiteUrl"
-                                    control={control}
+                                    control={adDetailsForm.control}
                                     render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://example.com" {...field} />}
                                 />
-                                {errors.adWebsiteUrl && <p className="text-sm text-destructive mt-1">{errors.adWebsiteUrl.message}</p>}
+                                {adDetailsForm.formState.errors.adWebsiteUrl && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.adWebsiteUrl.message}</p>}
                             </div>
                         </div>
                         <div className="space-y-2">
                              <Label htmlFor="adText">Ad Text / Slogan</Label>
                             <Controller
                                 name="adText"
-                                control={control}
+                                control={adDetailsForm.control}
                                 render={({ field }) => <Textarea id="adText" placeholder="e.g., 'Serving Pasco County for 20 years!'" {...field} />}
                             />
-                            {errors.adText && <p className="text-sm text-destructive mt-1">{errors.adText.message}</p>}
+                            {adDetailsForm.formState.errors.adText && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.adText.message}</p>}
                         </div>
                          <div className="space-y-2">
                              <Label htmlFor="adNotes">Ad Notes or Special Offers</Label>
                             <Controller
                                 name="adNotes"
-                                control={control}
+                                control={adDetailsForm.control}
                                 render={({ field }) => <Textarea id="adNotes" placeholder="e.g., 'Mention this ad for 10% off your first visit.'" {...field} />}
                             />
-                            {errors.adNotes && <p className="text-sm text-destructive mt-1">{errors.adNotes.message}</p>}
+                            {adDetailsForm.formState.errors.adNotes && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.adNotes.message}</p>}
                         </div>
                         <Button type="submit" disabled={isSavingAdDetails}>
                             {isSavingAdDetails ? (
@@ -438,7 +482,7 @@ export default function AccountPage() {
                      <CardHeader>
                         <CardTitle>Admin Tools</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-6">
                         {isAdminLoading && (
                             <div className="flex items-center">
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -447,20 +491,50 @@ export default function AccountPage() {
                         )}
                         {isAdmin && (
                             <>
-                            <h3 className="font-semibold">Stripe Sync</h3>
-                            <p className="text-sm text-muted-foreground">
-                                For any existing users who are missing a Stripe ID, this action will create a customer record for them, allowing the Stripe extension to sync their data.
-                            </p>
-                            <Button onClick={handleSyncStripeCustomers} disabled={isSyncing}>
-                                {isSyncing ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Syncing...
-                                    </>
-                                ) : (
-                                    'Sync Stripe Customers'
-                                )}
-                            </Button>
+                            <div>
+                                <h3 className="font-semibold">Stripe Sync</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    For any existing users who are missing a Stripe ID, this action will create a customer record for them, allowing the Stripe extension to sync their data.
+                                </p>
+                                <Button onClick={handleSyncStripeCustomers} disabled={isSyncing} className="mt-2">
+                                    {isSyncing ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Syncing...
+                                        </>
+                                    ) : (
+                                        'Sync Stripe Customers'
+                                    )}
+                                </Button>
+                            </div>
+                            <Separator />
+                             <div>
+                                <h3 className="font-semibold">Test Email Sending</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Send a test email to verify that the Firebase Trigger Email extension is configured and working correctly.
+                                </p>
+                                <form onSubmit={testEmailForm.handleSubmit(onTestEmailSubmit)} className="flex items-end gap-2 mt-2">
+                                     <div className="flex-grow">
+                                        <Label htmlFor="recipientEmail">Recipient Email</Label>
+                                        <Controller
+                                            name="recipientEmail"
+                                            control={testEmailForm.control}
+                                            render={({ field }) => <Input id="recipientEmail" type="email" placeholder="test@example.com" {...field} />}
+                                        />
+                                        {testEmailForm.formState.errors.recipientEmail && <p className="text-sm text-destructive mt-1">{testEmailForm.formState.errors.recipientEmail.message}</p>}
+                                    </div>
+                                    <Button type="submit" disabled={isSendingTestEmail}>
+                                        {isSendingTestEmail ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            </>
+                                        ) : (
+                                             <Mail className="mr-2 h-4 w-4" />
+                                        )}
+                                        Send Test
+                                    </Button>
+                                </form>
+                            </div>
                             </>
                         )}
                     </CardContent>
@@ -469,3 +543,5 @@ export default function AccountPage() {
         </div>
     );
 }
+
+    
