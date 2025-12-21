@@ -109,14 +109,17 @@ export default function SubscriptionDetailPage() {
                 }
                 const userData = userDocSnap.data() as UserDetails;
 
+                const startDate = foundSubData.created?.seconds ? new Date(foundSubData.created.seconds * 1000) : new Date();
+                const endDate = foundSubData.current_period_end?.seconds ? new Date(foundSubData.current_period_end.seconds * 1000) : new Date();
+
                 setSubscription({
                     id: subscriptionId,
                     customerId: foundCustomerId,
                     plan: foundSubData.items?.[0]?.price?.product?.name || 'N/A',
                     status: foundSubData.status,
                     amount: foundSubData.items?.[0]?.price?.unit_amount / 100 || 0,
-                    startDate: format(new Date(foundSubData.created * 1000), 'PPP'),
-                    endDate: format(new Date(foundSubData.current_period_end * 1000), 'PPP'),
+                    startDate: format(startDate, 'PPP'),
+                    endDate: format(endDate, 'PPP'),
                     adStatus: adData?.status || 'Not Started',
                 });
                 setUser(userData);
@@ -254,3 +257,5 @@ export default function SubscriptionDetailPage() {
         </div>
     )
 }
+
+    

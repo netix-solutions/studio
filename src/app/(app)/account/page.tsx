@@ -122,12 +122,13 @@ export default function AccountPage() {
             const subsData: Subscription[] = snapshot.docs.map(doc => {
                 const data = doc.data();
                 const priceData = data.items?.[0]?.price;
+                const periodEndDate = data.current_period_end?.seconds ? new Date(data.current_period_end.seconds * 1000) : new Date();
                 return {
                     id: doc.id,
                     status: data.status,
                     planName: data.items?.[0]?.price?.product?.name || 'N/A',
                     price: priceData ? `${(priceData.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: priceData.currency || 'USD' })}/${priceData.recurring?.interval}`: 'N/A',
-                    periodEnd: format(new Date(data.current_period_end * 1000), 'MMM d, yyyy'),
+                    periodEnd: format(periodEndDate, 'MMM d, yyyy'),
                 };
             });
             setSubscriptions(subsData);
@@ -498,3 +499,5 @@ export default function AccountPage() {
         </div>
     );
 }
+
+    

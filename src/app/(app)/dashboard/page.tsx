@@ -47,12 +47,13 @@ export default function DashboardPage() {
 
                 return subsSnaps.docs.map(subDoc => {
                     const subData = subDoc.data();
+                    const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
                     return {
                         id: subDoc.id,
                         customerName: userData?.contactName || userData?.email || 'N/A',
                         customerEmail: userData?.email || 'N/A',
                         amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
-                        startDate: subData.created ? format(new Date(subData.created * 1000), 'yyyy-MM-dd') : '',
+                        startDate: format(startDate, 'yyyy-MM-dd'),
                         status: subData.status || 'unknown',
                     };
                 });
@@ -147,3 +148,5 @@ export default function DashboardPage() {
   );
 }
 
+
+    

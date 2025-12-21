@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -105,6 +106,9 @@ export default function SubscriptionsPage() {
                         subsSnaps.forEach(subDoc => {
                             const subData = subDoc.data();
                             const adData = adsMap.get(subDoc.id);
+                            
+                            const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
+                            const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
 
                             allSubs.push({
                                 id: subDoc.id,
@@ -113,8 +117,8 @@ export default function SubscriptionsPage() {
                                 customerEmail: userData?.email || 'N/A',
                                 website: 'Community-Websites.com', // Placeholder
                                 plan: subData.items?.[0]?.price?.product?.name || 'N/A',
-                                startDate: format(new Date(subData.created * 1000), 'yyyy-MM-dd'),
-                                endDate: format(new Date(subData.current_period_end * 1000), 'yyyy-MM-dd'),
+                                startDate: format(startDate, 'yyyy-MM-dd'),
+                                endDate: format(endDate, 'yyyy-MM-dd'),
                                 status: subData.status,
                                 adStatus: adData?.status || 'Not Started',
                                 amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
@@ -140,6 +144,8 @@ export default function SubscriptionsPage() {
                 unsubscribe = onSnapshot(q, (snapshot) => {
                     const subsData: EnrichedSubscription[] = snapshot.docs.map(doc => {
                         const data = doc.data();
+                        const startDate = data.created?.seconds ? new Date(data.created.seconds * 1000) : new Date();
+                        const endDate = data.current_period_end?.seconds ? new Date(data.current_period_end.seconds * 1000) : new Date();
                         return {
                             id: doc.id,
                             customerId: user.uid,
@@ -147,8 +153,8 @@ export default function SubscriptionsPage() {
                             customerEmail: user.email || 'N/A',
                             website: 'Community-Websites.com', // Placeholder
                             plan: data.items?.[0]?.price?.product?.name || 'N/A',
-                            startDate: format(new Date(data.created * 1000), 'yyyy-MM-dd'),
-                            endDate: format(new Date(data.current_period_end * 1000), 'yyyy-MM-dd'),
+                            startDate: format(startDate, 'yyyy-MM-dd'),
+                            endDate: format(endDate, 'yyyy-MM-dd'),
                             status: data.status,
                             adStatus: 'Not Started', // Non-admins don't see this
                             amount: data.items?.[0]?.price?.unit_amount / 100 || 0,
@@ -336,3 +342,5 @@ export default function SubscriptionsPage() {
     </>
   );
 }
+
+    
