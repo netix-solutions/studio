@@ -179,5 +179,3 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
     </Dialog>
   );
 }
-
-    
