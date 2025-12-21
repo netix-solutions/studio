@@ -18,10 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { 
-  fetchSignInMethodsForEmail
-} from 'firebase/auth';
-import { doc, setDoc, query, collection, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
@@ -38,7 +35,7 @@ export function GetStartedForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const { auth, firestore } = useFirebase();
+  const { firestore } = useFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,7 +50,7 @@ export function GetStartedForm() {
   
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    if (!auth || !firestore) {
+    if (!firestore) {
       toast({
         title: "Error",
         description: "Services are not available. Please try again later.",
@@ -64,55 +61,25 @@ export function GetStartedForm() {
     }
 
     try {
-      // Check if user already exists in Firestore 'users' collection
-      const usersRef = collection(firestore, 'users');
-      const q = query(usersRef, where("email", "==", values.email));
-      const querySnapshot = await getDocs(q);
+      // Create a new document in the 'leads' collection
+      await addDoc(collection(firestore, "leads"), {
+        ...values,
+        createdAt: serverTimestamp(),
+      });
 
-      let userId;
-
-      if (!querySnapshot.empty) {
-        // User exists, use their existing ID
-        const existingUserDoc = querySnapshot.docs[0];
-        userId = existingUserDoc.id;
-        // Optionally update their info
-        const userDocRef = doc(firestore, 'users', userId);
-        await setDoc(userDocRef, {
-            contactName: values.contactName,
-            businessName: values.businessName,
-            phone: values.phone,
-        }, { merge: true });
-         toast({
-          title: "Welcome Back!",
-          description: "We've updated your info. Redirecting to pricing...",
-        });
-
-      } else {
-        // User doesn't exist, create a new record. We won't create an auth user yet.
-        const newUserRef = await addDoc(collection(firestore, "users"), {
-            email: values.email,
-            contactName: values.contactName,
-            businessName: values.businessName,
-            phone: values.phone,
-            role: 'user',
-        });
-        userId = newUserRef.id;
-        toast({
-          title: "Information Received!",
-          description: "Let's find a plan that works for you.",
-        });
-      }
+      toast({
+        title: "Information Received!",
+        description: "Let's find a plan that works for you.",
+      });
       
-      // We don't need to sign in or link accounts here.
-      // The user will be prompted to create a password-based account
-      // during the checkout flow if they are not already logged in.
+      // Redirect to pricing page after successful submission
       router.push('/pricing');
 
     } catch(error: any) {
-       console.error("Error processing form:", error);
+       console.error("Error creating lead:", error);
        toast({
          title: "An Error Occurred",
-         description: error.message || "Could not process your request. Please try again.",
+         description: "Could not submit your information. Please try again.",
          variant: 'destructive'
        });
     } finally {
@@ -241,3 +208,5 @@ export function GetStartedForm() {
     </Form>
   );
 }
+
+    
