@@ -11,7 +11,7 @@
  * which provides a simple and secure lookup mechanism.
  *
  * Key Security Decisions:
- * - User data is strictly private. Users cannot see or list other users' information.
+ * - User data is strictly private. Users cannot see or list other users' information unless they are an admin.
  * - Global collections like `communityWebsites` and `discountOffers` are publicly readable to
  *   allow any user (signed-in or anonymous) to view them.
  * - All write operations on global/business collections and all administrative actions are
@@ -82,13 +82,13 @@ service cloud.firestore {
      * @path /users/{userId}
      * @allow (create) A new user can create their own profile document.
      * @allow (get, update) An authenticated user can read or update their own profile.
-     * @deny (list) Listing all users is forbidden to prevent user enumeration.
+     * @allow (list) Listing all users is only allowed for administrators.
      * @deny (delete) Users cannot delete their own profile for safety.
-     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     * @principle Restricts access to a user's own data tree and enforces self-creation, with admins having read-only list access.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
       allow delete: if false;
