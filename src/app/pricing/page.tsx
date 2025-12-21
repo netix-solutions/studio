@@ -1,27 +1,28 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser, useFirebase } from '@/firebase';
-import { collection, getDocs, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 // Define interfaces for our data structures
 interface Price {
   id: string;
+  active: boolean;
   unit_amount: number;
-  interval: 'month' | 'year';
+  interval: 'month' | 'year' | string; // Allow string for flexibility
   description: string | null;
 }
 
 interface Product {
   id: string;
+  active: boolean;
   name: string;
   description: string | null;
   prices: Price[];
@@ -29,12 +30,13 @@ interface Product {
 
 // Function to fetch products and their prices
 async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
+  console.log('[PricingPage] Starting to fetch all products (no filters)...');
   const productsColRef = collection(firestore, 'products');
-  const productQuery = query(productsColRef, where('active', '==', true));
+  const productQuery = query(productsColRef); // No 'where' clause
   const productSnapshot = await getDocs(productQuery);
 
   if (productSnapshot.empty) {
-    console.log('[PricingPage] No active products found.');
+    console.log('[PricingPage] The "products" collection is empty.');
     return [];
   }
 
@@ -42,31 +44,48 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
 
   for (const productDoc of productSnapshot.docs) {
     const productData = productDoc.data();
+
+    // Client-side filter for active products
+    if (productData.active !== true) {
+      console.log(`[PricingPage] Skipping inactive product: ${productDoc.id}`);
+      continue;
+    }
+
     const pricesColRef = collection(firestore, 'products', productDoc.id, 'prices');
-    const priceQuery = query(pricesColRef, where('active', '==', true));
+    const priceQuery = query(pricesColRef); // No 'where' clause
     const priceSnapshot = await getDocs(priceQuery);
 
     const prices: Price[] = [];
     priceSnapshot.forEach(priceDoc => {
       const priceData = priceDoc.data();
-      prices.push({
-        id: priceDoc.id,
-        unit_amount: priceData.unit_amount,
-        interval: priceData.interval,
-        description: priceData.description,
-      });
+      // Client-side filter for active prices
+      if (priceData.active === true) {
+        // Correctly determine the interval
+        const interval = priceData.interval ?? priceData.recurring?.interval;
+        if (interval) {
+          prices.push({
+            id: priceDoc.id,
+            active: priceData.active,
+            unit_amount: priceData.unit_amount,
+            interval: interval,
+            description: priceData.description,
+          });
+        }
+      }
     });
 
     if (prices.length > 0) {
       products.push({
         id: productDoc.id,
+        active: productData.active,
         name: productData.name,
         description: productData.description,
         prices,
       });
     }
   }
-
+  
+  console.log(`[PricingPage] Found ${products.length} active product(s) with active prices.`);
   return products;
 }
 
@@ -98,7 +117,6 @@ export default function PricingPage() {
   const handleCheckout = async (priceId: string) => {
     setIsRedirecting(priceId);
     if (!user) {
-      // If user is not logged in, store the selected price and redirect to register
       sessionStorage.setItem('selectedPriceId', priceId);
       router.push('/register');
       return;
@@ -114,10 +132,6 @@ export default function PricingPage() {
       });
       setIsRedirecting(null);
     }
-  };
-
-  const getPriceByInterval = (product: Product, interval: 'month' | 'year') => {
-    return product.prices.find(p => p.interval === interval);
   };
   
   const features = [
@@ -137,47 +151,50 @@ export default function PricingPage() {
     );
   }
 
-  if (products.length === 0) {
+  const displayProducts = products.filter(p => {
+      const hasMonth = p.prices.some(price => price.interval === 'month');
+      const hasYear = p.prices.some(price => price.interval === 'year');
+      return hasMonth && hasYear;
+  });
+
+  if (displayProducts.length === 0) {
     return (
-      <Card className="m-auto max-w-2xl text-center">
-        <CardHeader>
-          <CardTitle>Pricing Not Available</CardTitle>
-          <CardDescription>
-            Pricing plans have not been configured yet. To add plans, please create a monthly and a yearly price for your product in the Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           <Button variant="link" onClick={() => router.back()}>&larr; Go Back</Button>
-        </CardContent>
-      </Card>
+      <div className="container mx-auto max-w-2xl text-center py-10">
+        <Card className="m-auto">
+          <CardHeader>
+            <CardTitle>Pricing Not Available</CardTitle>
+            <CardDescription>
+              Pricing plans have not been configured correctly. Please ensure your product in Stripe is marked as "active" and has at least one active monthly and one active yearly price.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+             <Button variant="link" onClick={() => router.back()}>&larr; Go Back</Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-8">
-      <div className="text-center">
+    <div className="container mx-auto py-10">
+      <div className="text-center mb-8">
         <h1 className="text-4xl font-bold tracking-tight font-headline">Our Advertising Plans</h1>
         <p className="mt-2 text-lg text-muted-foreground">Choose a plan that fits your business needs. Simple, transparent, and effective.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {products.map((product) => {
-          const monthlyPrice = getPriceByInterval(product, 'month');
-          const yearlyPrice = getPriceByInterval(product, 'year');
+      {displayProducts.map((product) => {
+        const monthlyPrice = product.prices.find(p => p.interval === 'month');
+        const yearlyPrice = product.prices.find(p => p.interval === 'year');
+        const yearlyDiscount = (monthlyPrice && yearlyPrice) ? Math.round( (1 - (yearlyPrice.unit_amount / 12) / monthlyPrice.unit_amount) * 100 ) : 0;
 
-          if (!monthlyPrice || !yearlyPrice) return null;
-
-          const yearlyDiscount = Math.round(
-            (1 - (yearlyPrice.unit_amount / 12) / monthlyPrice.unit_amount) * 100
-          );
-
-          return (
-            <React.Fragment key={product.id}>
-              {/* Monthly Plan */}
+        return (
+          <div key={product.id} className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Monthly Plan */}
+            {monthlyPrice && (
               <Card className="flex flex-col">
                 <CardHeader>
                   <CardTitle className="font-headline text-2xl">Monthly Plan</CardTitle>
-                  <CardDescription>Perfect for getting started or for seasonal promotions.</CardDescription>
+                  <CardDescription>{product.description || 'Perfect for getting started or for seasonal promotions.'}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-6">
                   <div className="text-4xl font-bold">
@@ -204,8 +221,10 @@ export default function PricingPage() {
                   </Button>
                 </CardFooter>
               </Card>
+            )}
 
-              {/* Yearly Plan */}
+            {/* Yearly Plan */}
+            {yearlyPrice && (
               <Card className="flex flex-col border-primary ring-2 ring-primary relative">
                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-sm font-medium text-primary-foreground">
                     Save {yearlyDiscount}%
@@ -239,10 +258,10 @@ export default function PricingPage() {
                   </Button>
                 </CardFooter>
               </Card>
-            </React.Fragment>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        );
+      })}
        <div className="text-center mt-8">
             <Button variant="link" onClick={() => router.back()}>
                 &larr; Go Back
@@ -251,3 +270,4 @@ export default function PricingPage() {
     </div>
   );
 }
+    
