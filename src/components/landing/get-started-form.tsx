@@ -23,7 +23,8 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
-  contactName: z.string().min(2, { message: "Contact name must be at least 2 characters." }),
+  firstName: z.string().min(1, { message: "First name is required." }),
+  lastName: z.string().min(1, { message: "Last name is required." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   phone: z.string().min(10, { message: "Please enter a valid cell phone number." }),
   siteCoverage: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -42,7 +43,8 @@ export function GetStartedForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       businessName: '',
-      contactName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       siteCoverage: [],
@@ -65,6 +67,7 @@ export function GetStartedForm() {
       // Create a new document in the 'leads' collection
       await addDoc(collection(firestore, "leads"), {
         ...values,
+        contactName: `${values.firstName} ${values.lastName}`.trim(),
         createdAt: serverTimestamp(),
       });
 
@@ -110,19 +113,34 @@ export function GetStartedForm() {
                 </FormItem>
             )}
             />
-            <FormField
-            control={form.control}
-            name="contactName"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                    <Input placeholder="e.g. Jane Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g. Jane" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                 <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g. Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
             <FormField
             control={form.control}
             name="email"
