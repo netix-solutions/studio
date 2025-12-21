@@ -3,13 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query } from 'firebase/firestore';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
+interface Subscription {
+    id: string;
+    status: string;
+    planName: string;
+    price: string;
+    periodEnd: string;
+}
 
 export default function AccountPage() {
     const { user } = useUser();
@@ -18,24 +28,56 @@ export default function AccountPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminLoading, setIsAdminLoading] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+    const [subsLoading, setSubsLoading] = useState(true);
+    const [subsError, setSubsError] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
         if (!user || !firestore) return;
 
+        // --- Admin Role Check ---
         const adminDocRef = doc(firestore, 'roles_admin', user.uid);
-        const unsubscribe = onSnapshot(adminDocRef, (docSnap) => {
+        const unsubAdmin = onSnapshot(adminDocRef, (docSnap) => {
             setIsAdmin(docSnap.exists());
             setIsAdminLoading(false);
         }, (error) => {
-            // This can fail if rules don't allow reads, so we handle it gracefully.
-            // We assume the user is not an admin if we can't read the doc.
             console.log("Admin check failed, likely due to permissions. User is not an admin.");
             setIsAdmin(false);
             setIsAdminLoading(false);
         });
+        
+        // --- Subscription Fetching ---
+        setSubsLoading(true);
+        const subsCollectionRef = collection(firestore, 'customers', user.uid, 'subscriptions');
+        const q = query(subsCollectionRef);
 
-        return () => unsubscribe();
+        const unsubSubs = onSnapshot(q, (snapshot) => {
+            const subsData: Subscription[] = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const priceData = data.items?.[0]?.price;
+                return {
+                    id: doc.id,
+                    status: data.status,
+                    planName: priceData?.product?.name || 'N/A',
+                    price: `${(priceData?.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: priceData?.currency || 'USD' })}/${priceData?.recurring?.interval}`,
+                    periodEnd: format(new Date(data.current_period_end * 1000), 'MMM d, yyyy'),
+                };
+            });
+            setSubscriptions(subsData);
+            setSubsLoading(false);
+            setSubsError(null);
+        }, (err) => {
+            console.error("Subscription fetch error:", err);
+            setSubsError("Could not load your subscriptions. Please try again later.");
+            setSubsLoading(false);
+        });
+
+
+        return () => {
+            unsubAdmin();
+            unsubSubs();
+        };
     }, [user, firestore]);
 
     const handleManageBilling = async () => {
@@ -50,9 +92,6 @@ export default function AccountPage() {
         setIsRedirecting(true);
         try {
             await goToBillingPortal(firestore, user.uid, window.location.origin + '/account');
-            // Redirection is handled inside goToBillingPortal, so we might not reach here.
-            // But if the promise resolves without redirecting for some reason, stop loading.
-             setIsRedirecting(false);
         } catch (error: any) {
             console.error('Error redirecting to billing portal:', error);
              toast({
@@ -85,9 +124,9 @@ export default function AccountPage() {
                      await setDoc(customerDocRef, {
                         email: userData.email,
                     }, { merge: true });
-                    return true; // Return true if a doc was created
+                    return true;
                 }
-                return false; // Return false if doc already existed
+                return false;
             });
 
             const results = await Promise.all(syncPromises);
@@ -115,42 +154,107 @@ export default function AccountPage() {
         }
     };
 
+    const getStatusBadgeVariant = (status: string) => {
+        switch (status) {
+            case 'active':
+            case 'trialing':
+                return 'secondary';
+            case 'past_due':
+            case 'canceled':
+            case 'unpaid':
+                return 'destructive';
+            default:
+                return 'outline';
+        }
+    };
+
     return (
-        <div className="flex-1 space-y-4">
-            <Card>
+        <div className="flex-1 space-y-6">
+             <Card>
                 <CardHeader>
                     <CardTitle>My Account</CardTitle>
-                    <CardDescription>Welcome, {user?.email}! Manage your account and billing information here.</CardDescription>
+                    <CardDescription>Welcome, {user?.email}! Manage your account and subscriptions here.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-8">
-                    <div className="space-y-2">
-                        <h3 className="font-semibold">Billing Management</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Click the button below to manage your subscription, view payment history, and update your payment method in our secure Stripe customer portal.
-                        </p>
-                        <Button onClick={handleManageBilling} disabled={isRedirecting || !user || !firestore}>
-                            {isRedirecting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Redirecting...
-                                </>
-                            ) : (
-                                'Manage Billing & Subscriptions'
-                            )}
-                        </Button>
-                    </div>
-                    {isAdminLoading && (
-                         <div className="space-y-2">
-                            <h3 className="font-semibold">Stripe Sync</h3>
-                             <p className="text-sm text-muted-foreground">Checking admin status...</p>
-                             <Button disabled>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Loading...
-                            </Button>
-                         </div>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Subscriptions</CardTitle>
+                    <CardDescription>A list of your active and past subscriptions.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     {subsLoading && (
+                        <div className="flex items-center justify-center h-24">
+                            <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                            <span>Loading subscriptions...</span>
+                        </div>
                     )}
-                    {!isAdminLoading && isAdmin && (
-                        <div className="space-y-2">
+                    {subsError && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>{subsError}</AlertDescription>
+                        </Alert>
+                    )}
+                    {!subsLoading && !subsError && subscriptions.length > 0 && (
+                        <div className="space-y-4">
+                            {subscriptions.map(sub => (
+                                <div key={sub.id} className="flex justify-between items-center p-4 border rounded-lg">
+                                    <div>
+                                        <div className="font-bold">{sub.planName}</div>
+                                        <div className="text-sm text-muted-foreground">{sub.price}</div>
+                                    </div>
+                                    <div className='text-right'>
+                                         <Badge variant={getStatusBadgeVariant(sub.status)} className="capitalize mb-1">{sub.status}</Badge>
+                                        <div className="text-sm text-muted-foreground">
+                                            {sub.status === 'active' ? `Renews on ${sub.periodEnd}` : `Ended on ${sub.periodEnd}`}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {!subsLoading && !subsError && subscriptions.length === 0 && (
+                        <p className="text-muted-foreground text-center py-8">You have no active subscriptions.</p>
+                    )}
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Billing Management</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                        Click the button below to manage your subscription, view payment history, and update your payment method in our secure Stripe customer portal.
+                    </p>
+                    <Button onClick={handleManageBilling} disabled={isRedirecting || !user || !firestore}>
+                        {isRedirecting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Redirecting...
+                            </>
+                        ) : (
+                            'Manage Billing & Subscriptions'
+                        )}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {(isAdminLoading || isAdmin) && (
+                <Card>
+                     <CardHeader>
+                        <CardTitle>Admin Tools</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {isAdminLoading && (
+                            <div className="flex items-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <span>Checking admin status...</span>
+                            </div>
+                        )}
+                        {isAdmin && (
+                            <>
                             <h3 className="font-semibold">Stripe Sync</h3>
                             <p className="text-sm text-muted-foreground">
                                 For any existing users who are missing a Stripe ID, this action will create a customer record for them, allowing the Stripe extension to sync their data.
@@ -165,10 +269,11 @@ export default function AccountPage() {
                                     'Sync Stripe Customers'
                                 )}
                             </Button>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
