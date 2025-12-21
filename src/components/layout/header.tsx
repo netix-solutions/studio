@@ -1,4 +1,3 @@
-
 'use client';
 import { usePathname } from 'next/navigation';
 import {
@@ -25,6 +24,7 @@ const pathToTitle: { [key: string]: string } = {
   '/pricing': 'Change Plan',
   '/advertisements': 'Advertisements',
   '/automated-emails': 'Automated Emails',
+  '/leads': 'Leads',
 };
 
 export default function Header({ isAdmin }: { isAdmin: boolean }) {

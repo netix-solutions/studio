@@ -9,12 +9,13 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Users, User, ShoppingBag, Megaphone, Mail } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, User, ShoppingBag, Megaphone, Mail, Handshake } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
 
 const allMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+  { href: '/leads', label: 'Leads', icon: Handshake, adminOnly: true },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone, adminOnly: true },
   { href: '/account', label: 'Account', icon: User, adminOnly: false },
   { href: '/pricing', label: 'Change Plan', icon: ShoppingBag, adminOnly: false },

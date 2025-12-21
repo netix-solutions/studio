@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -205,5 +204,3 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
     </Dialog>
   );
 }
-
-    
