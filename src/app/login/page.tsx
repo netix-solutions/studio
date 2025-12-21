@@ -28,7 +28,6 @@ import { signInWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
-import type { Auth } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -60,7 +59,7 @@ export default function LoginPage() {
     if (!auth) {
         toast({
             title: 'Error',
-            description: 'Authentication service is not available. Please try again later.',
+            description: 'Authentication service not available. Please try again later.',
             variant: 'destructive',
         });
         return;

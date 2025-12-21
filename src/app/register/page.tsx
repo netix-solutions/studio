@@ -55,6 +55,14 @@ export default function RegisterPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) {
+        toast({
+            title: 'Error',
+            description: 'Authentication service not available. Please try again later.',
+            variant: 'destructive',
+        });
+        return;
+    }
     setIsSubmitting(true);
     try {
       await registerWithEmail(auth, values.email, values.password);
