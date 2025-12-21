@@ -60,8 +60,20 @@ service cloud.firestore {
         }
     }
 
-    match /customers/{userId}/{document=**} {
+    match /customers/{userId} {
       allow read, write: if isOwner(userId) || isAdmin();
+      
+      match /checkout_sessions/{sessionId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /subscriptions/{subscriptionId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /portal_links/{linkId} {
+          allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
     
     match /roles_admin/{userId} {
