@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, Unsubscribe, collection, getDocs, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,7 @@ export default function AccountPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminLoading, setIsAdminLoading] = useState(true);
     const [isSubmittingAdmin, setIsSubmittingAdmin] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -58,7 +59,7 @@ export default function AccountPage() {
         setIsSubmittingAdmin(true);
         try {
             const adminDocRef = doc(firestore, 'roles_admin', user.uid);
-            await setDoc(adminDocRef, { uid: user.uid, role: 'admin' });
+            await setDoc(adminDocRef, { uid: user.uid });
             toast({
                 title: "Success!",
                 description: "You have been granted admin privileges."
@@ -72,6 +73,48 @@ export default function AccountPage() {
             });
         } finally {
             setIsSubmittingAdmin(false);
+        }
+    };
+
+    const handleSyncStripeCustomers = async () => {
+        if (!firestore) return;
+        setIsSyncing(true);
+        let syncedCount = 0;
+        try {
+            const usersSnapshot = await getDocs(collection(firestore, 'users'));
+            const syncPromises = usersSnapshot.docs.map(async (userDoc) => {
+                const userData = userDoc.data();
+                const userId = userDoc.id;
+
+                if (!userId || !userData.email) return;
+
+                const customerDocRef = doc(firestore, 'customers', userId);
+                const customerDocSnap = await getDoc(customerDocRef);
+
+                if (!customerDocSnap.exists()) {
+                    await setDoc(customerDocRef, {
+                        email: userData.email,
+                    }, { merge: true });
+                    syncedCount++;
+                }
+            });
+
+            await Promise.all(syncPromises);
+
+            toast({
+                title: "Sync Complete",
+                description: `${syncedCount} new customer record(s) created. The Stripe extension will now process them.`
+            });
+
+        } catch (error: any) {
+            console.error("Error syncing Stripe customers:", error);
+            toast({
+                title: "Sync Error",
+                description: "Could not sync customers. You may not have permission to read all user data.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -109,6 +152,24 @@ export default function AccountPage() {
                             {isAdminLoading ? 'Checking Status...' : isAdmin ? 'Admin Role Active' : 'Become an Admin'}
                         </Button>
                     </div>
+                    {isAdmin && (
+                        <div className="space-y-2">
+                            <h3 className="font-semibold">Stripe Sync</h3>
+                            <p className="text-sm text-muted-foreground">
+                                For any existing users who are missing a Stripe ID, this action will create a customer record for them, allowing the Stripe extension to sync their data.
+                            </p>
+                            <Button onClick={handleSyncStripeCustomers} disabled={isSyncing}>
+                                {isSyncing ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Syncing...
+                                    </>
+                                ) : (
+                                    'Sync Stripe Customers'
+                                )}
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
