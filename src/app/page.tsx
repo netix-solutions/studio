@@ -242,34 +242,6 @@ export default function LandingPage() {
             </div>
         </section>
 
-        {/* Examples Section */}
-        <section id="examples" className="py-20 lg:py-24">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="mx-auto max-w-2xl text-center">
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
-                        Ad Examples
-                    </h2>
-                    <p className="mt-4 text-muted-foreground md:text-xl">
-                        See how your business could look. We can help design an effective ad for you.
-                    </p>
-                </div>
-                <div className="mt-12 text-center text-muted-foreground">
-                  Your ad could be here!
-                </div>
-                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-muted/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
-                    <div className="flex-shrink-0">
-                        <Smartphone className="h-32 w-auto text-foreground/20" />
-                    </div>
-                    <div className="flex-1 text-center md:text-left">
-                        <h3 className="text-2xl font-bold font-headline">Optimized for All Devices</h3>
-                        <p className="text-muted-foreground mt-2">
-                           Your ads are designed to be clean, readable, and effective whether they are viewed on a desktop computer or a mobile phone. We ensure your message reaches local customers clearly, no matter how they browse.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         {/* Get Started Form Section */}
         <section id="get-started" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
