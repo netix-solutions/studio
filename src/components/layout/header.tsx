@@ -1,3 +1,4 @@
+
 'use client';
 import { usePathname } from 'next/navigation';
 import {
@@ -50,36 +51,38 @@ export default function Header() {
   const pageTitle = pathToTitle[pathname] || 'Dashboard';
 
   return (
-    <header className="sticky top-0 z-10 flex h-[70px] items-center gap-4 border-b bg-[hsl(222.2,47.4%,11.2%)] text-primary-foreground px-4 md:px-6">
-      <div className="md:hidden">
-        <SidebarTrigger />
-      </div>
-      <h1 className="text-xl font-semibold md:text-2xl font-headline">{pageTitle}</h1>
-      <div className="ml-auto">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-primary/20">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
-                <AvatarFallback>{getInitials(user?.displayName || user?.email)}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.displayName}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <header className="sticky top-0 z-30 w-full px-4 md:px-6">
+        <div className="mt-4 flex h-[70px] items-center gap-4 rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
+            <div className="md:hidden">
+                <SidebarTrigger />
+            </div>
+            <h1 className="text-xl font-semibold md:text-2xl font-headline text-foreground">{pageTitle}</h1>
+            <div className="ml-auto">
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-muted/50">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
+                        <AvatarFallback>{getInitials(user?.displayName || user?.email)}</AvatarFallback>
+                    </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user?.displayName}</p>
+                        <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </div>
     </header>
   );
 }
