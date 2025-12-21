@@ -1,23 +1,15 @@
-
 'use client';
-import {
-  createCheckoutSession,
-  getStripePayments,
-  StripePayments,
-} from '@stripe/firestore-stripe-payments';
+
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from '@/firebase';
-
-// This function now correctly initializes the Stripe Payments SDK with the
-// provided Firestore instance, ensuring checkout works as expected.
-export const getPayments = (firestore: Firestore): StripePayments => {
-  return getStripePayments(firebaseApp, {
-    productsCollection: 'plans',
-    customersCollection: 'customers',
-  });
-};
 
 export const createCheckout = async (
   firestore: Firestore,
@@ -25,28 +17,49 @@ export const createCheckout = async (
   priceId: string,
   redirectUrl: string
 ) => {
-  try {
-    const payments = getPayments(firestore);
-    const session = await createCheckoutSession(payments, {
-      price: priceId,
-      success_url: redirectUrl,
-      cancel_url: redirectUrl,
-    });
-    window.location.assign(session.url);
-  } catch (error) {
-    console.error("createCheckoutSession error:", error);
-    // Re-throw the error so the calling component can handle it
-    throw error;
-  }
+  // 1) Create a checkout session doc where the extension expects it
+  const sessionsRef = collection(firestore, 'customers', userId, 'checkout_sessions');
+
+  const docRef = await addDoc(sessionsRef, {
+    price: priceId,                 // must be the Stripe price id: price_...
+    success_url: redirectUrl,
+    cancel_url: redirectUrl,
+    allow_promotion_codes: true,
+    createdAt: serverTimestamp(),
+  });
+
+  // 2) Wait for the extension to write back the URL (or an error)
+  await new Promise<void>((resolve, reject) => {
+    const unsub = onSnapshot(
+      docRef,
+      (snap) => {
+        const data = snap.data() as any;
+        if (!data) return;
+
+        if (data.error) {
+          unsub();
+          reject(new Error(data.error?.message || 'Stripe checkout failed.'));
+          return;
+        }
+
+        if (data.url) {
+          unsub();
+          window.location.assign(data.url);
+          resolve();
+        }
+      },
+      (err) => {
+        unsub();
+        reject(err);
+      }
+    );
+  });
 };
 
-export const goToBillingPortal = async (
-  auth: Auth,
-  returnUrl: string
-) => {
-    const functions = getFunctions(firebaseApp, 'us-central1');
-    const functionRef = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
-
-    const { data } = await functionRef({ returnUrl: returnUrl });
-    window.location.assign((data as any).url);
-}
+export const goToBillingPortal = async (auth: Auth, returnUrl: string) => {
+  // NOTE: region must match the extension install region
+  const functions = getFunctions(firebaseApp, 'us-central1');
+  const fn = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
+  const { data } = await fn({ returnUrl });
+  window.location.assign((data as any).url);
+};
