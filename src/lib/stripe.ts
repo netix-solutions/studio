@@ -16,34 +16,40 @@ import { firebaseApp } from '@/firebase';
 export const createCheckout = async (
   firestore: Firestore,
   userId: string,
-  userEmail: string,
+  userEmail: string | null | undefined,
   priceId: string,
   redirectUrl: string
 ) => {
-  // 1) Ensure customer doc exists so the extension can create the Stripe customer
-  // if it doesn't exist. This is a crucial step.
+  // 1) Ensure the customer doc exists (doc id MUST equal Firebase UID)
   await setDoc(
     doc(firestore, 'customers', userId),
-    { email: userEmail },
+    {
+      email: userEmail ?? null,
+      createdAt: serverTimestamp(),
+    },
     { merge: true }
   );
 
-  // 2) Create checkout session doc where the extension expects it.
-  // The extension will listen for this document, create the session, and write back the URL.
-  const sessionsRef = collection(firestore, 'customers', userId, 'checkout_sessions');
+  // 2) Create checkout session doc where the extension listens
+  const sessionsRef = collection(
+    firestore,
+    'customers',
+    userId,
+    'checkout_sessions'
+  );
 
-  const sessionRef = await addDoc(sessionsRef, {
-    price: priceId, // must be "price_..."
+  const docRef = await addDoc(sessionsRef, {
+    price: priceId, // must be Stripe price id: price_...
     success_url: redirectUrl,
     cancel_url: redirectUrl,
     allow_promotion_codes: true,
     createdAt: serverTimestamp(),
   });
 
-  // 3) Wait for extension to write back url (or error)
-  return new Promise<void>((resolve, reject) => {
+  // 3) Wait for extension to attach url (or error)
+  await new Promise<void>((resolve, reject) => {
     const unsub = onSnapshot(
-      sessionRef,
+      docRef,
       (snap) => {
         const data = snap.data() as any;
         if (!data) return;
@@ -70,7 +76,10 @@ export const createCheckout = async (
 
 export const goToBillingPortal = async (auth: Auth, returnUrl: string) => {
   const functions = getFunctions(firebaseApp, 'us-central1');
-  const fn = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
+  const fn = httpsCallable(
+    functions,
+    'ext-firestore-stripe-payments-createPortalLink'
+  );
   const { data } = await fn({ returnUrl });
   window.location.assign((data as any).url);
 };

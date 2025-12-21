@@ -112,10 +112,14 @@ export default function PricingPage() {
 
   const handlePurchase = async (priceId: string) => {
     if (!firestore) {
-        toast({ title: 'Error', description: 'Database not ready.', variant: 'destructive'});
-        return;
+      toast({
+        title: 'Error',
+        description: 'Database not ready.',
+        variant: 'destructive',
+      });
+      return;
     }
-    
+
     setIsPurchasing(priceId);
 
     if (!user) {
@@ -123,15 +127,23 @@ export default function PricingPage() {
       router.push('/register');
       return;
     }
-    
+
     try {
-      await createCheckout(firestore, user.uid, user.email ?? '', priceId, window.location.origin + '/account');
+      await createCheckout(
+        firestore,
+        user.uid,
+        user.email,
+        priceId,
+        window.location.origin + '/account'
+      );
       // The createCheckout function will redirect, so no need to reset state here on success.
     } catch (error: any) {
-      console.error("Stripe checkout error:", error);
+      console.error('Stripe checkout error:', error);
       toast({
         title: 'Error Starting Checkout',
-        description: error.message || 'Could not redirect to checkout. Please check the console and try again.',
+        description:
+          error.message ||
+          'Could not redirect to checkout. Please check the console and try again.',
         variant: 'destructive',
       });
       setIsPurchasing(null); // Reset button state on error
