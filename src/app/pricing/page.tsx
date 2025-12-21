@@ -179,6 +179,7 @@ function PricingPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const businessName = searchParams.get('businessName');
+  const email = searchParams.get('email');
 
   useEffect(() => {
     if (firestore) {
@@ -207,7 +208,8 @@ function PricingPageContent() {
     setIsPurchasing(priceId);
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
-      router.push('/register');
+      const registerUrl = email ? `/register?email=${encodeURIComponent(email)}` : '/register';
+      router.push(registerUrl);
       return;
     }
     try {

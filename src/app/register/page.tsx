@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -35,12 +35,28 @@ const formSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const { auth, firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const emailFromQuery = searchParams.get('email');
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: emailFromQuery || '',
+      password: '',
+    },
+  });
+
+  useEffect(() => {
+    if(emailFromQuery) {
+        form.reset({ email: emailFromQuery, password: '' });
+    }
+  }, [emailFromQuery, form]);
 
   useEffect(() => {
     if (!isUserLoading && user && firestore) {
@@ -69,14 +85,6 @@ export default function RegisterPage() {
         }
     }
   }, [user, isUserLoading, router, toast, firestore]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) {
@@ -180,4 +188,12 @@ export default function RegisterPage() {
       </Card>
     </main>
   );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <RegisterPageContent />
+        </Suspense>
+    )
 }

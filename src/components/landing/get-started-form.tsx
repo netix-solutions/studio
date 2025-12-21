@@ -77,7 +77,11 @@ export function GetStartedForm() {
       });
       
       // Redirect to pricing page after successful submission
-      router.push(`/pricing?businessName=${encodeURIComponent(values.businessName)}`);
+      const params = new URLSearchParams({
+        businessName: values.businessName,
+        email: values.email,
+      });
+      router.push(`/pricing?${params.toString()}`);
 
     } catch(error: any) {
        console.error("Error creating lead:", error);
