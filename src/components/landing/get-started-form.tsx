@@ -19,12 +19,9 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { 
-  signInAnonymously, 
-  linkWithCredential, 
-  EmailAuthProvider,
   fetchSignInMethodsForEmail
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, query, collection, where, getDocs, addDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
@@ -67,48 +64,49 @@ export function GetStartedForm() {
     }
 
     try {
-      const signInMethods = await fetchSignInMethodsForEmail(auth, values.email);
+      // Check if user already exists in Firestore 'users' collection
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where("email", "==", values.email));
+      const querySnapshot = await getDocs(q);
 
-      if (signInMethods.length > 0) {
-        // User already exists, so we can't link. Just show them pricing.
-        // In a real app you might want to prompt them to log in.
-        toast({
-          title: "Welcome Back!",
-          description: "This email is already registered. Here are the available pricing plans.",
-        });
-        router.push('/pricing');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // 1. Sign in anonymously
-      const userCredential = await signInAnonymously(auth);
-      const user = userCredential.user;
+      let userId;
 
-      if (user) {
-        // 2. Create a credential for the email
-        const credential = EmailAuthProvider.credential(values.email);
-
-        // 3. Link the anonymous account with the email credential
-        await linkWithCredential(user, credential);
-        
-        // 4. Save the user data to Firestore
-        const userDocRef = doc(firestore, 'users', user.uid);
+      if (!querySnapshot.empty) {
+        // User exists, use their existing ID
+        const existingUserDoc = querySnapshot.docs[0];
+        userId = existingUserDoc.id;
+        // Optionally update their info
+        const userDocRef = doc(firestore, 'users', userId);
         await setDoc(userDocRef, {
-          id: user.uid,
-          email: values.email,
-          contactName: values.contactName,
-          businessName: values.businessName,
-          phone: values.phone,
-          role: 'user', // default role
+            contactName: values.contactName,
+            businessName: values.businessName,
+            phone: values.phone,
         }, { merge: true });
-        
+         toast({
+          title: "Welcome Back!",
+          description: "We've updated your info. Redirecting to pricing...",
+        });
+
+      } else {
+        // User doesn't exist, create a new record. We won't create an auth user yet.
+        const newUserRef = await addDoc(collection(firestore, "users"), {
+            email: values.email,
+            contactName: values.contactName,
+            businessName: values.businessName,
+            phone: values.phone,
+            role: 'user',
+        });
+        userId = newUserRef.id;
         toast({
           title: "Information Received!",
-          description: "We've created a temporary account for you. Here are the available pricing plans.",
+          description: "Let's find a plan that works for you.",
         });
-        router.push('/pricing');
       }
+      
+      // We don't need to sign in or link accounts here.
+      // The user will be prompted to create a password-based account
+      // during the checkout flow if they are not already logged in.
+      router.push('/pricing');
 
     } catch(error: any) {
        console.error("Error processing form:", error);

@@ -46,10 +46,10 @@ export default function RegisterPage() {
     if (!isUserLoading && user && firestore) {
         // Check if there is a pending purchase
         const selectedPriceId = sessionStorage.getItem('selectedPriceId');
-        if (selectedPriceId && user.uid) {
+        if (selectedPriceId && user.uid && user.email) {
             // Clear the stored price ID and initiate checkout
             sessionStorage.removeItem('selectedPriceId');
-            createCheckout(firestore, user.uid, selectedPriceId, window.location.origin + '/account')
+            createCheckout(firestore, user.uid, user.email, selectedPriceId, window.location.origin + '/account')
                 .catch(error => {
                     console.error("Stripe checkout error after registration:", error);
                     toast({
