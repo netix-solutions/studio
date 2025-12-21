@@ -1,17 +1,14 @@
 
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { useUser, useFirebase } from '@/firebase';
-import { createCheckout } from '@/lib/stripe';
+import { useFirebase } from '@/firebase';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { collection, query, getDocs, type DocumentData } from 'firebase/firestore';
 
-// Simplified interfaces for raw display
 interface RawPrice extends DocumentData {
     id: string;
 }
@@ -22,9 +19,7 @@ interface RawProduct extends DocumentData {
 }
 
 export default function PricingPage() {
-  const { toast } = useToast();
   const router = useRouter();
-  const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const [products, setProducts] = useState<RawProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,11 +74,6 @@ export default function PricingPage() {
     fetchProductsAndPrices();
   }, [fetchProductsAndPrices]);
 
-  const handlePurchase = async (priceId: string) => {
-    // This functionality is disabled in this simplified test view.
-    toast({ title: "Purchase Disabled", description: "This is a test view. Purchasing is disabled." });
-  };
-
   const renderContent = () => {
     if (isLoading) {
          return (
@@ -134,8 +124,8 @@ export default function PricingPage() {
                                 {product.prices.map(price => (
                                     <li key={price.id} className="border p-3 rounded-md bg-muted/50">
                                         <div><strong>Price ID:</strong> {price.id}</div>
-                                        <div><strong>Amount:</strong> ${(price.unit_amount / 100).toFixed(2)} {String(price.currency).toUpperCase()}</div>
-                                        <div><strong>Interval:</strong> {price.interval}</div>
+                                        <div><strong>Amount:</strong> {price.unit_amount ? `$(${(price.unit_amount / 100).toFixed(2)})` : 'N/A'} {String(price.currency).toUpperCase()}</div>
+                                        <div><strong>Interval:</strong> {price.interval || 'N/A'}</div>
                                         <div><strong>Active:</strong> {String(price.active)}</div>
                                     </li>
                                 ))}
