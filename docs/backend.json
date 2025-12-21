@@ -452,6 +452,31 @@
         "html": {
           "type": "string",
           "description": "The HTML body of the email. Can contain placeholders."
+        },
+        "triggerName": {
+          "type": "string",
+          "description": "A programmatic name for the trigger (e.g., 'interest_form_submission')."
+        },
+        "triggerDescription": {
+          "type": "string",
+          "description": "A human-readable description of what triggers the email."
+        },
+        "placeholders": {
+          "type": "array",
+          "description": "An array of available placeholders for this template.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "The placeholder key (e.g., '{{contactName}}')."
+              },
+              "description": {
+                "type": "string",
+                "description": "A description of what the placeholder represents."
+              }
+            }
+          }
         }
       },
       "required": ["id", "name", "description", "subject", "html"]

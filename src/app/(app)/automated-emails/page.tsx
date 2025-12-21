@@ -26,6 +26,9 @@ export interface EmailTemplate {
     description: string;
     subject: string;
     html: string;
+    triggerName?: string;
+    triggerDescription?: string;
+    placeholders?: { key: string; description: string }[];
 }
 
 const testEmailSchema = z.object({
@@ -48,6 +51,13 @@ export const defaultTemplates: EmailTemplate[] = [
 <p>If you have any questions, feel free to reply to this email or call/text us at 813-544-8383.</p>
 <p>Best,<br>The Community-Websites.com Team</p>
         `.trim(),
+        triggerName: 'interest_form_submission',
+        triggerDescription: 'This email is automatically sent immediately after a potential customer submits the "Get Started" interest form on the landing page.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the person who submitted the form." },
+            { key: '{{businessName}}', description: "The business name entered in the form." },
+            { key: '{{pricingLink}}', description: "The unique, auto-generated link to the pricing page." },
+        ]
     }
 ];
 
@@ -305,3 +315,5 @@ export default function AutomatedEmailsPage() {
         </div>
     );
 }
+
+    
