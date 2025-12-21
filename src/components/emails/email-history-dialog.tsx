@@ -20,6 +20,7 @@ import { useFirebase } from '@/firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Loader2, Mail, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 
 interface SentEmail {
   id: string;
@@ -37,45 +38,38 @@ type EmailHistoryDialogProps = {
   recipient: Recipient;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  renderAsCard?: boolean;
 };
 
-export function EmailHistoryDialog({ recipient, isOpen, onOpenChange }: EmailHistoryDialogProps) {
-  const { firestore } = useFirebase();
-  const [history, setHistory] = useState<SentEmail[]>([]);
-  const [loading, setLoading] = useState(true);
+function EmailHistoryContent({ recipient }: { recipient: Recipient }) {
+    const { firestore } = useFirebase();
+    const [history, setHistory] = useState<SentEmail[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!firestore || !isOpen) return;
+    useEffect(() => {
+        if (!firestore) return;
 
-    setLoading(true);
-    const historyQuery = query(
-      collection(firestore, 'sent_emails'),
-      where('recipientId', '==', recipient.id),
-      orderBy('sentAt', 'desc')
-    );
+        setLoading(true);
+        const historyQuery = query(
+            collection(firestore, 'sent_emails'),
+            where('recipientId', '==', recipient.id),
+            orderBy('sentAt', 'desc')
+        );
 
-    const unsubscribe = onSnapshot(historyQuery, (snapshot) => {
-      const historyData: SentEmail[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SentEmail));
-      setHistory(historyData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching email history: ", error);
-      setLoading(false);
-    });
+        const unsubscribe = onSnapshot(historyQuery, (snapshot) => {
+            const historyData: SentEmail[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SentEmail));
+            setHistory(historyData);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching email history: ", error);
+            setLoading(false);
+        });
 
-    return () => unsubscribe();
-  }, [firestore, recipient.id, isOpen]);
+        return () => unsubscribe();
+    }, [firestore, recipient.id]);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Email History</DialogTitle>
-          <DialogDescription>
-            A log of all emails sent to {recipient.email}.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 max-h-[60vh] overflow-y-auto pr-6">
+    return (
+         <div className="py-4 max-h-[60vh] overflow-y-auto pr-2">
           {loading ? (
             <div className="flex justify-center items-center h-48">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -109,6 +103,36 @@ export function EmailHistoryDialog({ recipient, isOpen, onOpenChange }: EmailHis
             </Accordion>
           )}
         </div>
+    )
+}
+
+
+export function EmailHistoryDialog({ recipient, isOpen, onOpenChange, renderAsCard = false }: EmailHistoryDialogProps) {
+  
+  if (renderAsCard) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Email History</CardTitle>
+                <CardDescription>A log of all emails sent to {recipient.email}.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <EmailHistoryContent recipient={recipient} />
+            </CardContent>
+        </Card>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Email History</DialogTitle>
+          <DialogDescription>
+            A log of all emails sent to {recipient.email}.
+          </DialogDescription>
+        </DialogHeader>
+        <EmailHistoryContent recipient={recipient} />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
@@ -118,5 +142,3 @@ export function EmailHistoryDialog({ recipient, isOpen, onOpenChange }: EmailHis
     </Dialog>
   );
 }
-
-    

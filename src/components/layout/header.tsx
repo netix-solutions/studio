@@ -1,3 +1,4 @@
+
 'use client';
 import { usePathname } from 'next/navigation';
 import {
@@ -67,6 +68,9 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
   // For dynamic routes
   if (pathname.match(/^\/subscriptions\/[^/]+$/)) {
       pageTitle = "Subscription Details";
+  }
+  if (pathname.match(/^\/leads\/[^/]+$/)) {
+      pageTitle = "Lead Details";
   }
 
 
