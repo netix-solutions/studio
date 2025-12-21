@@ -50,8 +50,21 @@ service cloud.firestore {
       }
     }
 
-    match /customers/{uid}/{document=**} {
-      allow read, write: if request.auth.uid == uid || isAdmin();
+    match /customers/{userId} {
+      allow read, create, update: if isOwner(userId) || isAdmin();
+
+      // Explicitly allow read access to subscriptions for the owner or an admin
+      match /subscriptions/{subscriptionId} {
+        allow read: if isOwner(userId) || isAdmin();
+      }
+
+      // Allow creating checkout sessions and portal links for the owner or an admin
+      match /checkout_sessions/{sessionId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      match /portal_links/{portalId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
     
     match /roles_admin/{userId} {
