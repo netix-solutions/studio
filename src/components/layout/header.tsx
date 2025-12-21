@@ -21,6 +21,7 @@ const pathToTitle: { [key: string]: string } = {
   '/subscriptions': 'Subscriptions',
   '/pricing': 'Ad Campaign Pricing',
   '/discounts': 'Discount Offers',
+  '/users': 'User Management',
 };
 
 export default function Header() {
@@ -30,7 +31,9 @@ export default function Header() {
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOutUser(auth);
+    if (auth) {
+      await signOutUser(auth);
+    }
     router.push('/login');
   };
 

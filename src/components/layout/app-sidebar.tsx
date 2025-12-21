@@ -9,7 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Tag, Percent, Globe } from 'lucide-react';
+import { LayoutDashboard, Ticket, Tag, Percent, Globe, Users } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const menuItems = [
@@ -17,6 +17,7 @@ const menuItems = [
   { href: '/subscriptions', label: 'Subscriptions', icon: Ticket },
   { href: '/pricing', label: 'Pricing', icon: Tag },
   { href: '/discounts', label: 'Discounts', icon: Percent },
+  { href: '/users', label: 'Users', icon: Users },
 ];
 
 export function AppSidebar() {
@@ -36,7 +37,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.href}>
                         <Button
                             asChild
-                            variant={pathname === item.href ? 'secondary' : 'ghost'}
+                            variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
                             className="w-full justify-start"
                             size="lg"
                         >
