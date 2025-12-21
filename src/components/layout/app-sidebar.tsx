@@ -30,7 +30,7 @@ export function AppSidebar() {
     <Sidebar>
         <SidebarHeader>
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors">
-                <Image src="/logo.png" alt="Community-Websites.com Logo" width={150} height={33} />
+                <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} />
             </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
