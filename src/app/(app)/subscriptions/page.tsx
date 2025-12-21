@@ -1,11 +1,9 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Subscription, mockSubscriptions } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -15,9 +13,16 @@ import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-interface EnrichedSubscription extends Subscription {
+interface EnrichedSubscription {
+    id: string;
     customerName: string;
     customerEmail: string;
+    website: string;
+    plan: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    amount: number;
 }
 
 export default function SubscriptionsPage() {

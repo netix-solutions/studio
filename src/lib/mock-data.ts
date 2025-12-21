@@ -27,6 +27,7 @@ export type Discount = {
   redemptions: number;
 };
 
+// This mock data is no longer used by the subscriptions page.
 export const mockSubscriptions: Subscription[] = [];
 
 export const mockPricings: Pricing[] = [];
