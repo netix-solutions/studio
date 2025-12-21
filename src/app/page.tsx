@@ -102,25 +102,37 @@ export default function LandingPage() {
       {/* Main Content */}
       <main>
         {/* Hero Section */}
-        <section className="container mx-auto flex flex-col items-center justify-center space-y-6 px-4 py-20 text-center md:px-6 lg:py-32">
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-            Reach thousands of local readers every day.
-          </h1>
-          <p className="max-w-[700px] text-muted-foreground md:text-xl">
-            Your clickable ad runs on WesleyChapelCommunity.com and PascoCommunity.com.
-          </p>
-          <div className="text-lg text-muted-foreground">Plans start from just $24 per month.</div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" asChild>
-              <Link href="#get-started">
-                Get Started <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="#get-started">
-                View Pricing
-              </Link>
-            </Button>
+        <section className="relative container mx-auto flex flex-col items-center justify-center space-y-6 px-4 py-20 text-center md:px-6 lg:py-32 overflow-hidden">
+          <div className="absolute inset-0 z-0">
+              <Image
+                  src="/bg.png"
+                  alt="Background"
+                  layout="fill"
+                  objectFit="cover"
+                  className="blur-sm"
+              />
+              <div className="absolute inset-0 bg-black/30"></div>
+          </div>
+          <div className="relative z-10 text-white">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
+              Reach thousands of local readers every day.
+            </h1>
+            <p className="max-w-[700px] text-gray-200 md:text-xl">
+              Your clickable ad runs on WesleyChapelCommunity.com and PascoCommunity.com.
+            </p>
+            <div className="text-lg text-gray-200">Plans start from just $24 per month.</div>
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" asChild>
+                <Link href="#get-started">
+                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="secondary" asChild>
+                <Link href="#get-started">
+                  View Pricing
+                </Link>
+              </Button>
+            </div>
           </div>
         </section>
 
