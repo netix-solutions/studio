@@ -11,34 +11,23 @@ import { createCheckout } from '@/lib/stripe';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { collection, query, getDocs, type DocumentData } from 'firebase/firestore';
 
-interface Price extends DocumentData {
+// Simplified interfaces for raw display
+interface RawPrice extends DocumentData {
     id: string;
-    description: string | null;
-    unit_amount: number;
-    currency: string;
-    interval: 'month' | 'year' | 'day';
-    interval_count: number;
-    active: boolean;
-    product: string;
 }
 
-interface Product extends DocumentData {
+interface RawProduct extends DocumentData {
     id: string;
-    name: string;
-    description: string;
-    prices: Price[];
-    active: boolean;
+    prices: RawPrice[];
 }
-
 
 export default function PricingPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<RawProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProductsAndPrices = useCallback(async () => {
@@ -54,36 +43,32 @@ export default function PricingPage() {
     try {
         const productsQuery = query(collection(firestore, 'products'));
         const productSnapshot = await getDocs(productsQuery);
-        console.log(`[PricingPage] Found ${productSnapshot.docs.length} total product document(s).`);
+        console.log(`[PricingPage] Raw product snapshot contains ${productSnapshot.docs.length} documents.`);
 
         if (productSnapshot.empty) {
             console.log("[PricingPage] The 'products' collection is empty or not readable.");
             setProducts([]);
-            setIsLoading(false);
-            return;
+        } else {
+            const productsData = await Promise.all(
+                productSnapshot.docs.map(async (productDoc) => {
+                    const product = { id: productDoc.id, ...productDoc.data() };
+                    console.log(`[PricingPage] Processing product: ${product.name} (${product.id})`);
+
+                    const pricesQuery = query(collection(firestore, 'products', productDoc.id, 'prices'));
+                    const pricesSnapshot = await getDocs(pricesQuery);
+                    
+                    const prices = pricesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RawPrice));
+                    console.log(`[PricingPage] Found ${prices.length} price(s) for product ${product.id}`);
+
+                    return { ...product, prices } as RawProduct;
+                })
+            );
+            console.log("[PricingPage] Final combined data to be set in state:", productsData);
+            setProducts(productsData);
         }
-
-        const allProductsData = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("[PricingPage] Raw product data from Firestore:", allProductsData);
-
-
-        const productsWithPrices = await Promise.all(
-            allProductsData.map(async (product) => {
-                const pricesQuery = query(collection(firestore, 'products', product.id, 'prices'));
-                const pricesSnapshot = await getDocs(pricesQuery);
-                const prices = pricesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Price));
-                
-                console.log(`[PricingPage] Product "${product.name}" (${product.id}) has ${prices.length} price(s) in its sub-collection.`);
-                return { ...product, prices } as Product;
-            })
-        );
-        
-        console.log("[PricingPage] Final combined data to be set in state:", productsWithPrices);
-        setProducts(productsWithPrices);
-
     } catch (err: any) {
         console.error("[PricingPage] Error fetching products and prices:", err);
-        setError(`Could not fetch pricing plans. This might be a permissions issue. Please check Firestore rules. Error: ${err.message}`);
+        setError(`An error occurred while fetching data. Check the console for details. Error: ${err.message}`);
     } finally {
         setIsLoading(false);
         console.log("[PricingPage] Fetching finished.");
@@ -95,37 +80,16 @@ export default function PricingPage() {
   }, [fetchProductsAndPrices]);
 
   const handlePurchase = async (priceId: string) => {
-    setIsSubmitting(priceId);
-    if (!user) {
-        sessionStorage.setItem('selectedPriceId', priceId);
-        toast({
-            title: 'Please sign in',
-            description: `You need to create an account or sign in to purchase a plan.`,
-            variant: 'default'
-        });
-        router.push('/login');
-        return;
-    }
-
-    try {
-        await createCheckout(user.uid, priceId, window.location.origin + '/account');
-    } catch(error: any) {
-        console.error("Stripe checkout error", error);
-        toast({
-            title: 'Error creating checkout',
-            description: error.message || 'There was a problem redirecting you to checkout. Please try again.',
-            variant: 'destructive',
-        });
-        setIsSubmitting(null);
-    }
+    // This functionality is disabled in this simplified test view.
+    toast({ title: "Purchase Disabled", description: "This is a test view. Purchasing is disabled." });
   };
-
 
   const renderContent = () => {
     if (isLoading) {
          return (
              <div className="flex items-center justify-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4 text-muted-foreground">Loading products from database...</p>
             </div>
         );
     }
@@ -134,7 +98,7 @@ export default function PricingPage() {
         return (
             <Alert variant="destructive" className="max-w-2xl mx-auto">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>Error Loading Data</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         );
@@ -146,7 +110,7 @@ export default function PricingPage() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>No Products Found</AlertTitle>
                 <AlertDescription>
-                   The app could not find any products in your Firestore database. Please ensure the Stripe Payments extension has synced your data correctly and the security rules allow reads on the 'products' collection.
+                   The app successfully connected to the database but found zero products in the 'products' collection. Please ensure the Stripe Payments extension has synced your data correctly.
                 </AlertDescription>
             </Alert>
         );
@@ -155,29 +119,29 @@ export default function PricingPage() {
     return (
         <div className="flex flex-wrap items-center justify-center gap-8">
             {products.map(product => (
-                <Card key={product.id} className="w-full max-w-md shadow-lg">
+                <Card key={product.id} className="w-full max-w-md shadow-lg bg-card">
                     <CardHeader>
-                        <CardTitle>{product.name || 'Unnamed Product'}</CardTitle>
-                        <CardDescription>ID: {product.id} / Active: {String(product.active)}</CardDescription>
+                        <CardTitle className="text-lg">{product.name || 'Unnamed Product'}</CardTitle>
+                        <CardDescription>
+                            Product ID: {product.id} <br/>
+                            Active: {String(product.active)}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="font-semibold mb-2">Prices Found: {product.prices.length}</p>
+                        <h4 className="font-semibold mb-2">Prices Found: {product.prices.length}</h4>
                         {product.prices.length > 0 ? (
-                            <ul className="space-y-2">
+                            <ul className="space-y-2 text-sm">
                                 {product.prices.map(price => (
-                                    <li key={price.id} className="border p-2 rounded-md">
-                                        <p>Amount: ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()}</p>
-                                        <p>Interval: {price.interval}</p>
-                                        <p>Active: {String(price.active)}</p>
-                                        <p className="text-xs text-muted-foreground">Price ID: {price.id}</p>
-                                        <Button className="w-full mt-2" size="sm" onClick={() => handlePurchase(price.id)} disabled={isUserLoading || !!isSubmitting}>
-                                            {isSubmitting === price.id ? 'Redirecting...' : `Purchase (${price.interval})`}
-                                        </Button>
+                                    <li key={price.id} className="border p-3 rounded-md bg-muted/50">
+                                        <div><strong>Price ID:</strong> {price.id}</div>
+                                        <div><strong>Amount:</strong> ${(price.unit_amount / 100).toFixed(2)} {String(price.currency).toUpperCase()}</div>
+                                        <div><strong>Interval:</strong> {price.interval}</div>
+                                        <div><strong>Active:</strong> {String(price.active)}</div>
                                     </li>
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-muted-foreground">No prices found for this product.</p>
+                            <p className="text-muted-foreground text-sm">No prices found for this product.</p>
                         )}
                     </CardContent>
                 </Card>
@@ -186,9 +150,8 @@ export default function PricingPage() {
     );
   };
 
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+    <main className="flex min-h-screen flex-col items-center bg-muted/40 p-4 pt-12">
         <div className="max-w-6xl mx-auto w-full">
             <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold font-headline">Raw Product Data</h1>

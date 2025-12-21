@@ -13,7 +13,7 @@
  *
  * Key Security Decisions:
  * - User data is strictly private. Users cannot see or list other users' information unless they are an admin.
- * - Global collections like `communityWebsites` and `discountOffers` are publicly readable to
+ * - Global collections like `communityWebsites`, `discountOffers` and `products` are publicly readable to
  *   allow any user (signed-in or anonymous) to view them.
  * - All write operations on global/business collections and all administrative actions are
  *   gated by an admin role check. An admin is any user whose UID exists as a document
@@ -163,40 +163,39 @@ service cloud.firestore {
     // --------------------------------
     // Stripe Payments Rules
     // --------------------------------
-
-    // This collection is read-only for clients by default.
-    match /products/{id} {
+    
+    /**
+     * @description Stripe products collection. Publicly readable.
+     */
+    match /products/{productId} {
       allow read: if true;
       allow write: if false;
 
-      match /prices/{id} {
+      /**
+       * @description Stripe prices sub-collection. Publicly readable.
+       */
+      match /prices/{priceId} {
         allow read: if true;
         allow write: if false;
       }
     }
 
-    // This collection is used for customers to create checkout sessions.
-    // Users can only read and write their own checkout sessions.
+    /**
+     * @description Stripe customers collection. Users can only access their own data.
+     */
     match /customers/{uid} {
-       allow read: if isOwner(uid);
-       allow write: if isOwner(uid);
+       allow read, write: if isOwner(uid);
        allow create: if isOwner(uid);
        allow update: if isOwner(uid);
        allow delete: if false;
 
       match /checkout_sessions/{id} {
-        allow read: if isOwner(uid);
-        allow write: if isOwner(uid);
-        allow create: if isOwner(uid);
-        allow update: if isOwner(uid);
-        allow delete: if isOwner(uid);
+        allow read, write, create, update, delete: if isOwner(uid);
       }
 
       match /subscriptions/{id} {
-        allow read: if isOwner(uid);
-        allow create: if false;
-        allow update: if isOwner(uid);
-        allow delete: if isOwner(uid);
+        allow read, update: if isOwner(uid);
+        allow create, delete: if false;
       }
     }
 
@@ -216,9 +215,7 @@ service cloud.firestore {
     match /roles_admin/{userId} {
       allow get: if isAdmin() || isOwner(userId);
       allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if isAdmin() && resource != null;
     }
   }
 }
