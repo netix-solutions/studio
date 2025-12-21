@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useUser, useFirebase } from '@/firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { collection, getDocs, query, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ interface Price {
   id: string;
   active: boolean;
   unit_amount: number;
-  interval: 'month' | 'year' | string; // Allow string for flexibility
+  interval: 'month' | 'year' | string;
   description: string | null;
 }
 
@@ -32,27 +32,27 @@ interface Product {
 async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
   console.log('[PricingPage] Starting to fetch all products (no filters)...');
   const productsColRef = collection(firestore, 'products');
-  const productQuery = query(productsColRef); // No 'where' clause
+  const productQuery = query(productsColRef); // No 'where' clause, fetch everything
   const productSnapshot = await getDocs(productQuery);
 
   if (productSnapshot.empty) {
-    console.log('[PricingPage] The "products" collection is empty.');
+    console.log('[PricingPage] The "products" collection is empty or not readable.');
     return [];
   }
+  
+  console.log(`[PricingPage] Raw product snapshot contains ${productSnapshot.docs.length} documents.`);
 
-  const products: Product[] = [];
-
-  for (const productDoc of productSnapshot.docs) {
+  const productPromises = productSnapshot.docs.map(async (productDoc: QueryDocumentSnapshot<DocumentData>) => {
     const productData = productDoc.data();
 
     // Client-side filter for active products
     if (productData.active !== true) {
       console.log(`[PricingPage] Skipping inactive product: ${productDoc.id}`);
-      continue;
+      return null;
     }
 
     const pricesColRef = collection(firestore, 'products', productDoc.id, 'prices');
-    const priceQuery = query(pricesColRef); // No 'where' clause
+    const priceQuery = query(pricesColRef); // No 'where' clause, fetch everything
     const priceSnapshot = await getDocs(priceQuery);
 
     const prices: Price[] = [];
@@ -60,7 +60,7 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
       const priceData = priceDoc.data();
       // Client-side filter for active prices
       if (priceData.active === true) {
-        // Correctly determine the interval
+        // Correctly determine the interval, checking recurring for Stripe extension v0.3.1+
         const interval = priceData.interval ?? priceData.recurring?.interval;
         if (interval) {
           prices.push({
@@ -75,18 +75,20 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
     });
 
     if (prices.length > 0) {
-      products.push({
+      return {
         id: productDoc.id,
         active: productData.active,
         name: productData.name,
         description: productData.description,
         prices,
-      });
+      };
     }
-  }
-  
-  console.log(`[PricingPage] Found ${products.length} active product(s) with active prices.`);
-  return products;
+    return null;
+  });
+
+  const resolvedProducts = (await Promise.all(productPromises)).filter(p => p !== null) as Product[];
+  console.log(`[PricingPage] Found ${resolvedProducts.length} active product(s) with active prices.`);
+  return resolvedProducts;
 }
 
 export default function PricingPage() {
@@ -110,7 +112,10 @@ export default function PricingPage() {
             variant: 'destructive',
           });
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+            console.log("[PricingPage] Fetching finished.");
+            setLoading(false)
+        });
     }
   }, [firestore, toast]);
 
@@ -151,6 +156,7 @@ export default function PricingPage() {
     );
   }
 
+  // Filter for products that have at least one monthly and one yearly price
   const displayProducts = products.filter(p => {
       const hasMonth = p.prices.some(price => price.interval === 'month');
       const hasYear = p.prices.some(price => price.interval === 'year');
@@ -270,4 +276,5 @@ export default function PricingPage() {
     </div>
   );
 }
+
     
