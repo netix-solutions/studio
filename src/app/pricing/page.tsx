@@ -3,13 +3,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
-import { collection, getDocs, query, QueryDocumentSnapshot, DocumentData, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface Price {
   id: string;
@@ -26,6 +29,9 @@ interface Product {
   active: boolean;
   prices: Price[];
   features?: string[];
+  metadata?: {
+    isFeatured?: string;
+  };
 }
 
 async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
@@ -41,19 +47,16 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
       const pricesQuery = query(pricesColRef, where('active', '==', true));
       const priceDocs = await getDocs(pricesQuery);
       
-      const prices: Price[] = priceDocs.docs
-        .map((priceDoc) => {
-          const priceData = priceDoc.data();
-          // Stripe v8 SDK has recurring object
-          const interval = priceData.interval ?? priceData.recurring?.interval;
-          return {
-            id: priceDoc.id,
-            interval: interval,
-            unit_amount: priceData.unit_amount,
-            currency: priceData.currency,
-            active: priceData.active,
-          };
-        });
+      const prices: Price[] = priceDocs.docs.map((priceDoc) => {
+        const priceData = priceDoc.data();
+        return {
+          id: priceDoc.id,
+          interval: priceData.interval ?? priceData.recurring?.interval,
+          unit_amount: priceData.unit_amount,
+          currency: priceData.currency,
+          active: priceData.active,
+        };
+      });
 
       return {
         id: productDoc.id,
@@ -63,24 +66,111 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
         prices: prices,
         features: productData.features || [
             "Rotating banner ad on high-traffic pages",
-            "Clickable link to drive traffic to your website",
-            "Ad design support if you don't have a banner",
-            "Flexibility to cancel your subscription anytime"
+            "Clickable link to drive traffic",
+            "Ad design support included",
+            "Cancel anytime flexibility"
         ],
+        metadata: productData.metadata,
       };
     })
   );
   
-  // Sort products by price, lowest first. Assumes first price is representative.
   const sortedProducts = allProducts
     .filter(p => p.active && p.prices.length > 0)
     .sort((a, b) => {
-        const aPrice = a.prices[0]?.unit_amount || 0;
-        const bPrice = b.prices[0]?.unit_amount || 0;
+        const aPrice = a.prices.find(p => p.interval === 'month')?.unit_amount || a.prices[0]?.unit_amount || 0;
+        const bPrice = b.prices.find(p => p.interval === 'month')?.unit_amount || b.prices[0]?.unit_amount || 0;
         return aPrice - bPrice;
     });
 
   return sortedProducts;
+}
+
+function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { product: Product; onPurchase: (priceId: string) => void; isPurchasing: string | null; isFeatured?: boolean }) {
+    const [billingCycle, setBillingCycle] = useState<'yearly' | 'monthly'>('yearly');
+
+    const monthlyPrice = product.prices.find(p => p.interval === 'month');
+    const yearlyPrice = product.prices.find(p => p.interval === 'year');
+
+    const handleCycleChange = (value: 'yearly' | 'monthly') => {
+        if (value) setBillingCycle(value);
+    };
+    
+    const displayPrice = billingCycle === 'yearly' && yearlyPrice
+        ? yearlyPrice.unit_amount / 12
+        : monthlyPrice?.unit_amount;
+
+    const priceIdToPurchase = billingCycle === 'yearly' && yearlyPrice ? yearlyPrice.id : monthlyPrice?.id;
+    
+    const savings = monthlyPrice && yearlyPrice
+        ? Math.round(((monthlyPrice.unit_amount * 12 - yearlyPrice.unit_amount) / (monthlyPrice.unit_amount * 12)) * 100)
+        : 0;
+
+    return (
+        <Card className={cn("flex flex-col rounded-xl shadow-lg border-2 h-full relative overflow-hidden", isFeatured ? "border-primary" : "border-border/60")}>
+             {isFeatured && (
+                <Badge className="absolute top-4 right-4" variant="secondary">Best Value</Badge>
+            )}
+            <CardHeader className="text-center pb-4">
+                <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
+                {product.description && <CardDescription className="pt-2 h-12">{product.description}</CardDescription>}
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col">
+                {(monthlyPrice && yearlyPrice) && (
+                    <div className="flex justify-center mb-6">
+                        <ToggleGroup type="single" value={billingCycle} onValueChange={handleCycleChange} className="bg-muted p-1 rounded-full">
+                            <ToggleGroupItem value="monthly" aria-label="Pay monthly" className="rounded-full data-[state=on]:bg-background data-[state=on]:shadow-sm px-4">Monthly</ToggleGroupItem>
+                            <ToggleGroupItem value="yearly" aria-label="Pay yearly" className="rounded-full data-[state=on]:bg-background data-[state=on]:shadow-sm px-4 flex items-center gap-2">
+                                Yearly
+                                {savings > 0 && <Badge variant="secondary">Save {savings}%</Badge>}
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+                )}
+                <div className="text-center my-4">
+                    {displayPrice !== undefined ? (
+                        <>
+                            <span className="text-5xl font-bold tracking-tight">
+                                {(displayPrice / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </span>
+                            <span className="text-muted-foreground">/month</span>
+                            {billingCycle === 'yearly' && yearlyPrice && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Billed as {(yearlyPrice.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} per year
+                                </p>
+                            )}
+                        </>
+                    ) : (
+                         <p className="text-lg font-medium text-muted-foreground">Price not available</p>
+                    )}
+                </div>
+
+                <ul className="space-y-4 text-muted-foreground my-8 flex-grow">
+                    {product.features && product.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <span>{feature}</span>
+                        </li>
+                    ))}
+                </ul>
+
+            </CardContent>
+            <CardFooter className="flex flex-col items-stretch gap-4 bg-muted/50 p-6 mt-auto">
+                 <Button
+                    size="lg"
+                    className={cn("w-full", isFeatured && "shadow-lg shadow-primary/30")}
+                    onClick={() => priceIdToPurchase && onPurchase(priceIdToPurchase)}
+                    disabled={!priceIdToPurchase || !!isPurchasing}
+                    >
+                    {isPurchasing === priceIdToPurchase ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        'Choose Plan'
+                    )}
+                    </Button>
+            </CardFooter>
+        </Card>
+    );
 }
 
 export default function PricingPage() {
@@ -112,43 +202,21 @@ export default function PricingPage() {
 
   const handlePurchase = async (priceId: string) => {
     if (!firestore) {
-      toast({
-        title: 'Error',
-        description: 'Database not ready.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Database not ready.', variant: 'destructive' });
       return;
     }
-
     setIsPurchasing(priceId);
-
-    // If user is not logged in, redirect them to register.
-    // The price ID will be stored in session storage.
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
       router.push('/register');
       return;
     }
-
     try {
-      await createCheckout(
-        firestore,
-        user.uid,
-        user.email,
-        priceId,
-        window.location.origin + '/account'
-      );
-      // The createCheckout function handles the redirect, so no need to reset state here on success.
+      await createCheckout(firestore, user.uid, user.email, priceId, window.location.origin + '/account');
     } catch (error: any) {
       console.error('Stripe checkout error:', error);
-      toast({
-        title: 'Error Starting Checkout',
-        description:
-          error.message ||
-          'Could not redirect to checkout. Please check the console and try again.',
-        variant: 'destructive',
-      });
-      setIsPurchasing(null); // Reset button state on error
+      toast({ title: 'Error Starting Checkout', description: error.message || 'Could not redirect to checkout.', variant: 'destructive' });
+      setIsPurchasing(null);
     }
   };
   
@@ -162,93 +230,35 @@ export default function PricingPage() {
 
   return (
     <div className="bg-background text-foreground">
-        <div className="container mx-auto py-10 px-4 md:px-6">
+        <div className="container mx-auto py-16 px-4 md:px-6">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold tracking-tight font-headline sm:text-5xl">Choose Your Plan</h1>
                 <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">Simple, transparent pricing to reach your community on WesleyChapelCommunity.com and PascoCommunity.com.</p>
             </div>
 
             {products.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto items-start">
-                {products.map((product) => {
-                    const monthlyPrice = product.prices.find(p => p.interval === 'month');
-                    const yearlyPrice = product.prices.find(p => p.interval === 'year');
-
-                    return (
-                    <Card key={product.id} className="flex flex-col rounded-lg shadow-lg border border-border/60 h-full">
-                        <CardHeader className="text-center pb-4">
-                        <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
-                        {product.description && <CardDescription className="pt-2 h-12">{product.description}</CardDescription>}
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            {monthlyPrice && (
-                                <div className="text-center mb-6">
-                                    <span className="text-4xl font-bold">
-                                        {(monthlyPrice.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: monthlyPrice.currency })}
-                                    </span>
-                                    <span className="text-muted-foreground">/month</span>
-                                </div>
-                            )}
-                            <ul className="space-y-4 text-muted-foreground my-6">
-                                {product.features && product.features.map((feature, i) => (
-                                    <li key={i} className="flex items-start gap-3">
-                                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                                        <span>{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                        <CardFooter className="flex flex-col items-stretch gap-4 bg-muted/50 p-6 mt-auto">
-                        {monthlyPrice && (
-                            <Button
-                            size="lg"
-                            className="w-full"
-                            onClick={() => handlePurchase(monthlyPrice.id)}
-                            disabled={!!isPurchasing}
-                            >
-                            {isPurchasing === monthlyPrice.id ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                'Choose Monthly'
-                            )}
-                            </Button>
-                        )}
-                        {yearlyPrice && (
-                            <div className="text-center">
-                                <p className="text-sm font-medium mb-2">Or save with a yearly plan:</p>
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => handlePurchase(yearlyPrice.id)}
-                                    disabled={!!isPurchasing}
-                                >
-                                {isPurchasing === yearlyPrice.id ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <>
-                                    {(yearlyPrice.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: yearlyPrice.currency })} / year
-                                    </>
-                                )}
-                                </Button>
-                            </div>
-                        )}
-                        </CardFooter>
-                    </Card>
-                    );
-                })}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
+                    {products.map((product) => (
+                        <PricingCard 
+                            key={product.id}
+                            product={product}
+                            onPurchase={handlePurchase}
+                            isPurchasing={isPurchasing}
+                            isFeatured={product.metadata?.isFeatured === 'true'}
+                        />
+                    ))}
                 </div>
             ) : (
                 <Card className="m-auto max-w-2xl text-center p-8 border-dashed">
-                <CardHeader>
-                    <CardTitle>Pricing Not Available</CardTitle>
-                    <CardDescription>
-                    Pricing plans have not been configured or synced from Stripe. To add plans, please create a product with monthly and/or yearly prices in your Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button variant="outline" onClick={() => router.back()}>&larr; Go Back</Button>
-                </CardContent>
+                    <CardHeader>
+                        <CardTitle>Pricing Not Available</CardTitle>
+                        <CardDescription>
+                            Pricing plans have not been configured or synced from Stripe. To add plans, please create a product with prices in your Stripe Dashboard.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="outline" onClick={() => router.back()}>&larr; Go Back</Button>
+                    </CardContent>
                 </Card>
             )}
         </div>
