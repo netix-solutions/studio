@@ -1,18 +1,15 @@
 
 'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Check, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { createCheckout } from '@/lib/stripe';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { collection, query, getDocs, type DocumentData } from 'firebase/firestore';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 
 interface Price extends DocumentData {
     id: string;
@@ -42,58 +39,41 @@ export default function PricingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
   const [error, setError] = useState<string | null>(null);
 
   const fetchProductsAndPrices = useCallback(async () => {
     if (!firestore) return;
     setIsLoading(true);
     setError(null);
-    console.log("[PricingPage] Starting to fetch products...");
+    console.log("[PricingPage] Starting to fetch all products (no filters)...");
 
     try {
         const productsQuery = query(collection(firestore, 'products'));
         const productSnapshot = await getDocs(productsQuery);
-        console.log(`[PricingPage] Fetched ${productSnapshot.docs.length} total product document(s).`);
+        console.log(`[PricingPage] Found ${productSnapshot.docs.length} total product document(s).`);
 
-        const allProducts = productSnapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(product => product.active === true);
-        
-        console.log(`[PricingPage] Found ${allProducts.length} active product(s).`);
-
-        if (allProducts.length === 0) {
-            console.log("[PricingPage] No active products found.");
+        if (productSnapshot.empty) {
+            console.log("[PricingPage] The 'products' collection is empty.");
             setProducts([]);
             setIsLoading(false);
             return;
         }
 
+        const allProducts = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
         const productsWithPrices = await Promise.all(
             allProducts.map(async (product) => {
                 const pricesQuery = query(collection(firestore, 'products', product.id, 'prices'));
                 const pricesSnapshot = await getDocs(pricesQuery);
-                const prices = pricesSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() } as Price))
-                    .filter(price => price.active === true);
+                const prices = pricesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Price));
                 
-                console.log(`[PricingPage] Product "${product.name}" has ${prices.length} active price(s).`);
+                console.log(`[PricingPage] Product "${product.name}" (${product.id}) has ${prices.length} price(s) in its sub-collection.`, prices);
                 return { ...product, prices } as Product;
             })
         );
-
-        const validProducts = productsWithPrices.filter(p => {
-            const hasMonthly = p.prices.some(price => price.interval === 'month');
-            const hasAnnual = p.prices.some(price => price.interval === 'year');
-            const isValid = hasMonthly && hasAnnual;
-            if (!isValid) {
-                 console.log(`[PricingPage] Filtering out product "${p.name}" because it's missing an active monthly or yearly price.`);
-            }
-            return isValid;
-        });
-
-        console.log(`[PricingPage] Found ${validProducts.length} product(s) with valid monthly and annual prices.`);
-        setProducts(validProducts);
+        
+        console.log("[PricingPage] Final combined data:", productsWithPrices);
+        setProducts(productsWithPrices);
 
     } catch (err: any) {
         console.error("[PricingPage] Error fetching products:", err);
@@ -134,28 +114,6 @@ export default function PricingPage() {
     }
   };
 
-  const mainProduct = useMemo(() => products.find(p => p.prices.length > 0), [products]);
-
-  const { monthlyPrice, annualPrice } = useMemo(() => {
-    if (!mainProduct) return { monthlyPrice: null, annualPrice: null };
-    const monthly = mainProduct.prices.find(p => p.interval === 'month');
-    const annual = mainProduct.prices.find(p => p.interval === 'year');
-    return { monthlyPrice: monthly, annualPrice: annual };
-  }, [mainProduct]);
-
-  const displayedPrice = billingCycle === 'monthly' ? monthlyPrice : annualPrice;
-  const effectiveMonthlyRate = billingCycle === 'annually' && annualPrice ? annualPrice.unit_amount / 1200 : (monthlyPrice?.unit_amount || 0) / 100;
-  
-  const annualBillingAmount = annualPrice ? annualPrice.unit_amount / 100 : 0;
-  const savings = monthlyPrice && annualPrice ? (monthlyPrice.unit_amount * 12 - annualPrice.unit_amount) / 100 : 0;
-
-  const features = [
-      "Rotating Banner Ad",
-      "Clickable Traffic to Your Site",
-      "Creative Support Included",
-      "Easy Ad Updates",
-      "Cancel Anytime"
-  ];
 
   const renderContent = () => {
     if (isLoading) {
@@ -176,76 +134,48 @@ export default function PricingPage() {
         );
     }
 
-    if (!mainProduct || !displayedPrice) {
+    if (products.length === 0) {
         return (
             <Alert variant="default" className="max-w-2xl mx-auto">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Pricing Not Available</AlertTitle>
+                <AlertTitle>No Products Found</AlertTitle>
                 <AlertDescription>
-                    Pricing plans have not been configured yet. To add plans, please create a monthly and a yearly price for your product in the Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
+                   The app could not find any products in your Firestore database. Please ensure the Stripe Payments extension has synced your data correctly.
                 </AlertDescription>
             </Alert>
         );
     }
 
     return (
-        <div className="flex flex-col items-center">
-            {annualPrice && monthlyPrice && (
-                 <div className="flex justify-center items-center gap-4 mb-12">
-                    <Label htmlFor="billing-cycle" className={billingCycle === 'monthly' ? 'font-semibold text-foreground' : 'text-muted-foreground'}>Monthly</Label>
-                    <Switch 
-                        id="billing-cycle"
-                        checked={billingCycle === 'annually'}
-                        onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
-                        aria-label="Toggle billing cycle"
-                    />
-                    <Label htmlFor="billing-cycle" className={billingCycle === 'annually' ? 'font-semibold text-foreground' : 'text-muted-foreground'}>Annually</Label>
-                    {savings > 0 && <Badge variant="secondary" className="ml-2">Save ${savings.toFixed(2)}!</Badge>}
-                </div>
-            )}
-            <Card className="flex flex-col max-w-md w-full shadow-lg">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold font-headline">{mainProduct.name}</CardTitle>
-                    <CardDescription>
-                        {billingCycle === 'annually' && annualPrice ?
-                            `Billed as one payment of $${annualBillingAmount.toFixed(2)}` :
-                            'Billed monthly, cancel anytime.'
-                        }
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                    <div className="mb-6 text-center">
-                        {effectiveMonthlyRate > 0 ? (
-                            <>
-                                <span className="text-5xl font-bold">${effectiveMonthlyRate.toFixed(2)}</span>
-                                <span className="text-muted-foreground text-lg">/month</span>
-                            </>
+        <div className="flex flex-wrap items-center justify-center gap-8">
+            {products.map(product => (
+                <Card key={product.id} className="w-full max-w-md shadow-lg">
+                    <CardHeader>
+                        <CardTitle>{product.name || 'Unnamed Product'}</CardTitle>
+                        <CardDescription>ID: {product.id} / Active: {String(product.active)}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="font-semibold mb-2">Prices Found: {product.prices.length}</p>
+                        {product.prices.length > 0 ? (
+                            <ul className="space-y-2">
+                                {product.prices.map(price => (
+                                    <li key={price.id} className="border p-2 rounded-md">
+                                        <p>Amount: ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()}</p>
+                                        <p>Interval: {price.interval}</p>
+                                        <p>Active: {String(price.active)}</p>
+                                        <p className="text-xs text-muted-foreground">Price ID: {price.id}</p>
+                                        <Button className="w-full mt-2" size="sm" onClick={() => handlePurchase(price.id)} disabled={isUserLoading || !!isSubmitting}>
+                                            {isSubmitting === price.id ? 'Redirecting...' : `Purchase (${price.interval})`}
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
                         ) : (
-                            <span className="text-2xl font-bold">Contact for pricing</span>
+                            <p className="text-muted-foreground">No prices found for this product.</p>
                         )}
-                    </div>
-                    <ul className="space-y-4">
-                        {features.map(feature => (
-                            <li key={feature} className="flex items-center gap-3">
-                                <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                                <span>{feature}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </CardContent>
-                <CardFooter>
-                    <Button className="w-full" size="lg" onClick={() => handlePurchase(displayedPrice.id)} disabled={isUserLoading || !!isSubmitting}>
-                        {isSubmitting === displayedPrice.id ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Redirecting...
-                            </>
-                        ) : (
-                            'Get Started'
-                        )}
-                    </Button>
-                </CardFooter>
-            </Card>
+                    </CardContent>
+                </Card>
+            ))}
         </div>
     );
   };
@@ -255,8 +185,8 @@ export default function PricingPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
         <div className="max-w-6xl mx-auto w-full">
             <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold font-headline">Choose Your Plan</h1>
-                <p className="text-muted-foreground mt-2 text-lg">Select the perfect plan for your business advertising needs.</p>
+                <h1 className="text-4xl font-bold font-headline">Raw Product Data</h1>
+                <p className="text-muted-foreground mt-2 text-lg">Displaying all products found in the database without any filters.</p>
             </div>
             
             {renderContent()}
@@ -270,5 +200,3 @@ export default function PricingPage() {
     </main>
   );
 }
-
-    
