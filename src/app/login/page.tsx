@@ -28,6 +28,7 @@ import { signInWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import type { Auth } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -38,7 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
-  const getAuth = useAuth;
+  const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -55,9 +56,8 @@ export default function LoginPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>, auth: Auth) {
     setIsSubmitting(true);
-    const auth = getAuth();
     try {
       await signInWithEmail(auth, values.email, values.password);
       toast({
@@ -96,7 +96,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit((values) => onSubmit(values, auth))} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
