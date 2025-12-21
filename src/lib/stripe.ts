@@ -11,8 +11,6 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { firebaseApp } from '@/firebase';
 
 export const createCheckout = async (
   firestore: Firestore,
@@ -77,25 +75,34 @@ export const createCheckout = async (
   });
 };
 
-export const goToBillingPortal = async (auth: Auth, returnUrl: string) => {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('User not signed in.');
-  }
+export const goToBillingPortal = async (firestore: Firestore, userId: string, returnUrl: string) => {
+  // 1. Ensure customer doc exists
+  await setDoc(doc(firestore, 'customers', userId), {}, { merge: true });
 
-  // Ensure the customer document exists before creating the portal link.
-  // This triggers the extension to create a Stripe customer if one doesn't exist.
-  const firestore = getFirestore(firebaseApp);
-  await setDoc(doc(firestore, 'customers', user.uid), {
-      email: user.email,
-  }, { merge: true });
+  // 2. Create a new portal link document
+  const portalLinksRef = collection(firestore, 'customers', userId, 'portal_links');
+  const docRef = await addDoc(portalLinksRef, {
+    return_url: returnUrl,
+    createdAt: serverTimestamp(),
+  });
 
-
-  const functions = getFunctions(firebaseApp, 'us-central1');
-  const fn = httpsCallable(
-    functions,
-    'ext-firestore-stripe-payments-createPortalLink'
-  );
-  const { data } = await fn({ returnUrl });
-  window.location.assign((data as any).url);
+  // 3. Wait for the extension to write the URL
+  return new Promise<void>((resolve, reject) => {
+    const unsub = onSnapshot(docRef, (snap) => {
+      const data = snap.data();
+      if (data?.url) {
+        unsub();
+        window.location.assign(data.url);
+        resolve();
+      }
+      if (data?.error) {
+        unsub();
+        const errorMessage = data.error.message || 'Could not create billing portal link.';
+        reject(new Error(errorMessage));
+      }
+    }, (error) => {
+      unsub();
+      reject(error);
+    });
+  });
 };

@@ -40,7 +40,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    match /plans/{planId} {
+    match /products/{productId} {
       allow read: if true;
       allow write: if false;
 

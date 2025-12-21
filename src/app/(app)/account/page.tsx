@@ -13,7 +13,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 
 export default function AccountPage() {
     const { user } = useUser();
-    const { auth, firestore } = useFirebase();
+    const { firestore } = useFirebase();
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminLoading, setIsAdminLoading] = useState(true);
@@ -23,10 +23,8 @@ export default function AccountPage() {
     useEffect(() => {
         if (!user || !firestore) return;
 
-        let unsubscribe: Unsubscribe;
         const adminDocRef = doc(firestore, 'roles_admin', user.uid);
-        
-        unsubscribe = onSnapshot(adminDocRef, (docSnap) => {
+        const unsubscribe = onSnapshot(adminDocRef, (docSnap) => {
             setIsAdmin(docSnap.exists());
             setIsAdminLoading(false);
         }, (error) => {
@@ -41,15 +39,27 @@ export default function AccountPage() {
     }, [user, firestore]);
 
     const handleManageBilling = async () => {
-        if (!auth) {
-            console.error("Auth is not available");
+        if (!firestore || !user) {
+            toast({
+                title: "Error",
+                description: "Services not available. Please try again.",
+                variant: "destructive",
+            });
             return;
         }
         setIsRedirecting(true);
         try {
-            await goToBillingPortal(auth, window.location.origin + '/account');
-        } catch (error) {
+            await goToBillingPortal(firestore, user.uid, window.location.origin + '/account');
+            // Redirection is handled inside goToBillingPortal, so we might not reach here.
+            // But if the promise resolves without redirecting for some reason, stop loading.
+             setIsRedirecting(false);
+        } catch (error: any) {
             console.error('Error redirecting to billing portal:', error);
+             toast({
+                title: "Error",
+                description: error.message || "Could not open billing portal. Please try again.",
+                variant: "destructive",
+            });
             setIsRedirecting(false);
         }
     };
@@ -118,7 +128,7 @@ export default function AccountPage() {
                         <p className="text-sm text-muted-foreground">
                             Click the button below to manage your subscription, view payment history, and update your payment method in our secure Stripe customer portal.
                         </p>
-                        <Button onClick={handleManageBilling} disabled={isRedirecting || !auth}>
+                        <Button onClick={handleManageBilling} disabled={isRedirecting || !user || !firestore}>
                             {isRedirecting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
