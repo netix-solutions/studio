@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Firestore } from 'firebase/firestore';
@@ -37,7 +38,7 @@ export const createCheckout = async (
   const docRef = await addDoc(sessionsRef, {
     price: priceId, // must be Stripe price id: price_...
     success_url: redirectUrl,
-    cancel_url: redirectUrl,
+    cancel_url: window.location.origin + '/pricing',
     allow_promotion_codes: true, // Enable promotion codes on the checkout session
     createdAt: serverTimestamp(),
   });
