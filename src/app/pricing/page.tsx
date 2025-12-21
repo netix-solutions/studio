@@ -122,6 +122,8 @@ export default function PricingPage() {
 
     setIsPurchasing(priceId);
 
+    // If user is not logged in, redirect them to register.
+    // The price ID will be stored in session storage.
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
       router.push('/register');
@@ -136,7 +138,7 @@ export default function PricingPage() {
         priceId,
         window.location.origin + '/account'
       );
-      // The createCheckout function will redirect, so no need to reset state here on success.
+      // The createCheckout function handles the redirect, so no need to reset state here on success.
     } catch (error: any) {
       console.error('Stripe checkout error:', error);
       toast({
@@ -254,3 +256,4 @@ export default function PricingPage() {
   );
 }
 
+    
