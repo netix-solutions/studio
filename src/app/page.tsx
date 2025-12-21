@@ -216,7 +216,7 @@ export default function LandingPage() {
                     <div className="relative w-full max-w-md">
                         <Smartphone className="relative z-10 h-auto w-full text-foreground/20" />
                         <div className="absolute inset-[13px] sm:inset-[16px] rounded-[20px] sm:rounded-[24px] overflow-hidden bg-background">
-                            <Image src="https://picsum.photos/seed/news/400/800" alt="Community News Site on Mobile" layout="fill" objectFit="cover" />
+                            <Image src="/adhere.png" alt="Community News Site on Mobile" layout="fill" objectFit="cover" />
                              <div className="absolute bottom-4 left-4 right-4 bg-gray-200/80 backdrop-blur-sm p-2 rounded-md">
                                 <p className="text-center text-xs text-black font-semibold">Your Ad Here</p>
                             </div>
