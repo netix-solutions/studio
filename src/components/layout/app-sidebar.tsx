@@ -18,7 +18,6 @@ const menuItems = [
   { href: '/subscriptions', label: 'Subscriptions', icon: Ticket },
   // { href: '/pricing', label: 'Pricing', icon: Tag }, // Pricing is now a public page
   { href: '/discounts', label: 'Discounts', icon: Percent },
-  { href: '/users', label: 'Users', icon: Users },
 ];
 
 export function AppSidebar() {
