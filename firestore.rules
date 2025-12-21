@@ -217,14 +217,15 @@ service cloud.firestore {
     /**
      * @description Manages the collection of administrator roles.
      * @path /roles_admin/{userId}
-     * @allow (any) Only existing administrators can view or modify the list of admins.
-     * @deny (any) Non-admins cannot read this collection to prevent enumeration of admins.
-     * @principle Secures the admin role management system itself.
+     * @allow (create) An authenticated user can create their own admin role document.
+     * @allow (get, list) Only existing administrators can view or modify the list of admins.
+     * @deny (any) Non-admins cannot read this collection to prevent enumeration of admins (unless it's their own doc).
+     * @principle Secures the admin role management system itself, with a special rule for self-creation.
      */
     match /roles_admin/{userId} {
-      allow get: if isAdmin();
+      allow get: if isAdmin() || isOwner(userId);
       allow list: if isAdmin();
-      allow create: if isAdmin();
+      allow create: if isOwner(userId);
       allow update: if isAdmin() && resource != null;
       allow delete: if isAdmin() && resource != null;
     }
