@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -334,6 +335,9 @@ export default function LandingPage() {
             <div className="text-sm text-muted-foreground text-center md:text-left">
                 &copy; {new Date().getFullYear()} Community-Websites.com. All rights reserved.
             </div>
+        </div>
+        <div className="container mx-auto text-center pb-4">
+            <Link href="/pricing" className="text-xs text-muted-foreground hover:text-primary">View Pricing Page</Link>
         </div>
       </footer>
     </div>
