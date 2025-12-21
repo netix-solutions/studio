@@ -81,7 +81,7 @@ service cloud.firestore {
      * @description Manages user profile documents.
      * @path /users/{userId}
      * @allow (create) A new user can create their own profile document.
-     * @allow (get, update) An authenticated user can read or update their own profile.
+     * @allow (get, update) An authenticated user can read or update their own profile. Admins can also get/update any profile.
      * @allow (list) Listing all users is only allowed for administrators.
      * @deny (delete) Users cannot delete their own profile for safety.
      * @principle Restricts access to a user's own data tree and enforces self-creation, with admins having read-only list access.
@@ -90,7 +90,7 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
+      allow update: if (isOwner(userId) || isAdmin()) && resource != null && request.resource.data.id == resource.data.id;
       allow delete: if false;
 
       /**
@@ -155,7 +155,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
+      update: if isAdmin() && resource != null;
       allow delete: if isAdmin() && resource != null;
     }
 
@@ -218,16 +218,17 @@ service cloud.firestore {
      * @description Manages the collection of administrator roles.
      * @path /roles_admin/{userId}
      * @allow (get, list) Only existing administrators can view the list of admins. A user can view their own role.
-     * @allow (create) An authenticated user can create their OWN admin role document. This is for initial setup.
-     * @deny (update, delete) Non-admins cannot modify roles.
+     * @allow (create, update) An administrator can grant or revoke admin privileges for other users.
+     * @allow (delete) An administrator can remove admin privileges.
      * @principle Secures the admin role management system itself.
      */
     match /roles_admin/{userId} {
       allow get: if isAdmin() || isOwner(userId);
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow create: if isAdmin();
       allow update: if isAdmin() && resource != null;
       allow delete: if isAdmin() && resource != null;
     }
   }
 }
+    

@@ -28,6 +28,7 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
+            role: 'user', // Default role
         });
     }
     
@@ -41,3 +42,5 @@ export const signOutUser = (auth: Auth) => {
 export const sendPasswordReset = (auth: Auth, email: string) => {
     return sendPasswordResetEmail(auth, email);
 };
+
+    
