@@ -51,7 +51,7 @@ service cloud.firestore {
     }
 
     match /customers/{uid}/{document=**} {
-      allow read, write: if isOwner(uid) || isAdmin();
+      allow read, write: if request.auth.uid == uid || isAdmin();
     }
     
     match /roles_admin/{userId} {
