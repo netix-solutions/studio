@@ -79,7 +79,8 @@ export default function LandingPage() {
        <header className="sticky top-0 z-40 w-full px-4 md:px-6">
         <div className="container mx-auto mt-4 flex h-16 items-center justify-between rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
           <Link href="/" className="flex items-center gap-3 font-bold text-xl">
-             <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
+            <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
+            <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
              <Button variant="ghost" className="hidden sm:inline-flex" asChild>
