@@ -113,7 +113,6 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
             )}
             <CardHeader className="text-center">
                 <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
-                {product.description && <CardDescription className="pt-2 min-h-[4rem]">{product.description}</CardDescription>}
             </CardHeader>
             <CardContent className="flex-grow flex flex-col">
                  <div className="flex justify-center my-6">
