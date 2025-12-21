@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -73,7 +74,7 @@ export function GetStartedForm() {
       });
       
       // Redirect to pricing page after successful submission
-      router.push('/pricing');
+      router.push(`/pricing?businessName=${encodeURIComponent(values.businessName)}`);
 
     } catch(error: any) {
        console.error("Error creating lead:", error);
@@ -208,5 +209,3 @@ export function GetStartedForm() {
     </Form>
   );
 }
-
-    

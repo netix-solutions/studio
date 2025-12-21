@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useFirebase } from '@/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
@@ -170,13 +170,15 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
     );
 }
 
-export default function PricingPage() {
+function PricingPageContent() {
   const { firestore, user } = useFirebase();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const businessName = searchParams.get('businessName');
 
   useEffect(() => {
     if (firestore) {
@@ -229,7 +231,9 @@ export default function PricingPage() {
     <div className="bg-background text-foreground">
         <div className="container mx-auto py-16 px-4 md:px-6">
             <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold tracking-tight font-headline sm:text-5xl">Choose Your Plan</h1>
+                <h1 className="text-4xl font-bold tracking-tight font-headline sm:text-5xl">
+                    {businessName ? `Choose your plan for ${businessName}` : 'Choose Your Plan'}
+                </h1>
                 <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">Simple, transparent pricing to reach your community on WesleyChapelCommunity.com and PascoCommunity.com.</p>
             </div>
 
@@ -261,4 +265,13 @@ export default function PricingPage() {
         </div>
     </div>
   );
+}
+
+
+export default function PricingPage() {
+    return (
+        <Suspense fallback={<div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+            <PricingPageContent />
+        </Suspense>
+    );
 }
