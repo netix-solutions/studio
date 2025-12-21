@@ -7,6 +7,8 @@ import { doc, setDoc, onSnapshot, Unsubscribe, collection, getDocs, getDoc } fro
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 
 export default function AccountPage() {
@@ -27,6 +29,14 @@ export default function AccountPage() {
         
         unsubscribe = onSnapshot(adminDocRef, (docSnap) => {
             setIsAdmin(docSnap.exists());
+            setIsAdminLoading(false);
+        }, (error) => {
+             // Handle potential permission errors on the admin check itself
+            const permissionError = new FirestorePermissionError({
+                path: adminDocRef.path,
+                operation: 'get',
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
             setIsAdminLoading(false);
         });
 
@@ -57,23 +67,32 @@ export default function AccountPage() {
             return;
         }
         setIsSubmittingAdmin(true);
-        try {
-            const adminDocRef = doc(firestore, 'roles_admin', user.uid);
-            await setDoc(adminDocRef, { uid: user.uid });
-            toast({
-                title: "Success!",
-                description: "You have been granted admin privileges."
+        const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+        
+        setDoc(adminDocRef, { uid: user.uid })
+            .then(() => {
+                toast({
+                    title: "Success!",
+                    description: "You have been granted admin privileges."
+                });
+            })
+            .catch((error: any) => {
+                const permissionError = new FirestorePermissionError({
+                    path: adminDocRef.path,
+                    operation: 'create',
+                    requestResourceData: { uid: user.uid },
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+
+                toast({
+                    title: "Error",
+                    description: "Could not grant admin role. Check Firestore rules or console for errors.",
+                    variant: "destructive"
+                });
+            })
+            .finally(() => {
+                setIsSubmittingAdmin(false);
             });
-        } catch (error: any) {
-            console.error("Error setting admin role:", error);
-            toast({
-                title: "Error",
-                description: "Could not grant admin role. Check Firestore rules or console for errors.",
-                variant: "destructive"
-            });
-        } finally {
-            setIsSubmittingAdmin(false);
-        }
     };
 
     const handleSyncStripeCustomers = async () => {
@@ -81,7 +100,9 @@ export default function AccountPage() {
         setIsSyncing(true);
         let syncedCount = 0;
         try {
-            const usersSnapshot = await getDocs(collection(firestore, 'users'));
+            const usersCollectionRef = collection(firestore, 'users');
+            const usersSnapshot = await getDocs(usersCollectionRef);
+
             const syncPromises = usersSnapshot.docs.map(async (userDoc) => {
                 const userData = userDoc.data();
                 const userId = userDoc.id;
@@ -92,7 +113,7 @@ export default function AccountPage() {
                 const customerDocSnap = await getDoc(customerDocRef);
 
                 if (!customerDocSnap.exists()) {
-                    await setDoc(customerDocRef, {
+                     await setDoc(customerDocRef, {
                         email: userData.email,
                     }, { merge: true });
                     syncedCount++;
@@ -107,7 +128,13 @@ export default function AccountPage() {
             });
 
         } catch (error: any) {
-            console.error("Error syncing Stripe customers:", error);
+            // This will catch the getDocs error if list permission is denied
+            const permissionError = new FirestorePermissionError({
+                path: '/users',
+                operation: 'list',
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+
             toast({
                 title: "Sync Error",
                 description: "Could not sync customers. You may not have permission to read all user data.",
