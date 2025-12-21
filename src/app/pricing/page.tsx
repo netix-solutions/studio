@@ -7,7 +7,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -144,14 +144,12 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                     )}
                 </div>
 
-                <ul className="space-y-4 text-muted-foreground my-8 flex-grow">
-                    {product.features && product.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                            <span>{feature}</span>
-                        </li>
-                    ))}
-                </ul>
+                {product.description && (
+                    <div className="my-8 flex-grow">
+                         <p className="text-muted-foreground text-center px-4">{product.description}</p>
+                    </div>
+                )}
+
 
             </CardContent>
             <CardFooter className="flex flex-col items-stretch gap-4 bg-muted/50 p-6 mt-auto">
@@ -264,5 +262,3 @@ export default function PricingPage() {
     </div>
   );
 }
-
-    
