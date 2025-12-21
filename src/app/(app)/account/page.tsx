@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
-import { Loader2, AlertCircle, Edit, Save, Mail, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, Edit, Save, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -19,7 +19,6 @@ import * as z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { sendEmail } from '@/lib/firebase/email';
 import { Separator } from '@/components/ui/separator';
 
 interface Subscription {
@@ -39,12 +38,8 @@ const adDetailsSchema = z.object({
     adNotes: z.string().optional(),
 });
 
-const testEmailSchema = z.object({
-    recipientEmail: z.string().email("Please enter a valid email address."),
-});
 
 type AdDetailsFormData = z.infer<typeof adDetailsSchema>;
-type TestEmailFormData = z.infer<typeof testEmailSchema>;
 
 
 export default function AccountPage() {
@@ -59,7 +54,6 @@ export default function AccountPage() {
     const [subsError, setSubsError] = useState<string | null>(null);
     const { toast } = useToast();
     const [isSavingAdDetails, setIsSavingAdDetails] = useState(false);
-    const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
     const [showAdDetailsPrompt, setShowAdDetailsPrompt] = useState(false);
     
     const adDetailsForm = useForm<AdDetailsFormData>({
@@ -72,13 +66,6 @@ export default function AccountPage() {
             adText: '',
             adNotes: '',
         }
-    });
-
-     const testEmailForm = useForm<TestEmailFormData>({
-        resolver: zodResolver(testEmailSchema),
-        defaultValues: {
-            recipientEmail: user?.email || '',
-        },
     });
 
     useEffect(() => {
@@ -96,9 +83,6 @@ export default function AccountPage() {
                     adWebsiteUrl: userData.adWebsiteUrl || '',
                     adText: userData.adText || '',
                     adNotes: userData.adNotes || '',
-                });
-                testEmailForm.reset({
-                    recipientEmail: user.email || '',
                 });
             }
         });
@@ -161,7 +145,7 @@ export default function AccountPage() {
             unsubAdmin();
             unsubSubs();
         };
-    }, [user, firestore, adDetailsForm.reset, testEmailForm.reset]);
+    }, [user, firestore, adDetailsForm.reset]);
     
     const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
         if (!user || !firestore) return;
@@ -221,32 +205,6 @@ export default function AccountPage() {
             setIsSavingAdDetails(false);
         }
     };
-    
-    const onTestEmailSubmit = async (data: TestEmailFormData) => {
-        if (!firestore) return;
-        setIsSendingTestEmail(true);
-        try {
-            await sendEmail(firestore, {
-                to: data.recipientEmail,
-                subject: "Test Email from Community-Websites.com",
-                html: `<p>This is a test email to confirm that the Firebase Trigger Email extension is configured and working correctly.</p>`,
-            });
-            toast({
-                title: "Test Email Queued",
-                description: `An email has been queued to be sent to ${data.recipientEmail}.`,
-            });
-        } catch (error: any) {
-            console.error("Error sending test email:", error);
-            toast({
-                title: "Error Sending Email",
-                description: error.message || "Could not queue the test email for sending.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSendingTestEmail(false);
-        }
-    };
-
 
     const handleManageBilling = async () => {
         if (!firestore || !user) {
@@ -532,34 +490,6 @@ export default function AccountPage() {
                                     )}
                                 </Button>
                             </div>
-                            <Separator />
-                             <div>
-                                <h3 className="font-semibold">Test Email Sending</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Send a test email to verify that the Firebase Trigger Email extension is configured and working correctly.
-                                </p>
-                                <form onSubmit={testEmailForm.handleSubmit(onTestEmailSubmit)} className="flex items-end gap-2 mt-2">
-                                     <div className="flex-grow">
-                                        <Label htmlFor="recipientEmail">Recipient Email</Label>
-                                        <Controller
-                                            name="recipientEmail"
-                                            control={testEmailForm.control}
-                                            render={({ field }) => <Input id="recipientEmail" type="email" placeholder="test@example.com" {...field} />}
-                                        />
-                                        {testEmailForm.formState.errors.recipientEmail && <p className="text-sm text-destructive mt-1">{testEmailForm.formState.errors.recipientEmail.message}</p>}
-                                    </div>
-                                    <Button type="submit" disabled={isSendingTestEmail}>
-                                        {isSendingTestEmail ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            </>
-                                        ) : (
-                                             <Mail className="mr-2 h-4 w-4" />
-                                        )}
-                                        Send Test
-                                    </Button>
-                                </form>
-                            </div>
                             </>
                         )}
                     </CardContent>
@@ -568,5 +498,3 @@ export default function AccountPage() {
         </div>
     );
 }
-
-    

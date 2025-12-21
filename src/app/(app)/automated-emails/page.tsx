@@ -1,8 +1,9 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useUser } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
 import { Loader2, AlertCircle, MoreHorizontal, Mail } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -11,6 +12,14 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditEmailTemplateDialog } from '@/components/emails/edit-email-template-dialog';
+import { Separator } from '@/components/ui/separator';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { sendEmail } from '@/lib/firebase/email';
 
 export interface EmailTemplate {
     id: string;
@@ -20,13 +29,35 @@ export interface EmailTemplate {
     html: string;
 }
 
+const testEmailSchema = z.object({
+    recipientEmail: z.string().email("Please enter a valid email address."),
+});
+
+type TestEmailFormData = z.infer<typeof testEmailSchema>;
+
 export default function AutomatedEmailsPage() {
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { firestore } = useFirebase();
+    const { user } = useUser();
+    const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+    const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+
+    const testEmailForm = useForm<TestEmailFormData>({
+        resolver: zodResolver(testEmailSchema),
+        defaultValues: {
+            recipientEmail: user?.email || '',
+        },
+    });
+
+    useEffect(() => {
+        if (user?.email) {
+            testEmailForm.reset({ recipientEmail: user.email });
+        }
+    }, [user, testEmailForm]);
 
     useEffect(() => {
         if (!firestore) {
@@ -65,8 +96,33 @@ export default function AutomatedEmailsPage() {
         setIsEditDialogOpen(true);
     };
 
+    const onTestEmailSubmit = async (data: TestEmailFormData) => {
+        if (!firestore) return;
+        setIsSendingTestEmail(true);
+        try {
+            await sendEmail(firestore, {
+                to: data.recipientEmail,
+                subject: "Test Email from Community-Websites.com",
+                html: `<p>This is a test email to confirm that the Firebase Trigger Email extension is configured and working correctly.</p>`,
+            });
+            toast({
+                title: "Test Email Queued",
+                description: `An email has been queued to be sent to ${data.recipientEmail}.`,
+            });
+        } catch (error: any) {
+            console.error("Error sending test email:", error);
+            toast({
+                title: "Error Sending Email",
+                description: error.message || "Could not queue the test email for sending.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSendingTestEmail(false);
+        }
+    };
+
     return (
-        <>
+        <div className="space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Automated Emails</CardTitle>
@@ -131,6 +187,39 @@ export default function AutomatedEmailsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Test Email Sending</CardTitle>
+                    <CardDescription>
+                        Send a test email to verify that the Firebase Trigger Email extension is configured and working correctly.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <form onSubmit={testEmailForm.handleSubmit(onTestEmailSubmit)} className="flex items-end gap-2 mt-2">
+                            <div className="flex-grow">
+                            <Label htmlFor="recipientEmail">Recipient Email</Label>
+                            <Controller
+                                name="recipientEmail"
+                                control={testEmailForm.control}
+                                render={({ field }) => <Input id="recipientEmail" type="email" placeholder="test@example.com" {...field} />}
+                            />
+                            {testEmailForm.formState.errors.recipientEmail && <p className="text-sm text-destructive mt-1">{testEmailForm.formState.errors.recipientEmail.message}</p>}
+                        </div>
+                        <Button type="submit" disabled={isSendingTestEmail}>
+                            {isSendingTestEmail ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                </>
+                            ) : (
+                                    <Mail className="mr-2 h-4 w-4" />
+                            )}
+                            Send Test
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+
             {selectedTemplate && (
                 <EditEmailTemplateDialog 
                     template={selectedTemplate}
@@ -138,6 +227,6 @@ export default function AutomatedEmailsPage() {
                     onOpenChange={setIsEditDialogOpen}
                 />
             )}
-        </>
+        </div>
     );
 }
