@@ -166,6 +166,11 @@ export default function LandingPage() {
                         </Card>
                     ))}
                 </div>
+                <div className="mt-12 text-center">
+                    <Button asChild size="lg">
+                        <Link href="#get-started">View Current Pricing</Link>
+                    </Button>
+                </div>
             </div>
         </section>
 
@@ -192,6 +197,11 @@ export default function LandingPage() {
                             </div>
                         </div>
                     ))}
+                </div>
+                <div className="mt-12 text-center">
+                    <Button asChild size="lg">
+                        <Link href="#get-started">View Current Pricing</Link>
+                    </Button>
                 </div>
             </div>
         </section>
@@ -224,6 +234,11 @@ export default function LandingPage() {
                         <Image src="/adhere.png" alt="Community News Site Ad Example" width={600} height={500} layout="responsive" />
                     </div>
                 </div>
+            </div>
+             <div className="mt-12 text-center">
+                <Button asChild size="lg">
+                    <Link href="#get-started">View Current Pricing</Link>
+                </Button>
             </div>
         </section>
 
