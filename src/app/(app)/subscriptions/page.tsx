@@ -25,8 +25,26 @@ interface EnrichedSubscription {
     startDate: string;
     endDate: string;
     status: string;
+    adStatus: 'pending_ad_creation' | 'pending_customer_approval' | 'live' | 'canceled_inactive' | 'Not Started';
     amount: number;
 }
+
+const adStatusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+    pending_ad_creation: 'outline',
+    pending_customer_approval: 'default',
+    live: 'secondary',
+    canceled_inactive: 'destructive',
+    'Not Started': 'outline',
+};
+
+const adStatusTextMap: { [key: string]: string } = {
+    pending_ad_creation: 'Pending Ad Creation',
+    pending_customer_approval: 'Pending Approval',
+    live: 'Live',
+    canceled_inactive: 'Canceled/Inactive',
+    'Not Started': 'Not Started',
+};
+
 
 export default function SubscriptionsPage() {
   const { user, firestore } = useFirebase();
@@ -56,43 +74,58 @@ export default function SubscriptionsPage() {
             if (userIsAdmin) {
                 // Admin: Fetch all subscriptions from all users
                 const customersColRef = collection(firestore, 'customers');
-                 getDocs(customersColRef).then(customerSnaps => {
-                     const allSubs: EnrichedSubscription[] = [];
-                     const userPromises = customerSnaps.docs.map(async (customerDoc) => {
+                 getDocs(customersColRef).then(async (customerSnaps) => {
+                     let allSubs: EnrichedSubscription[] = [];
+                     
+                     // 1. Fetch all ads at once and map them by subscription ID
+                     const adsSnapshot = await getDocs(collection(firestore, 'advertisements'));
+                     const adsMap = new Map<string, any>();
+                     adsSnapshot.forEach(adDoc => {
+                         const adData = adDoc.data();
+                         if (adData.subscriptionId) {
+                            adsMap.set(adData.subscriptionId, adData);
+                         }
+                     });
+
+                     // 2. Fetch all users and map them by ID
+                     const usersSnapshot = await getDocs(collection(firestore, 'users'));
+                     const usersMap = new Map<string, any>();
+                     usersSnapshot.forEach(userDoc => {
+                         usersMap.set(userDoc.id, userDoc.data());
+                     });
+
+                     // 3. Process subscriptions
+                     for (const customerDoc of customerSnaps.docs) {
                         const customerId = customerDoc.id;
                         const subscriptionsColRef = collection(firestore, 'customers', customerId, 'subscriptions');
-                        const subsQuery = query(subscriptionsColRef); // Potentially filter by status on backend
-                        const userDocRef = doc(firestore, 'users', customerId);
-
-                        const [subsSnaps, userSnap] = await Promise.all([
-                            getDocs(subsQuery),
-                            getDoc(userDocRef)
-                        ]);
-                        
-                        const userData = userSnap.data();
+                        const subsSnaps = await getDocs(subscriptionsColRef);
+                        const userData = usersMap.get(customerId);
 
                         subsSnaps.forEach(subDoc => {
                             const subData = subDoc.data();
+                            const adData = adsMap.get(subDoc.id);
+
                             allSubs.push({
                                 id: subDoc.id,
                                 customerId: customerId,
-                                customerName: userData?.contactName || 'N/A',
+                                customerName: userData?.contactName || userData?.email || 'N/A',
                                 customerEmail: userData?.email || 'N/A',
                                 website: 'Community-Websites.com', // Placeholder
                                 plan: subData.items?.[0]?.price?.product?.name || 'N/A',
                                 startDate: format(new Date(subData.created * 1000), 'yyyy-MM-dd'),
                                 endDate: format(new Date(subData.current_period_end * 1000), 'yyyy-MM-dd'),
                                 status: subData.status,
+                                adStatus: adData?.status || 'Not Started',
                                 amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
                             });
                         });
-                    });
+                     }
 
-                    Promise.all(userPromises).then(() => {
-                        setSubscriptions(allSubs);
-                        setLoading(false);
-                    });
+                    setSubscriptions(allSubs);
+                    setLoading(false);
+
                  }).catch(err => {
+                    console.error("Error fetching subscriptions:", err);
                     setError("You do not have permission to view all subscriptions. Please contact support.");
                     setLoading(false);
                  });
@@ -116,6 +149,7 @@ export default function SubscriptionsPage() {
                             startDate: format(new Date(data.created * 1000), 'yyyy-MM-dd'),
                             endDate: format(new Date(data.current_period_end * 1000), 'yyyy-MM-dd'),
                             status: data.status,
+                            adStatus: 'Not Started', // Non-admins don't see this
                             amount: data.items?.[0]?.price?.unit_amount / 100 || 0,
                         };
                     });
@@ -226,7 +260,8 @@ export default function SubscriptionsPage() {
                     {isAdmin && <TableHead>Customer</TableHead>}
                     <TableHead>Plan</TableHead>
                     <TableHead>Period</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Billing Status</TableHead>
+                    {isAdmin && <TableHead>Ad Status</TableHead>}
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
@@ -248,6 +283,13 @@ export default function SubscriptionsPage() {
                     <TableCell>
                         <Badge variant={getStatusBadgeVariant(sub.status)}>{capitalize(sub.status)}</Badge>
                     </TableCell>
+                    {isAdmin && (
+                        <TableCell>
+                           <Badge variant={adStatusVariantMap[sub.adStatus] || 'outline'}>
+                                {adStatusTextMap[sub.adStatus] || sub.adStatus}
+                           </Badge>
+                        </TableCell>
+                    )}
                     <TableCell className="text-right">${sub.amount.toFixed(2)}</TableCell>
                     <TableCell>
                         <DropdownMenu>
@@ -271,7 +313,7 @@ export default function SubscriptionsPage() {
                     </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 6 : 5} className="text-center h-24">No subscriptions found.</TableCell>
+                    <TableCell colSpan={isAdmin ? 7 : 5} className="text-center h-24">No subscriptions found.</TableCell>
                   </TableRow>
                 )}
                 </TableBody>
