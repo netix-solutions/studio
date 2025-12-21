@@ -90,6 +90,14 @@ service cloud.firestore {
     match /roles_admin/{userId} {
       allow read, write, list: if isAdmin();
     }
+
+    // EMAIL TRIGGER
+    // Any authenticated user can create a document in the /mail collection.
+    // The Trigger Email extension will then process this document.
+    match /mail/{mailId} {
+      allow create: if isSignedIn();
+      allow read, update, delete, list: if false; // Only the extension should read/delete
+    }
   }
 }
 
