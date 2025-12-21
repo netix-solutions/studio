@@ -25,27 +25,44 @@ export default function ProtectedLayout({
 
   useEffect(() => {
     if (user && firestore) {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      
-      const checkAndCreateUserDoc = async () => {
-        const docSnap = await getDoc(userDocRef);
-        if (!docSnap.exists()) {
-          // Document doesn't exist, so create it.
+      const checkAndCreateUserDocs = async () => {
+        // --- User Profile Document ---
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
           try {
             await setDoc(userDocRef, {
               id: user.uid,
               email: user.email,
               displayName: user.displayName,
               photoURL: user.photoURL,
-            });
-            console.log("User document created for existing user:", user.uid);
+            }, { merge: true });
+            console.log("User document created in /users:", user.uid);
           } catch (error) {
-            console.error("Error creating user document:", error);
+            console.error("Error creating document in /users:", error);
           }
+        }
+        
+        // --- Stripe Customer Document ---
+        // This is the crucial part for Stripe integration.
+        // The extension listens for new documents in this collection.
+        const customerDocRef = doc(firestore, 'customers', user.uid);
+        const customerDocSnap = await getDoc(customerDocRef);
+        if (!customerDocSnap.exists()) {
+            try {
+                await setDoc(customerDocRef, {
+                    email: user.email,
+                    // The Stripe extension will automatically create a Stripe Customer
+                    // and populate the stripeId and stripeLink fields.
+                });
+                console.log("Customer document created in /customers for Stripe:", user.uid);
+            } catch (error) {
+                console.error("Error creating document in /customers:", error);
+            }
         }
       };
 
-      checkAndCreateUserDoc();
+      checkAndCreateUserDocs();
     }
   }, [user, firestore]);
 
