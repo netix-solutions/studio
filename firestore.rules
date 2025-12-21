@@ -41,13 +41,13 @@ service cloud.firestore {
     }
     
     // Stripe Collections
-    match /products/{productId} {
+    match /plans/{planId} {
       allow read: if true;
-      allow write: if false; // Deny client-side writes
+      allow write: if false;
 
       match /prices/{priceId} {
         allow read: if true;
-        allow write: if false; // Deny client-side writes
+        allow write: if false;
       }
     }
 
@@ -68,5 +68,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
