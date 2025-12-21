@@ -1,12 +1,15 @@
+
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser, useFirebase } from '@/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LayoutDashboard, User } from 'lucide-react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
 import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions'];
 const USER_DEFAULT_ROUTE = '/account';
@@ -102,6 +105,14 @@ export default function ProtectedLayout({
                 <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
                     {children}
                 </main>
+            </div>
+             <div className="fixed bottom-4 right-4 z-50">
+                <Button asChild size="lg" className="rounded-full shadow-lg">
+                    <Link href={isAdmin ? ADMIN_DEFAULT_ROUTE : USER_DEFAULT_ROUTE}>
+                        {isAdmin ? <LayoutDashboard className="mr-2 h-5 w-5" /> : <User className="mr-2 h-5 w-5" />}
+                        {isAdmin ? 'Admin Panel' : 'My Account'}
+                    </Link>
+                </Button>
             </div>
         </div>
     </SidebarProvider>
