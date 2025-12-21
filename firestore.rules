@@ -89,7 +89,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if (isOwner(userId) || isAdmin()) && resource != null && request.resource.data.id == resource.data.id;
       allow delete: if false;
 
@@ -231,4 +231,3 @@ service cloud.firestore {
     }
   }
 }
-    

@@ -23,13 +23,18 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
         const firestore = getFirestore(firebaseApp);
         const userDocRef = doc(firestore, 'users', user.uid);
         
+        // When registering with email/password, there isn't a display name or photo URL by default
+        const contactName = user.displayName || email.split('@')[0];
+        const [firstName, lastName] = contactName.split(' ');
+
         await setDoc(userDocRef, {
             id: user.uid,
             email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
+            contactName: contactName,
+            firstName: firstName || '',
+            lastName: lastName || '',
             role: 'user', // Default role
-        });
+        }, { merge: true });
     }
     
     return userCredential;

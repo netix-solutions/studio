@@ -17,6 +17,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useFirebase } from '@/firebase';
+import { 
+  signInAnonymously, 
+  linkWithCredential, 
+  EmailAuthProvider,
+  fetchSignInMethodsForEmail
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
@@ -33,6 +41,7 @@ export function GetStartedForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { auth, firestore } = useFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,17 +56,70 @@ export function GetStartedForm() {
   
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    console.log(values);
+    if (!auth || !firestore) {
+      toast({
+        title: "Error",
+        description: "Services are not available. Please try again later.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
 
-    // Simulate API call to store lead
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const signInMethods = await fetchSignInMethodsForEmail(auth, values.email);
 
-    toast({
-      title: "Information Received!",
-      description: "Here are the available pricing plans.",
-    });
-    router.push('/pricing');
-    setIsSubmitting(false);
+      if (signInMethods.length > 0) {
+        // User already exists, so we can't link. Just show them pricing.
+        // In a real app you might want to prompt them to log in.
+        toast({
+          title: "Welcome Back!",
+          description: "This email is already registered. Here are the available pricing plans.",
+        });
+        router.push('/pricing');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // 1. Sign in anonymously
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+
+      if (user) {
+        // 2. Create a credential for the email
+        const credential = EmailAuthProvider.credential(values.email);
+
+        // 3. Link the anonymous account with the email credential
+        await linkWithCredential(user, credential);
+        
+        // 4. Save the user data to Firestore
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+          id: user.uid,
+          email: values.email,
+          contactName: values.contactName,
+          businessName: values.businessName,
+          phone: values.phone,
+          role: 'user', // default role
+        }, { merge: true });
+        
+        toast({
+          title: "Information Received!",
+          description: "We've created a temporary account for you. Here are the available pricing plans.",
+        });
+        router.push('/pricing');
+      }
+
+    } catch(error: any) {
+       console.error("Error processing form:", error);
+       toast({
+         title: "An Error Occurred",
+         description: error.message || "Could not process your request. Please try again.",
+         variant: 'destructive'
+       });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const siteCoverageOptions = [
