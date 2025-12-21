@@ -68,7 +68,7 @@ export function GetStartedForm() {
     try {
       const contactName = `${values.firstName} ${values.lastName}`.trim();
       // 1. Create a new document in the 'leads' collection
-      await addDoc(collection(firestore, "leads"), {
+      const leadDocRef = await addDoc(collection(firestore, "leads"), {
         ...values,
         contactName: contactName,
         createdAt: serverTimestamp(),
@@ -105,6 +105,10 @@ export function GetStartedForm() {
           to: values.email,
           subject: subject,
           html: html,
+        }, {
+          recipientId: leadDocRef.id,
+          templateId: template.id,
+          triggerType: 'interest_form_submission',
         });
 
       } else {
@@ -272,3 +276,5 @@ export function GetStartedForm() {
     </Form>
   );
 }
+
+    

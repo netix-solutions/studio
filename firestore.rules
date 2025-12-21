@@ -112,6 +112,14 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow read, update, delete, list: if false; // Only the extension should read/delete
     }
+
+    // SENT EMAILS LOG
+    // Only admins can read the email log. Creation is handled by the `sendEmail` function logic.
+    match /sent_emails/{emailId} {
+      allow create: if isSignedIn(); // Logically handled in functions, but open for authenticated writes.
+      allow read, list: if isAdmin();
+      allow update, delete: if false;
+    }
   }
 }
 

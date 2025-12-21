@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -7,12 +8,13 @@ import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, doc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, MoreHorizontal, History } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditUserDialog } from '@/components/users/edit-user-dialog';
+import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 
 export interface AppUser {
     id: string;
@@ -29,6 +31,7 @@ export default function UsersPage() {
     const [error, setError] = useState<string | null>(null);
     const { firestore } = useFirebase();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
     const [adminRoles, setAdminRoles] = useState<{[key: string]: boolean}>({});
 
@@ -90,6 +93,11 @@ export default function UsersPage() {
         setSelectedUser(user);
         setIsEditDialogOpen(true);
     };
+    
+    const handleViewHistory = (user: AppUser) => {
+        setSelectedUser(user);
+        setIsHistoryDialogOpen(true);
+    };
 
     return (
         <>
@@ -142,7 +150,11 @@ export default function UsersPage() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                                            Edit
+                                                            Edit User Details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewHistory(user)}>
+                                                            <History className="mr-2 h-4 w-4" />
+                                                            View Email History
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -164,6 +176,13 @@ export default function UsersPage() {
                     user={selectedUser}
                     isOpen={isEditDialogOpen}
                     onOpenChange={setIsEditDialogOpen}
+                />
+            )}
+             {selectedUser && selectedUser.email && (
+                 <EmailHistoryDialog
+                    recipient={{ id: selectedUser.id, email: selectedUser.email }}
+                    isOpen={isHistoryDialogOpen}
+                    onOpenChange={setIsHistoryDialogOpen}
                 />
             )}
         </>

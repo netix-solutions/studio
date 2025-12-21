@@ -130,7 +130,11 @@ export default function AccountPage() {
                              const subject = template.subject.replace(/{{contactName}}/g, userData?.contactName || 'Valued Customer');
                              const html = template.html.replace(/{{contactName}}/g, userData?.contactName || 'Valued Customer');
                              
-                             await sendEmail(firestore, { to: user.email!, subject, html });
+                             await sendEmail(firestore, { to: user.email!, subject, html }, {
+                                 recipientId: user.uid,
+                                 templateId: template.id,
+                                 triggerType: 'new_subscription_purchase'
+                             });
                              
                              // Set flag to prevent re-sending
                              await updateDoc(userDocRef, { welcomeEmailSent: true });

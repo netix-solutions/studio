@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, orderBy } from 'firebase/firestore';
-import { Loader2, AlertCircle, MoreHorizontal, Mail } from 'lucide-react';
+import { Loader2, AlertCircle, MoreHorizontal, Mail, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { SendManualEmailDialog } from '@/components/leads/send-manual-email-dialog';
+import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 
 export interface Lead {
     id: string;
@@ -30,6 +31,7 @@ export default function LeadsPage() {
     const [error, setError] = useState<string | null>(null);
     const { firestore } = useFirebase();
     const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
+    const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
     useEffect(() => {
@@ -68,6 +70,12 @@ export default function LeadsPage() {
         setSelectedLead(lead);
         setIsManualEmailDialogOpen(true);
     };
+
+    const handleViewHistory = (lead: Lead) => {
+        setSelectedLead(lead);
+        setIsHistoryDialogOpen(true);
+    };
+
 
     return (
         <>
@@ -126,6 +134,10 @@ export default function LeadsPage() {
                                                             <Mail className="mr-2 h-4 w-4" />
                                                             Send Manual Email
                                                         </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewHistory(lead)}>
+                                                            <History className="mr-2 h-4 w-4" />
+                                                            View Email History
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -149,6 +161,16 @@ export default function LeadsPage() {
                     onOpenChange={setIsManualEmailDialogOpen}
                 />
             )}
+
+            {selectedLead && (
+                 <EmailHistoryDialog
+                    recipient={{ id: selectedLead.id, email: selectedLead.email }}
+                    isOpen={isHistoryDialogOpen}
+                    onOpenChange={setIsHistoryDialogOpen}
+                />
+            )}
         </>
     );
 }
+
+    

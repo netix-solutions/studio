@@ -1,6 +1,6 @@
 
 'use client';
-import { addDoc, collection, type Firestore } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, type Firestore } from "firebase/firestore";
 
 export interface EmailData {
     to: string | string[];
@@ -11,23 +11,31 @@ export interface EmailData {
     html?: string;
 }
 
+// New interface for logging options
+export interface EmailLogOptions {
+    recipientId?: string;
+    templateId?: string;
+    triggerType?: string;
+}
+
 /**
- * Sends an email by creating a document in the 'mail' collection.
+ * Sends an email by creating a document in the 'mail' collection
+ * and logs the email in the 'sent_emails' collection.
  * The Firebase Trigger Email extension must be installed and configured.
  * @param {Firestore} firestore - The Firestore instance.
  * @param {EmailData} emailData - The email content.
+ * @param {EmailLogOptions} logOptions - Optional data for logging.
  */
-export async function sendEmail(firestore: Firestore, emailData: EmailData) {
+export async function sendEmail(firestore: Firestore, emailData: EmailData, logOptions: EmailLogOptions = {}) {
     if (!firestore) {
         throw new Error("Firestore is not initialized.");
     }
     
     const { to, from, replyTo, subject, text, html } = emailData;
 
+    // 1. Queue the email for the Trigger Email extension
     const mailCollection = collection(firestore, 'mail');
-
-    // The Trigger Email extension expects a specific document structure.
-    const emailDoc = {
+    const emailDocPayload = {
         to: Array.isArray(to) ? to : [to],
         ...(from && { from }),
         ...(replyTo && { replyTo }),
@@ -39,11 +47,29 @@ export async function sendEmail(firestore: Firestore, emailData: EmailData) {
     };
 
     try {
-        await addDoc(mailCollection, emailDoc);
-        console.log("Email document created successfully. The Trigger Email extension will now process it.");
+        await addDoc(mailCollection, emailDocPayload);
     } catch (error) {
         console.error("Error adding document to mail collection: ", error);
         throw new Error("Failed to queue email for sending.");
+    }
+
+    // 2. Log the email in the 'sent_emails' collection
+    const sentEmailsCollection = collection(firestore, 'sent_emails');
+    const recipientEmail = Array.isArray(to) ? to.join(', ') : to;
+    const emailLogPayload = {
+        recipientEmail: recipientEmail,
+        subject: subject,
+        html: html || text || '',
+        sentAt: serverTimestamp(),
+        ...logOptions,
+    };
+
+    try {
+        await addDoc(sentEmailsCollection, emailLogPayload);
+    } catch (error) {
+        // Log this error but don't throw, as the email is already queued.
+        // This is a non-critical failure in the context of the user action.
+        console.error("Error adding document to sent_emails collection: ", error);
     }
 }
 

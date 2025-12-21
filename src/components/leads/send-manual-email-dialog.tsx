@@ -98,6 +98,10 @@ export function SendManualEmailDialog({ lead, isOpen, onOpenChange }: SendManual
         to: lead.email,
         subject,
         html,
+      }, {
+        recipientId: lead.id,
+        templateId: selectedTemplate.id,
+        triggerType: 'manual_send',
       });
 
       toast({
@@ -169,3 +173,5 @@ export function SendManualEmailDialog({ lead, isOpen, onOpenChange }: SendManual
     </Dialog>
   );
 }
+
+    
