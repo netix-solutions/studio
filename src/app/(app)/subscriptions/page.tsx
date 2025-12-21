@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -14,6 +13,7 @@ import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
+import { useRouter } from 'next/navigation';
 
 interface EnrichedSubscription {
     id: string;
@@ -48,6 +48,7 @@ const adStatusTextMap: { [key: string]: string } = {
 
 export default function SubscriptionsPage() {
   const { user, firestore } = useFirebase();
+  const router = useRouter();
   const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -201,9 +202,8 @@ export default function SubscriptionsPage() {
 
   const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
 
-  const handleOpenComments = (sub: EnrichedSubscription) => {
-    setSelectedSubscription(sub);
-    setIsCommentsDialogOpen(true);
+  const handleRowClick = (sub: EnrichedSubscription) => {
+    router.push(`/subscriptions/${sub.id}`);
   };
 
   if (loading) {
@@ -268,7 +268,11 @@ export default function SubscriptionsPage() {
                 </TableHeader>
                 <TableBody>
                 {filteredSubscriptions.length > 0 ? filteredSubscriptions.map((sub) => (
-                    <TableRow key={sub.id}>
+                    <TableRow 
+                        key={sub.id} 
+                        onClick={() => handleRowClick(sub)}
+                        className="cursor-pointer"
+                    >
                     {isAdmin && (
                         <TableCell>
                             <div className="font-medium">{sub.customerName}</div>
@@ -291,21 +295,22 @@ export default function SubscriptionsPage() {
                         </TableCell>
                     )}
                     <TableCell className="text-right">${sub.amount.toFixed(2)}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <Button 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                     <span className="sr-only">Open menu</span>
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem>View Details</DropdownMenuItem>
-                                {isAdmin && (
-                                  <DropdownMenuItem onClick={() => handleOpenComments(sub)}>
-                                    View Comments
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem onClick={() => handleRowClick(sub)}>
+                                    View Details
+                                </DropdownMenuItem>
                                 <DropdownMenuItem>Cancel Subscription</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -331,5 +336,3 @@ export default function SubscriptionsPage() {
     </>
   );
 }
-
-    

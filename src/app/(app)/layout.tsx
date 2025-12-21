@@ -56,7 +56,7 @@ export default function ProtectedLayout({
         setIsRoleLoading(false);
 
         // --- Role-based routing ---
-        const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
+        const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route) && route !== '/subscriptions'); // allow non-admins to see their own subs
         
         if (!userIsAdmin && isAccessingAdminRoute) {
           // If a non-admin tries to access an admin page, redirect them.
@@ -86,7 +86,8 @@ export default function ProtectedLayout({
   }
 
   // Final check to prevent flashing admin content to non-admins
-  if (!isAdmin && ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
+  const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route) && route !== '/subscriptions');
+  if (!isAdmin && isAccessingAdminRoute) {
       return (
         <div className="flex h-screen items-center justify-center bg-background">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />

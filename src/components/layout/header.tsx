@@ -64,6 +64,11 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
       }
   }
 
+  // For dynamic routes
+  if (pathname.match(/^\/subscriptions\/[^/]+$/)) {
+      pageTitle = "Subscription Details";
+  }
+
 
   return (
     <header className="sticky top-0 z-30 w-full px-4 md:px-6">
