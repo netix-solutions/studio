@@ -20,6 +20,7 @@ interface Price {
     currency: string;
     interval: 'month' | 'year' | 'week' | 'day';
     interval_count: number;
+    active: boolean;
 }
 
 interface Product {
@@ -27,6 +28,7 @@ interface Product {
     name: string;
     description: string;
     prices: Price[];
+    active: boolean;
 }
 
 
@@ -48,28 +50,37 @@ export default function PricingPage() {
       where('active', '==', true)
     );
 
-    const unsubscribe: Unsubscribe = onSnapshot(productsQuery, async (querySnapshot) => {
-        setIsLoading(true);
-        const productsPromises = querySnapshot.docs.map(async (doc) => {
-            const productData = doc.data();
-            const pricesCol = collection(doc.ref, 'prices');
-            const pricesSnap = await getDocs(query(pricesCol, where('active', '==', true)));
-            
-            const prices: Price[] = pricesSnap.docs.map(priceDoc => ({
-                id: priceDoc.id,
-                ...priceDoc.data()
-            } as Price)).sort((a, b) => a.unit_amount - b.unit_amount);
+    const unsubscribe = onSnapshot(productsQuery, async (productSnapshot) => {
+        if (productSnapshot.empty) {
+            setProducts([]);
+            setIsLoading(false);
+            return;
+        }
 
-            return {
-                id: doc.id,
-                name: productData.name,
-                description: productData.description,
-                prices: prices,
-            };
-        });
+        const productsData = await Promise.all(
+            productSnapshot.docs.map(async (productDoc) => {
+                const productData = productDoc.data();
+                const pricesQuery = query(
+                    collection(productDoc.ref, 'prices'),
+                    where('active', '==', true)
+                );
+                const pricesSnapshot = await getDocs(pricesQuery);
+                const prices: Price[] = pricesSnapshot.docs.map(priceDoc => ({
+                    id: priceDoc.id,
+                    ...priceDoc.data()
+                } as Price));
 
-        const fetchedProducts = await Promise.all(productsPromises);
-        setProducts(fetchedProducts);
+                return {
+                    id: productDoc.id,
+                    name: productData.name,
+                    description: productData.description,
+                    active: productData.active,
+                    prices: prices,
+                };
+            })
+        );
+        
+        setProducts(productsData.filter(p => p.prices.length > 0));
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching products:", error);
@@ -115,13 +126,15 @@ export default function PricingPage() {
 
   const { monthlyPrice, annualPrice } = useMemo(() => {
     if (!mainProduct) return { monthlyPrice: null, annualPrice: null };
-    const monthly = mainProduct.prices.find(p => p.interval === 'month' && p.interval_count === 1);
+    const monthly = mainProduct.prices.find(p => p.interval === 'month');
     const annual = mainProduct.prices.find(p => p.interval === 'year');
     return { monthlyPrice: monthly, annualPrice: annual };
   }, [mainProduct]);
 
   const displayedPrice = billingCycle === 'monthly' ? monthlyPrice : annualPrice;
-  const effectiveMonthlyRate = billingCycle === 'annually' && annualPrice ? annualPrice.unit_amount / 12 : monthlyPrice?.unit_amount;
+  const effectiveMonthlyRate = billingCycle === 'annually' && annualPrice ? annualPrice.unit_amount / 1200 : (monthlyPrice?.unit_amount || 0) / 100;
+  
+  const annualBillingAmount = annualPrice ? annualPrice.unit_amount / 100 : 0;
 
   const features = [
       "Rotating Banner Ad",
@@ -139,16 +152,19 @@ export default function PricingPage() {
                 <p className="text-muted-foreground mt-2 text-lg">Select the perfect plan for your business advertising needs.</p>
             </div>
             
-            <div className="flex justify-center items-center gap-4 mb-12">
-                <Label htmlFor="billing-cycle" className={billingCycle === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>Monthly</Label>
-                <Switch 
-                    id="billing-cycle"
-                    checked={billingCycle === 'annually'}
-                    onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
-                />
-                <Label htmlFor="billing-cycle" className={billingCycle === 'annually' ? 'text-foreground' : 'text-muted-foreground'}>Annually</Label>
-                 <Badge variant="secondary" className="ml-2">Save with Annual!</Badge>
-            </div>
+            {mainProduct && (
+                 <div className="flex justify-center items-center gap-4 mb-12">
+                    <Label htmlFor="billing-cycle" className={billingCycle === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>Monthly</Label>
+                    <Switch 
+                        id="billing-cycle"
+                        checked={billingCycle === 'annually'}
+                        onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
+                        disabled={!monthlyPrice || !annualPrice}
+                    />
+                    <Label htmlFor="billing-cycle" className={billingCycle === 'annually' ? 'text-foreground' : 'text-muted-foreground'}>Annually</Label>
+                    {annualPrice && monthlyPrice && <Badge variant="secondary" className="ml-2">Save with Annual!</Badge>}
+                </div>
+            )}
 
             {isLoading ? (
                  <div className="flex items-center justify-center h-64">
@@ -161,16 +177,16 @@ export default function PricingPage() {
                             <CardTitle>{mainProduct.name}</CardTitle>
                             <CardDescription>
                                 {billingCycle === 'annually' && annualPrice ?
-                                    `Billed as one payment of $${(annualPrice.unit_amount / 100).toFixed(2)}` :
+                                    `Billed as one payment of $${annualBillingAmount.toFixed(2)}` :
                                     'Billed monthly, cancel anytime.'
                                 }
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow">
                             <div className="mb-6">
-                                {effectiveMonthlyRate ? (
+                                {effectiveMonthlyRate > 0 ? (
                                     <>
-                                        <span className="text-4xl font-bold">${(effectiveMonthlyRate / 100).toFixed(2)}</span>
+                                        <span className="text-4xl font-bold">${effectiveMonthlyRate.toFixed(2)}</span>
                                         <span className="text-muted-foreground">/month</span>
                                     </>
                                 ) : (
