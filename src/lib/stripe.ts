@@ -25,7 +25,6 @@ export const createCheckout = async (
     doc(firestore, 'customers', userId),
     {
       email: userEmail ?? null,
-      createdAt: serverTimestamp(),
     },
     { merge: true }
   );
@@ -78,6 +77,19 @@ export const createCheckout = async (
 };
 
 export const goToBillingPortal = async (auth: Auth, returnUrl: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User not signed in.');
+  }
+
+  // Ensure the customer document exists before creating the portal link.
+  // This triggers the extension to create a Stripe customer if one doesn't exist.
+  const firestore = getFirestore(firebaseApp);
+  await setDoc(doc(firestore, 'customers', user.uid), {
+      email: user.email,
+  }, { merge: true });
+
+
   const functions = getFunctions(firebaseApp, 'us-central1');
   const fn = httpsCallable(
     functions,
