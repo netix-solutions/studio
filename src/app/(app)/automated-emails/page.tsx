@@ -4,15 +4,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirebase, useUser } from '@/firebase';
-import { collection, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
-import { Loader2, AlertCircle, MoreHorizontal, Mail } from 'lucide-react';
+import { collection, onSnapshot, query, Unsubscribe, doc, getDoc, setDoc } from 'firebase/firestore';
+import { Loader2, AlertCircle, MoreHorizontal, Mail, PlusCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditEmailTemplateDialog } from '@/components/emails/edit-email-template-dialog';
-import { Separator } from '@/components/ui/separator';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -35,6 +34,24 @@ const testEmailSchema = z.object({
 
 type TestEmailFormData = z.infer<typeof testEmailSchema>;
 
+export const defaultTemplates: EmailTemplate[] = [
+    {
+        id: 'pricing_link',
+        name: 'Pricing Link (Auto-response)',
+        description: 'Sent to users after they fill out the "Get Started" interest form.',
+        subject: 'Here is your link to our pricing, {{contactName}}!',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>Thanks for your interest in advertising with Community-Websites.com. We're excited to help you reach more local customers.</p>
+<p>You can view our current plans and get started by clicking the link below:</p>
+<p><a href="{{pricingLink}}"><strong>View Pricing & Sign Up</strong></a></p>
+<p>If you have any questions, feel free to reply to this email or call/text us at 813-544-8383.</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+    }
+];
+
+
 export default function AutomatedEmailsPage() {
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +62,7 @@ export default function AutomatedEmailsPage() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
     const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+    const [isSeeding, setIsSeeding] = useState(false);
 
     const testEmailForm = useForm<TestEmailFormData>({
         resolver: zodResolver(testEmailSchema),
@@ -58,6 +76,47 @@ export default function AutomatedEmailsPage() {
             testEmailForm.reset({ recipientEmail: user.email });
         }
     }, [user, testEmailForm]);
+
+    const seedDefaultTemplates = async () => {
+        if (!firestore) return;
+        setIsSeeding(true);
+        let createdCount = 0;
+        try {
+            for (const template of defaultTemplates) {
+                const templateRef = doc(firestore, 'emailTemplates', template.id);
+                const templateSnap = await getDoc(templateRef);
+                if (!templateSnap.exists()) {
+                    await setDoc(templateRef, template);
+                    createdCount++;
+                }
+            }
+            if (createdCount > 0) {
+                 toast({
+                    title: "Templates Added",
+                    description: `${createdCount} default email template(s) have been added.`,
+                });
+            } else {
+                 toast({
+                    title: "Templates Verified",
+                    description: "All default templates already exist.",
+                });
+            }
+        } catch (error) {
+            console.error("Error seeding templates:", error);
+            toast({ title: "Error", description: "Could not add default templates.", variant: "destructive" });
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+    
+    // Auto-seed on first load
+    useEffect(() => {
+        if (firestore) {
+            seedDefaultTemplates();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [firestore]);
+
 
     useEffect(() => {
         if (!firestore) {
@@ -185,6 +244,30 @@ export default function AutomatedEmailsPage() {
                             </Table>
                         </div>
                     )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Template Management</CardTitle>
+                    <CardDescription>
+                        If a default template is missing, you can add it here.
+                    </CardDescription>
+                </CardHeader>
+                 <CardContent>
+                     <Button onClick={seedDefaultTemplates} disabled={isSeeding}>
+                        {isSeeding ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Please wait...
+                            </>
+                        ) : (
+                            <>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Missing Default Templates
+                            </>
+                        )}
+                    </Button>
                 </CardContent>
             </Card>
 
