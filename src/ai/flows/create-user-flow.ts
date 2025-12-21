@@ -6,8 +6,8 @@
 
 import { z } from 'zod';
 import admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
 import type { App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 const CreateUserInputSchema = z.object({
   email: z.string().email(),
@@ -21,22 +21,38 @@ const CreateUserOutputSchema = z.object({
 });
 
 /**
- * Initializes the Firebase Admin SDK if it hasn't been already.
- * It uses Application Default Credentials, which is the recommended approach
- * for server-side environments like Firebase App Hosting.
+ * Initializes the Firebase Admin SDK, reusing the existing instance if available.
+ * It prioritizes using a service account key from environment variables,
+ * falling back to Application Default Credentials if the key is not present.
  */
 function initializeAdminApp(): App {
-    if (admin.apps.length > 0) {
-        return admin.app();
-    }
-    
-    admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-    });
-    
+  if (admin.apps.length > 0) {
     return admin.app();
-}
+  }
 
+  let credential;
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+      // The key is stored as a stringified JSON, so it needs to be parsed.
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      credential = admin.credential.cert(serviceAccount);
+    } catch (e: any) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
+      // Fallback or throw an error, depending on desired behavior.
+      // Here we'll let it fallback to ADC and potentially fail there if not configured.
+      credential = admin.credential.applicationDefault();
+    }
+  } else {
+    // Use Application Default Credentials if the service account key is not provided.
+    credential = admin.credential.applicationDefault();
+  }
+  
+  admin.initializeApp({
+    credential,
+  });
+  
+  return admin.app();
+}
 
 export async function createUser(
   input: z.infer<typeof CreateUserInputSchema>
@@ -65,9 +81,8 @@ export async function createUser(
             return { error: 'A user with this email address already exists.' };
         }
 
-        // Catch potential ADC initialization errors.
-        if (error.code === 'app/invalid-credential' || error.message.includes('Could not load the default credentials')) {
-             return { error: 'Firebase Admin SDK not configured. The server environment is missing credentials.' };
+        if (error.code === 'app/invalid-credential' || (error.message && error.message.includes('Could not load the default credentials'))) {
+             return { error: 'Firebase Admin SDK not configured. The server environment is missing credentials. Please set the FIREBASE_SERVICE_ACCOUNT_KEY environment variable.' };
         }
 
         return {
