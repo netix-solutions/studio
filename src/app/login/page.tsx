@@ -28,6 +28,7 @@ import { signInWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import { createCheckout } from '@/lib/stripe';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -43,9 +44,26 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.replace('/dashboard');
+        // Check if there is a pending purchase
+        const selectedPriceId = sessionStorage.getItem('selectedPriceId');
+        if (selectedPriceId && user.uid) {
+            // Clear the stored price ID and initiate checkout
+            sessionStorage.removeItem('selectedPriceId');
+            createCheckout(user.uid, selectedPriceId, window.location.origin + '/dashboard')
+                .catch(error => {
+                    console.error("Stripe checkout error after login:", error);
+                    toast({
+                        title: 'Error starting purchase',
+                        description: error.message || 'Could not redirect to checkout. Please try selecting the plan again.',
+                        variant: 'destructive',
+                    });
+                     router.replace('/dashboard');
+                });
+        } else {
+            router.replace('/dashboard');
+        }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,11 +85,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signInWithEmail(auth, values.email, values.password);
-      toast({
-        title: 'Success!',
-        description: 'You have successfully logged in.',
-      });
-      router.push('/dashboard');
+      // The useEffect will handle the redirect
     } catch (error: any) {
       console.error('Login failed:', error);
       toast({
@@ -79,8 +93,7 @@ export default function LoginPage() {
         description: 'Invalid credentials. Please check your email and password.',
         variant: 'destructive',
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   }
 

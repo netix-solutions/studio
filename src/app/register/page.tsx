@@ -27,6 +27,7 @@ import { useUser, useAuth } from '@/firebase';
 import { registerWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { createCheckout } from '@/lib/stripe';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -42,9 +43,31 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.replace('/dashboard');
+        // Check if there is a pending purchase
+        const selectedPriceId = sessionStorage.getItem('selectedPriceId');
+        if (selectedPriceId && user.uid) {
+            // Clear the stored price ID and initiate checkout
+            sessionStorage.removeItem('selectedPriceId');
+            createCheckout(user.uid, selectedPriceId, window.location.origin + '/dashboard')
+                .catch(error => {
+                    console.error("Stripe checkout error after registration:", error);
+                    toast({
+                        title: 'Error starting purchase',
+                        description: error.message || 'Could not redirect to checkout. Please log in and try again from the pricing page.',
+                        variant: 'destructive',
+                    });
+                     router.replace('/dashboard');
+                });
+        } else {
+            // If no plan was selected, just go to the dashboard
+             toast({
+                title: 'Account Created!',
+                description: 'You have been successfully registered and logged in.',
+            });
+            router.replace('/dashboard');
+        }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,12 +89,7 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       await registerWithEmail(auth, values.email, values.password);
-      toast({
-        title: 'Account Created!',
-        description: 'You have been successfully registered and logged in.',
-      });
-      // Redirect to thank-you page to simulate payment/next steps.
-      router.push('/thank-you');
+      // The useEffect hook will handle redirection and checkout.
     } catch (error: any) {
       console.error('Registration failed:', error);
       let errorMessage = 'There was an error registering. Please try again.';
@@ -83,8 +101,7 @@ export default function RegisterPage() {
         description: errorMessage,
         variant: 'destructive',
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   }
   

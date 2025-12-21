@@ -1,31 +1,33 @@
 'use client';
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { mockPricings } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import { useUser } from '@/firebase';
+import { createCheckout } from '@/lib/stripe';
 
+// In a real app, these would come from your Stripe products in Firestore
 const plans = [
     {
         name: "Monthly",
-        price: 100,
+        priceId: 'price_1PSc7iRXg1yHqXJ1t7xKzM3D',
         description: "Billed monthly",
         features: ["Billed Monthly", "Cancel Anytime"],
         priceKey: "monthly" as const,
     },
     {
         name: "Quarterly",
-        price: 270,
+        priceId: 'price_1PSc8JRXg1yHqXJ1zG1d9Y2K',
         description: "Billed quarterly (Save 10%)",
         features: ["Billed Quarterly", "Save 10%", "Cancel Anytime"],
         priceKey: "quarterly" as const,
     },
     {
         name: "Yearly",
-        price: 960,
+        priceId: 'price_1PSc8nRXg1yHqXJ1y5eY9g6X',
         description: "Billed yearly (Save 20%)",
         features: ["Billed Annually", "Best Value", "Cancel Anytime"],
         priceKey: "yearly" as const,
@@ -39,16 +41,35 @@ const adCampaign = mockPricings[0];
 export default function PricingPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
 
-  const handlePurchase = (planName: string, planPrice: number) => {
-    // Store selected plan in sessionStorage to retrieve after login/registration
-    sessionStorage.setItem('selectedPlan', JSON.stringify({ name: planName, price: planPrice }));
-    
-    toast({
-      title: 'Plan Selected!',
-      description: `You've selected the ${planName} plan. Please create an account to proceed.`,
-    });
-    router.push('/register');
+  const handlePurchase = async (priceId: string) => {
+    setIsSubmitting(priceId);
+    if (!user) {
+        // Store selected plan in sessionStorage to retrieve after login/registration
+        sessionStorage.setItem('selectedPriceId', priceId);
+        toast({
+            title: 'Please sign in',
+            description: `You need to create an account or sign in to purchase a plan.`,
+            variant: 'default'
+        });
+        router.push('/login');
+        return;
+    }
+
+    try {
+        await createCheckout(user.uid, priceId, window.location.origin + '/dashboard');
+        // The createCheckout function handles the redirect to Stripe
+    } catch(error: any) {
+        console.error("Stripe checkout error", error);
+        toast({
+            title: 'Error creating checkout',
+            description: error.message || 'There was a problem redirecting you to checkout. Please try again.',
+            variant: 'destructive',
+        });
+        setIsSubmitting(null);
+    }
   };
 
   return (
@@ -80,8 +101,15 @@ export default function PricingPage() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" size="lg" onClick={() => handlePurchase(plan.name, adCampaign[plan.priceKey])}>
-                                Get Started
+                            <Button className="w-full" size="lg" onClick={() => handlePurchase(plan.priceId)} disabled={isUserLoading || !!isSubmitting}>
+                                 {isSubmitting === plan.priceId ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Redirecting...
+                                    </>
+                                ) : (
+                                    'Get Started'
+                                )}
                             </Button>
                         </CardFooter>
                     </Card>
