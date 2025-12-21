@@ -11,23 +11,6 @@ import { Loader2, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-// Define interfaces for our data structures
-interface Price {
-  id: string;
-  active: boolean;
-  unit_amount: number;
-  interval: 'month' | 'year' | string;
-  description: string | null;
-}
-
-interface Product {
-  id: string;
-  active: boolean;
-  name: string;
-  description: string | null;
-  prices: Price[];
-}
-
 // The user-provided test function to get the real error code
 async function testProductsRead(firestore: any) {
   try {
@@ -49,17 +32,18 @@ async function testProductsRead(firestore: any) {
 
 export default function PricingPage() {
   const { firestore, user } = useFirebase();
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
   const router = useRouter();
-  const { toast } = useToast();
-
+  
   useEffect(() => {
     if (firestore) {
         console.log('[PricingPage] projectId:', firestore.app.options.projectId);
         console.log('[PricingPage] apiKey:', firestore.app.options.apiKey);
         console.log('[PricingPage] authDomain:', firestore.app.options.authDomain);
+        console.log("[PricingPage] firestore host:", (firestore as any)?._settings?.host);
+        console.log("[PricingPage] firestore ssl:", (firestore as any)?._settings?.ssl);
+        console.log("[PricingPage] firestore databaseId:", (firestore as any)?._databaseId);
+
         setLoading(true);
         // Call the test function provided by the user
         testProductsRead(firestore).finally(() => {
@@ -68,13 +52,7 @@ export default function PricingPage() {
     }
   }, [firestore]);
 
-  // The rest of the component remains for now, but will show "No Products Found"
-  // as we are not setting the products state in this test.
 
-  const handleCheckout = async (priceId: string) => {
-    // This function will not be used in this test version
-  };
-  
   if (loading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -94,7 +72,7 @@ export default function PricingPage() {
           <CardHeader>
             <CardTitle>Test Results</CardTitle>
             <CardDescription>
-             The developer console will show the results of the database read attempt, including any specific error codes.
+             The developer console will show the results of the database read attempt, including any specific error codes related to emulator connection or database ID.
             </CardDescription>
           </CardHeader>
           <CardContent>
