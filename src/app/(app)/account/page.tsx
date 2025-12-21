@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer, updateDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2, AlertCircle, Edit, Save, FileText, Upload } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -21,6 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { sendEmail } from '@/lib/firebase/email';
+import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
 interface Subscription {
     id: string;
@@ -104,10 +106,43 @@ export default function AccountPage() {
         const q = query(subsCollectionRef);
 
         const unsubSubs = onSnapshot(q, async (snapshot) => {
+             const userDoc = await getDoc(userDocRef);
+             const userData = userDoc.data();
+            
+            const docChanges = snapshot.docChanges();
+            
+            for (const change of docChanges) {
+                if (change.type === "added" && !userData?.welcomeEmailSent) {
+                    const subData = change.doc.data();
+                     if (subData.status === 'active' || subData.status === 'trialing') {
+                         
+                        // Send welcome email
+                        const templatesQuery = query(
+                            collection(firestore, 'emailTemplates'), 
+                            where('triggerName', '==', 'new_subscription_purchase')
+                        );
+                        const templateSnap = await getDocs(templatesQuery);
+
+                        if (!templateSnap.empty) {
+                            const templateDoc = templateSnap.docs[0];
+                            const template = templateDoc.data() as EmailTemplate;
+                            
+                             const subject = template.subject.replace(/{{contactName}}/g, userData?.contactName || 'Valued Customer');
+                             const html = template.html.replace(/{{contactName}}/g, userData?.contactName || 'Valued Customer');
+                             
+                             await sendEmail(firestore, { to: user.email!, subject, html });
+                             
+                             // Set flag to prevent re-sending
+                             await updateDoc(userDocRef, { welcomeEmailSent: true });
+                        }
+                    }
+                }
+            }
+
+
             const activeSubs = snapshot.docs.filter(doc => doc.data().status === 'active' || doc.data().status === 'trialing');
 
             if (activeSubs.length > 0) {
-                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && !userDoc.data().businessName) {
                     setShowAdDetailsPrompt(true);
                 } else {

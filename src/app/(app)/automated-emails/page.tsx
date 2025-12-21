@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -57,6 +58,28 @@ export const defaultTemplates: EmailTemplate[] = [
             { key: '{{contactName}}', description: "The full name of the person who submitted the form." },
             { key: '{{businessName}}', description: "The business name entered in the form." },
             { key: '{{pricingLink}}', description: "The unique, auto-generated link to the pricing page." },
+        ]
+    },
+    {
+        id: 'new_customer_welcome',
+        name: 'New Customer Welcome',
+        description: 'Sent to a new customer immediately after they complete their first subscription purchase.',
+        subject: 'Welcome to Community-Websites.com, {{contactName}}!',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>Thank you for your purchase and welcome aboard! We're thrilled to have you as an advertising partner.</p>
+<p><strong>What's next?</strong></p>
+<p>Please log in to your account and fill out the "Advertisement Details" form. This is where you can provide us with your business information, ad text, and upload any logos or images you'd like us to use.</p>
+<p><a href="{{accountLink}}"><strong>Go to My Account</strong></a></p>
+<p>Once we receive your details, our design team will get to work on creating your ad. We'll send you a proof for approval before it goes live.</p>
+<p>If you have any questions, please don't hesitate to reach out.</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'new_subscription_purchase',
+        triggerDescription: 'This email is automatically sent immediately after a customer successfully completes their first subscription purchase.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The customer's full name from their user profile." },
+            { key: '{{accountLink}}', description: "A direct link to the user's account page." },
         ]
     }
 ];
@@ -327,3 +350,5 @@ export default function AutomatedEmailsPage() {
         </div>
     );
 }
+
+    

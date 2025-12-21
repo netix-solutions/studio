@@ -327,6 +327,10 @@
             "format": "uri"
           },
           "description": "An array of URLs to files uploaded by the user for their advertisement."
+        },
+        "welcomeEmailSent": {
+          "type": "boolean",
+          "description": "Flag to indicate if the initial welcome email for new subscribers has been sent."
         }
       },
       "required": [
@@ -472,7 +476,7 @@
         "triggerName": {
           "type": "string",
           "description": "A programmatic name for the trigger that this email is associated with.",
-          "enum": ["none", "interest_form_submission"]
+          "enum": ["none", "interest_form_submission", "new_subscription_purchase"]
         },
         "triggerDescription": {
           "type": "string",
@@ -744,3 +748,5 @@
     ]
   }
 }
+
+    

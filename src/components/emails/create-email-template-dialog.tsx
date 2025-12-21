@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -178,6 +179,7 @@ export function CreateEmailTemplateDialog({ isOpen, onOpenChange }: CreateEmailT
                             <SelectContent>
                                 <SelectItem value="none">None (Manual Send Only)</SelectItem>
                                 <SelectItem value="interest_form_submission">Interest Form Submission</SelectItem>
+                                <SelectItem value="new_subscription_purchase">New Subscription Purchase</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -224,3 +226,5 @@ export function CreateEmailTemplateDialog({ isOpen, onOpenChange }: CreateEmailT
     </Dialog>
   );
 }
+
+    

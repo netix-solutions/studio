@@ -157,6 +157,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
                             <SelectContent>
                                 <SelectItem value="none">None (Manual Send Only)</SelectItem>
                                 <SelectItem value="interest_form_submission">Interest Form Submission</SelectItem>
+                                <SelectItem value="new_subscription_purchase">New Subscription Purchase</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -204,3 +205,5 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
     </Dialog>
   );
 }
+
+    
