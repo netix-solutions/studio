@@ -112,10 +112,10 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                 <Badge className="absolute top-4 right-4" variant="secondary">Best Value</Badge>
             )}
             <CardHeader className="text-center pb-4">
-                <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
-                {product.description && <CardDescription className="pt-2 h-12 flex items-center justify-center">{product.description}</CardDescription>}
+                <CardTitle className="font-headline text-2xl h-14 flex items-center justify-center">{product.name}</CardTitle>
+                {product.description && <CardDescription className="pt-2 h-16 flex items-center justify-center text-center">{product.description}</CardDescription>}
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col">
+            <CardContent className="flex-grow flex flex-col px-6">
                 {(monthlyPrice && yearlyPrice) && (
                     <div className="flex justify-center mb-6">
                         <ToggleGroup type="single" value={billingCycle} onValueChange={handleCycleChange} className="bg-muted p-1 rounded-full">
