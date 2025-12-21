@@ -121,8 +121,8 @@ export default function LandingPage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="#examples">
-                See Examples
+              <Link href="/pricing">
+                View Pricing
               </Link>
             </Button>
           </div>
@@ -347,3 +347,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
