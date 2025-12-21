@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, setDoc, onSnapshot, Unsubscribe, collection, getDocs, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,6 @@ export default function AccountPage() {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminLoading, setIsAdminLoading] = useState(true);
-    const [isSubmittingAdmin, setIsSubmittingAdmin] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const { toast } = useToast();
 
@@ -53,44 +52,6 @@ export default function AccountPage() {
             console.error('Error redirecting to billing portal:', error);
             setIsRedirecting(false);
         }
-    };
-    
-    const handleBecomeAdmin = async () => {
-        if (!user || !firestore) {
-            toast({
-                title: "Error",
-                description: "User or database not available.",
-                variant: "destructive"
-            });
-            return;
-        }
-        setIsSubmittingAdmin(true);
-        const adminDocRef = doc(firestore, 'roles_admin', user.uid);
-        
-        setDoc(adminDocRef, { uid: user.uid })
-            .then(() => {
-                toast({
-                    title: "Success!",
-                    description: "You have been granted admin privileges."
-                });
-            })
-            .catch((error: any) => {
-                const permissionError = new FirestorePermissionError({
-                    path: adminDocRef.path,
-                    operation: 'create',
-                    requestResourceData: { uid: user.uid },
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-
-                toast({
-                    title: "Error",
-                    description: "Could not grant admin role. Check Firestore rules or console for errors.",
-                    variant: "destructive"
-                });
-            })
-            .finally(() => {
-                setIsSubmittingAdmin(false);
-            });
     };
 
     const handleSyncStripeCustomers = async () => {
@@ -168,17 +129,17 @@ export default function AccountPage() {
                             )}
                         </Button>
                     </div>
-                     <div className="space-y-2">
-                        <h3 className="font-semibold">Role Management</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Grant yourself administrator privileges to access user management features. This action is irreversible through the UI.
-                        </p>
-                        <Button onClick={handleBecomeAdmin} disabled={isAdminLoading || isAdmin || isSubmittingAdmin}>
-                            {isSubmittingAdmin ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {isAdminLoading ? 'Checking Status...' : isAdmin ? 'Admin Role Active' : 'Become an Admin'}
-                        </Button>
-                    </div>
-                    {isAdmin && (
+                    {isAdminLoading && (
+                         <div className="space-y-2">
+                            <h3 className="font-semibold">Stripe Sync</h3>
+                             <p className="text-sm text-muted-foreground">Checking admin status...</p>
+                             <Button disabled>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Loading...
+                            </Button>
+                         </div>
+                    )}
+                    {!isAdminLoading && isAdmin && (
                         <div className="space-y-2">
                             <h3 className="font-semibold">Stripe Sync</h3>
                             <p className="text-sm text-muted-foreground">
