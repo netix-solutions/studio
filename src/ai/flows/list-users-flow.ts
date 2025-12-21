@@ -64,4 +64,29 @@ export async function listAllUsers(): Promise<z.infer<typeof ListUsersOutputSche
 
         do {
             const listUsersResult = await getAuth(adminApp).listUsers(1000, pageToken);
-            userRecords.push(...listUsersr
+            userRecords.push(...listUsersResult.users);
+            pageToken = listUsersResult.pageToken;
+        } while (pageToken);
+
+        const users = userRecords.map(user => ({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            creationTime: user.metadata.creationTime,
+            lastSignInTime: user.metadata.lastSignInTime,
+        }));
+        
+        return { users };
+
+    } catch (error: any) {
+        console.error('Error listing users:', error);
+
+        if (error.code === 'app/invalid-credential' || (error.message && error.message.includes('Could not load the default credentials'))) {
+             return { error: 'Firebase Admin SDK not configured. The server environment is missing credentials. Please set the FIREBASE_SERVICE_ACCOUNT_KEY environment variable.' };
+        }
+
+        return {
+            error: error.message || 'An unknown error occurred during user listing.',
+        };
+    }
+}
