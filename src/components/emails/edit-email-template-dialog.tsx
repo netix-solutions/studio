@@ -22,7 +22,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -30,6 +29,7 @@ import { Loader2, Info } from 'lucide-react';
 import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { RichTextEditor } from '../ui/rich-text-editor';
 
 const formSchema = z.object({
   subject: z.string().min(1, 'Subject cannot be empty.'),
@@ -53,7 +53,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
     defaultValues: {
       subject: '',
       html: '',
-      triggerName: '',
+      triggerName: 'none',
     },
   });
 
@@ -62,7 +62,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
       form.reset({
         subject: template.subject,
         html: template.html,
-        triggerName: template.triggerName || '',
+        triggerName: template.triggerName || 'none',
       });
     }
   }, [template, form]);
@@ -116,7 +116,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground">
-                            {template.triggerDescription || 'Trigger not specified.'}
+                            {template.triggerDescription || 'This email is not sent automatically. It must be sent manually.'}
                         </p>
                     </CardContent>
                 </Card>
@@ -148,14 +148,14 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Email Trigger</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a trigger" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="none">None (Manual Send Only)</SelectItem>
                                 <SelectItem value="interest_form_submission">Interest Form Submission</SelectItem>
                             </SelectContent>
                           </Select>
@@ -181,9 +181,9 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
                     name="html"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Email Body (HTML)</FormLabel>
+                        <FormLabel>Email Body</FormLabel>
                         <FormControl>
-                            <Textarea placeholder="<p>Your HTML content here.</p>" {...field} rows={15} />
+                            <RichTextEditor content={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
