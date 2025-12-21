@@ -49,58 +49,44 @@ export default function PricingPage() {
     if (!firestore) return;
     setIsLoading(true);
     setError(null);
-    console.log('[PricingPage] Starting to fetch products...');
-
     try {
-        const productsQuery = query(
-            collection(firestore, 'products'),
-            where('active', '==', true)
-        );
+        const productsQuery = query(collection(firestore, 'products'));
         const productSnapshot = await getDocs(productsQuery);
-        console.log(`[PricingPage] Found ${productSnapshot.docs.length} active product(s).`);
-
-        if (productSnapshot.empty) {
+        
+        const allProducts = productSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(product => product.active === true);
+        
+        if (allProducts.length === 0) {
             setProducts([]);
             setIsLoading(false);
-            console.log('[PricingPage] No active products found.');
             return;
         }
 
         const productsData = await Promise.all(
-            productSnapshot.docs.map(async (productDoc) => {
-                const productData = productDoc.data();
-                console.log(`[PricingPage] Fetching prices for product: ${productDoc.id}`);
+            allProducts.map(async (product) => {
                 const pricesQuery = query(
-                    collection(productDoc.ref, 'prices'),
+                    collection(firestore, 'products', product.id, 'prices'),
                     where('active', '==', true)
                 );
                 const pricesSnapshot = await getDocs(pricesQuery);
-                console.log(`[PricingPage] Found ${pricesSnapshot.docs.length} active price(s) for product ${productDoc.id}.`);
                 const prices: Price[] = pricesSnapshot.docs.map(priceDoc => {
-                    const priceData = { id: priceDoc.id, ...priceDoc.data() } as Price;
-                    console.log(`[PricingPage] Price data:`, priceData);
-                    return priceData;
+                    return { id: priceDoc.id, ...priceDoc.data() } as Price;
                 });
                 
                 return {
-                    id: productDoc.id,
-                    ...productData,
+                    ...product,
                     prices,
                 } as Product;
             })
         );
         
-        console.log('[PricingPage] Raw products data with prices:', productsData);
-        
-        // Filter out products that don't have at least one monthly and one annual price
         const activeProducts = productsData.filter(p => {
             const hasMonthly = p.prices.some(price => price.interval === 'month' && price.active === true);
             const hasAnnual = p.prices.some(price => price.interval === 'year' && price.active === true);
-            console.log(`[PricingPage] Product ${p.id} has monthly price: ${hasMonthly}, has annual price: ${hasAnnual}`);
             return hasMonthly && hasAnnual;
         });
 
-        console.log('[PricingPage] Filtered, fully-configured products:', activeProducts);
         setProducts(activeProducts);
 
     } catch (err: any) {
@@ -108,7 +94,6 @@ export default function PricingPage() {
         setError("Could not fetch pricing plans. Please try again later.");
     } finally {
         setIsLoading(false);
-        console.log('[PricingPage] Fetching finished.');
     }
   }, [firestore]);
   
