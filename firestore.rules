@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a hybrid security model. User-specific data
  * (profiles, subscriptions) is protected by a strict path-based ownership model, where users can
@@ -163,24 +164,14 @@ service cloud.firestore {
     // Stripe Payments Rules
     // --------------------------------
 
-    // The following rules are required for the Stripe payments extension.
-    // They are based on the official documentation.
-    // https://github.com/stripe/stripe-firebase-extensions/blob/next/firestore-stripe-payments/POSTINSTALL.md
-
-    // This collection is read-only for clients.
+    // This collection is read-only for clients by default.
     match /products/{id} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow read: if true;
+      allow write: if false;
 
       match /prices/{id} {
-        allow get: if true;
-        allow list: if true;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+        allow read: if true;
+        allow write: if false;
       }
     }
 

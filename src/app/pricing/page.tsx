@@ -42,7 +42,11 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProductsAndPrices = useCallback(async () => {
-    if (!firestore) return;
+    if (!firestore) {
+      setError("Database connection is not available.");
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     console.log("[PricingPage] Starting to fetch all products (no filters)...");
@@ -53,31 +57,33 @@ export default function PricingPage() {
         console.log(`[PricingPage] Found ${productSnapshot.docs.length} total product document(s).`);
 
         if (productSnapshot.empty) {
-            console.log("[PricingPage] The 'products' collection is empty.");
+            console.log("[PricingPage] The 'products' collection is empty or not readable.");
             setProducts([]);
             setIsLoading(false);
             return;
         }
 
-        const allProducts = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const allProductsData = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("[PricingPage] Raw product data from Firestore:", allProductsData);
+
 
         const productsWithPrices = await Promise.all(
-            allProducts.map(async (product) => {
+            allProductsData.map(async (product) => {
                 const pricesQuery = query(collection(firestore, 'products', product.id, 'prices'));
                 const pricesSnapshot = await getDocs(pricesQuery);
                 const prices = pricesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Price));
                 
-                console.log(`[PricingPage] Product "${product.name}" (${product.id}) has ${prices.length} price(s) in its sub-collection.`, prices);
+                console.log(`[PricingPage] Product "${product.name}" (${product.id}) has ${prices.length} price(s) in its sub-collection.`);
                 return { ...product, prices } as Product;
             })
         );
         
-        console.log("[PricingPage] Final combined data:", productsWithPrices);
+        console.log("[PricingPage] Final combined data to be set in state:", productsWithPrices);
         setProducts(productsWithPrices);
 
     } catch (err: any) {
-        console.error("[PricingPage] Error fetching products:", err);
-        setError("Could not fetch pricing plans. Please try again later.");
+        console.error("[PricingPage] Error fetching products and prices:", err);
+        setError(`Could not fetch pricing plans. This might be a permissions issue. Please check Firestore rules. Error: ${err.message}`);
     } finally {
         setIsLoading(false);
         console.log("[PricingPage] Fetching finished.");
@@ -140,7 +146,7 @@ export default function PricingPage() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>No Products Found</AlertTitle>
                 <AlertDescription>
-                   The app could not find any products in your Firestore database. Please ensure the Stripe Payments extension has synced your data correctly.
+                   The app could not find any products in your Firestore database. Please ensure the Stripe Payments extension has synced your data correctly and the security rules allow reads on the 'products' collection.
                 </AlertDescription>
             </Alert>
         );
