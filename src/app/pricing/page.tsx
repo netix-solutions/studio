@@ -8,7 +8,7 @@ import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { createCheckout } from '@/lib/stripe';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -48,34 +48,41 @@ export default function PricingPage() {
       where('active', '==', true)
     );
 
-    const unsubscribe = onSnapshot(productsQuery, async (querySnapshot) => {
-      const fetchedProducts: Product[] = [];
-      for (const doc of querySnapshot.docs) {
-        const productData = doc.data();
-        const pricesCol = collection(doc.ref, 'prices');
-        const pricesSnap = await getDocs(query(pricesCol, where('active', '==', true)));
-        
-        const prices: Price[] = pricesSnap.docs.map(priceDoc => ({
-          id: priceDoc.id,
-          ...priceDoc.data()
-        } as Price)).sort((a, b) => a.unit_amount - b.unit_amount);
+    const unsubscribe: Unsubscribe = onSnapshot(productsQuery, async (querySnapshot) => {
+        setIsLoading(true);
+        const productsPromises = querySnapshot.docs.map(async (doc) => {
+            const productData = doc.data();
+            const pricesCol = collection(doc.ref, 'prices');
+            const pricesSnap = await getDocs(query(pricesCol, where('active', '==', true)));
+            
+            const prices: Price[] = pricesSnap.docs.map(priceDoc => ({
+                id: priceDoc.id,
+                ...priceDoc.data()
+            } as Price)).sort((a, b) => a.unit_amount - b.unit_amount);
 
-        fetchedProducts.push({
-          id: doc.id,
-          name: productData.name,
-          description: productData.description,
-          prices: prices,
+            return {
+                id: doc.id,
+                name: productData.name,
+                description: productData.description,
+                prices: prices,
+            };
         });
-      }
-      setProducts(fetchedProducts);
-      setIsLoading(false);
+
+        const fetchedProducts = await Promise.all(productsPromises);
+        setProducts(fetchedProducts);
+        setIsLoading(false);
     }, (error) => {
-      console.error("Error fetching products:", error);
-      setIsLoading(false);
+        console.error("Error fetching products:", error);
+        toast({
+            title: 'Error',
+            description: 'Could not fetch pricing plans. Please check console for details.',
+            variant: 'destructive',
+        });
+        setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [firestore]);
+}, [firestore, toast]);
   
 
   const handlePurchase = async (priceId: string) => {
