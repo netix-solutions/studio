@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
 import { signInWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -39,17 +40,17 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { auth, firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!isUserLoading && user && firestore) {
         // Check if there is a pending purchase
         const selectedPriceId = sessionStorage.getItem('selectedPriceId');
         if (selectedPriceId && user.uid) {
             // Clear the stored price ID and initiate checkout
             sessionStorage.removeItem('selectedPriceId');
-            createCheckout(user.uid, selectedPriceId, window.location.origin + '/account')
+            createCheckout(firestore, user.uid, selectedPriceId, window.location.origin + '/account')
                 .catch(error => {
                     console.error("Stripe checkout error after login:", error);
                     toast({
@@ -63,7 +64,7 @@ export default function LoginPage() {
             router.replace('/account');
         }
     }
-  }, [user, isUserLoading, router, toast]);
+  }, [user, isUserLoading, router, toast, firestore]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -1,24 +1,30 @@
+
 'use client';
 import {
   createCheckoutSession,
   getStripePayments,
 } from '@stripe/firestore-stripe-payments';
-import { firebaseApp } from '@/firebase';
+import { firebaseApp, type useFirestore } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 
-// Initialize the Stripe Payments SDK
-const payments = getStripePayments(firebaseApp, {
-  productsCollection: 'plans',
-  customersCollection: 'customers',
-});
+// Initialize the Stripe Payments SDK on-demand
+export const getPayments = (firestore: Firestore) => {
+    return getStripePayments(firebaseApp, {
+      productsCollection: 'plans',
+      customersCollection: 'customers',
+    });
+};
 
 export const createCheckout = async (
+  firestore: Firestore,
   userId: string,
   priceId: string,
   redirectUrl: string
 ) => {
   try {
+    const payments = getPayments(firestore);
     const session = await createCheckoutSession(payments, {
       price: priceId,
       success_url: redirectUrl,
@@ -43,5 +49,3 @@ export const goToBillingPortal = async (
     const { data } = await functionRef({ returnUrl: returnUrl });
     window.location.assign((data as any).url);
 }
-
-export default payments;

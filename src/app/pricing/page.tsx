@@ -16,60 +16,53 @@ interface Price {
   interval?: 'month' | 'year';
   unit_amount: number;
   currency: string;
+  active: boolean;
 }
 
 interface Product {
   id: string;
   name: string;
   description: string | null;
+  active: boolean;
   prices: Price[];
 }
 
-async function fetchPlansAndPrices(firestore: any): Promise<Product[]> {
-  const plansColRef = collection(firestore, 'plans');
-  const planDocs = await getDocs(plansColRef);
+async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
+  const productsColRef = collection(firestore, 'plans');
+  const productDocs = await getDocs(productsColRef);
 
-  if (planDocs.empty) {
-    console.warn("[PricingPage] The 'plans' collection is empty or not readable.");
-    return [];
-  }
-
-  const allPlans: Product[] = await Promise.all(
-    planDocs.docs.map(async (planDoc) => {
-      const planData = planDoc.data();
+  const allProducts: Product[] = await Promise.all(
+    productDocs.docs.map(async (productDoc) => {
+      const productData = productDoc.data();
       
-      const pricesColRef = collection(firestore, 'plans', planDoc.id, 'prices');
+      const pricesColRef = collection(firestore, 'plans', productDoc.id, 'prices');
       const priceDocs = await getDocs(pricesColRef);
       
       const prices: Price[] = priceDocs.docs
         .map((priceDoc) => {
           const priceData = priceDoc.data();
-          if (!priceData.active) return null;
-
           const interval = priceData.interval ?? priceData.recurring?.interval;
           return {
             id: priceDoc.id,
             interval: interval,
             unit_amount: priceData.unit_amount,
             currency: priceData.currency,
+            active: priceData.active,
           };
         })
-        .filter((p): p is Price => p !== null);
+        .filter(p => p.active);
 
       return {
-        id: planDoc.id,
-        name: planData.name,
-        description: planData.description,
+        id: productDoc.id,
+        name: productData.name,
+        description: productData.description,
+        active: productData.active,
         prices: prices,
       };
     })
   );
   
-  // Filter out products that are not active or have no active prices
-  return allPlans.filter(plan => {
-      const planData = planDocs.docs.find(doc => doc.id === plan.id)?.data();
-      return planData?.active && plan.prices.length > 0;
-  });
+  return allProducts.filter(p => p.active && p.prices.length > 0);
 }
 
 
@@ -84,7 +77,7 @@ export default function PricingPage() {
   useEffect(() => {
     if (firestore) {
       setLoading(true);
-      fetchPlansAndPrices(firestore)
+      fetchProductsAndPrices(firestore)
         .then(setProducts)
         .catch(error => {
           console.error("Error fetching products and prices:", error);
@@ -101,6 +94,10 @@ export default function PricingPage() {
   }, [firestore, toast]);
 
   const handlePurchase = async (priceId: string) => {
+    if (!firestore) {
+        toast({ title: 'Error', description: 'Database not ready.', variant: 'destructive'});
+        return;
+    }
     setIsPurchasing(priceId);
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
@@ -108,7 +105,7 @@ export default function PricingPage() {
       return;
     }
     try {
-      await createCheckout(user.uid, priceId, window.location.origin + '/account');
+      await createCheckout(firestore, user.uid, priceId, window.location.origin + '/account');
     } catch (error: any) {
       console.error("Stripe checkout error:", error);
       toast({
