@@ -25,6 +25,9 @@ export const createCheckout = async (
     success_url: redirectUrl,
     cancel_url: redirectUrl,
     allow_promotion_codes: true,
+    // Add a client field to indicate the checkout was initiated from the web client
+    client: 'web',
+    mode: 'subscription',
     createdAt: serverTimestamp(),
   });
 
@@ -36,12 +39,16 @@ export const createCheckout = async (
         const data = snap.data() as any;
         if (!data) return;
 
+        // If the extension writes an error, reject the promise with a user-friendly message.
         if (data.error) {
           unsub();
-          reject(new Error(data.error?.message || 'Stripe checkout failed.'));
+          // The error object might be complex. Safely access the message.
+          const errorMessage = data.error.message || 'An unknown error occurred with Stripe checkout.';
+          reject(new Error(errorMessage));
           return;
         }
 
+        // If the extension writes the checkout URL, redirect the user.
         if (data.url) {
           unsub();
           window.location.assign(data.url);
@@ -49,6 +56,7 @@ export const createCheckout = async (
         }
       },
       (err) => {
+        // Handle Firestore listener errors.
         unsub();
         reject(err);
       }
