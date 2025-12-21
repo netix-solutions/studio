@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import type { FirebaseApp } from 'firebase/app';
-import type { Firestore } from 'firestore';
+import type { Firestore } from 'firebase/firestore';
 import type { Auth, User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -89,4 +89,10 @@ export function useUser() {
 export function useAuth() {
     const { auth } = useFirebase();
     return auth;
+}
+
+// A specific hook to get just the Firestore service.
+export function useFirestore() {
+  const { firestore } = useFirebase();
+  return firestore;
 }
