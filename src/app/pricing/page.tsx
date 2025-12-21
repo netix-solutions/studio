@@ -26,27 +26,26 @@ interface Product {
 }
 
 async function fetchPlansAndPrices(firestore: any): Promise<Product[]> {
-  console.log("[PricingPage] Starting to fetch plans...");
+  const plansColRef = collection(firestore, 'plans');
+  const planDocs = await getDocs(plansColRef);
 
-  try {
-    const plansColRef = collection(firestore, 'plans');
-    const planDocs = await getDocs(plansColRef);
-    console.log(`[PricingPage] Raw plan snapshot contains ${planDocs.size} documents.`);
+  if (planDocs.empty) {
+    console.warn("[PricingPage] The 'plans' collection is empty or not readable.");
+    return [];
+  }
 
-    if (planDocs.empty) {
-      console.log("[PricingPage] The 'plans' collection is empty or not readable.");
-      return [];
-    }
-
-    const allPlans: Product[] = await Promise.all(
-      planDocs.docs.map(async (planDoc) => {
-        const planData = planDoc.data();
-        
-        const pricesColRef = collection(firestore, 'plans', planDoc.id, 'prices');
-        const priceDocs = await getDocs(pricesColRef);
-        
-        const prices: Price[] = priceDocs.docs.map((priceDoc) => {
+  const allPlans: Product[] = await Promise.all(
+    planDocs.docs.map(async (planDoc) => {
+      const planData = planDoc.data();
+      
+      const pricesColRef = collection(firestore, 'plans', planDoc.id, 'prices');
+      const priceDocs = await getDocs(pricesColRef);
+      
+      const prices: Price[] = priceDocs.docs
+        .map((priceDoc) => {
           const priceData = priceDoc.data();
+          if (!priceData.active) return null;
+
           const interval = priceData.interval ?? priceData.recurring?.interval;
           return {
             id: priceDoc.id,
@@ -54,25 +53,23 @@ async function fetchPlansAndPrices(firestore: any): Promise<Product[]> {
             unit_amount: priceData.unit_amount,
             currency: priceData.currency,
           };
-        });
+        })
+        .filter((p): p is Price => p !== null);
 
-        return {
-          id: planDoc.id,
-          name: planData.name,
-          description: planData.description,
-          prices: prices,
-        };
-      })
-    );
-
-    return allPlans.filter(plan => plan.prices.length > 0);
-
-  } catch (e: any) {
-    console.error("[PricingPage] Plans read FAILED");
-    console.error("code:", e?.code);
-    console.error("message:", e?.message);
-    return [];
-  }
+      return {
+        id: planDoc.id,
+        name: planData.name,
+        description: planData.description,
+        prices: prices,
+      };
+    })
+  );
+  
+  // Filter out products that are not active or have no active prices
+  return allPlans.filter(plan => {
+      const planData = planDocs.docs.find(doc => doc.id === plan.id)?.data();
+      return planData?.active && plan.prices.length > 0;
+  });
 }
 
 
@@ -98,7 +95,6 @@ export default function PricingPage() {
           });
         })
         .finally(() => {
-          console.log("[PricingPage] Fetching finished.");
           setLoading(false);
         });
     }
@@ -133,47 +129,45 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold tracking-tight font-headline">Choose Your Plan</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Simple, transparent pricing to reach your community.</p>
+    <div className="container mx-auto py-10 px-4 md:px-6">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold tracking-tight font-headline sm:text-5xl">Choose Your Plan</h1>
+        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">Simple, transparent pricing to reach your community on WesleyChapelCommunity.com and PascoCommunity.com.</p>
       </div>
 
       {products.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {products.map((product) => {
             const monthlyPrice = product.prices.find(p => p.interval === 'month');
             const yearlyPrice = product.prices.find(p => p.interval === 'year');
 
-            if (!monthlyPrice && !yearlyPrice) return null;
-
             return (
-              <Card key={product.id} className="flex flex-col">
-                <CardHeader>
+              <Card key={product.id} className="flex flex-col rounded-lg shadow-lg border border-border/60">
+                <CardHeader className="text-center pb-4">
                   <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
-                  {product.description && <CardDescription>{product.description}</CardDescription>}
+                  {product.description && <CardDescription className="pt-2">{product.description}</CardDescription>}
                 </CardHeader>
                 <CardContent className="flex-grow">
-                   <ul className="space-y-3 text-muted-foreground">
-                        <li className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <span>Rotating Banner Ad</span>
+                   <ul className="space-y-4 text-muted-foreground my-6">
+                        <li className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <span>Rotating banner ad on high-traffic pages</span>
                         </li>
-                        <li className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <span>Clickable Link to Your Site</span>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <span>Clickable link to drive traffic to your website</span>
                         </li>
-                        <li className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <span>Ad Design Support</span>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <span>Ad design support if you don't have a banner</span>
                         </li>
-                         <li className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <span>Cancel Anytime</span>
+                         <li className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <span>Flexibility to cancel your subscription anytime</span>
                         </li>
                     </ul>
                 </CardContent>
-                <CardFooter className="flex flex-col items-stretch gap-4">
+                <CardFooter className="flex flex-col items-stretch gap-4 bg-muted/50 p-6">
                   {monthlyPrice && (
                     <Button
                       size="lg"
@@ -213,11 +207,11 @@ export default function PricingPage() {
           })}
         </div>
       ) : (
-        <Card className="m-auto max-w-2xl text-center p-8">
+        <Card className="m-auto max-w-2xl text-center p-8 border-dashed">
           <CardHeader>
             <CardTitle>Pricing Not Available</CardTitle>
             <CardDescription>
-             Pricing plans have not been configured yet. To add plans, please create a monthly and a yearly price for your product in the Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
+             Pricing plans have not been configured or synced from Stripe. To add plans, please create a product with monthly and/or yearly prices in your Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
             </CardDescription>
           </CardHeader>
           <CardContent>
