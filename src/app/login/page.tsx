@@ -88,9 +88,13 @@ export default function LoginPage() {
       // The useEffect will handle the redirect
     } catch (error: any) {
       console.error('Login failed:', error);
+      let errorMessage = 'Invalid credentials. Please check your email and password.';
+       if (error.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid credentials. Please check your email and password.';
+      }
       toast({
         title: 'Error',
-        description: 'Invalid credentials. Please check your email and password.',
+        description: errorMessage,
         variant: 'destructive',
       });
       setIsSubmitting(false);
