@@ -9,7 +9,7 @@ import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { createCheckout } from '@/lib/stripe';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { collection, query, where, getDocs, type DocumentData } from 'firebase/firestore';
+import { collection, query, getDocs, type DocumentData } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -49,51 +49,58 @@ export default function PricingPage() {
     if (!firestore) return;
     setIsLoading(true);
     setError(null);
+    console.log("[PricingPage] Starting to fetch products...");
+
     try {
         const productsQuery = query(collection(firestore, 'products'));
         const productSnapshot = await getDocs(productsQuery);
-        
+        console.log(`[PricingPage] Fetched ${productSnapshot.docs.length} total product document(s).`);
+
         const allProducts = productSnapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
             .filter(product => product.active === true);
         
+        console.log(`[PricingPage] Found ${allProducts.length} active product(s).`);
+
         if (allProducts.length === 0) {
+            console.log("[PricingPage] No active products found.");
             setProducts([]);
             setIsLoading(false);
             return;
         }
 
-        const productsData = await Promise.all(
+        const productsWithPrices = await Promise.all(
             allProducts.map(async (product) => {
-                const pricesQuery = query(
-                    collection(firestore, 'products', product.id, 'prices'),
-                    where('active', '==', true)
-                );
+                const pricesQuery = query(collection(firestore, 'products', product.id, 'prices'));
                 const pricesSnapshot = await getDocs(pricesQuery);
-                const prices: Price[] = pricesSnapshot.docs.map(priceDoc => {
-                    return { id: priceDoc.id, ...priceDoc.data() } as Price;
-                });
+                const prices = pricesSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() } as Price))
+                    .filter(price => price.active === true);
                 
-                return {
-                    ...product,
-                    prices,
-                } as Product;
+                console.log(`[PricingPage] Product "${product.name}" has ${prices.length} active price(s).`);
+                return { ...product, prices } as Product;
             })
         );
-        
-        const activeProducts = productsData.filter(p => {
-            const hasMonthly = p.prices.some(price => price.interval === 'month' && price.active === true);
-            const hasAnnual = p.prices.some(price => price.interval === 'year' && price.active === true);
-            return hasMonthly && hasAnnual;
+
+        const validProducts = productsWithPrices.filter(p => {
+            const hasMonthly = p.prices.some(price => price.interval === 'month');
+            const hasAnnual = p.prices.some(price => price.interval === 'year');
+            const isValid = hasMonthly && hasAnnual;
+            if (!isValid) {
+                 console.log(`[PricingPage] Filtering out product "${p.name}" because it's missing an active monthly or yearly price.`);
+            }
+            return isValid;
         });
 
-        setProducts(activeProducts);
+        console.log(`[PricingPage] Found ${validProducts.length} product(s) with valid monthly and annual prices.`);
+        setProducts(validProducts);
 
     } catch (err: any) {
         console.error("[PricingPage] Error fetching products:", err);
         setError("Could not fetch pricing plans. Please try again later.");
     } finally {
         setIsLoading(false);
+        console.log("[PricingPage] Fetching finished.");
     }
   }, [firestore]);
   
@@ -263,3 +270,5 @@ export default function PricingPage() {
     </main>
   );
 }
+
+    
