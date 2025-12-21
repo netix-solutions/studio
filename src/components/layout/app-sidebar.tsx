@@ -15,7 +15,7 @@ import { Button } from '../ui/button';
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/subscriptions', label: 'Subscriptions', icon: Ticket },
-  { href: '/pricing', label: 'Pricing', icon: Tag },
+  // { href: '/pricing', label: 'Pricing', icon: Tag }, // Pricing is now a public page
   { href: '/discounts', label: 'Discounts', icon: Percent },
   { href: '/users', label: 'Users', icon: Users },
 ];

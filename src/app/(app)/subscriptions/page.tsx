@@ -10,12 +10,20 @@ import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
+import { useUser } from '@/firebase';
 
 export default function SubscriptionsPage() {
+  const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const filteredSubscriptions = mockSubscriptions.filter((sub) => {
+  // In a real app, you would fetch subscriptions for the current user.
+  // Here we simulate it by filtering the mock data.
+  // We'll assign the first mock subscription to the current user for demonstration.
+  const userSubscriptions = user ? mockSubscriptions.filter((sub, index) => index < 2) : [];
+
+
+  const filteredSubscriptions = userSubscriptions.filter((sub) => {
     const matchesSearch =
       sub.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,13 +48,13 @@ export default function SubscriptionsPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscriptions</CardTitle>
-        <CardDescription>View and manage all ad subscriptions.</CardDescription>
+        <CardTitle>My Subscriptions</CardTitle>
+        <CardDescription>View and manage your ad subscriptions.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 mb-4">
           <Input
-            placeholder="Search by name, email, or website..."
+            placeholder="Search by website..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
@@ -77,7 +85,7 @@ export default function SubscriptionsPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {filteredSubscriptions.map((sub) => (
+                {filteredSubscriptions.length > 0 ? filteredSubscriptions.map((sub) => (
                     <TableRow key={sub.id}>
                     <TableCell>
                         <div className="font-medium">{sub.customerName}</div>
@@ -107,7 +115,11 @@ export default function SubscriptionsPage() {
                         </DropdownMenu>
                     </TableCell>
                     </TableRow>
-                ))}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center h-24">No subscriptions found.</TableCell>
+                  </TableRow>
+                )}
                 </TableBody>
             </Table>
         </div>

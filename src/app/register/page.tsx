@@ -70,12 +70,17 @@ export default function RegisterPage() {
         title: 'Account Created!',
         description: 'You have been successfully registered and logged in.',
       });
+      // Redirect to thank-you page to simulate payment/next steps.
       router.push('/thank-you');
     } catch (error: any) {
       console.error('Registration failed:', error);
+      let errorMessage = 'There was an error registering. Please try again.';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already in use. Please log in or use a different email.';
+      }
       toast({
         title: 'Error',
-        description: error.message || 'There was an error registering. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -98,7 +103,7 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl font-bold tracking-tight font-headline">
             Create Your Account
           </CardTitle>
-          <CardDescription>Register to start advertising with us.</CardDescription>
+          <CardDescription>Register to complete your ad purchase.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -136,7 +141,7 @@ export default function RegisterPage() {
                     Registering...
                     </>
                 ) : (
-                    'Create Account'
+                    'Create Account & Proceed'
                 )}
               </Button>
             </form>

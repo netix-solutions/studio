@@ -12,26 +12,35 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Lege
 
 const chartConfig = {
   total: {
-    label: "Total",
+    label: "Total Ads",
     color: "hsl(var(--chart-2))",
   },
   new: {
-    label: "New",
+    label: "New Ads",
     color: "hsl(var(--chart-1))",
   },
 }
+
+// In a real app, this data would be fetched for the specific user.
+// We'll use a scaled down version of the mock data for demonstration.
+const userSubscriptionData = subscriptionDataByMonth.map(d => ({
+    ...d,
+    new: Math.ceil(d.new / 10),
+    total: Math.ceil(d.total / 10),
+}));
+
 
 export default function SubscriptionsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscription Growth</CardTitle>
-        <CardDescription>New and total subscriptions over the past 6 months.</CardDescription>
+        <CardTitle>My Ad Performance</CardTitle>
+        <CardDescription>A summary of your ad subscriptions over the last 6 months.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <ResponsiveContainer>
-             <ComposedChart data={subscriptionDataByMonth}>
+             <ComposedChart data={userSubscriptionData}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="month"
@@ -43,6 +52,7 @@ export default function SubscriptionsChart() {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                allowDecimals={false}
               />
               <Tooltip
                 content={<ChartTooltipContent indicator="dot" />}
