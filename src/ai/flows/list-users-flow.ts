@@ -23,18 +23,37 @@ const ListUsersOutputSchema = z.object({
 });
 
 // Initialize Firebase Admin SDK if it hasn't been already.
-let adminApp: App;
-if (!getApps().length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
-    adminApp = initializeApp({
-        credential: cert(serviceAccount),
-    });
-} else {
-    adminApp = getApps()[0];
+function getAdminApp(): App | null {
+    if (getApps().length > 0) {
+        return getApps()[0];
+    }
+
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!serviceAccountKey) {
+        console.error("FIREBASE_SERVICE_ACCOUNT_KEY is not set. Admin features will be disabled.");
+        return null;
+    }
+
+    try {
+        const serviceAccount = JSON.parse(serviceAccountKey);
+        return initializeApp({
+            credential: cert(serviceAccount),
+        });
+    } catch(error: any) {
+        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", error.message);
+        return null;
+    }
 }
 
 
 export async function listAllUsers(): Promise<z.infer<typeof ListUsersOutputSchema>> {
+    const adminApp = getAdminApp();
+    if (!adminApp) {
+        return {
+            error: "Firebase Admin SDK is not configured. Please set the FIREBASE_SERVICE_ACCOUNT_KEY."
+        }
+    }
+
     try {
         const userRecords: UserRecord[] = [];
         let pageToken;
