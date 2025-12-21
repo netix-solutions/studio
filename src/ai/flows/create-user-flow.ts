@@ -4,10 +4,9 @@
  * This is a server-side flow that should be called from a client component.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 import { getAuth } from 'firebase-admin/auth';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 
 const CreateUserInputSchema = z.object({
   email: z.string().email(),
@@ -21,40 +20,41 @@ const CreateUserOutputSchema = z.object({
 });
 
 // Initialize Firebase Admin SDK if it hasn't been already.
+let adminApp: App;
 if (!getApps().length) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
-    initializeApp({
+    adminApp = initializeApp({
         credential: cert(serviceAccount),
     });
+} else {
+    adminApp = getApps()[0];
 }
 
-const createUserFlow = ai.defineFlow(
-  {
-    name: 'createUserFlow',
-    inputSchema: CreateUserInputSchema,
-    outputSchema: CreateUserOutputSchema,
-  },
-  async ({ email, password }) => {
-    try {
-      const userRecord = await getAuth().createUser({
-        email,
-        password,
-      });
-      return {
-        uid: userRecord.uid,
-        email: userRecord.email,
-      };
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      return {
-        error: error.message || 'An unknown error occurred during user creation.',
-      };
-    }
-  }
-);
 
 export async function createUser(
   input: z.infer<typeof CreateUserInputSchema>
 ): Promise<z.infer<typeof CreateUserOutputSchema>> {
-  return createUserFlow(input);
+    try {
+        const validatedInput = CreateUserInputSchema.parse(input);
+        const userRecord = await getAuth(adminApp).createUser({
+            email: validatedInput.email,
+            password: validatedInput.password,
+        });
+        return {
+            uid: userRecord.uid,
+            email: userRecord.email,
+        };
+    } catch (error: any) {
+        console.error('Error creating user:', error);
+        
+        if (error instanceof z.ZodError) {
+            return {
+                error: error.errors.map(e => e.message).join(', '),
+            };
+        }
+
+        return {
+            error: error.message || 'An unknown error occurred during user creation.',
+        };
+    }
 }
