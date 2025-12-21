@@ -11,7 +11,7 @@ import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions'];
+const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/dashboard';
 

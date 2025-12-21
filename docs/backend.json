@@ -425,6 +425,35 @@
         }
       },
       "required": ["to", "message"]
+    },
+    "EmailTemplate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EmailTemplate",
+      "type": "object",
+      "description": "Stores editable templates for automated emails.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the template (e.g., 'welcome_email')."
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-friendly name for the template (e.g., 'Welcome Email')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief explanation of when this email is sent."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject line of the email."
+        },
+        "html": {
+          "type": "string",
+          "description": "The HTML body of the email. Can contain placeholders."
+        }
+      },
+      "required": ["id", "name", "description", "subject", "html"]
     }
   },
   "auth": {
@@ -633,10 +662,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/emailTemplates/{templateId}",
+        "definition": {
+          "entityName": "EmailTemplate",
+          "schema": {
+            "$ref": "#/backend/entities/EmailTemplate"
+          },
+          "description": "Stores editable templates for automated emails. Only admins can read or write.",
+          "params": [
+            {
+              "name": "templateId",
+              "description": "The unique identifier for the email template."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to adhere to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs, ensuring secure and scalable data management for the Community-Websites application. It leverages structural segregation and denormalization to optimize security rules and database operations.\n\n*   **Leads**: A new top-level `/leads` collection is introduced to capture interest form submissions from unauthenticated users. This collection is publicly writeable but only readable by admins, providing a secure inbox for new potential customers.\n*   **Users:** User data is stored under `/users/{userId}`. This path-based ownership model simplifies security rules and provides clear ownership.\n*   **Ad Subscriptions:** Ad subscriptions are stored under `/users/{userId}/adSubscriptions/{adSubscriptionId}`. This structure maintains a clear 1:N relationship between users and their ad subscriptions. The `userId` field within the `adSubscriptions` collection enforces the ownership invariant.\n*   **Advertisements:** A new top-level `/advertisements` collection is introduced to serve as a 'ticket system' for managing the ad creation lifecycle. This collection is writeable only by a server-side process (like a Cloud Function triggered by a new subscription) and readable/writeable by admins. This separation provides a clean, secure, and scalable way to manage the operational workflow without mixing it with user-facing data.\n*   **Community Websites:** Community websites are stored in the `/communityWebsites/{communityWebsiteId}` collection. This allows for global access to website information without requiring authorization checks, given that this information is intended to be public. If websites had owners or restricted data, a different approach would be taken.\n*   **Ad Campaigns:** Ad campaigns are stored under `/communityWebsites/{websiteId}/adCampaigns/{adCampaignId}`. This maintains the 1:N relationship between community websites and ad campaigns. This structure ensures that only admins can modify ad campaigns, which is checked via a separate admin roles collection.\n*   **Admin Roles:** Admin roles are managed through the `/roles_admin/{userId}` collection. The existence of a document in this collection grants admin privileges. This follows the Existence over Content strategy, simplifying role-based access control.\n*   **Stripe Integration**: Added collections for Stripe payments (`/products`, `/customers`) as required by the `firestore-stripe-payments` extension.\n*   **Email Trigger**: Added a `/mail` collection for the 'Trigger Email' extension."
+    "reasoning": "The Firestore structure is designed to adhere to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs, ensuring secure and scalable data management for the Community-Websites application. It leverages structural segregation and denormalization to optimize security rules and database operations.\n\n*   **Leads**: A new top-level `/leads` collection is introduced to capture interest form submissions from unauthenticated users. This collection is publicly writeable but only readable by admins, providing a secure inbox for new potential customers.\n*   **Users:** User data is stored under `/users/{userId}`. This path-based ownership model simplifies security rules and provides clear ownership.\n*   **Ad Subscriptions:** Ad subscriptions are stored under `/users/{userId}/adSubscriptions/{adSubscriptionId}`. This structure maintains a clear 1:N relationship between users and their ad subscriptions. The `userId` field within the `adSubscriptions` collection enforces the ownership invariant.\n*   **Advertisements:** A new top-level `/advertisements` collection is introduced to serve as a 'ticket system' for managing the ad creation lifecycle. This collection is writeable only by a server-side process (like a Cloud Function triggered by a new subscription) and readable/writeable by admins. This separation provides a clean, secure, and scalable way to manage the operational workflow without mixing it with user-facing data.\n*   **Community Websites:** Community websites are stored in the `/communityWebsites/{communityWebsiteId}` collection. This allows for global access to website information without requiring authorization checks, given that this information is intended to be public. If websites had owners or restricted data, a different approach would be taken.\n*   **Ad Campaigns:** Ad campaigns are stored under `/communityWebsites/{websiteId}/adCampaigns/{adCampaignId}`. This maintains the 1:N relationship between community websites and ad campaigns. This structure ensures that only admins can modify ad campaigns, which is checked via a separate admin roles collection.\n*   **Admin Roles:** Admin roles are managed through the `/roles_admin/{userId}` collection. The existence of a document in this collection grants admin privileges. This follows the Existence over Content strategy, simplifying role-based access control.\n*   **Stripe Integration**: Added collections for Stripe payments (`/products`, `/customers`) as required by the `firestore-stripe-payments` extension.\n*   **Email Trigger**: Added a `/mail` collection for the 'Trigger Email' extension.\n*   **Email Templates**: Added a `/emailTemplates` collection for storing editable email templates, manageable only by admins."
   }
 }
-
-    

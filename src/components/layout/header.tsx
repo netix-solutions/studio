@@ -23,6 +23,8 @@ const pathToTitle: { [key: string]: string } = {
   '/subscriptions': 'All Subscriptions',
   '/users': 'User Management',
   '/pricing': 'Change Plan',
+  '/advertisements': 'Advertisements',
+  '/automated-emails': 'Automated Emails',
 };
 
 export default function Header({ isAdmin }: { isAdmin: boolean }) {

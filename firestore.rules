@@ -68,6 +68,12 @@ service cloud.firestore {
     match /communityWebsites/{websiteId}/adCampaigns/{adCampaignId} {
         allow read, write: if isAdmin();
     }
+
+    // EMAIL TEMPLATES
+    // Only admins can read or write email templates.
+    match /emailTemplates/{templateId} {
+      allow read, list, write: if isAdmin();
+    }
     
     // STRIPE PRODUCTS & PLANS
     // These collections are managed in Stripe and synced to Firestore.
@@ -107,5 +113,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
