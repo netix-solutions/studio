@@ -31,8 +31,8 @@ export default function AccountPage() {
             setIsAdmin(docSnap.exists());
             setIsAdminLoading(false);
         }, (error) => {
-            // This error is expected for non-admins if rules are strict.
-            // We can just assume they are not an admin.
+            // This can fail if rules don't allow reads, so we handle it gracefully.
+            // We assume the user is not an admin if we can't read the doc.
             console.log("Admin check failed, likely due to permissions. User is not an admin.");
             setIsAdmin(false);
             setIsAdminLoading(false);
@@ -96,7 +96,7 @@ export default function AccountPage() {
     const handleSyncStripeCustomers = async () => {
         if (!firestore) return;
         setIsSyncing(true);
-        let syncedCount = 0;
+        
         try {
             const usersCollectionRef = collection(firestore, 'users');
             const usersSnapshot = await getDocs(usersCollectionRef);
@@ -105,7 +105,7 @@ export default function AccountPage() {
                 const userData = userDoc.data();
                 const userId = userDoc.id;
 
-                if (!userId || !userData.email) return;
+                if (!userId || !userData.email) return false;
 
                 const customerDocRef = doc(firestore, 'customers', userId);
                 const customerDocSnap = await getDoc(customerDocRef);
@@ -114,11 +114,13 @@ export default function AccountPage() {
                      await setDoc(customerDocRef, {
                         email: userData.email,
                     }, { merge: true });
-                    syncedCount++;
+                    return true; // Return true if a doc was created
                 }
+                return false; // Return false if doc already existed
             });
 
-            await Promise.all(syncPromises);
+            const results = await Promise.all(syncPromises);
+            const syncedCount = results.filter(Boolean).length;
 
             toast({
                 title: "Sync Complete",
@@ -126,7 +128,6 @@ export default function AccountPage() {
             });
 
         } catch (error: any) {
-            // This will catch the getDocs error if list permission is denied
             const permissionError = new FirestorePermissionError({
                 path: '/users',
                 operation: 'list',
