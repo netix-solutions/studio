@@ -51,16 +51,8 @@ service cloud.firestore {
       }
     }
 
-    match /customers/{uid} {
+    match /customers/{uid}/{document=**} {
       allow read, write: if isOwner(uid);
-
-      match /checkout_sessions/{id} {
-        allow read, write: if isOwner(uid);
-      }
-      match /subscriptions/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
-      }
     }
     
     match /roles_admin/{userId} {
