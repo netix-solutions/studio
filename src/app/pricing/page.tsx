@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, 'useState', 'useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { collection, getDocs, query, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
@@ -26,7 +26,7 @@ interface Product {
 }
 
 async function fetchPlansAndPrices(firestore: any): Promise<Product[]> {
-  console.log("[PricingPage] Starting to fetch plans (no filters)...");
+  console.log("[PricingPage] Starting to fetch plans...");
 
   try {
     const plansColRef = collection(firestore, 'plans');
@@ -145,6 +145,8 @@ export default function PricingPage() {
             const monthlyPrice = product.prices.find(p => p.interval === 'month');
             const yearlyPrice = product.prices.find(p => p.interval === 'year');
 
+            if (!monthlyPrice && !yearlyPrice) return null;
+
             return (
               <Card key={product.id} className="flex flex-col">
                 <CardHeader>
@@ -226,4 +228,3 @@ export default function PricingPage() {
     </div>
   );
 }
-
