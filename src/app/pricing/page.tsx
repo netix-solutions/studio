@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -8,23 +9,23 @@ import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { createCheckout } from '@/lib/stripe';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { collection, query, where, onSnapshot, getDocs, QuerySnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, type DocumentData } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
-interface Price {
+interface Price extends DocumentData {
     id: string;
     description: string | null;
     unit_amount: number;
     currency: string;
-    interval: 'month' | 'year' | 'week' | 'day';
+    interval: 'month' | 'year' | 'day';
     interval_count: number;
     active: boolean;
     product: string;
 }
 
-interface Product {
+interface Product extends DocumentData {
     id: string;
     name: string;
     description: string;
@@ -42,58 +43,63 @@ export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchProductsAndPrices = useCallback(async () => {
     if (!firestore) return;
+    setIsLoading(true);
+    setError(null);
 
-    const productsQuery = query(
-      collection(firestore, 'products'),
-      where('active', '==', true)
-    );
-
-    const unsubscribe = onSnapshot(productsQuery, async (productSnapshot) => {
-      if (productSnapshot.empty) {
-        setIsLoading(false);
-        setProducts([]);
-        return;
-      }
-      
-      const productsData = await Promise.all(
-        productSnapshot.docs.map(async (productDoc) => {
-          const productData = productDoc.data();
-          const pricesQuery = query(
-            collection(productDoc.ref, 'prices'),
+    try {
+        const productsQuery = query(
+            collection(firestore, 'products'),
             where('active', '==', true)
-          );
-          const pricesSnapshot = await getDocs(pricesQuery);
-          const prices: Price[] = pricesSnapshot.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as Price));
-          
-          return {
-            id: productDoc.id,
-            ...productData,
-            prices,
-          } as Product;
-        })
-      );
-      
-      // Filter out products that don't have any active prices
-      const activeProducts = productsData.filter(p => p.prices.length > 0);
-      setProducts(activeProducts);
-      setIsLoading(false);
+        );
+        const productSnapshot = await getDocs(productsQuery);
 
-    }, (error) => {
-        console.error("Error fetching products:", error);
-        toast({
-            title: 'Error',
-            description: 'Could not fetch pricing plans. Please check console for details.',
-            variant: 'destructive',
-        });
+        if (productSnapshot.empty) {
+            setProducts([]);
+            setIsLoading(false);
+            return;
+        }
+
+        const productsData = await Promise.all(
+            productSnapshot.docs.map(async (productDoc) => {
+                const productData = productDoc.data();
+                const pricesQuery = query(
+                    collection(productDoc.ref, 'prices'),
+                    where('active', '==', true)
+                );
+                const pricesSnapshot = await getDocs(pricesQuery);
+                const prices: Price[] = pricesSnapshot.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as Price));
+                
+                return {
+                    id: productDoc.id,
+                    ...productData,
+                    prices,
+                } as Product;
+            })
+        );
+        
+        // Filter out products that don't have at least one monthly and one annual price
+        const activeProducts = productsData.filter(p => 
+            p.prices.some(price => price.interval === 'month') &&
+            p.prices.some(price => price.interval === 'year')
+        );
+        
+        setProducts(activeProducts);
+
+    } catch (err: any) {
+        console.error("Error fetching products:", err);
+        setError("Could not fetch pricing plans. Please try again later.");
+    } finally {
         setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-}, [firestore, toast]);
+    }
+  }, [firestore]);
   
+  useEffect(() => {
+    fetchProductsAndPrices();
+  }, [fetchProductsAndPrices]);
 
   const handlePurchase = async (priceId: string) => {
     setIsSubmitting(priceId);
@@ -134,6 +140,7 @@ export default function PricingPage() {
   const effectiveMonthlyRate = billingCycle === 'annually' && annualPrice ? annualPrice.unit_amount / 1200 : (monthlyPrice?.unit_amount || 0) / 100;
   
   const annualBillingAmount = annualPrice ? annualPrice.unit_amount / 100 : 0;
+  const savings = monthlyPrice && annualPrice ? (monthlyPrice.unit_amount * 12 - annualPrice.unit_amount) / 100 : 0;
 
   const features = [
       "Rotating Banner Ad",
@@ -143,86 +150,109 @@ export default function PricingPage() {
       "Cancel Anytime"
   ];
 
+  const renderContent = () => {
+    if (isLoading) {
+         return (
+             <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <Alert variant="destructive" className="max-w-2xl mx-auto">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        );
+    }
+
+    if (!mainProduct || !displayedPrice) {
+        return (
+            <Alert variant="default" className="max-w-2xl mx-auto">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Pricing Not Available</AlertTitle>
+                <AlertDescription>
+                    Pricing plans have not been configured yet. To add plans, please create a monthly and a yearly price for your product in the Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    return (
+        <div className="flex flex-col items-center">
+            {annualPrice && monthlyPrice && (
+                 <div className="flex justify-center items-center gap-4 mb-12">
+                    <Label htmlFor="billing-cycle" className={billingCycle === 'monthly' ? 'font-semibold text-foreground' : 'text-muted-foreground'}>Monthly</Label>
+                    <Switch 
+                        id="billing-cycle"
+                        checked={billingCycle === 'annually'}
+                        onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
+                        aria-label="Toggle billing cycle"
+                    />
+                    <Label htmlFor="billing-cycle" className={billingCycle === 'annually' ? 'font-semibold text-foreground' : 'text-muted-foreground'}>Annually</Label>
+                    {savings > 0 && <Badge variant="secondary" className="ml-2">Save ${savings.toFixed(2)}!</Badge>}
+                </div>
+            )}
+            <Card className="flex flex-col max-w-md w-full shadow-lg">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl font-bold font-headline">{mainProduct.name}</CardTitle>
+                    <CardDescription>
+                        {billingCycle === 'annually' && annualPrice ?
+                            `Billed as one payment of $${annualBillingAmount.toFixed(2)}` :
+                            'Billed monthly, cancel anytime.'
+                        }
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                    <div className="mb-6 text-center">
+                        {effectiveMonthlyRate > 0 ? (
+                            <>
+                                <span className="text-5xl font-bold">${effectiveMonthlyRate.toFixed(2)}</span>
+                                <span className="text-muted-foreground text-lg">/month</span>
+                            </>
+                        ) : (
+                            <span className="text-2xl font-bold">Contact for pricing</span>
+                        )}
+                    </div>
+                    <ul className="space-y-4">
+                        {features.map(feature => (
+                            <li key={feature} className="flex items-center gap-3">
+                                <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                                <span>{feature}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </CardContent>
+                <CardFooter>
+                    <Button className="w-full" size="lg" onClick={() => handlePurchase(displayedPrice.id)} disabled={isUserLoading || !!isSubmitting}>
+                        {isSubmitting === displayedPrice.id ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Redirecting...
+                            </>
+                        ) : (
+                            'Get Started'
+                        )}
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+    );
+  };
+
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
         <div className="max-w-6xl mx-auto w-full">
             <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold font-headline">Choose Your Plan</h1>
                 <p className="text-muted-foreground mt-2 text-lg">Select the perfect plan for your business advertising needs.</p>
             </div>
             
-            {!isLoading && mainProduct && annualPrice && monthlyPrice && (
-                 <div className="flex justify-center items-center gap-4 mb-12">
-                    <Label htmlFor="billing-cycle" className={billingCycle === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>Monthly</Label>
-                    <Switch 
-                        id="billing-cycle"
-                        checked={billingCycle === 'annually'}
-                        onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
-                    />
-                    <Label htmlFor="billing-cycle" className={billingCycle === 'annually' ? 'text-foreground' : 'text-muted-foreground'}>Annually</Label>
-                    {(annualPrice.unit_amount < monthlyPrice.unit_amount * 12) && <Badge variant="secondary" className="ml-2">Save with Annual!</Badge>}
-                </div>
-            )}
-
-            {isLoading ? (
-                 <div className="flex items-center justify-center h-64">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            ) : mainProduct && displayedPrice ? (
-                <div className="flex justify-center">
-                    <Card className="flex flex-col max-w-md w-full">
-                        <CardHeader>
-                            <CardTitle>{mainProduct.name}</CardTitle>
-                            <CardDescription>
-                                {billingCycle === 'annually' && annualPrice ?
-                                    `Billed as one payment of $${annualBillingAmount.toFixed(2)}` :
-                                    'Billed monthly, cancel anytime.'
-                                }
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            <div className="mb-6">
-                                {effectiveMonthlyRate > 0 ? (
-                                    <>
-                                        <span className="text-4xl font-bold">${effectiveMonthlyRate.toFixed(2)}</span>
-                                        <span className="text-muted-foreground">/month</span>
-                                    </>
-                                ) : (
-                                    <span className="text-2xl font-bold">Contact for pricing</span>
-                                )}
-                            </div>
-                            <ul className="space-y-3">
-                                {features.map(feature => (
-                                    <li key={feature} className="flex items-center gap-2">
-                                        <Check className="h-5 w-5 text-green-500" />
-                                        <span>{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            <Button className="w-full" size="lg" onClick={() => handlePurchase(displayedPrice.id)} disabled={isUserLoading || !!isSubmitting}>
-                                {isSubmitting === displayedPrice.id ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Redirecting...
-                                    </>
-                                ) : (
-                                    'Get Started'
-                                )}
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
-            ) : (
-                <Alert variant="default" className="max-w-2xl mx-auto">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Pricing Not Available</AlertTitle>
-                    <AlertDescription>
-                        Pricing plans have not been configured yet. To add plans, please create a monthly and a yearly price for your product in the Stripe Dashboard. The Stripe Firebase Extension will automatically sync them here.
-                    </AlertDescription>
-                </Alert>
-            )}
+            {renderContent()}
 
              <div className="text-center mt-8">
                 <Button variant="link" onClick={() => router.back()}>
@@ -233,3 +263,4 @@ export default function PricingPage() {
     </main>
   );
 }
+
