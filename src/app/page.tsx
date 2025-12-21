@@ -84,10 +84,10 @@ export default function LandingPage() {
             <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
-             <Button variant="ghost" className="hidden sm:inline-flex" asChild>
+             <Button variant="ghost" asChild>
               <a href="tel:813-544-8383" className="flex items-center gap-2">
-                <Smartphone className="h-4 w-4" />
-                <span>Call or Text 24/7: 813-544-8383</span>
+                <Smartphone className="h-5 w-5" />
+                <span className="hidden sm:inline text-xs">Call/Text: 813-544-8383</span>
               </a>
             </Button>
             <Button variant="outline" asChild>
