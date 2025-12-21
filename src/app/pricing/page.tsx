@@ -113,7 +113,7 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
             )}
             <CardHeader className="text-center pb-4">
                 <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
-                {product.description && <CardDescription className="pt-2 h-12">{product.description}</CardDescription>}
+                {product.description && <CardDescription className="pt-2 h-12 flex items-center justify-center">{product.description}</CardDescription>}
             </CardHeader>
             <CardContent className="flex-grow flex flex-col">
                 {(monthlyPrice && yearlyPrice) && (
