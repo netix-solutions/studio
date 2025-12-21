@@ -108,14 +108,6 @@ export default function AutomatedEmailsPage() {
             setIsSeeding(false);
         }
     };
-    
-    // Auto-seed on first load
-    useEffect(() => {
-        if (firestore) {
-            seedDefaultTemplates();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [firestore]);
 
 
     useEffect(() => {
