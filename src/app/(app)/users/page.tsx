@@ -8,6 +8,8 @@ import { collection, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 interface AppUser {
     uid: string;
@@ -31,32 +33,30 @@ export default function UsersPage() {
 
         let unsubscribe: Unsubscribe | undefined;
 
-        try {
-            const usersQuery = query(collection(firestore, 'users'));
-            
-            unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-                const usersData: AppUser[] = snapshot.docs.map(doc => ({
-                    uid: doc.id,
-                    ...doc.data()
-                } as AppUser));
-                setUsers(usersData);
-                setLoading(false);
-                setError(null);
-            }, (err) => {
-                console.error("Error fetching users:", err);
-                if (err.code === 'permission-denied') {
-                     setError("You do not have permission to view this data. Please contact an administrator to be granted the 'admin' role.");
-                } else {
-                    setError("An error occurred while fetching the user list.");
-                }
-                setLoading(false);
-            });
-
-        } catch (e: any) {
-            console.error("Error setting up snapshot:", e);
-            setError("Could not set up the user listener.");
+        const usersQuery = query(collection(firestore, 'users'));
+        
+        unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+            const usersData: AppUser[] = snapshot.docs.map(doc => ({
+                uid: doc.id,
+                ...doc.data()
+            } as AppUser));
+            setUsers(usersData);
             setLoading(false);
-        }
+            setError(null);
+        }, (err) => {
+            // Create a rich, contextual error for the developer overlay
+            const permissionError = new FirestorePermissionError({
+                path: '/users',
+                operation: 'list',
+            } satisfies SecurityRuleContext);
+            
+            // Emit the error for the global listener to catch and throw
+            errorEmitter.emit('permission-error', permissionError);
+
+            // Also, set a user-friendly error message for the UI
+            setError("You do not have permission to view this data. Please contact an administrator to be granted the 'admin' role.");
+            setLoading(false);
+        });
 
         // Cleanup subscription on unmount
         return () => {
