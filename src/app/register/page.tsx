@@ -48,7 +48,7 @@ export default function RegisterPage() {
         if (selectedPriceId && user.uid) {
             // Clear the stored price ID and initiate checkout
             sessionStorage.removeItem('selectedPriceId');
-            createCheckout(user.uid, selectedPriceId, window.location.origin + '/dashboard')
+            createCheckout(user.uid, selectedPriceId, window.location.origin + '/account')
                 .catch(error => {
                     console.error("Stripe checkout error after registration:", error);
                     toast({
@@ -56,7 +56,7 @@ export default function RegisterPage() {
                         description: error.message || 'Could not redirect to checkout. Please log in and try again from the pricing page.',
                         variant: 'destructive',
                     });
-                     router.replace('/dashboard');
+                     router.replace('/account');
                 });
         } else {
             // If no plan was selected, just go to the dashboard
@@ -64,7 +64,7 @@ export default function RegisterPage() {
                 title: 'Account Created!',
                 description: 'You have been successfully registered and logged in.',
             });
-            router.replace('/dashboard');
+            router.replace('/account');
         }
     }
   }, [user, isUserLoading, router, toast]);

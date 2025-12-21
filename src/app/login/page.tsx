@@ -49,7 +49,7 @@ export default function LoginPage() {
         if (selectedPriceId && user.uid) {
             // Clear the stored price ID and initiate checkout
             sessionStorage.removeItem('selectedPriceId');
-            createCheckout(user.uid, selectedPriceId, window.location.origin + '/dashboard')
+            createCheckout(user.uid, selectedPriceId, window.location.origin + '/account')
                 .catch(error => {
                     console.error("Stripe checkout error after login:", error);
                     toast({
@@ -57,10 +57,10 @@ export default function LoginPage() {
                         description: error.message || 'Could not redirect to checkout. Please try selecting the plan again.',
                         variant: 'destructive',
                     });
-                     router.replace('/dashboard');
+                     router.replace('/account');
                 });
         } else {
-            router.replace('/dashboard');
+            router.replace('/account');
         }
     }
   }, [user, isUserLoading, router, toast]);
@@ -112,7 +112,7 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold tracking-tight font-headline">
             Advertiser Login
           </CardTitle>
-          <CardDescription>Access your admin panel.</CardDescription>
+          <CardDescription>Access your account portal.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

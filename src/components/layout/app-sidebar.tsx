@@ -9,11 +9,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Tag, Percent, Globe, Users } from 'lucide-react';
+import { LayoutDashboard, Ticket, Tag, Percent, Globe, Users, User } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/account', label: 'Account', icon: User },
   { href: '/subscriptions', label: 'Subscriptions', icon: Ticket },
   // { href: '/pricing', label: 'Pricing', icon: Tag }, // Pricing is now a public page
   { href: '/discounts', label: 'Discounts', icon: Percent },

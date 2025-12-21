@@ -18,6 +18,7 @@ import { SidebarTrigger } from '../ui/sidebar';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
+  '/account': 'My Account',
   '/subscriptions': 'My Subscriptions',
   '/pricing': 'Ad Campaign Pricing',
   '/discounts': 'Discount Offers',
