@@ -4,7 +4,6 @@
  * This is a server-side flow intended for admin use.
  */
 
-import 'dotenv/config';
 import { z } from 'zod';
 import { getAuth, type UserRecord } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
@@ -25,11 +24,12 @@ const ListUsersOutputSchema = z.object({
 
 // Initialize Firebase Admin SDK if it hasn't been already.
 function getAdminApp(): App | null {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    
     if (getApps().length > 0) {
         return getApps()[0];
     }
 
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (!serviceAccountKey) {
         console.error("FIREBASE_SERVICE_ACCOUNT_KEY is not set. Admin features will be disabled.");
         return null;
@@ -41,7 +41,7 @@ function getAdminApp(): App | null {
             credential: cert(serviceAccount),
         });
     } catch(error: any) {
-        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", error.message);
+        console.error("Failed to parse or initialize FIREBASE_SERVICE_ACCOUNT_KEY:", error.message);
         return null;
     }
 }

@@ -4,7 +4,6 @@
  * This is a server-side flow that should be called from a client component.
  */
 
-import 'dotenv/config';
 import { z } from 'zod';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
@@ -22,11 +21,12 @@ const CreateUserOutputSchema = z.object({
 
 // Initialize Firebase Admin SDK if it hasn't been already.
 function getAdminApp(): App | null {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
     if (getApps().length > 0) {
         return getApps()[0];
     }
 
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (!serviceAccountKey) {
         console.error("FIREBASE_SERVICE_ACCOUNT_KEY is not set. Admin features will be disabled.");
         return null;
@@ -38,7 +38,7 @@ function getAdminApp(): App | null {
             credential: cert(serviceAccount),
         });
     } catch(error: any) {
-        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", error.message);
+        console.error("Failed to parse or initialize FIREBASE_SERVICE_ACCOUNT_KEY:", error.message);
         return null;
     }
 }
@@ -71,6 +71,10 @@ export async function createUser(
             return {
                 error: error.errors.map(e => e.message).join(', '),
             };
+        }
+
+        if (error.code === 'auth/email-already-exists') {
+            return { error: 'A user with this email address already exists.' };
         }
 
         return {
