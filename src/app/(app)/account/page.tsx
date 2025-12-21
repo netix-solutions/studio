@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
-import { Loader2, AlertCircle, Edit, Save, Mail } from 'lucide-react';
+import { Loader2, AlertCircle, Edit, Save, Mail, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -60,6 +60,7 @@ export default function AccountPage() {
     const { toast } = useToast();
     const [isSavingAdDetails, setIsSavingAdDetails] = useState(false);
     const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+    const [showAdDetailsPrompt, setShowAdDetailsPrompt] = useState(false);
     
     const adDetailsForm = useForm<AdDetailsFormData>({
         resolver: zodResolver(adDetailsSchema),
@@ -114,12 +115,26 @@ export default function AccountPage() {
             setIsAdminLoading(false);
         });
         
-        // --- Subscription Fetching ---
+        // --- Subscription Fetching & Ad Details Prompt Logic ---
         setSubsLoading(true);
         const subsCollectionRef = collection(firestore, 'customers', user.uid, 'subscriptions');
         const q = query(subsCollectionRef);
 
-        const unsubSubs = onSnapshot(q, (snapshot) => {
+        const unsubSubs = onSnapshot(q, async (snapshot) => {
+            const activeSubs = snapshot.docs.filter(doc => doc.data().status === 'active' || doc.data().status === 'trialing');
+
+            // Logic to show the prompt
+            if (activeSubs.length > 0) {
+                 const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists() && !userDoc.data().businessName) {
+                    setShowAdDetailsPrompt(true);
+                } else {
+                    setShowAdDetailsPrompt(false);
+                }
+            } else {
+                setShowAdDetailsPrompt(false);
+            }
+
             const subsData: Subscription[] = snapshot.docs.map(doc => {
                 const data = doc.data();
                 const priceData = data.items?.[0]?.price;
@@ -325,6 +340,15 @@ export default function AccountPage() {
 
     return (
         <div className="flex-1 space-y-6">
+             {showAdDetailsPrompt && (
+                <Alert className="border-primary border-2">
+                    <FileText className="h-4 w-4" />
+                    <AlertTitle className="font-bold text-lg">Next Step: Submit Your Ad Details</AlertTitle>
+                    <AlertDescription>
+                        Welcome! Please fill out the "Ad Details" form below so our design team can get started on creating your ad.
+                    </AlertDescription>
+                </Alert>
+            )}
              <Card>
                 <CardHeader>
                     <CardTitle>My Account</CardTitle>
@@ -543,5 +567,3 @@ export default function AccountPage() {
         </div>
     );
 }
-
-    
