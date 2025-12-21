@@ -113,7 +113,7 @@ export default function LandingPage() {
           <p className="max-w-[700px] text-muted-foreground md:text-xl">
             Your clickable ad runs on WesleyChapelCommunity.com and PascoCommunity.com.
           </p>
-          <div className="text-lg text-muted-foreground">Plans as low as $24 per month.</div>
+          <div className="text-lg text-muted-foreground">Plans start from just $24 per month.</div>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button size="lg" asChild>
               <Link href="#get-started">
@@ -228,19 +228,8 @@ export default function LandingPage() {
                         See how your business could look. We can help design an effective ad for you.
                     </p>
                 </div>
-                <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    {sampleAds.map((ad) => (
-                        <div key={ad.id} className="w-full aspect-[3/1] rounded-lg overflow-hidden">
-                           <Image 
-                            src={ad.imageUrl}
-                            alt={ad.alt}
-                            width={300}
-                            height={100}
-                            className="w-full h-full object-cover"
-                            data-ai-hint={ad.imageHint}
-                           />
-                        </div>
-                    ))}
+                <div className="mt-12 text-center text-muted-foreground">
+                  Your ad could be here!
                 </div>
                  <div className="mt-12 mx-auto max-w-5xl p-6 bg-muted/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
                     <div className="flex-shrink-0">
@@ -347,9 +336,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    

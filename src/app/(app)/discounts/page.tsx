@@ -108,7 +108,8 @@ export default function DiscountsPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {mockDiscounts.map((d) => (
+                {mockDiscounts.length > 0 ? (
+                  mockDiscounts.map((d) => (
                     <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.code}</TableCell>
                     <TableCell>{d.percentage}%</TableCell>
@@ -136,7 +137,14 @@ export default function DiscountsPage() {
                         </DropdownMenu>
                     </TableCell>
                     </TableRow>
-                ))}
+                ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">
+                      No discounts have been created yet.
+                    </TableCell>
+                  </TableRow>
+                )}
                 </TableBody>
             </Table>
         </div>

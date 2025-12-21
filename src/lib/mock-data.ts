@@ -27,148 +27,21 @@ export type Discount = {
   redemptions: number;
 };
 
-export const mockSubscriptions: Subscription[] = [
-  {
-    id: 'SUB001',
-    customerName: 'Alice Johnson',
-    customerEmail: 'alice.j@example.com',
-    website: 'sunset-community.com',
-    plan: 'Quarterly',
-    startDate: '2024-04-01',
-    endDate: '2024-07-01',
-    status: 'Active',
-    amount: 270,
-  },
-  {
-    id: 'SUB002',
-    customerName: 'Bob Williams',
-    customerEmail: 'bob.w@example.com',
-    website: 'riverdale-news.com',
-    plan: 'Monthly',
-    startDate: '2024-06-15',
-    endDate: '2024-07-15',
-    status: 'Active',
-    amount: 50,
-  },
-  {
-    id: 'SUB003',
-    customerName: 'Charlie Brown',
-    customerEmail: 'charlie.b@example.com',
-    website: 'mountain-view.org',
-    plan: 'Yearly',
-    startDate: '2024-01-01',
-    endDate: '2025-01-01',
-    status: 'Active',
-    amount: 960,
-  },
-  {
-    id: 'SUB004',
-    customerName: 'Diana Prince',
-    customerEmail: 'diana.p@example.com',
-    website: 'sunset-community.com',
-    plan: 'Monthly',
-    startDate: '2024-05-01',
-    endDate: '2024-06-01',
-    status: 'Expired',
-    amount: 100,
-  },
-    {
-    id: 'SUB005',
-    customerName: 'Ethan Hunt',
-    customerEmail: 'ethan.h@example.com',
-    website: 'lakeside-gazette.net',
-    plan: 'Yearly',
-    startDate: '2023-09-01',
-    endDate: '2024-09-01',
-    status: 'Active',
-    amount: 480,
-  },
-];
+export const mockSubscriptions: Subscription[] = [];
 
-export const mockPricings: Pricing[] = [
-  {
-    id: 'PRICE01',
-    website: 'sunset-community.com',
-    monthly: 100,
-    quarterly: 270,
-    yearly: 960,
-  },
-  {
-    id: 'PRICE02',
-    website: 'riverdale-news.com',
-    monthly: 50,
-    quarterly: 135,
-    yearly: 480,
-  },
-  {
-    id: 'PRICE03',
-    website: 'mountain-view.org',
-    monthly: 75,
-    quarterly: 200,
-    yearly: 720,
-  },
-    {
-    id: 'PRICE04',
-    website: 'lakeside-gazette.net',
-    monthly: 45,
-    quarterly: 120,
-    yearly: 430,
-  },
-];
+export const mockPricings: Pricing[] = [];
 
-export const mockDiscounts: Discount[] = [
-  {
-    id: 'DISC01',
-    code: 'NEW20',
-    percentage: 20,
-    status: 'Active',
-    applicableTo: ['Monthly', 'Quarterly'],
-    redemptions: 42,
-  },
-  {
-    id: 'DISC02',
-    code: 'YEARLY50',
-    percentage: 50,
-    status: 'Active',
-    applicableTo: ['Yearly'],
-    redemptions: 15,
-  },
-  {
-    id: 'DISC03',
-    code: 'SUMMER10',
-    percentage: 10,
-    status: 'Expired',
-    applicableTo: ['Monthly'],
-    redemptions: 120,
-  },
-];
+export const mockDiscounts: Discount[] = [];
 
 export const subscriptionDataByMonth = [
-    { month: 'Jan', new: 15, total: 50 },
-    { month: 'Feb', new: 20, total: 65 },
-    { month: 'Mar', new: 18, total: 80 },
-    { month: 'Apr', new: 25, total: 100 },
-    { month: 'May', new: 22, total: 118 },
-    { month: 'Jun', new: 30, total: 140 },
+    { month: 'Jan', new: 0, total: 0 },
+    { month: 'Feb', new: 0, total: 0 },
+    { month: 'Mar', new: 0, total: 0 },
+    { month: 'Apr', new: 0, total: 0 },
+    { month: 'May', new: 0, total: 0 },
+    { month: 'Jun', new: 0, total: 0 },
 ];
 
-export const sampleAds = [
-    { id: 1, imageUrl: 'https://picsum.photos/seed/ad1/300/100', alt: 'Sample Ad 1', imageHint: 'local restaurant' },
-    { id: 2, imageUrl: 'https://picsum.photos/seed/ad2/300/100', alt: 'Sample Ad 2', imageHint: 'real estate' },
-    { id: 3, imageUrl: 'https://picsum.photos/seed/ad3/300/100', alt: 'Sample Ad 3', imageHint: 'home services' },
-    { id: 4, imageUrl: 'https://picsum.photos/seed/ad4/300/100', alt: 'Sample Ad 4', imageHint: 'retail shop' },
-    { id: 5, imageUrl: 'https://picsum.photos/seed/ad5/300/100', alt: 'Sample Ad 5', imageHint: 'dentist office' },
-    { id: 6, imageUrl: 'https://picsum.photos/seed/ad6/300/100', alt: 'Sample Ad 6', imageHint: 'car dealership' },
-    { id: 7, imageUrl: 'https://picsum.photos/seed/ad7/300/100', alt: 'Sample Ad 7', imageHint: 'gym fitness' },
-    { id: 8, imageUrl: 'https://picsum.photos/seed/ad8/300/100', alt: 'Sample Ad 8', imageHint: 'flower shop' },
-];
+export const sampleAds: { id: number; imageUrl: string; alt: string; imageHint: string; }[] = [];
 
-export const dailyVisitorsData = [
-  { day: 'Mon', visitors: 1100 },
-  { day: 'Tue', visitors: 1250 },
-  { day: 'Wed', visitors: 1300 },
-  { day: 'Thu', visitors: 1450 },
-  { day: 'Fri', visitors: 1600 },
-  { day: 'Sat', visitors: 1800 },
-  { day: 'Sun', visitors: 1700 },
-];
+export const dailyVisitorsData: { day: string; visitors: number; }[] = [];

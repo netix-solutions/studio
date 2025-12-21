@@ -18,7 +18,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
             <CardHeader>
                 <CardTitle>Recent Subscriptions</CardTitle>
-                <CardDescription>The last 5 subscriptions created.</CardDescription>
+                <CardDescription>Your most recent subscriptions.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -31,19 +31,27 @@ export default function DashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {recentSubscriptions.map((sub) => (
-                            <TableRow key={sub.id}>
-                                <TableCell>
-                                    <div className="font-medium">{sub.customerName}</div>
-                                    <div className="text-sm text-muted-foreground">{sub.customerEmail}</div>
-                                </TableCell>
-                                <TableCell className="text-right">${sub.amount.toFixed(2)}</TableCell>
-                                <TableCell className="hidden md:table-cell">{format(new Date(sub.startDate), 'MMM d, yyyy')}</TableCell>
-                                <TableCell className="hidden sm:table-cell">
-                                    <Badge variant={sub.status === 'Active' ? 'secondary' : 'outline'}>{sub.status}</Badge>
+                        {recentSubscriptions.length > 0 ? (
+                            recentSubscriptions.map((sub) => (
+                                <TableRow key={sub.id}>
+                                    <TableCell>
+                                        <div className="font-medium">{sub.customerName}</div>
+                                        <div className="text-sm text-muted-foreground">{sub.customerEmail}</div>
+                                    </TableCell>
+                                    <TableCell className="text-right">${sub.amount.toFixed(2)}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{format(new Date(sub.startDate), 'MMM d, yyyy')}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                        <Badge variant={sub.status === 'Active' ? 'secondary' : 'outline'}>{sub.status}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    No subscriptions yet.
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>
