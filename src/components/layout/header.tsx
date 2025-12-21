@@ -21,8 +21,8 @@ const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
   '/account': 'My Account',
   '/subscriptions': 'All Subscriptions',
-  '/discounts': 'Discount Offers',
   '/users': 'User Management',
+  '/pricing': 'Change Plan',
 };
 
 export default function Header({ isAdmin }: { isAdmin: boolean }) {
@@ -47,7 +47,14 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
     return names[0][0];
   };
 
-  let pageTitle = pathToTitle[pathname] || 'Account';
+  let pageTitle = "Account";
+  for (const path in pathToTitle) {
+      if (pathname.startsWith(path)) {
+          pageTitle = pathToTitle[path];
+          break;
+      }
+  }
+
   // For non-admins, some pages have a different context
   if (!isAdmin) {
       if (pathname.startsWith('/subscriptions')) {

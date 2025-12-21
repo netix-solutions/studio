@@ -31,7 +31,8 @@ export const mockSubscriptions: Subscription[] = [];
 
 export const mockPricings: Pricing[] = [];
 
-export const mockDiscounts: Discount[] = [];
+// This is no longer needed as discounts are managed in Stripe
+// export const mockDiscounts: Discount[] = [];
 
 export const subscriptionDataByMonth = [
     { month: 'Jan', new: 0, total: 0 },

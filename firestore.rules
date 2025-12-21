@@ -17,16 +17,12 @@ service cloud.firestore {
     }
 
     // USER DATA
-    // Users can manage their own profile and subscriptions. Admins can manage any user.
+    // Users can manage their own profile. Admins can manage any user.
     match /users/{userId} {
       allow read, update: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId);
       allow list: if isAdmin();
-      allow delete: if false;
-
-      match /adSubscriptions/{adSubscriptionId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
+      allow delete: if false; // Users should not be deletable from the client
     }
 
     // STRIPE CUSTOMER DATA & ALL SUBCOLLECTIONS
@@ -46,15 +42,13 @@ service cloud.firestore {
     match /communityWebsites/{websiteId}/adCampaigns/{adCampaignId} {
         allow read, write: if isAdmin();
     }
-
-    match /discountOffers/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
     
+    // STRIPE PRODUCTS & PLANS
+    // These collections are managed in Stripe and synced to Firestore.
+    // They should be publicly readable but not writable by any client.
     match /plans/{planId} {
       allow read: if true;
-      allow write: if false; // Plans are managed in Stripe, not by app clients
+      allow write: if false;
 
       match /prices/{priceId} {
         allow read: if true;
@@ -64,7 +58,7 @@ service cloud.firestore {
     
     match /products/{productId} {
       allow read: if true;
-      allow write: if false; // Products are managed in Stripe, not by app clients
+      allow write: if false;
 
       match /prices/{priceId} {
         allow read: if true;
@@ -79,5 +73,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

@@ -38,7 +38,7 @@ export const createCheckout = async (
     price: priceId, // must be Stripe price id: price_...
     success_url: redirectUrl,
     cancel_url: redirectUrl,
-    allow_promotion_codes: true,
+    allow_promotion_codes: true, // Enable promotion codes on the checkout session
     createdAt: serverTimestamp(),
   });
 

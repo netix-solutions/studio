@@ -10,7 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Percent, Users, User, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, User, ShoppingBag } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
 
@@ -19,7 +19,6 @@ const allMenuItems = [
   { href: '/account', label: 'Account', icon: User, adminOnly: false },
   { href: '/pricing', label: 'Change Plan', icon: ShoppingBag, adminOnly: false },
   { href: '/subscriptions', label: 'Subscriptions', icon: Ticket, adminOnly: true },
-  { href: '/discounts', label: 'Discounts', icon: Percent, adminOnly: true },
   { href: '/users', label: 'Users', icon: Users, adminOnly: true },
 ];
 
