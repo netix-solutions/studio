@@ -283,12 +283,6 @@ export default function LandingPage() {
                         We work with all types of local businesses targeting residents in Pasco County, including restaurants, real estate agents, home service providers, medical offices, and local retailers.
                         </AccordionContent>
                     </AccordionItem>
-                    <AccordionItem value="item-2">
-                        <AccordionTrigger>Can I see how my ad is performing?</AccordionTrigger>
-                        <AccordionContent>
-                        Yes, basic performance reporting (impressions and clicks) is available upon request. We can provide you with updates to see how your ad is doing.
-                        </AccordionContent>
-                    </AccordionItem>
                     <AccordionItem value="item-3">
                         <AccordionTrigger>What if I need to change my ad?</AccordionTrigger>
                         <AccordionContent>
@@ -317,20 +311,6 @@ export default function LandingPage() {
                  <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
                     Call or Text 24/7: 813-544-8383
                 </a>
-            </div>
-            <div className="flex gap-4">
-                <Link href="https://www.facebook.com/wesleychapelflorida" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                    <Facebook className="h-5 w-5" />
-                    <span className="sr-only">Facebook</span>
-                </Link>
-                <Link href="https://x.com/wesleychapel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                    <Twitter className="h-5 w-5" />
-                    <span className="sr-only">X</span>
-                </Link>
-                <Link href="https://www.instagram.com/wesleychapelfl/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                    <Instagram className="h-5 w-5" />
-                    <span className="sr-only">Instagram</span>
-                </Link>
             </div>
             <div className="text-sm text-muted-foreground text-center md:text-left">
                 &copy; {new Date().getFullYear()} Community-Websites.com. All rights reserved.
