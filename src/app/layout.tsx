@@ -4,6 +4,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { Manrope, Inter, Bebas_Neue } from 'next/font/google';
+import Script from 'next/script';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -79,7 +80,19 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-DF78ZBZW82"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-DF78ZBZW82');
+          `}
+        </Script>
         <FirebaseClientProvider>
           {children}
           <Toaster />
