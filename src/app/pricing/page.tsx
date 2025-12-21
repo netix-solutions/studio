@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
-import { collection, getDocs, query, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, query, QueryDocumentSnapshot, DocumentData, where } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ interface Product {
 
 async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
   const productsColRef = collection(firestore, 'plans');
-  const q = query(productsColRef);
+  const q = query(productsColRef, where('active', '==', true));
   const productDocs = await getDocs(q);
 
   const allProducts: Product[] = await Promise.all(
@@ -38,7 +38,8 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
       const productData = productDoc.data();
       
       const pricesColRef = collection(firestore, 'plans', productDoc.id, 'prices');
-      const priceDocs = await getDocs(query(pricesColRef));
+      const pricesQuery = query(pricesColRef, where('active', '==', true));
+      const priceDocs = await getDocs(pricesQuery);
       
       const prices: Price[] = priceDocs.docs
         .map((priceDoc) => {
@@ -52,8 +53,7 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
             currency: priceData.currency,
             active: priceData.active,
           };
-        })
-        .filter(p => p.active);
+        });
 
       return {
         id: productDoc.id,
