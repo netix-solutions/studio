@@ -82,7 +82,7 @@ export default function LandingPage() {
     <div className="bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm border-border/50">
-        <div className="container mx-auto flex h-14 items-center justify-between px-4 md:px-6">
+        <div className="container mx-auto flex h-[70px] items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
              <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} priority />
           </Link>
@@ -307,7 +307,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2">
-                    <Image src="/logo.png" alt="Community-Websites.com Logo" width={150} height={33} />
+                    <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} />
                 </div>
                  <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
                     813-544-8383
