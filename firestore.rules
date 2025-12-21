@@ -49,22 +49,19 @@ service cloud.firestore {
         allow write: if false;
       }
     }
+    
+    match /products/{productId} {
+        allow read: if true;
+        allow write: if false;
+        
+        match /prices/{priceId} {
+            allow read: if true;
+            allow write: if false;
+        }
+    }
 
-    match /customers/{userId} {
-      allow read, create, update: if isOwner(userId) || isAdmin();
-
-      // Explicitly allow read access to subscriptions for the owner or an admin
-      match /subscriptions/{subscriptionId} {
-        allow read: if isOwner(userId) || isAdmin();
-      }
-
-      // Allow creating checkout sessions and portal links for the owner or an admin
-      match /checkout_sessions/{sessionId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-      match /portal_links/{portalId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
+    match /customers/{userId}/{document=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
     }
     
     match /roles_admin/{userId} {

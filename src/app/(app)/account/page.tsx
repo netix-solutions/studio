@@ -59,8 +59,8 @@ export default function AccountPage() {
                 return {
                     id: doc.id,
                     status: data.status,
-                    planName: priceData?.product?.name || 'N/A',
-                    price: `${(priceData?.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: priceData?.currency || 'USD' })}/${priceData?.recurring?.interval}`,
+                    planName: data.items?.[0]?.price?.product?.name || 'N/A',
+                    price: priceData ? `${(priceData.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: priceData.currency || 'USD' })}/${priceData.recurring?.interval}`: 'N/A',
                     periodEnd: format(new Date(data.current_period_end * 1000), 'MMM d, yyyy'),
                 };
             });
@@ -92,6 +92,8 @@ export default function AccountPage() {
         setIsRedirecting(true);
         try {
             await goToBillingPortal(firestore, user.uid, window.location.origin + '/account');
+            // The goToBillingPortal function will handle the redirect, but if it fails before redirecting,
+            // we should stop the loading state.
         } catch (error: any) {
             console.error('Error redirecting to billing portal:', error);
              toast({
@@ -207,7 +209,7 @@ export default function AccountPage() {
                                     <div className='text-right'>
                                          <Badge variant={getStatusBadgeVariant(sub.status)} className="capitalize mb-1">{sub.status}</Badge>
                                         <div className="text-sm text-muted-foreground">
-                                            {sub.status === 'active' ? `Renews on ${sub.periodEnd}` : `Ended on ${sub.periodEnd}`}
+                                            {sub.status === 'active' || sub.status === 'trialing' ? `Renews on ${sub.periodEnd}` : `Ended on ${sub.periodEnd}`}
                                         </div>
                                     </div>
                                 </div>
