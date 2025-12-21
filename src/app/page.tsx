@@ -81,7 +81,7 @@ export default function LandingPage() {
   return (
     <div className="bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm border-border/50">
+      <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto flex h-[70px] items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
              <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} priority />
@@ -129,7 +129,7 @@ export default function LandingPage() {
         </section>
 
         {/* How it works section */}
-        <section id="how-it-works" className="bg-muted/50 py-20 lg:py-24">
+        <section id="how-it-works" className="bg-card/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-2xl text-center">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
@@ -141,7 +141,7 @@ export default function LandingPage() {
                 </div>
                 <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {howItWorksSteps.map((step, index) => (
-                        <Card key={index} className="flex flex-col items-center text-center p-6 bg-card/80">
+                        <Card key={index} className="flex flex-col items-center text-center p-6 bg-card/80 border-border/60">
                             <div className="rounded-full bg-primary p-3 text-primary-foreground mb-4">
                                 <step.icon className="h-6 w-6" />
                             </div>
@@ -183,7 +183,7 @@ export default function LandingPage() {
         <StatsSection />
 
         {/* Where your ad appears section */}
-        <section id="placements" className="bg-muted/50 py-20 lg:py-24">
+        <section id="placements" className="bg-card/50 py-20 lg:py-24">
             <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center px-4 md:px-6">
                 <div className="space-y-4">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
@@ -231,7 +231,7 @@ export default function LandingPage() {
                 <div className="mt-12 text-center text-muted-foreground">
                   Your ad could be here!
                 </div>
-                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-muted/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
+                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-card/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
                     <div className="flex-shrink-0">
                         <Smartphone className="h-32 w-auto text-foreground" />
                     </div>
@@ -246,9 +246,9 @@ export default function LandingPage() {
         </section>
 
         {/* Get Started Form Section */}
-        <section id="get-started" className="bg-muted/50 py-20 lg:py-24">
+        <section id="get-started" className="bg-card/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                <Card className="max-w-3xl mx-auto bg-card/80">
+                <Card className="max-w-3xl mx-auto bg-card/80 border-border/60">
                     <CardHeader className="text-center">
                         <CardTitle className="text-3xl font-bold font-headline">See Current Pricing</CardTitle>
                         <CardDescription>
@@ -303,7 +303,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-card text-card-foreground">
+      <footer className="border-t border-border/50 bg-card text-card-foreground">
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2">
