@@ -27,11 +27,20 @@ import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { AppUser } from '@/app/(app)/users/page';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Textarea } from '../ui/textarea';
+import { Separator } from '../ui/separator';
 
 const formSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(50),
-  lastName: z.string().min(1, 'Last name is required').max(50),
+  // User fields
+  contactName: z.string().min(1, 'Contact name is required').max(100),
   role: z.enum(['user', 'admin']),
+  
+  // Ad details fields
+  businessName: z.string().optional(),
+  phone: z.string().optional(),
+  adWebsiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  adText: z.string().optional(),
+  adNotes: z.string().optional(),
 });
 
 type EditUserDialogProps = {
@@ -48,18 +57,26 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
+      contactName: '',
       role: 'user',
+      businessName: '',
+      phone: '',
+      adWebsiteUrl: '',
+      adText: '',
+      adNotes: '',
     },
   });
 
   useEffect(() => {
     if (user) {
       form.reset({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
+        contactName: user.contactName || '',
         role: user.role || 'user',
+        businessName: user.businessName || '',
+        phone: user.phone || '',
+        adWebsiteUrl: user.adWebsiteUrl || '',
+        adText: user.adText || '',
+        adNotes: user.adNotes || '',
       });
     }
   }, [user, form]);
@@ -71,13 +88,17 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
     try {
       const userDocRef = doc(firestore, 'users', user.id);
       
-      // Update user details
+      // Update user details in one go
       await setDoc(userDocRef, {
-        firstName: values.firstName,
-        lastName: values.lastName,
+        contactName: values.contactName,
+        businessName: values.businessName,
+        phone: values.phone,
+        adWebsiteUrl: values.adWebsiteUrl,
+        adText: values.adText,
+        adNotes: values.adNotes,
       }, { merge: true });
 
-      // Update role
+      // Update role separately
       const adminDocRef = doc(firestore, 'roles_admin', user.id);
       if (values.role === 'admin' && user.role !== 'admin') {
         await setDoc(adminDocRef, { uid: user.id });
@@ -87,7 +108,7 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
 
       toast({
         title: 'User Updated',
-        description: `${values.firstName} ${values.lastName}'s profile has been updated.`,
+        description: `${values.contactName}'s profile has been updated.`,
       });
       onOpenChange(false);
     } catch (error: any) {
@@ -104,7 +125,7 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
@@ -112,54 +133,116 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Jane" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+            <h3 className="text-lg font-semibold">User Details</h3>
+             <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="contactName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Name</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
+                      <Input placeholder="Jane Doe" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <Separator className="my-6" />
+
+            <h3 className="text-lg font-semibold">Ad Information</h3>
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="businessName"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Business Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="The Local Cafe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                 <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                        <Input placeholder="(555) 123-4567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
+            <FormField
+              control={form.control}
+              name="adWebsiteUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ad Link URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="adText"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ad Text / Slogan</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="e.g., 'Serving Pasco County for 20 years!'" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="adNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ad Notes / Special Offers</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="e.g., 'Mention this ad for 10% off your first visit.'" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>

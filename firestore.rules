@@ -29,9 +29,9 @@ service cloud.firestore {
       }
     }
 
-    // STRIPE CUSTOMER DATA
+    // STRIPE CUSTOMER DATA & ALL SUBCOLLECTIONS
     // A user can manage their own customer data, and so can an admin.
-    // This includes all subcollections like checkout_sessions, subscriptions, and portal_links.
+    // This includes checkout_sessions, subscriptions, and portal_links.
     match /customers/{userId}/{allDocuments=**} {
         allow read, write: if isOwner(userId) || isAdmin();
     }
@@ -61,7 +61,7 @@ service cloud.firestore {
         allow write: if false;
       }
     }
-
+    
     match /products/{productId} {
       allow read: if true;
       allow write: if false; // Products are managed in Stripe, not by app clients
@@ -79,3 +79,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

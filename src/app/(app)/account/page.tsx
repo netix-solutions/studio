@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query } from 'firebase/firestore';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Edit, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -12,6 +12,12 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Subscription {
     id: string;
@@ -20,6 +26,18 @@ interface Subscription {
     price: string;
     periodEnd: string;
 }
+
+const adDetailsSchema = z.object({
+    businessName: z.string().min(2, "Business name is required."),
+    contactName: z.string().min(2, "Contact name is required."),
+    phone: z.string().min(10, "A valid phone number is required."),
+    adWebsiteUrl: z.string().url("Please enter a valid URL (e.g., https://example.com).").optional().or(z.literal('')),
+    adText: z.string().optional(),
+    adNotes: z.string().optional(),
+});
+
+type AdDetailsFormData = z.infer<typeof adDetailsSchema>;
+
 
 export default function AccountPage() {
     const { user } = useUser();
@@ -32,9 +50,39 @@ export default function AccountPage() {
     const [subsLoading, setSubsLoading] = useState(true);
     const [subsError, setSubsError] = useState<string | null>(null);
     const { toast } = useToast();
+    const [isSavingAdDetails, setIsSavingAdDetails] = useState(false);
+    
+    const { control, handleSubmit, reset, formState: { errors } } = useForm<AdDetailsFormData>({
+        resolver: zodResolver(adDetailsSchema),
+        defaultValues: {
+            businessName: '',
+            contactName: '',
+            phone: '',
+            adWebsiteUrl: '',
+            adText: '',
+            adNotes: '',
+        }
+    });
 
     useEffect(() => {
         if (!user || !firestore) return;
+
+        // --- User Data & Ad Details ---
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const unsubUser = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                reset({
+                    businessName: userData.businessName || '',
+                    contactName: userData.contactName || '',
+                    phone: userData.phone || '',
+                    adWebsiteUrl: userData.adWebsiteUrl || '',
+                    adText: userData.adText || '',
+                    adNotes: userData.adNotes || '',
+                });
+            }
+        });
+
 
         // --- Admin Role Check ---
         const adminDocRef = doc(firestore, 'roles_admin', user.uid);
@@ -75,10 +123,41 @@ export default function AccountPage() {
 
 
         return () => {
+            unsubUser();
             unsubAdmin();
             unsubSubs();
         };
-    }, [user, firestore]);
+    }, [user, firestore, reset]);
+    
+    const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
+        if (!user || !firestore) return;
+        setIsSavingAdDetails(true);
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        try {
+            await setDoc(userDocRef, data, { merge: true });
+            toast({
+                title: "Ad Details Saved",
+                description: "Your business information has been successfully updated.",
+            });
+        } catch (error: any) {
+             const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: data,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+            
+            toast({
+                title: "Save Error",
+                description: "Could not save your details. You may not have the required permissions.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSavingAdDetails(false);
+        }
+    };
+
 
     const handleManageBilling = async () => {
         if (!firestore || !user) {
@@ -181,6 +260,87 @@ export default function AccountPage() {
 
             <Card>
                 <CardHeader>
+                    <CardTitle>Ad Details</CardTitle>
+                    <CardDescription>
+                        Submit or update your business information below. This will help our team design and publish your ad.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit(onAdDetailsSubmit)} className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                             <div>
+                                <Label htmlFor="businessName">Business Name</Label>
+                                <Controller
+                                    name="businessName"
+                                    control={control}
+                                    render={({ field }) => <Input id="businessName" {...field} />}
+                                />
+                                {errors.businessName && <p className="text-sm text-destructive mt-1">{errors.businessName.message}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="contactName">Contact Name</Label>
+                                <Controller
+                                    name="contactName"
+                                    control={control}
+                                    render={({ field }) => <Input id="contactName" {...field} />}
+                                />
+                                {errors.contactName && <p className="text-sm text-destructive mt-1">{errors.contactName.message}</p>}
+                            </div>
+                             <div>
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <Controller
+                                    name="phone"
+                                    control={control}
+                                    render={({ field }) => <Input id="phone" {...field} />}
+                                />
+                                {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
+                            </div>
+                             <div>
+                                <Label htmlFor="adWebsiteUrl">Ad Link URL</Label>
+                                <Controller
+                                    name="adWebsiteUrl"
+                                    control={control}
+                                    render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://example.com" {...field} />}
+                                />
+                                {errors.adWebsiteUrl && <p className="text-sm text-destructive mt-1">{errors.adWebsiteUrl.message}</p>}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                             <Label htmlFor="adText">Ad Text / Slogan</Label>
+                            <Controller
+                                name="adText"
+                                control={control}
+                                render={({ field }) => <Textarea id="adText" placeholder="e.g., 'Serving Pasco County for 20 years!'" {...field} />}
+                            />
+                            {errors.adText && <p className="text-sm text-destructive mt-1">{errors.adText.message}</p>}
+                        </div>
+                         <div className="space-y-2">
+                             <Label htmlFor="adNotes">Ad Notes or Special Offers</Label>
+                            <Controller
+                                name="adNotes"
+                                control={control}
+                                render={({ field }) => <Textarea id="adNotes" placeholder="e.g., 'Mention this ad for 10% off your first visit.'" {...field} />}
+                            />
+                            {errors.adNotes && <p className="text-sm text-destructive mt-1">{errors.adNotes.message}</p>}
+                        </div>
+                        <Button type="submit" disabled={isSavingAdDetails}>
+                            {isSavingAdDetails ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="mr-2 h-4 w-4" /> Save Ad Details
+                                </>
+                            )}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+
+
+            <Card>
+                <CardHeader>
                     <CardTitle>My Subscriptions</CardTitle>
                     <CardDescription>A list of your active and past subscriptions.</CardDescription>
                 </CardHeader>
@@ -279,3 +439,5 @@ export default function AccountPage() {
         </div>
     );
 }
+
+    
