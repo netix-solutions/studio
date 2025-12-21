@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditEmailTemplateDialog } from '@/components/emails/edit-email-template-dialog';
+import { CreateEmailTemplateDialog } from '@/components/emails/create-email-template-dialog';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -70,6 +70,7 @@ export default function AutomatedEmailsPage() {
     const { user } = useUser();
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
     const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
@@ -185,9 +186,15 @@ export default function AutomatedEmailsPage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Automated Emails</CardTitle>
-                    <CardDescription>Manage the templates for automated emails sent to users.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Automated Emails</CardTitle>
+                        <CardDescription>Manage the templates for automated emails sent to users.</CardDescription>
+                    </div>
+                     <Button onClick={() => setIsCreateDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create New Template
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     {loading && (
@@ -305,6 +312,11 @@ export default function AutomatedEmailsPage() {
                 </CardContent>
             </Card>
 
+            <CreateEmailTemplateDialog 
+                isOpen={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+            />
+
             {selectedTemplate && (
                 <EditEmailTemplateDialog 
                     template={selectedTemplate}
@@ -315,5 +327,3 @@ export default function AutomatedEmailsPage() {
         </div>
     );
 }
-
-    
