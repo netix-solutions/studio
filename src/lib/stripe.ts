@@ -54,9 +54,12 @@ export const createCheckout = async (
         const data = snap.data() as any;
         if (!data) return;
 
+        // Instead of a generic error, check for the specific error from the extension
         if (data.error) {
           unsub();
-          reject(new Error(data.error?.message || 'Stripe checkout failed.'));
+          // Safely access the error message, providing a fallback.
+          const errorMessage = data.error.message || 'An unknown Stripe error occurred.';
+          reject(new Error(errorMessage));
           return;
         }
 
