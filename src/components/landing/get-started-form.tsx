@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { sendEmail } from '@/lib/firebase/email';
 import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
@@ -74,12 +74,17 @@ export function GetStartedForm() {
         createdAt: serverTimestamp(),
       });
 
-      // 2. Send the automated "pricing link" email
-      const pricingLinkTemplateRef = doc(firestore, 'emailTemplates', 'pricing_link');
-      const templateSnap = await getDoc(pricingLinkTemplateRef);
+      // 2. Send the automated email associated with this trigger
+      const templatesQuery = query(
+        collection(firestore, 'emailTemplates'), 
+        where('triggerName', '==', 'interest_form_submission')
+      );
+      const templateSnap = await getDocs(templatesQuery);
 
-      if (templateSnap.exists()) {
-        const template = templateSnap.data() as EmailTemplate;
+      if (!templateSnap.empty) {
+        const templateDoc = templateSnap.docs[0]; // Use the first template found for this trigger
+        const template = templateDoc.data() as EmailTemplate;
+
         const pricingParams = new URLSearchParams({
           businessName: values.businessName,
           email: values.email,
@@ -87,8 +92,14 @@ export function GetStartedForm() {
         const pricingLink = `${window.location.origin}/pricing?${pricingParams.toString()}`;
 
         // Replace placeholders
-        const subject = template.subject.replace(/{{contactName}}/g, contactName).replace(/{{businessName}}/g, values.businessName);
-        const html = template.html.replace(/{{contactName}}/g, contactName).replace(/{{pricingLink}}/g, pricingLink);
+        const subject = template.subject
+            .replace(/{{contactName}}/g, contactName)
+            .replace(/{{businessName}}/g, values.businessName);
+        
+        const html = template.html
+            .replace(/{{contactName}}/g, contactName)
+            .replace(/{{businessName}}/g, values.businessName)
+            .replace(/{{pricingLink}}/g, pricingLink);
 
         await sendEmail(firestore, {
           to: values.email,
@@ -97,7 +108,7 @@ export function GetStartedForm() {
         });
 
       } else {
-        console.warn("Could not find 'pricing_link' email template. Skipping email.");
+        console.warn("Could not find an email template for the 'interest_form_submission' trigger. Skipping email.");
       }
 
 

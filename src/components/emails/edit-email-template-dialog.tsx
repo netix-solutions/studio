@@ -29,11 +29,12 @@ import { doc, setDoc } from 'firebase/firestore';
 import { Loader2, Info } from 'lucide-react';
 import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Separator } from '../ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   subject: z.string().min(1, 'Subject cannot be empty.'),
   html: z.string().min(1, 'HTML body cannot be empty.'),
+  triggerName: z.string().optional(),
 });
 
 type EditEmailTemplateDialogProps = {
@@ -52,6 +53,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
     defaultValues: {
       subject: '',
       html: '',
+      triggerName: '',
     },
   });
 
@@ -60,6 +62,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
       form.reset({
         subject: template.subject,
         html: template.html,
+        triggerName: template.triggerName || '',
       });
     }
   }, [template, form]);
@@ -74,6 +77,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
       await setDoc(templateDocRef, {
         subject: values.subject,
         html: values.html,
+        triggerName: values.triggerName,
       }, { merge: true });
 
       toast({
@@ -138,6 +142,27 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
             <div className="md:col-span-2">
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <FormField
+                      control={form.control}
+                      name="triggerName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Trigger</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a trigger" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="interest_form_submission">Interest Form Submission</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                     control={form.control}
                     name="subject"

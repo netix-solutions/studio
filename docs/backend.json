@@ -471,7 +471,8 @@
         },
         "triggerName": {
           "type": "string",
-          "description": "A programmatic name for the trigger (e.g., 'interest_form_submission')."
+          "description": "A programmatic name for the trigger that this email is associated with.",
+          "enum": ["none", "interest_form_submission"]
         },
         "triggerDescription": {
           "type": "string",
@@ -743,5 +744,3 @@
     ]
   }
 }
-
-    
