@@ -135,6 +135,9 @@ export default function LandingPage() {
                 </Link>
               </Button>
             </div>
+             <p className="mt-6 font-bold text-lg text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_50%)]">
+                Call or Text Us for Info: <a href="tel:813-544-8383" className="underline hover:text-gray-300">813-544-8383</a>
+            </p>
           </div>
         </section>
 
@@ -323,3 +326,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
