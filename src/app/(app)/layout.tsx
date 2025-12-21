@@ -44,16 +44,14 @@ export default function ProtectedLayout({
         }
         
         // --- Stripe Customer Document ---
-        // This is the crucial part for Stripe integration.
-        // The extension listens for new documents in this collection.
+        // The Stripe extension listens for new documents in this collection.
+        // Creating this doc triggers the extension to create a Stripe Customer.
         const customerDocRef = doc(firestore, 'customers', user.uid);
         const customerDocSnap = await getDoc(customerDocRef);
         if (!customerDocSnap.exists()) {
             try {
                 await setDoc(customerDocRef, {
                     email: user.email,
-                    // The Stripe extension will automatically create a Stripe Customer
-                    // and populate the stripeId and stripeLink fields.
                 });
                 console.log("Customer document created in /customers for Stripe:", user.uid);
             } catch (error) {
