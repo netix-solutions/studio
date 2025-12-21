@@ -60,7 +60,7 @@ export default function ProtectedLayout({
   return (
     <SidebarProvider>
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-            <div className="hidden border-r bg-card md:block">
+            <div className="hidden border-r bg-muted/40 md:block">
                 <AppSidebar />
             </div>
             <div className="flex flex-col">

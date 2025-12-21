@@ -50,7 +50,7 @@ export default function Header() {
   const pageTitle = pathToTitle[pathname] || 'Dashboard';
 
   return (
-    <header className="sticky top-0 z-10 flex h-[70px] items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-4 md:px-6">
+    <header className="sticky top-0 z-10 flex h-[70px] items-center gap-4 border-b bg-[hsl(222.2,47.4%,11.2%)] text-primary-foreground px-4 md:px-6">
       <div className="md:hidden">
         <SidebarTrigger />
       </div>
@@ -58,7 +58,7 @@ export default function Header() {
       <div className="ml-auto">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-primary/20">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
                 <AvatarFallback>{getInitials(user?.displayName || user?.email)}</AvatarFallback>

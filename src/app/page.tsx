@@ -76,19 +76,19 @@ export default function LandingPage() {
   return (
     <div className="bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg">
+      <header className="sticky top-0 z-40 w-full border-b bg-[hsl(222.2,47.4%,11.2%)] text-primary-foreground">
         <div className="container mx-auto flex h-[70px] items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
              <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} priority />
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
-             <Button variant="ghost" className="hidden sm:inline-flex" asChild>
+             <Button variant="ghost" className="hidden sm:inline-flex text-primary-foreground hover:bg-primary/20 hover:text-primary-foreground" asChild>
               <a href="tel:813-544-8383" className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 <span>813-544-8383</span>
               </a>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" className="text-primary-foreground border-primary-foreground/50 hover:bg-primary/20 hover:text-primary-foreground" asChild>
                 <Link href="/login">Login</Link>
             </Button>
             <Button asChild>
