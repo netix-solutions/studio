@@ -111,13 +111,13 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
              {isFeatured && (
                 <Badge className="absolute top-4 right-4" variant="secondary">Best Value</Badge>
             )}
-            <CardHeader className="text-center pb-4">
-                <CardTitle className="font-headline text-2xl h-14 flex items-center justify-center">{product.name}</CardTitle>
-                {product.description && <CardDescription className="pt-2 h-16 flex items-center justify-center text-center">{product.description}</CardDescription>}
+            <CardHeader className="text-center">
+                <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
+                {product.description && <CardDescription className="pt-2">{product.description}</CardDescription>}
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col px-6">
-                {(monthlyPrice && yearlyPrice) && (
-                    <div className="flex justify-center mb-6">
+            <CardContent className="flex-grow flex flex-col">
+                 <div className="flex justify-center my-6">
+                    {(monthlyPrice && yearlyPrice) ? (
                         <ToggleGroup type="single" value={billingCycle} onValueChange={handleCycleChange} className="bg-muted p-1 rounded-full">
                             <ToggleGroupItem value="monthly" aria-label="Pay monthly" className="rounded-full data-[state=on]:bg-background data-[state=on]:shadow-sm px-4">Monthly</ToggleGroupItem>
                             <ToggleGroupItem value="yearly" aria-label="Pay yearly" className="rounded-full data-[state=on]:bg-background data-[state=on]:shadow-sm px-4 flex items-center gap-2">
@@ -125,8 +125,8 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                                 {savings > 0 && <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-[10px] font-bold">Save {savings}%</Badge>}
                             </ToggleGroupItem>
                         </ToggleGroup>
-                    </div>
-                )}
+                    ) : <div className="h-10"/> /* Spacer to keep alignment */}
+                </div>
                 <div className="text-center my-4">
                     {displayPrice !== undefined ? (
                         <>
