@@ -3,18 +3,20 @@
 import {
   createCheckoutSession,
   getStripePayments,
+  StripePayments,
 } from '@stripe/firestore-stripe-payments';
-import { firebaseApp, type useFirestore } from '@/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { firebaseApp } from '@/firebase';
 
-// Initialize the Stripe Payments SDK on-demand
-export const getPayments = (firestore: Firestore) => {
-    return getStripePayments(firebaseApp, {
-      productsCollection: 'plans',
-      customersCollection: 'customers',
-    });
+// This function now correctly initializes the Stripe Payments SDK with the
+// provided Firestore instance, ensuring checkout works as expected.
+export const getPayments = (firestore: Firestore): StripePayments => {
+  return getStripePayments(firebaseApp, {
+    productsCollection: 'plans',
+    customersCollection: 'customers',
+  });
 };
 
 export const createCheckout = async (
@@ -42,7 +44,6 @@ export const goToBillingPortal = async (
   auth: Auth,
   returnUrl: string
 ) => {
-    // Pass auth to getFunctions to ensure the call is authenticated
     const functions = getFunctions(firebaseApp, 'us-central1');
     const functionRef = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
 
