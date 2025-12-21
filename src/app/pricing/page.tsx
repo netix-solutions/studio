@@ -4,11 +4,10 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { createCheckout } from '@/lib/stripe';
-import { Alert, AlertCircle } from 'lucide-react';
-import { AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // In a real app, these would come from your Stripe products in Firestore
 const plans = [
