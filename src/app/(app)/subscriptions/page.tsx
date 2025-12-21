@@ -13,6 +13,7 @@ import { MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
 
 interface EnrichedSubscription {
     id: string;
@@ -35,6 +36,9 @@ export default function SubscriptionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<EnrichedSubscription | null>(null);
+  const [isCommentsDialogOpen, setIsCommentsDialogOpen] = useState(false);
+
 
   useEffect(() => {
     if (!user || !firestore) return;
@@ -163,6 +167,11 @@ export default function SubscriptionsPage() {
 
   const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
 
+  const handleOpenComments = (sub: EnrichedSubscription) => {
+    setSelectedSubscription(sub);
+    setIsCommentsDialogOpen(true);
+  };
+
   if (loading) {
     return (
         <div className="flex items-center justify-center h-64">
@@ -182,6 +191,7 @@ export default function SubscriptionsPage() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>{isAdmin ? 'All Subscriptions' : 'My Subscriptions'}</CardTitle>
@@ -249,6 +259,11 @@ export default function SubscriptionsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem>View Details</DropdownMenuItem>
+                                {isAdmin && (
+                                  <DropdownMenuItem onClick={() => handleOpenComments(sub)}>
+                                    View Comments
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem>Cancel Subscription</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -264,5 +279,15 @@ export default function SubscriptionsPage() {
         </div>
       </CardContent>
     </Card>
+    {selectedSubscription && (
+        <CommentsDialog
+            subscription={selectedSubscription}
+            isOpen={isCommentsDialogOpen}
+            onOpenChange={setIsCommentsDialogOpen}
+        />
+    )}
+    </>
   );
 }
+
+    

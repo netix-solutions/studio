@@ -36,6 +36,17 @@ service cloud.firestore {
     // STRIPE CUSTOMER DATA & ALL SUBCOLLECTIONS
     // A user can manage their own customer data, and so can an admin.
     // This includes checkout_sessions, subscriptions, and portal_links.
+    match /customers/{userId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // Comments on subscriptions can only be managed by admins.
+    match /customers/{userId}/subscriptions/{subscriptionId}/comments/{commentId} {
+        allow read, list, create: if isAdmin();
+        allow update, delete: if false; // Comments are immutable
+    }
+
+    // All other subcollections under /customers/{userId}
     match /customers/{userId}/{allDocuments=**} {
         allow read, write: if isOwner(userId) || isAdmin();
     }
@@ -81,3 +92,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

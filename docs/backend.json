@@ -1,5 +1,41 @@
 {
   "entities": {
+    "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Comment",
+      "type": "object",
+      "description": "Represents a comment or note made by an admin on a record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the comment."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the comment."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "The ID of the admin user who wrote the comment."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "The display name of the admin who wrote the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the comment was created."
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "authorId",
+        "authorName",
+        "createdAt"
+      ]
+    },
     "Advertisement": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Advertisement",
@@ -467,8 +503,34 @@
           },
           "description": "Stripe subscriptions. Read-only for clients."
         }
+      },
+      {
+        "path": "/customers/{userId}/subscriptions/{subscriptionId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "Admin comments on a specific subscription.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the customer."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the subscription."
+            },
+            {
+              "name": "commentId",
+              "description": "The unique identifier for the comment."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is designed to adhere to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs, ensuring secure and scalable data management for the Community-Websites application. It leverages structural segregation and denormalization to optimize security rules and database operations.\n\n*   **Users:** User data is stored under `/users/{userId}`. This path-based ownership model simplifies security rules and provides clear ownership.\n*   **Ad Subscriptions:** Ad subscriptions are stored under `/users/{userId}/adSubscriptions/{adSubscriptionId}`. This structure maintains a clear 1:N relationship between users and their ad subscriptions. The `userId` field within the `adSubscriptions` collection enforces the ownership invariant.\n*   **Advertisements:** A new top-level `/advertisements` collection is introduced to serve as a 'ticket system' for managing the ad creation lifecycle. This collection is writeable only by a server-side process (like a Cloud Function triggered by a new subscription) and readable/writeable by admins. This separation provides a clean, secure, and scalable way to manage the operational workflow without mixing it with user-facing data.\n*   **Community Websites:** Community websites are stored in the `/communityWebsites/{communityWebsiteId}` collection. This allows for global access to website information without requiring authorization checks, given that this information is intended to be public. If websites had owners or restricted data, a different approach would be taken.\n*   **Ad Campaigns:** Ad campaigns are stored under `/communityWebsites/{websiteId}/adCampaigns/{adCampaignId}`. This maintains the 1:N relationship between community websites and ad campaigns. This structure ensures that only admins can modify ad campaigns, which is checked via a separate admin roles collection.\n*   **Admin Roles:** Admin roles are managed through the `/roles_admin/{userId}` collection. The existence of a document in this collection grants admin privileges. This follows the Existence over Content strategy, simplifying role-based access control.\n*   **Stripe Integration**: Added collections for Stripe payments (`/products`, `/customers`) as required by the `firestore-stripe-payments` extension."
   }
 }
+
+    
