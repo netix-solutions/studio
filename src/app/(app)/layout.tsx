@@ -1,12 +1,16 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useUser, useFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore';
+
+const ADMIN_ROUTES = ['/dashboard', '/users', '/discounts'];
+const USER_DEFAULT_ROUTE = '/account';
+const ADMIN_DEFAULT_ROUTE = '/dashboard';
 
 export default function ProtectedLayout({
   children,
@@ -16,6 +20,9 @@ export default function ProtectedLayout({
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const router = useRouter();
+  const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isRoleLoading, setIsRoleLoading] = useState(true);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -25,30 +32,49 @@ export default function ProtectedLayout({
 
   useEffect(() => {
     if (user && firestore) {
-      const checkAndCreateUserDocs = async () => {
-        // --- User Profile Document ---
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
+      // Create user profile doc if it doesn't exist
+      const userDocRef = doc(firestore, 'users', user.uid);
+      getDoc(userDocRef).then(userDocSnap => {
         if (!userDocSnap.exists()) {
-          try {
-            await setDoc(userDocRef, {
+           setDoc(userDocRef, {
               id: user.uid,
               email: user.email,
               displayName: user.displayName,
               photoURL: user.photoURL,
             }, { merge: true });
-            console.log("User document created in /users:", user.uid);
-          } catch (error) {
-            console.error("Error creating document in /users:", error);
-          }
         }
-      };
+      });
+      
+      // Check for admin role
+      const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+      const unsubscribe = onSnapshot(adminDocRef, (docSnap) => {
+        const userIsAdmin = docSnap.exists();
+        setIsAdmin(userIsAdmin);
+        setIsRoleLoading(false);
 
-      checkAndCreateUserDocs();
+        // --- Role-based routing ---
+        const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
+        
+        if (!userIsAdmin && isAccessingAdminRoute) {
+          // If a non-admin tries to access an admin page, redirect them.
+          router.replace(USER_DEFAULT_ROUTE);
+        } else if (userIsAdmin && pathname === USER_DEFAULT_ROUTE) {
+          // If an admin logs in and lands on the default user page, send them to their dashboard.
+          router.replace(ADMIN_DEFAULT_ROUTE);
+        }
+
+      }, (error) => {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+        setIsRoleLoading(false);
+      });
+
+      return () => unsubscribe();
     }
-  }, [user, firestore]);
+  }, [user, firestore, pathname, router]);
 
-  if (isUserLoading || !user) {
+
+  if (isUserLoading || isRoleLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -56,14 +82,23 @@ export default function ProtectedLayout({
     );
   }
 
+  // Final check to prevent flashing admin content to non-admins
+  if (!isAdmin && ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
+      return (
+        <div className="flex h-screen items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+  }
+
   return (
     <SidebarProvider>
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             <div className="hidden border-r bg-muted/40 md:block">
-                <AppSidebar />
+                <AppSidebar isAdmin={isAdmin} />
             </div>
             <div className="flex flex-col">
-                <Header />
+                <Header isAdmin={isAdmin} />
                 <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
                     {children}
                 </main>

@@ -45,26 +45,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user && firestore) {
-        // Check if there is a pending purchase
-        const selectedPriceId = sessionStorage.getItem('selectedPriceId');
-        if (selectedPriceId && user.uid) {
-            // Clear the stored price ID and initiate checkout
-            sessionStorage.removeItem('selectedPriceId');
-            createCheckout(firestore, user.uid, selectedPriceId, window.location.origin + '/account')
-                .catch(error => {
-                    console.error("Stripe checkout error after login:", error);
-                    toast({
-                        title: 'Error starting purchase',
-                        description: error.message || 'Could not redirect to checkout. Please try selecting the plan again.',
-                        variant: 'destructive',
-                    });
-                     router.replace('/account');
-                });
-        } else {
-            router.replace('/account');
-        }
+        // The new protected layout will handle role-based redirects.
+        // We just need to send them to a single entry point.
+        router.replace('/account');
     }
-  }, [user, isUserLoading, router, toast, firestore]);
+  }, [user, isUserLoading, router, firestore]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

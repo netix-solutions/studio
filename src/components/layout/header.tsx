@@ -20,13 +20,12 @@ import { SidebarTrigger } from '../ui/sidebar';
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
   '/account': 'My Account',
-  '/subscriptions': 'My Subscriptions',
-  '/pricing': 'Ad Campaign Pricing',
+  '/subscriptions': 'All Subscriptions',
   '/discounts': 'Discount Offers',
   '/users': 'User Management',
 };
 
-export default function Header() {
+export default function Header({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   const { user } = useUser();
   const auth = useAuth();
@@ -48,7 +47,14 @@ export default function Header() {
     return names[0][0];
   };
 
-  const pageTitle = pathToTitle[pathname] || 'Dashboard';
+  let pageTitle = pathToTitle[pathname] || 'Account';
+  // For non-admins, some pages have a different context
+  if (!isAdmin) {
+      if (pathname.startsWith('/subscriptions')) {
+          pageTitle = 'My Subscriptions';
+      }
+  }
+
 
   return (
     <header className="sticky top-0 z-30 w-full px-4 md:px-6">

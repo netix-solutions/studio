@@ -3,10 +3,10 @@ export type Subscription = {
   customerName: string;
   customerEmail: string;
   website: string;
-  plan: 'Monthly' | 'Quarterly' | 'Yearly';
+  plan: 'Monthly' | 'Quarterly' | 'Yearly' | string;
   startDate: string;
   endDate: string;
-  status: 'Active' | 'Expired' | 'Cancelled';
+  status: 'Active' | 'Expired' | 'Cancelled' | string;
   amount: number;
 };
 

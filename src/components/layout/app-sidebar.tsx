@@ -10,21 +10,22 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Tag, Percent, Globe, Users, User } from 'lucide-react';
+import { LayoutDashboard, Ticket, Percent, Users, User } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
 
-const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/account', label: 'Account', icon: User },
-  { href: '/subscriptions', label: 'Subscriptions', icon: Ticket },
-  // { href: '/pricing', label: 'Pricing', icon: Tag }, // Pricing is now a public page
-  { href: '/discounts', label: 'Discounts', icon: Percent },
-  { href: '/users', label: 'Users', icon: Users },
+const allMenuItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+  { href: '/account', label: 'Account', icon: User, adminOnly: false },
+  { href: '/subscriptions', label: 'Subscriptions', icon: Ticket, adminOnly: true },
+  { href: '/discounts', label: 'Discounts', icon: Percent, adminOnly: true },
+  { href: '/users', label: 'Users', icon: Users, adminOnly: true },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+
+  const visibleMenuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <Sidebar>
@@ -36,7 +37,7 @@ export function AppSidebar() {
         </SidebarHeader>
         <SidebarContent className="p-2">
             <SidebarMenu>
-                {menuItems.map((item) => (
+                {visibleMenuItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                         <Button
                             asChild

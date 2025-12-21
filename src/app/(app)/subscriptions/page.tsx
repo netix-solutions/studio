@@ -1,60 +1,185 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockSubscriptions, Subscription } from '@/lib/mock-data';
+import { Subscription, mockSubscriptions } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
+import { useFirebase } from '@/firebase';
+import { collection, onSnapshot, query, Unsubscribe, where, getDocs } from 'firebase/firestore';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+
+interface EnrichedSubscription extends Subscription {
+    customerName: string;
+    customerEmail: string;
+}
 
 export default function SubscriptionsPage() {
-  const { user } = useUser();
+  const { user, firestore } = useFirebase();
+  const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // In a real app, you would fetch subscriptions for the current user.
-  // Here we simulate it by filtering the mock data.
-  // We'll assign the first mock subscription to the current user for demonstration.
-  const userSubscriptions = user ? mockSubscriptions.filter((sub, index) => index < 2) : [];
+  useEffect(() => {
+    if (!user || !firestore) return;
+
+    // Check admin status to determine which query to run
+    const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+    const unsubAdmin = onSnapshot(adminDocRef, (snap) => {
+        const userIsAdmin = snap.exists();
+        setIsAdmin(userIsAdmin);
+
+        let unsubscribe: Unsubscribe = () => {};
+        setLoading(true);
+
+        try {
+            if (userIsAdmin) {
+                // Admin: Fetch all subscriptions from all users
+                const customersColRef = collection(firestore, 'customers');
+                 getDocs(customersColRef).then(customerSnaps => {
+                     const allSubs: EnrichedSubscription[] = [];
+                     const userPromises = customerSnaps.docs.map(async (customerDoc) => {
+                        const customerId = customerDoc.id;
+                        const subscriptionsColRef = collection(firestore, 'customers', customerId, 'subscriptions');
+                        const subsQuery = query(subscriptionsColRef); // Potentially filter by status on backend
+                        const userDocRef = doc(firestore, 'users', customerId);
+
+                        const [subsSnaps, userSnap] = await Promise.all([
+                            getDocs(subsQuery),
+                            getDoc(userDocRef)
+                        ]);
+                        
+                        const userData = userSnap.data();
+
+                        subsSnaps.forEach(subDoc => {
+                            const subData = subDoc.data();
+                            allSubs.push({
+                                id: subDoc.id,
+                                customerName: userData?.contactName || 'N/A',
+                                customerEmail: userData?.email || 'N/A',
+                                website: 'Community-Websites.com', // Placeholder
+                                plan: subData.items?.[0]?.price?.product?.name || 'N/A',
+                                startDate: format(new Date(subData.created * 1000), 'yyyy-MM-dd'),
+                                endDate: format(new Date(subData.current_period_end * 1000), 'yyyy-MM-dd'),
+                                status: subData.status,
+                                amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
+                            });
+                        });
+                    });
+
+                    Promise.all(userPromises).then(() => {
+                        setSubscriptions(allSubs);
+                        setLoading(false);
+                    });
+                 }).catch(err => {
+                    setError("You do not have permission to view all subscriptions. Please contact support.");
+                    setLoading(false);
+                 });
 
 
-  const filteredSubscriptions = userSubscriptions.filter((sub) => {
+            } else {
+                // Non-admin: Fetch only the current user's subscriptions
+                const subsCollectionRef = collection(firestore, 'customers', user.uid, 'subscriptions');
+                const q = query(subsCollectionRef, where('status', 'in', ['active', 'trialing', 'past_due']));
+                
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    const subsData: EnrichedSubscription[] = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            customerName: user.displayName || user.email || 'Me',
+                            customerEmail: user.email || 'N/A',
+                            website: 'Community-Websites.com', // Placeholder
+                            plan: data.items?.[0]?.price?.product?.name || 'N/A',
+                            startDate: format(new Date(data.created * 1000), 'yyyy-MM-dd'),
+                            endDate: format(new Date(data.current_period_end * 1000), 'yyyy-MM-dd'),
+                            status: data.status,
+                            amount: data.items?.[0]?.price?.unit_amount / 100 || 0,
+                        };
+                    });
+                    setSubscriptions(subsData);
+                    setLoading(false);
+                }, (err) => {
+                    setError("Could not load your subscriptions. Please try again later.");
+                    setLoading(false);
+                });
+            }
+        } catch (err) {
+             setError("An unexpected error occurred while fetching subscriptions.");
+             setLoading(false);
+        }
+
+        return () => {
+            unsubscribe();
+        };
+
+    });
+     return () => unsubAdmin();
+
+  }, [user, firestore]);
+
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      sub.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.website.toLowerCase().includes(searchTerm.toLowerCase());
+      sub.customerName.toLowerCase().includes(searchLower) ||
+      sub.customerEmail.toLowerCase().includes(searchLower) ||
+      (sub.plan && sub.plan.toLowerCase().includes(searchLower));
+      
     const matchesStatus = statusFilter === 'All' || sub.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusBadgeVariant = (status: Subscription['status']) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'Active':
+      case 'active':
+      case 'trialing':
         return 'secondary';
-      case 'Expired':
-        return 'outline';
-      case 'Cancelled':
+      case 'past_due':
+      case 'canceled':
         return 'destructive';
       default:
-        return 'default';
+        return 'outline';
     }
   };
+
+  const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
+
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (error) {
+      return (
+          <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error Loading Subscriptions</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+          </Alert>
+      );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Subscriptions</CardTitle>
-        <CardDescription>View and manage your ad subscriptions.</CardDescription>
+        <CardTitle>{isAdmin ? 'All Subscriptions' : 'My Subscriptions'}</CardTitle>
+        <CardDescription>View and manage {isAdmin ? 'all customer' : 'your'} ad subscriptions.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 mb-4">
           <Input
-            placeholder="Search by website..."
+            placeholder={isAdmin ? "Search by customer or plan..." : "Search by plan..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
@@ -65,9 +190,11 @@ export default function SubscriptionsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All Statuses</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Expired">Expired</SelectItem>
-              <SelectItem value="Cancelled">Cancelled</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="trialing">Trialing</SelectItem>
+              <SelectItem value="past_due">Past Due</SelectItem>
+              <SelectItem value="canceled">Canceled</SelectItem>
+              <SelectItem value="incomplete">Incomplete</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -75,8 +202,7 @@ export default function SubscriptionsPage() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Website</TableHead>
+                    {isAdmin && <TableHead>Customer</TableHead>}
                     <TableHead>Plan</TableHead>
                     <TableHead>Period</TableHead>
                     <TableHead>Status</TableHead>
@@ -87,17 +213,18 @@ export default function SubscriptionsPage() {
                 <TableBody>
                 {filteredSubscriptions.length > 0 ? filteredSubscriptions.map((sub) => (
                     <TableRow key={sub.id}>
-                    <TableCell>
-                        <div className="font-medium">{sub.customerName}</div>
-                        <div className="text-sm text-muted-foreground">{sub.customerEmail}</div>
-                    </TableCell>
-                    <TableCell>{sub.website}</TableCell>
+                    {isAdmin && (
+                        <TableCell>
+                            <div className="font-medium">{sub.customerName}</div>
+                            <div className="text-sm text-muted-foreground">{sub.customerEmail}</div>
+                        </TableCell>
+                    )}
                     <TableCell>{sub.plan}</TableCell>
                     <TableCell>
                         {format(new Date(sub.startDate), 'LLL d, y')} - {format(new Date(sub.endDate), 'LLL d, y')}
                     </TableCell>
                     <TableCell>
-                        <Badge variant={getStatusBadgeVariant(sub.status)}>{sub.status}</Badge>
+                        <Badge variant={getStatusBadgeVariant(sub.status)}>{capitalize(sub.status)}</Badge>
                     </TableCell>
                     <TableCell className="text-right">${sub.amount.toFixed(2)}</TableCell>
                     <TableCell>
@@ -117,7 +244,7 @@ export default function SubscriptionsPage() {
                     </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center h-24">No subscriptions found.</TableCell>
+                    <TableCell colSpan={isAdmin ? 6 : 5} className="text-center h-24">No subscriptions found.</TableCell>
                   </TableRow>
                 )}
                 </TableBody>
