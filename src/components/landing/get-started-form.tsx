@@ -19,7 +19,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { sendEmail } from '@/lib/firebase/email';
+import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
@@ -64,19 +66,47 @@ export function GetStartedForm() {
     }
 
     try {
-      // Create a new document in the 'leads' collection
+      const contactName = `${values.firstName} ${values.lastName}`.trim();
+      // 1. Create a new document in the 'leads' collection
       await addDoc(collection(firestore, "leads"), {
         ...values,
-        contactName: `${values.firstName} ${values.lastName}`.trim(),
+        contactName: contactName,
         createdAt: serverTimestamp(),
       });
 
+      // 2. Send the automated "pricing link" email
+      const pricingLinkTemplateRef = doc(firestore, 'emailTemplates', 'pricing_link');
+      const templateSnap = await getDoc(pricingLinkTemplateRef);
+
+      if (templateSnap.exists()) {
+        const template = templateSnap.data() as EmailTemplate;
+        const pricingParams = new URLSearchParams({
+          businessName: values.businessName,
+          email: values.email,
+        });
+        const pricingLink = `${window.location.origin}/pricing?${pricingParams.toString()}`;
+
+        // Replace placeholders
+        const subject = template.subject.replace(/{{contactName}}/g, contactName).replace(/{{businessName}}/g, values.businessName);
+        const html = template.html.replace(/{{contactName}}/g, contactName).replace(/{{pricingLink}}/g, pricingLink);
+
+        await sendEmail(firestore, {
+          to: values.email,
+          subject: subject,
+          html: html,
+        });
+
+      } else {
+        console.warn("Could not find 'pricing_link' email template. Skipping email.");
+      }
+
+
       toast({
         title: "Information Received!",
-        description: "Let's find a plan that works for you.",
+        description: "We've sent you an email with a link to our pricing. Let's find a plan that works for you.",
       });
       
-      // Redirect to pricing page after successful submission
+      // 3. Redirect to pricing page after successful submission
       const params = new URLSearchParams({
         businessName: values.businessName,
         email: values.email,
@@ -84,7 +114,7 @@ export function GetStartedForm() {
       router.push(`/pricing?${params.toString()}`);
 
     } catch(error: any) {
-       console.error("Error creating lead:", error);
+       console.error("Error creating lead and sending email:", error);
        toast({
          title: "An Error Occurred",
          description: "Could not submit your information. Please try again.",
@@ -224,7 +254,7 @@ export function GetStartedForm() {
               Submitting...
             </>
           ) : (
-            'View Pricing'
+            'View Pricing & Continue'
           )}
         </Button>
       </form>

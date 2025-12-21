@@ -14,7 +14,7 @@ export const signInWithEmail = (auth: Auth, email: string, password: string) => 
   return signInWithEmailAndPassword(auth, email, password);
 };
 
-export const registerWithEmail = async (auth: Auth, email: string, password: string) => {
+export const registerWithEmail = async (auth: Auth, email: string, password: string): Promise<UserCredential> => {
     const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
@@ -23,16 +23,18 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
         const firestore = getFirestore(firebaseApp);
         const userDocRef = doc(firestore, 'users', user.uid);
         
-        // When registering with email/password, there isn't a display name or photo URL by default
         const contactName = user.displayName || email.split('@')[0];
-        const [firstName, lastName] = contactName.split(' ');
+        const nameParts = contactName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
 
         await setDoc(userDocRef, {
             id: user.uid,
             email: user.email,
             contactName: contactName,
-            firstName: firstName || '',
-            lastName: lastName || '',
+            firstName: firstName,
+            lastName: lastName,
             role: 'user', // Default role
         }, { merge: true });
     }
