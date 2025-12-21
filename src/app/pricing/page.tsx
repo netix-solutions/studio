@@ -8,7 +8,7 @@ import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { createCheckout } from '@/lib/stripe';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, QuerySnapshot } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -51,43 +51,36 @@ export default function PricingPage() {
       where('active', '==', true)
     );
 
-    const unsubscribe = onSnapshot(productsQuery, (productSnapshot) => {
-        const promises = productSnapshot.docs.map(doc => {
-            const productData = doc.data();
-            const pricesQuery = query(
-                collection(doc.ref, 'prices'),
-                where('active', '==', true)
-            );
-            return onSnapshot(pricesQuery, (priceSnapshot) => {
-                const prices: Price[] = priceSnapshot.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as Price));
-                setProducts(prevProducts => {
-                    const otherProducts = prevProducts.filter(p => p.id !== doc.id);
-                    const updatedProduct = {
-                        id: doc.id,
-                        ...productData,
-                        prices,
-                    } as Product;
-
-                    if (prices.length > 0) {
-                        const productExists = prevProducts.some(p => p.id === doc.id);
-                        if (productExists) {
-                           return prevProducts.map(p => p.id === doc.id ? updatedProduct : p);
-                        } else {
-                           return [...prevProducts, updatedProduct];
-                        }
-                    } else {
-                        return otherProducts;
-                    }
-                });
-            });
-        });
-        
+    const unsubscribe = onSnapshot(productsQuery, async (productSnapshot) => {
+      if (productSnapshot.empty) {
         setIsLoading(false);
+        setProducts([]);
+        return;
+      }
+      
+      const productsData = await Promise.all(
+        productSnapshot.docs.map(async (productDoc) => {
+          const productData = productDoc.data();
+          const pricesQuery = query(
+            collection(productDoc.ref, 'prices'),
+            where('active', '==', true)
+          );
+          const pricesSnapshot = await getDocs(pricesQuery);
+          const prices: Price[] = pricesSnapshot.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as Price));
+          
+          return {
+            id: productDoc.id,
+            ...productData,
+            prices,
+          } as Product;
+        })
+      );
+      
+      // Filter out products that don't have any active prices
+      const activeProducts = productsData.filter(p => p.prices.length > 0);
+      setProducts(activeProducts);
+      setIsLoading(false);
 
-        // This is to unsubscribe from all price listeners when the component unmounts
-        return () => {
-            promises.forEach(unsub => unsub());
-        };
     }, (error) => {
         console.error("Error fetching products:", error);
         toast({
@@ -158,17 +151,16 @@ export default function PricingPage() {
                 <p className="text-muted-foreground mt-2 text-lg">Select the perfect plan for your business advertising needs.</p>
             </div>
             
-            {mainProduct && (
+            {!isLoading && mainProduct && annualPrice && monthlyPrice && (
                  <div className="flex justify-center items-center gap-4 mb-12">
                     <Label htmlFor="billing-cycle" className={billingCycle === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>Monthly</Label>
                     <Switch 
                         id="billing-cycle"
                         checked={billingCycle === 'annually'}
                         onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
-                        disabled={!monthlyPrice || !annualPrice}
                     />
                     <Label htmlFor="billing-cycle" className={billingCycle === 'annually' ? 'text-foreground' : 'text-muted-foreground'}>Annually</Label>
-                    {annualPrice && monthlyPrice && (annualPrice.unit_amount < monthlyPrice.unit_amount * 12) && <Badge variant="secondary" className="ml-2">Save with Annual!</Badge>}
+                    {(annualPrice.unit_amount < monthlyPrice.unit_amount * 12) && <Badge variant="secondary" className="ml-2">Save with Annual!</Badge>}
                 </div>
             )}
 
