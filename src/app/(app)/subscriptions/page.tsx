@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface EnrichedSubscription {
     id: string;
+    customerId: string;
     customerName: string;
     customerEmail: string;
     website: string;
@@ -69,6 +71,7 @@ export default function SubscriptionsPage() {
                             const subData = subDoc.data();
                             allSubs.push({
                                 id: subDoc.id,
+                                customerId: customerId,
                                 customerName: userData?.contactName || 'N/A',
                                 customerEmail: userData?.email || 'N/A',
                                 website: 'Community-Websites.com', // Placeholder
@@ -101,6 +104,7 @@ export default function SubscriptionsPage() {
                         const data = doc.data();
                         return {
                             id: doc.id,
+                            customerId: user.uid,
                             customerName: user.displayName || user.email || 'Me',
                             customerEmail: user.email || 'N/A',
                             website: 'Community-Websites.com', // Placeholder
@@ -137,6 +141,7 @@ export default function SubscriptionsPage() {
     const matchesSearch =
       sub.customerName.toLowerCase().includes(searchLower) ||
       sub.customerEmail.toLowerCase().includes(searchLower) ||
+      sub.customerId.toLowerCase().includes(searchLower) ||
       (sub.plan && sub.plan.toLowerCase().includes(searchLower));
       
     const matchesStatus = statusFilter === 'All' || sub.status === statusFilter;
@@ -185,7 +190,7 @@ export default function SubscriptionsPage() {
       <CardContent>
         <div className="flex items-center gap-4 mb-4">
           <Input
-            placeholder={isAdmin ? "Search by customer or plan..." : "Search by plan..."}
+            placeholder={isAdmin ? "Search by customer, ID, or plan..." : "Search by plan..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
@@ -223,6 +228,7 @@ export default function SubscriptionsPage() {
                         <TableCell>
                             <div className="font-medium">{sub.customerName}</div>
                             <div className="text-sm text-muted-foreground">{sub.customerEmail}</div>
+                            <div className="text-xs text-muted-foreground mt-1">ID: {sub.customerId}</div>
                         </TableCell>
                     )}
                     <TableCell>{sub.plan}</TableCell>
