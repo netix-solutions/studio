@@ -3,8 +3,9 @@ import {
   createCheckoutSession,
   getStripePayments,
 } from '@stripe/firestore-stripe-payments';
-import { firebaseApp } from '@/firebase';
+import { firebaseApp, useAuth } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import type { Auth } from 'firebase/auth';
 
 // Initialize the Stripe Payments SDK
 const payments = getStripePayments(firebaseApp, {
@@ -26,8 +27,10 @@ export const createCheckout = async (
 };
 
 export const goToBillingPortal = async (
+  auth: Auth,
   returnUrl: string
 ) => {
+    // Pass auth to getFunctions to ensure the call is authenticated
     const functions = getFunctions(firebaseApp, 'us-central1');
     const functionRef = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
 

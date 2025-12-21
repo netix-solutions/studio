@@ -1,19 +1,24 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AccountPage() {
     const { user } = useUser();
+    const auth = useAuth();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     const handleManageBilling = async () => {
+        if (!auth) {
+            console.error("Auth is not available");
+            return;
+        }
         setIsRedirecting(true);
         try {
-            await goToBillingPortal(window.location.origin + '/account');
+            await goToBillingPortal(auth, window.location.origin + '/account');
         } catch (error) {
             console.error('Error redirecting to billing portal:', error);
             setIsRedirecting(false);
@@ -35,7 +40,7 @@ export default function AccountPage() {
                                 Click the button below to manage your subscription, view payment history, and update your payment method in our secure Stripe customer portal.
                             </p>
                         </div>
-                        <Button onClick={handleManageBilling} disabled={isRedirecting}>
+                        <Button onClick={handleManageBilling} disabled={isRedirecting || !auth}>
                             {isRedirecting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
