@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sidebar';
 import { LayoutDashboard, Ticket, Tag, Percent, Globe, Users, User } from 'lucide-react';
 import { Button } from '../ui/button';
+import Image from 'next/image';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -28,8 +29,7 @@ export function AppSidebar() {
     <Sidebar>
         <SidebarHeader>
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors">
-                <Globe className="h-6 w-6" />
-                <span className="font-headline">Community-Websites.com</span>
+                <Image src="/Community-Wesbites-Logo-1.avif" alt="Community-Websites.com Logo" width={180} height={40} />
             </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
