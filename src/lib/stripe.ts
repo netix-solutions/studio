@@ -13,29 +13,6 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from '@/firebase';
 
-function waitForStripeId(firestore: Firestore, userId: string) {
-  const customerRef = doc(firestore, 'customers', userId);
-
-  return new Promise<string>((resolve, reject) => {
-    const unsub = onSnapshot(
-      customerRef,
-      (snap) => {
-        const data = snap.data() as any;
-        const stripeId = data?.stripeId;
-
-        if (stripeId) {
-          unsub();
-          resolve(stripeId);
-        }
-      },
-      (err) => {
-        unsub();
-        reject(err);
-      }
-    );
-  });
-}
-
 export const createCheckout = async (
   firestore: Firestore,
   userId: string,
@@ -44,16 +21,15 @@ export const createCheckout = async (
   redirectUrl: string
 ) => {
   // 1) Ensure customer doc exists so the extension can create the Stripe customer
+  // if it doesn't exist. This is a crucial step.
   await setDoc(
     doc(firestore, 'customers', userId),
     { email: userEmail },
     { merge: true }
   );
 
-  // 2) Wait until the extension writes stripeId
-  await waitForStripeId(firestore, userId);
-
-  // 3) Create checkout session doc where the extension expects it
+  // 2) Create checkout session doc where the extension expects it.
+  // The extension will listen for this document, create the session, and write back the URL.
   const sessionsRef = collection(firestore, 'customers', userId, 'checkout_sessions');
 
   const sessionRef = await addDoc(sessionsRef, {
@@ -64,8 +40,8 @@ export const createCheckout = async (
     createdAt: serverTimestamp(),
   });
 
-  // 4) Wait for extension to write back url (or error)
-  await new Promise<void>((resolve, reject) => {
+  // 3) Wait for extension to write back url (or error)
+  return new Promise<void>((resolve, reject) => {
     const unsub = onSnapshot(
       sessionRef,
       (snap) => {
