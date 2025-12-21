@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
 import { Loader2, AlertCircle, Edit, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -135,7 +135,37 @@ export default function AccountPage() {
 
         const userDocRef = doc(firestore, 'users', user.uid);
         try {
+            // 1. Save details to user's profile
             await setDoc(userDocRef, data, { merge: true });
+            
+            // 2. For each active subscription, create an advertisement "ticket" if it doesn't exist
+            const activeSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'trialing');
+
+            for (const sub of activeSubs) {
+                const adQuery = query(
+                    collection(firestore, 'advertisements'),
+                    where('subscriptionId', '==', sub.id)
+                );
+                const existingAds = await getDocsFromServer(adQuery);
+
+                if (existingAds.empty) {
+                    await addDoc(collection(firestore, 'advertisements'), {
+                        ...data,
+                        userId: user.uid,
+                        email: user.email,
+                        subscriptionId: sub.id,
+                        status: 'pending_ad_creation',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                     toast({
+                        title: "Ad Ticket Created",
+                        description: "Our team has been notified and will begin working on your ad.",
+                    });
+                }
+            }
+
+
             toast({
                 title: "Ad Details Saved",
                 description: "Your business information has been successfully updated.",
