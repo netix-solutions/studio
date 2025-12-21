@@ -24,7 +24,7 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
         const userDocRef = doc(firestore, 'users', user.uid);
         
         await setDoc(userDocRef, {
-            uid: user.uid,
+            id: user.uid,
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,

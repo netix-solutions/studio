@@ -33,7 +33,7 @@ export default function ProtectedLayout({
           // Document doesn't exist, so create it.
           try {
             await setDoc(userDocRef, {
-              uid: user.uid,
+              id: user.uid,
               email: user.email,
               displayName: user.displayName,
               photoURL: user.photoURL,
