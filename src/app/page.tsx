@@ -82,7 +82,7 @@ export default function LandingPage() {
     <div className="bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm border-border/50">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="container mx-auto flex h-14 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
              <Image src="/logo.png" alt="Community-Websites.com Logo" width={150} height={33} priority />
           </Link>
