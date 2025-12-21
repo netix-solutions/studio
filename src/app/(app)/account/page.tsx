@@ -260,8 +260,9 @@ export default function AccountPage() {
         setIsRedirecting(true);
         try {
             await goToBillingPortal(firestore, user.uid, window.location.origin + '/account');
-            // The goToBillingPortal function will handle the redirect, but if it fails before redirecting,
-            // we should stop the loading state.
+            // The goToBillingPortal function will handle the redirect. If it throws an error,
+            // the catch block below will handle it. We don't need to set isRedirecting to false here
+            // as a successful call will navigate the user away from this page.
         } catch (error: any) {
             console.error('Error redirecting to billing portal:', error);
              toast({
