@@ -65,7 +65,6 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
   return allProducts.filter(p => p.active && p.prices.length > 0);
 }
 
-
 export default function PricingPage() {
   const { firestore, user } = useFirebase();
   const [products, setProducts] = useState<Product[]>([]);
@@ -105,7 +104,7 @@ export default function PricingPage() {
       return;
     }
     try {
-      await createCheckout(firestore, user.uid, priceId, window.location.origin + '/account');
+      await createCheckout(firestore, user.uid, user.email ?? '', priceId, window.location.origin + '/account');
     } catch (error: any) {
       console.error("Stripe checkout error:", error);
       toast({

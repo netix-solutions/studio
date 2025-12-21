@@ -5,50 +5,79 @@ import type { Firestore } from 'firebase/firestore';
 import {
   addDoc,
   collection,
+  doc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from '@/firebase';
 
+function waitForStripeId(firestore: Firestore, userId: string) {
+  const customerRef = doc(firestore, 'customers', userId);
+
+  return new Promise<string>((resolve, reject) => {
+    const unsub = onSnapshot(
+      customerRef,
+      (snap) => {
+        const data = snap.data() as any;
+        const stripeId = data?.stripeId;
+
+        if (stripeId) {
+          unsub();
+          resolve(stripeId);
+        }
+      },
+      (err) => {
+        unsub();
+        reject(err);
+      }
+    );
+  });
+}
+
 export const createCheckout = async (
   firestore: Firestore,
   userId: string,
+  userEmail: string,
   priceId: string,
   redirectUrl: string
 ) => {
-  // 1) Create a checkout session doc where the extension expects it
+  // 1) Ensure customer doc exists so the extension can create the Stripe customer
+  await setDoc(
+    doc(firestore, 'customers', userId),
+    { email: userEmail },
+    { merge: true }
+  );
+
+  // 2) Wait until the extension writes stripeId
+  await waitForStripeId(firestore, userId);
+
+  // 3) Create checkout session doc where the extension expects it
   const sessionsRef = collection(firestore, 'customers', userId, 'checkout_sessions');
 
-  const docRef = await addDoc(sessionsRef, {
-    price: priceId,                 // must be the Stripe price id: price_...
+  const sessionRef = await addDoc(sessionsRef, {
+    price: priceId, // must be "price_..."
     success_url: redirectUrl,
     cancel_url: redirectUrl,
     allow_promotion_codes: true,
-    // Add a client field to indicate the checkout was initiated from the web client
-    client: 'web',
-    mode: 'subscription',
     createdAt: serverTimestamp(),
   });
 
-  // 2) Wait for the extension to write back the URL (or an error)
+  // 4) Wait for extension to write back url (or error)
   await new Promise<void>((resolve, reject) => {
     const unsub = onSnapshot(
-      docRef,
+      sessionRef,
       (snap) => {
         const data = snap.data() as any;
         if (!data) return;
 
-        // If the extension writes an error, reject the promise with a user-friendly message.
         if (data.error) {
           unsub();
-          // The error object might be complex. Safely access the message.
-          const errorMessage = data.error.message || 'An unknown error occurred with Stripe checkout.';
-          reject(new Error(errorMessage));
+          reject(new Error(data.error?.message || 'Stripe checkout failed.'));
           return;
         }
 
-        // If the extension writes the checkout URL, redirect the user.
         if (data.url) {
           unsub();
           window.location.assign(data.url);
@@ -56,7 +85,6 @@ export const createCheckout = async (
         }
       },
       (err) => {
-        // Handle Firestore listener errors.
         unsub();
         reject(err);
       }
@@ -65,7 +93,6 @@ export const createCheckout = async (
 };
 
 export const goToBillingPortal = async (auth: Auth, returnUrl: string) => {
-  // NOTE: region must match the extension install region
   const functions = getFunctions(firebaseApp, 'us-central1');
   const fn = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
   const { data } = await fn({ returnUrl });
