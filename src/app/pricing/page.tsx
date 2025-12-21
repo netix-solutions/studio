@@ -122,7 +122,7 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                             <ToggleGroupItem value="monthly" aria-label="Pay monthly" className="rounded-full data-[state=on]:bg-background data-[state=on]:shadow-sm px-4">Monthly</ToggleGroupItem>
                             <ToggleGroupItem value="yearly" aria-label="Pay yearly" className="rounded-full data-[state=on]:bg-background data-[state=on]:shadow-sm px-4 flex items-center gap-2">
                                 Yearly
-                                {savings > 0 && <Badge variant="secondary">Save {savings}%</Badge>}
+                                {savings > 0 && <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-[10px] font-bold">Save {savings}%</Badge>}
                             </ToggleGroupItem>
                         </ToggleGroup>
                     </div>
