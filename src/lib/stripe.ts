@@ -3,13 +3,13 @@ import {
   createCheckoutSession,
   getStripePayments,
 } from '@stripe/firestore-stripe-payments';
-import { firebaseApp, useAuth } from '@/firebase';
+import { firebaseApp } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Auth } from 'firebase/auth';
 
 // Initialize the Stripe Payments SDK
 const payments = getStripePayments(firebaseApp, {
-  productsCollection: 'products',
+  productsCollection: 'plans',
   customersCollection: 'customers',
 });
 
@@ -18,12 +18,18 @@ export const createCheckout = async (
   priceId: string,
   redirectUrl: string
 ) => {
-  const session = await createCheckoutSession(payments, {
-    price: priceId,
-    success_url: redirectUrl,
-    cancel_url: redirectUrl,
-  });
-  window.location.assign(session.url);
+  try {
+    const session = await createCheckoutSession(payments, {
+      price: priceId,
+      success_url: redirectUrl,
+      cancel_url: redirectUrl,
+    });
+    window.location.assign(session.url);
+  } catch (error) {
+    console.error("createCheckoutSession error:", error);
+    // Re-throw the error so the calling component can handle it
+    throw error;
+  }
 };
 
 export const goToBillingPortal = async (
