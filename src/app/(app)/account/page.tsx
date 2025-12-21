@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
-import { Loader2, AlertCircle, Edit, Save, FileText } from 'lucide-react';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Loader2, AlertCircle, Edit, Save, FileText, Upload } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -36,6 +37,7 @@ const adDetailsSchema = z.object({
     adWebsiteUrl: z.string().url("Please enter a valid URL (e.g., https://example.com).").optional().or(z.literal('')),
     adText: z.string().optional(),
     adNotes: z.string().optional(),
+    fileUploads: z.any().optional(),
 });
 
 
@@ -44,7 +46,7 @@ type AdDetailsFormData = z.infer<typeof adDetailsSchema>;
 
 export default function AccountPage() {
     const { user } = useUser();
-    const { firestore } = useFirebase();
+    const { firestore, firebaseApp } = useFirebase();
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminLoading, setIsAdminLoading] = useState(true);
@@ -71,7 +73,6 @@ export default function AccountPage() {
     useEffect(() => {
         if (!user || !firestore) return;
 
-        // --- User Data & Ad Details ---
         const userDocRef = doc(firestore, 'users', user.uid);
         const unsubUser = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -88,7 +89,6 @@ export default function AccountPage() {
         });
 
 
-        // --- Admin Role Check ---
         const adminDocRef = doc(firestore, 'roles_admin', user.uid);
         const unsubAdmin = onSnapshot(adminDocRef, (docSnap) => {
             setIsAdmin(docSnap.exists());
@@ -99,7 +99,6 @@ export default function AccountPage() {
             setIsAdminLoading(false);
         });
         
-        // --- Subscription Fetching & Ad Details Prompt Logic ---
         setSubsLoading(true);
         const subsCollectionRef = collection(firestore, 'customers', user.uid, 'subscriptions');
         const q = query(subsCollectionRef);
@@ -107,7 +106,6 @@ export default function AccountPage() {
         const unsubSubs = onSnapshot(q, async (snapshot) => {
             const activeSubs = snapshot.docs.filter(doc => doc.data().status === 'active' || doc.data().status === 'trialing');
 
-            // Logic to show the prompt
             if (activeSubs.length > 0) {
                  const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && !userDoc.data().businessName) {
@@ -149,13 +147,39 @@ export default function AccountPage() {
     }, [user, firestore, adDetailsForm.reset]);
     
     const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
-        if (!user || !firestore) return;
+        if (!user || !firestore || !firebaseApp) return;
         setIsSavingAdDetails(true);
 
         const userDocRef = doc(firestore, 'users', user.uid);
+        const storage = getStorage(firebaseApp);
+        let uploadedFileUrls: string[] = [];
+
         try {
+            // Handle file uploads
+            const files = data.fileUploads;
+            if (files && files.length > 0) {
+                const uploadPromises = Array.from(files).map(async (file: any) => {
+                    const filePath = `advertisements/${user.uid}/${file.name}`;
+                    const fileStorageRef = storageRef(storage, filePath);
+                    await uploadBytes(fileStorageRef, file);
+                    const downloadUrl = await getDownloadURL(fileStorageRef);
+                    return downloadUrl;
+                });
+                uploadedFileUrls = await Promise.all(uploadPromises);
+            }
+            
+            const userDetailsToSave = {
+                ...data,
+                fileUploads: uploadedFileUrls, // Save URLs instead of file objects
+            };
+            
+            delete userDetailsToSave.fileUploads;
+
             // 1. Save details to user's profile
-            await setDoc(userDocRef, data, { merge: true });
+            await setDoc(userDocRef, { 
+                ...userDetailsToSave,
+                ...(uploadedFileUrls.length > 0 && { fileUploads: uploadedFileUrls })
+            }, { merge: true });
             
             // 2. For each active subscription, create an advertisement "ticket" if it doesn't exist
             const activeSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'trialing');
@@ -167,16 +191,19 @@ export default function AccountPage() {
                 );
                 const existingAds = await getDocsFromServer(adQuery);
 
+                const ticketData = {
+                    ...userDetailsToSave,
+                    userId: user.uid,
+                    email: user.email,
+                    subscriptionId: sub.id,
+                    status: 'pending_ad_creation',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    ...(uploadedFileUrls.length > 0 && { fileUploads: uploadedFileUrls })
+                };
+
                 if (existingAds.empty) {
-                    await addDoc(collection(firestore, 'advertisements'), {
-                        ...data,
-                        userId: user.uid,
-                        email: user.email,
-                        subscriptionId: sub.id,
-                        status: 'pending_ad_creation',
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp()
-                    });
+                    await addDoc(collection(firestore, 'advertisements'), ticketData);
                      toast({
                         title: "Ad Ticket Created",
                         description: "Our team has been notified and will begin working on your ad.",
@@ -186,7 +213,7 @@ export default function AccountPage() {
 
 
             toast({
-                title: "Ad Details Saved",
+                title: "Advertisement Details Saved",
                 description: "Your business information has been successfully updated.",
             });
         } catch (error: any) {
@@ -219,9 +246,6 @@ export default function AccountPage() {
         setIsRedirecting(true);
         try {
             await goToBillingPortal(firestore, user.uid, window.location.origin + '/account');
-            // The goToBillingPortal function will handle the redirect. If it throws an error,
-            // the catch block below will handle it. We don't need to set isRedirecting to false here
-            // as a successful call will navigate the user away from this page.
         } catch (error: any) {
             console.error('Error redirecting to billing portal:', error);
              toast({
@@ -303,9 +327,9 @@ export default function AccountPage() {
              {showAdDetailsPrompt && (
                 <Alert className="border-primary border-2">
                     <FileText className="h-4 w-4" />
-                    <AlertTitle className="font-bold text-lg">Next Step: Submit Your Ad Details</AlertTitle>
+                    <AlertTitle className="font-bold text-lg">Next Step: Submit Your Advertisement Details</AlertTitle>
                     <AlertDescription>
-                        Welcome! Please fill out the "Ad Details" form below so our design team can get started on creating your ad.
+                        Welcome! Please fill out the "Advertisement Details" form below so our design team can get started on creating your ad.
                     </AlertDescription>
                 </Alert>
             )}
@@ -318,7 +342,7 @@ export default function AccountPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Ad Details</CardTitle>
+                    <CardTitle>Advertisement Details</CardTitle>
                     <CardDescription>
                         Submit or update your business information below. This will help our team design and publish your ad.
                     </CardDescription>
@@ -381,6 +405,25 @@ export default function AccountPage() {
                             />
                             {adDetailsForm.formState.errors.adNotes && <p className="text-sm text-destructive mt-1">{adDetailsForm.formState.errors.adNotes.message}</p>}
                         </div>
+
+                         <div className="space-y-2">
+                            <Label htmlFor="fileUploads">File Uploads (Logo, Images, etc.)</Label>
+                            <Controller
+                                name="fileUploads"
+                                control={adDetailsForm.control}
+                                render={({ field }) => (
+                                    <Input 
+                                        id="fileUploads" 
+                                        type="file" 
+                                        multiple
+                                        onChange={(e) => field.onChange(e.target.files)}
+                                    />
+                                )}
+                            />
+                             <p className="text-sm text-muted-foreground">You can select multiple files.</p>
+                        </div>
+
+
                         <Button type="submit" disabled={isSavingAdDetails}>
                             {isSavingAdDetails ? (
                                 <>
@@ -388,7 +431,7 @@ export default function AccountPage() {
                                 </>
                             ) : (
                                 <>
-                                    <Save className="mr-2 h-4 w-4" /> Save Ad Details
+                                    <Save className="mr-2 h-4 w-4" /> Save Advertisement Details
                                 </>
                             )}
                         </Button>
