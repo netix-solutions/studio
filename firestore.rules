@@ -3,6 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -15,6 +16,8 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
+    // USER DATA
+    // Users can manage their own profile and subscriptions. Admins can manage any user.
     match /users/{userId} {
       allow read, update: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId);
@@ -22,64 +25,57 @@ service cloud.firestore {
       allow delete: if false;
 
       match /adSubscriptions/{adSubscriptionId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
+
+    // STRIPE CUSTOMER DATA
+    // A user can manage their own customer data, and so can an admin.
+    // This includes all subcollections like checkout_sessions, subscriptions, and portal_links.
+    match /customers/{userId}/{allDocuments=**} {
+        allow read, write: if isOwner(userId) || isAdmin();
+    }
     
-    match /communityWebsites/{communityWebsiteId} {
+    // PUBLIC & ADMIN-MANAGED DATA
+    // These collections are readable by anyone, but only writable by admins.
+    match /communityWebsites/{docId} {
       allow read: if true;
       allow write: if isAdmin();
-      
-      match /adCampaigns/{adCampaignId} {
-        allow read, write: if isAdmin();
-      }
     }
     
-    match /discountOffers/{discountOfferId} {
+    match /communityWebsites/{websiteId}/adCampaigns/{adCampaignId} {
+        allow read, write: if isAdmin();
+    }
+
+    match /discountOffers/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
     match /plans/{planId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if false; // Plans are managed in Stripe, not by app clients
 
       match /prices/{priceId} {
         allow read: if true;
         allow write: if false;
       }
     }
-    
+
     match /products/{productId} {
+      allow read: if true;
+      allow write: if false; // Products are managed in Stripe, not by app clients
+
+      match /prices/{priceId} {
         allow read: if true;
         allow write: if false;
-        
-        match /prices/{priceId} {
-            allow read: if true;
-            allow write: if false;
-        }
-    }
-
-    match /customers/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
-      
-      match /checkout_sessions/{sessionId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-
-      match /subscriptions/{subscriptionId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-      
-      match /portal_links/{linkId} {
-          allow read, write: if isOwner(userId) || isAdmin();
       }
     }
-    
+
+    // ADMIN ROLES
+    // Only admins can view or modify the list of other admins.
     match /roles_admin/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-      allow list: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
   }
 }
