@@ -78,8 +78,9 @@ export default function LandingPage() {
       {/* Header */}
        <header className="sticky top-0 z-40 w-full px-4 md:px-6">
         <div className="container mx-auto mt-4 flex h-[70px] items-center justify-between rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-             <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} priority />
+          <Link href="/" className="flex items-center gap-3 font-bold text-xl">
+             <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} priority style={{height: '45px', width: 'auto'}} />
+             <span className="font-bebas text-2xl tracking-wider text-gray-700 hidden sm:inline">Community-Websites.com</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
              <Button variant="ghost" className="hidden sm:inline-flex" asChild>
@@ -301,8 +302,9 @@ export default function LandingPage() {
       <footer className="border-t border-border/50 bg-muted/50 text-card-foreground">
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                <div className="flex items-center gap-2">
-                    <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} />
+                <div className="flex items-center gap-3">
+                    <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
+                    <span className="font-bebas text-xl tracking-wider text-gray-700">Community-Websites.com</span>
                 </div>
                  <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
                     813-544-8383
