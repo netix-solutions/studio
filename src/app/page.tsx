@@ -79,14 +79,13 @@ export default function LandingPage() {
        <header className="sticky top-0 z-40 w-full px-4 md:px-6">
         <div className="container mx-auto mt-4 flex h-16 items-center justify-between rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
           <Link href="/" className="flex items-center gap-3 font-bold text-xl">
-             <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} priority style={{height: '45px', width: 'auto'}} />
              <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
              <Button variant="ghost" className="hidden sm:inline-flex" asChild>
               <a href="tel:813-544-8383" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                <span>813-544-8383</span>
+                <Smartphone className="h-4 w-4" />
+                <span>Call or Text 24/7: 813-544-8383</span>
               </a>
             </Button>
             <Button variant="outline" asChild>
@@ -114,6 +113,7 @@ export default function LandingPage() {
               <div className="absolute inset-0 bg-black/30"></div>
           </div>
           <div className="relative container mx-auto z-10 text-white drop-shadow-lg px-4 md:px-6">
+            <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} priority style={{height: '45px', width: 'auto'}} className="mx-auto mb-4" />
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline [text-shadow:_0_2px_4px_rgb(0_0_0_/_50%)]">
               Reach thousands of local readers every day.
             </h1>
@@ -262,7 +262,7 @@ export default function LandingPage() {
                         <CardDescription>
                             Fill out this form to see our pricing and plans.
                             <br />
-                            Have questions? Call us at <a href="tel:813-544-8383" className="text-primary font-medium hover:underline">813-544-8383</a>.
+                            Have questions? Call or text us 24/7 at <a href="tel:813-544-8383" className="text-primary font-medium hover:underline">813-544-8383</a>.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -319,7 +319,7 @@ export default function LandingPage() {
                     <span className="font-headline text-lg tracking-tight text-gray-700">Community-Websites.com</span>
                 </div>
                  <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
-                    813-544-8383
+                    Call or Text 24/7: 813-544-8383
                 </a>
             </div>
             <div className="flex gap-4">
