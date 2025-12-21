@@ -31,7 +31,7 @@ export function AppSidebar() {
         <SidebarHeader>
             <Link href="/dashboard" className="flex items-center gap-3 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors">
                 <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
-                <span className="font-bebas text-2xl tracking-wider text-gray-700 group-data-[collapsible=icon]:hidden">Community-Websites.com</span>
+                <span className="font-headline text-lg tracking-tight text-gray-700 group-data-[collapsible=icon]:hidden">Community-Websites.com</span>
             </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">

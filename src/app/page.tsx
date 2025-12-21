@@ -77,10 +77,10 @@ export default function LandingPage() {
     <div className="bg-background text-foreground">
       {/* Header */}
        <header className="sticky top-0 z-40 w-full px-4 md:px-6">
-        <div className="container mx-auto mt-4 flex h-[70px] items-center justify-between rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
+        <div className="container mx-auto mt-4 flex h-16 items-center justify-between rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
           <Link href="/" className="flex items-center gap-3 font-bold text-xl">
              <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} priority style={{height: '45px', width: 'auto'}} />
-             <span className="font-bebas text-2xl tracking-wider text-gray-700 hidden sm:inline">Community-Websites.com</span>
+             <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
              <Button variant="ghost" className="hidden sm:inline-flex" asChild>
@@ -100,7 +100,7 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content */}
-      <main className="-mt-[102px]">
+      <main className="-mt-[88px]">
         {/* Hero Section */}
         <section className="relative w-full flex h-screen min-h-[700px] flex-col items-center justify-center text-center">
           <div className="absolute inset-0 z-0">
@@ -316,7 +316,7 @@ export default function LandingPage() {
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-3">
                     <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
-                    <span className="font-bebas text-xl tracking-wider text-gray-700">Community-Websites.com</span>
+                    <span className="font-headline text-lg tracking-tight text-gray-700">Community-Websites.com</span>
                 </div>
                  <a href="tel:813-544-8383" className="text-muted-foreground hover:text-foreground text-sm">
                     813-544-8383
