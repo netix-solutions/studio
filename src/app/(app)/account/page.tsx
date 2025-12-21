@@ -31,12 +31,10 @@ export default function AccountPage() {
             setIsAdmin(docSnap.exists());
             setIsAdminLoading(false);
         }, (error) => {
-             // Handle potential permission errors on the admin check itself
-            const permissionError = new FirestorePermissionError({
-                path: adminDocRef.path,
-                operation: 'get',
-            } satisfies SecurityRuleContext);
-            errorEmitter.emit('permission-error', permissionError);
+            // This error is expected for non-admins if rules are strict.
+            // We can just assume they are not an admin.
+            console.log("Admin check failed, likely due to permissions. User is not an admin.");
+            setIsAdmin(false);
             setIsAdminLoading(false);
         });
 
