@@ -57,11 +57,14 @@ export default function PricingPage() {
 
   useEffect(() => {
     if (firestore) {
-      setLoading(true);
-      // Call the test function provided by the user
-      testProductsRead(firestore).finally(() => {
-        setLoading(false);
-      });
+        console.log('[PricingPage] projectId:', firestore.app.options.projectId);
+        console.log('[PricingPage] apiKey:', firestore.app.options.apiKey);
+        console.log('[PricingPage] authDomain:', firestore.app.options.authDomain);
+        setLoading(true);
+        // Call the test function provided by the user
+        testProductsRead(firestore).finally(() => {
+            setLoading(false);
+        });
     }
   }, [firestore]);
 
