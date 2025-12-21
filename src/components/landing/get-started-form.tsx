@@ -29,7 +29,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, { message: "Last name is required." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   phone: z.string().min(10, { message: "Please enter a valid cell phone number." }),
-  siteCoverage: z.array(z.string()).refine((value) => value.some((item) => item), {
+  siteCoverage: z.array(z.string()).refine((value) => value && value.length > 0, {
     message: "You have to select at least one site.",
   }),
 });
