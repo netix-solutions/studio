@@ -70,18 +70,13 @@ export default function LandingPage() {
           icon: Calendar,
           title: "Month-to-Month Billing",
           description: "No long-term contracts. Your plan renews monthly and you can cancel anytime."
-      },
-      {
-          icon: FileCheck,
-          title: "Basic Reporting",
-          description: "We provide basic performance updates on clicks and impressions upon request."
       }
   ];
 
   return (
     <div className="bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg">
         <div className="container mx-auto flex h-[70px] items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
              <Image src="/logo.png" alt="Community-Websites.com Logo" width={60} height={13} priority />
@@ -129,7 +124,7 @@ export default function LandingPage() {
         </section>
 
         {/* How it works section */}
-        <section id="how-it-works" className="bg-card/50 py-20 lg:py-24">
+        <section id="how-it-works" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-2xl text-center">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
@@ -141,7 +136,7 @@ export default function LandingPage() {
                 </div>
                 <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {howItWorksSteps.map((step, index) => (
-                        <Card key={index} className="flex flex-col items-center text-center p-6 bg-card/80 border-border/60">
+                        <Card key={index} className="flex flex-col items-center text-center p-6 bg-card border-border/60">
                             <div className="rounded-full bg-primary p-3 text-primary-foreground mb-4">
                                 <step.icon className="h-6 w-6" />
                             </div>
@@ -158,7 +153,7 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-2xl text-center">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
-                        What You Get Each Month
+                        What Your Business Gets
                     </h2>
                     <p className="mt-4 text-muted-foreground md:text-xl">
                         Everything you need for effective local advertising.
@@ -183,7 +178,7 @@ export default function LandingPage() {
         <StatsSection />
 
         {/* Where your ad appears section */}
-        <section id="placements" className="bg-card/50 py-20 lg:py-24">
+        <section id="placements" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center px-4 md:px-6">
                 <div className="space-y-4">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
@@ -205,7 +200,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex justify-center">
                     <div className="relative w-full max-w-md">
-                        <Smartphone className="relative z-10 h-auto w-full text-foreground" />
+                        <Smartphone className="relative z-10 h-auto w-full text-foreground/20" />
                         <div className="absolute inset-[13px] sm:inset-[16px] rounded-[20px] sm:rounded-[24px] overflow-hidden bg-background">
                             <Image src="https://picsum.photos/seed/news/400/800" alt="Community News Site on Mobile" layout="fill" objectFit="cover" />
                              <div className="absolute bottom-4 left-4 right-4 bg-gray-200/80 backdrop-blur-sm p-2 rounded-md">
@@ -231,9 +226,9 @@ export default function LandingPage() {
                 <div className="mt-12 text-center text-muted-foreground">
                   Your ad could be here!
                 </div>
-                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-card/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
+                 <div className="mt-12 mx-auto max-w-5xl p-6 bg-muted/50 rounded-lg flex flex-col md:flex-row items-center gap-6">
                     <div className="flex-shrink-0">
-                        <Smartphone className="h-32 w-auto text-foreground" />
+                        <Smartphone className="h-32 w-auto text-foreground/20" />
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <h3 className="text-2xl font-bold font-headline">Optimized for All Devices</h3>
@@ -246,9 +241,9 @@ export default function LandingPage() {
         </section>
 
         {/* Get Started Form Section */}
-        <section id="get-started" className="bg-card/50 py-20 lg:py-24">
+        <section id="get-started" className="bg-muted/50 py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                <Card className="max-w-3xl mx-auto bg-card/80 border-border/60">
+                <Card className="max-w-3xl mx-auto bg-card border-border/60">
                     <CardHeader className="text-center">
                         <CardTitle className="text-3xl font-bold font-headline">See Current Pricing</CardTitle>
                         <CardDescription>
@@ -303,7 +298,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card text-card-foreground">
+      <footer className="border-t border-border/50 bg-muted/50 text-card-foreground">
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2">
