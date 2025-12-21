@@ -5,8 +5,9 @@
  */
 
 import { z } from 'zod';
+import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import type { App } from 'firebase-admin/app';
 
 const CreateUserInputSchema = z.object({
   email: z.string().email(),
@@ -19,21 +20,21 @@ const CreateUserOutputSchema = z.object({
   error: z.string().optional(),
 });
 
-// Initialize Firebase Admin SDK if it hasn't been already.
-function getAdminApp(): App {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountKey) {
-        throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is not set. Admin features will be disabled.");
+/**
+ * Initializes the Firebase Admin SDK if it hasn't been already.
+ * It uses Application Default Credentials, which is the recommended approach
+ * for server-side environments like Firebase App Hosting.
+ */
+function initializeAdminApp(): App {
+    if (admin.apps.length > 0) {
+        return admin.app();
     }
     
-    if (getApps().find(a => a.name === 'admin')) {
-        return getApps().find(a => a.name === 'admin')!;
-    }
+    admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+    });
     
-    const serviceAccount = JSON.parse(serviceAccountKey);
-    return initializeApp({
-        credential: cert(serviceAccount),
-    }, 'admin');
+    return admin.app();
 }
 
 
@@ -41,7 +42,7 @@ export async function createUser(
   input: z.infer<typeof CreateUserInputSchema>
 ): Promise<z.infer<typeof CreateUserOutputSchema>> {
     try {
-        const adminApp = getAdminApp();
+        const adminApp = initializeAdminApp();
         const validatedInput = CreateUserInputSchema.parse(input);
         const userRecord = await getAuth(adminApp).createUser({
             email: validatedInput.email,
@@ -62,6 +63,11 @@ export async function createUser(
 
         if (error.code === 'auth/email-already-exists') {
             return { error: 'A user with this email address already exists.' };
+        }
+
+        // Catch potential ADC initialization errors.
+        if (error.code === 'app/invalid-credential' || error.message.includes('Could not load the default credentials')) {
+             return { error: 'Firebase Admin SDK not configured. The server environment is missing credentials.' };
         }
 
         return {

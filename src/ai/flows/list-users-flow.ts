@@ -5,8 +5,9 @@
  */
 
 import { z } from 'zod';
+import admin from 'firebase-admin';
 import { getAuth, type UserRecord } from 'firebase-admin/auth';
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import type { App } from 'firebase-admin/app';
 
 // Define the shape of a single user for the output
 const UserSchema = z.object({
@@ -22,27 +23,26 @@ const ListUsersOutputSchema = z.object({
   error: z.string().optional(),
 });
 
-// Initialize Firebase Admin SDK if it hasn't been already.
-function getAdminApp(): App {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountKey) {
-        throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is not set. Admin features will be disabled.");
+/**
+ * Initializes the Firebase Admin SDK if it hasn't been already.
+ * It uses Application Default Credentials, which is the recommended approach
+ * for server-side environments like Firebase App Hosting.
+ */
+function initializeAdminApp(): App {
+    if (admin.apps.length > 0) {
+        return admin.app();
     }
     
-    if (getApps().find(a => a.name === 'admin')) {
-        return getApps().find(a => a.name === 'admin')!;
-    }
+    admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+    });
     
-    const serviceAccount = JSON.parse(serviceAccountKey);
-    return initializeApp({
-        credential: cert(serviceAccount),
-    }, 'admin');
+    return admin.app();
 }
-
 
 export async function listAllUsers(): Promise<z.infer<typeof ListUsersOutputSchema>> {
     try {
-        const adminApp = getAdminApp();
+        const adminApp = initializeAdminApp();
         const userRecords: UserRecord[] = [];
         let pageToken;
 
@@ -65,6 +65,12 @@ export async function listAllUsers(): Promise<z.infer<typeof ListUsersOutputSche
 
     } catch (error: any) {
         console.error('Error listing users:', error);
+
+        // Catch potential ADC initialization errors.
+        if (error.code === 'app/invalid-credential' || error.message.includes('Could not load the default credentials')) {
+             return { error: 'Firebase Admin SDK not configured. The server environment is missing credentials.' };
+        }
+
         return {
             error: error.message || 'An unknown error occurred while listing users.',
         };
