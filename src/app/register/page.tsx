@@ -37,7 +37,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const getAuth = useAuth;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -56,6 +56,7 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+    const auth = getAuth();
     try {
       await registerWithEmail(auth, values.email, values.password);
       toast({
