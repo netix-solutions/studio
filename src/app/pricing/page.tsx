@@ -29,7 +29,7 @@ interface Product {
 }
 
 async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
-  const productsColRef = collection(firestore, 'plans');
+  const productsColRef = collection(firestore, 'products');
   const q = query(productsColRef);
   const productDocs = await getDocs(q);
 
@@ -37,7 +37,7 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
     productDocs.docs.map(async (productDoc) => {
       const productData = productDoc.data();
       
-      const pricesColRef = collection(firestore, 'plans', productDoc.id, 'prices');
+      const pricesColRef = collection(firestore, 'products', productDoc.id, 'prices');
       const priceDocs = await getDocs(query(pricesColRef));
       
       const prices: Price[] = priceDocs.docs
