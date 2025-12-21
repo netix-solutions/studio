@@ -261,7 +261,7 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <Card className="max-w-3xl mx-auto bg-card/80">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-3xl font-bold font-headline">Get Started Today</CardTitle>
+                        <CardTitle className="text-3xl font-bold font-headline">See Current Pricing</CardTitle>
                         <CardDescription>
                             Fill out this form to see our pricing and plans.
                             <br />
@@ -347,6 +347,8 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
 
     
 
