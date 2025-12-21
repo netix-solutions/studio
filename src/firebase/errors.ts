@@ -1,123 +1,54 @@
-'use client';
-import { getAuth, type User } from 'firebase/auth';
 
-type SecurityRuleContext = {
+'use client';
+
+/**
+ * Defines the context for a Firestore security rule violation.
+ * This information is used to generate a rich, contextual error message
+ * that helps developers debug security rules during development.
+ */
+export type SecurityRuleContext = {
   path: string;
-  operation: 'get' | 'list' | 'create' | 'update' | 'delete' | 'write';
+  operation: 'get' | 'list' | 'create' | 'update' | 'delete';
+  // `requestResourceData` is the data being sent in a create, update, or set operation.
   requestResourceData?: any;
 };
 
-interface FirebaseAuthToken {
-  name: string | null;
-  email: string | null;
-  email_verified: boolean;
-  phone_number: string | null;
-  sub: string;
-  firebase: {
-    identities: Record<string, string[]>;
-    sign_in_provider: string;
-    tenant: string | null;
-  };
-}
-
-interface FirebaseAuthObject {
-  uid: string;
-  token: FirebaseAuthToken;
-}
-
-interface SecurityRuleRequest {
-  auth: FirebaseAuthObject | null;
-  method: string;
-  path: string;
-  resource?: {
-    data: any;
-  };
-}
-
 /**
- * Builds a security-rule-compliant auth object from the Firebase User.
- * @param currentUser The currently authenticated Firebase user.
- * @returns An object that mirrors request.auth in security rules, or null.
- */
-function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
-  if (!currentUser) {
-    return null;
-  }
-
-  const token: FirebaseAuthToken = {
-    name: currentUser.displayName,
-    email: currentUser.email,
-    email_verified: currentUser.emailVerified,
-    phone_number: currentUser.phoneNumber,
-    sub: currentUser.uid,
-    firebase: {
-      identities: currentUser.providerData.reduce((acc, p) => {
-        if (p.providerId) {
-          acc[p.providerId] = [p.uid];
-        }
-        return acc;
-      }, {} as Record<string, string[]>),
-      sign_in_provider: currentUser.providerData[0]?.providerId || 'custom',
-      tenant: currentUser.tenantId,
-    },
-  };
-
-  return {
-    uid: currentUser.uid,
-    token: token,
-  };
-}
-
-/**
- * Builds the complete, simulated request object for the error message.
- * It safely tries to get the current authenticated user.
- * @param context The context of the failed Firestore operation.
- * @returns A structured request object.
- */
-function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
-  let authObject: FirebaseAuthObject | null = null;
-  try {
-    // Safely attempt to get the current user.
-    const firebaseAuth = getAuth();
-    const currentUser = firebaseAuth.currentUser;
-    if (currentUser) {
-      authObject = buildAuthObject(currentUser);
-    }
-  } catch {
-    // This will catch errors if the Firebase app is not yet initialized.
-    // In this case, we'll proceed without auth information.
-  }
-
-  return {
-    auth: authObject,
-    method: context.operation,
-    path: `/databases/(default)/documents/${context.path}`,
-    resource: context.requestResourceData ? { data: context.requestResourceData } : undefined,
-  };
-}
-
-/**
- * Builds the final, formatted error message for the LLM.
- * @param requestObject The simulated request object.
- * @returns A string containing the error message and the JSON payload.
- */
-function buildErrorMessage(requestObject: SecurityRuleRequest): string {
-  return `Missing or insufficient permissions: The following request was denied by Firestore Security Rules:
-${JSON.stringify(requestObject, null, 2)}`;
-}
-
-/**
- * A custom error class designed to be consumed by an LLM for debugging.
- * It structures the error information to mimic the request object
- * available in Firestore Security Rules.
+ * A custom error class designed to be thrown when a Firestore operation
+ * fails due to security rule permissions. It encapsulates the context
+ * of the failed operation to provide detailed debugging information in
+ * a development environment.
+ *
+ * This error is intended to be caught and re-thrown by a global error handler
+ * (like Next.js's `error.tsx`) to display a developer-friendly overlay.
  */
 export class FirestorePermissionError extends Error {
-  public readonly request: SecurityRuleRequest;
+  // Public property to hold the context of the security rule violation.
+  public context: SecurityRuleContext;
 
   constructor(context: SecurityRuleContext) {
-    const requestObject = buildRequestObject(context);
-    super(buildErrorMessage(requestObject));
-    this.name = 'FirebaseError';
-    this.request = requestObject;
+    // Construct the detailed error message for the developer overlay.
+    const message = `FirestoreError: Missing or insufficient permissions: The following request was denied by Firestore Security Rules:\n${JSON.stringify(
+      {
+        context,
+      },
+      null,
+      2
+    )}`;
+
+    // Call the parent `Error` constructor.
+    super(message);
+
+    // Standard practice for custom errors to maintain the stack trace.
+    this.name = 'FirestorePermissionError';
+    this.context = context;
+
+    // This line is for V8's stack trace API (used in Node.js and Chrome).
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, this.constructor);
+    } else {
+      // Fallback for other environments.
+      this.stack = new Error(message).stack;
+    }
   }
 }

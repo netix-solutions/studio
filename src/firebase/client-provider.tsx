@@ -2,47 +2,35 @@
 
 import React, { useState, useEffect, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
-import { initializeFirebase } from '@/firebase';
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Firestore } from 'firebase/firestore';
+import { firebaseApp, auth, firestore } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
-interface FirebaseClientProviderProps {
-  children: ReactNode;
-}
-
-interface FirebaseServices {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-}
-
-export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const [services, setServices] = useState<FirebaseServices | null>(null);
+/**
+ * This provider is responsible for ensuring that Firebase is initialized
+ * on the client-side and that the services are ready before rendering
+ * the rest of the application. It shows a loading screen while waiting.
+ */
+export function FirebaseClientProvider({ children }: { children: ReactNode }) {
+  const [isFirebaseInitialized, setIsFirebaseInitialized] = useState(false);
 
   useEffect(() => {
-    // This effect ensures Firebase is initialized only on the client-side after mount.
-    const { firebaseApp, auth, firestore } = initializeFirebase();
-    setServices({ firebaseApp, auth, firestore });
-  }, []); // Empty dependency array ensures this runs only once on mount.
+    // The mere act of importing from '@/firebase' initializes the services.
+    // We use a state to track that this client-side effect has run.
+    setIsFirebaseInitialized(true);
+  }, []);
 
-  if (!services) {
-    // While services are initializing, show a loading indicator.
-    // This prevents child components from accessing null services.
+  // While waiting for the client-side effect to run, show a loading screen.
+  // This prevents any child components from trying to use Firebase too early.
+  if (!isFirebaseInitialized) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <FirebaseProvider
-      firebaseApp={services.firebaseApp}
-      auth={services.auth}
-      firestore={services.firestore}
-    >
+    <FirebaseProvider firebaseApp={firebaseApp} auth={auth} firestore={firestore}>
       {children}
     </FirebaseProvider>
   );

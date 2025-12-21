@@ -59,7 +59,7 @@ export default function LoginPage() {
     if (!auth) {
         toast({
             title: 'Error',
-            description: 'Authentication service not available. Please try again later.',
+            description: 'Authentication service is not available. Please try again later.',
             variant: 'destructive',
         });
         return;

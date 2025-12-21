@@ -14,10 +14,7 @@ export const registerWithEmail = (auth: Auth, email: string, password: string) =
     return createUserWithEmailAndPassword(auth, email, password);
 };
 
-export const signOutUser = (auth: Auth | null) => {
-  if (!auth) {
-    return Promise.resolve();
-  }
+export const signOutUser = (auth: Auth) => {
   return signOut(auth);
 };
 
