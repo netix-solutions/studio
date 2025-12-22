@@ -29,6 +29,16 @@ import { registerWithEmail } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createCheckout } from '@/lib/stripe';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -42,6 +52,8 @@ function RegisterPageContent() {
   const { user, isUserLoading } = useUser();
   const { auth, firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAccountExistsDialog, setShowAccountExistsDialog] = useState(false);
+  const [existingEmail, setExistingEmail] = useState('');
   const emailFromQuery = searchParams.get('email');
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -101,15 +113,16 @@ function RegisterPageContent() {
       // The useEffect hook will handle redirection and checkout.
     } catch (error: any) {
       console.error('Registration failed:', error);
-      let errorMessage = 'There was an error registering. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already in use. Please log in or use a different email.';
+        setExistingEmail(values.email);
+        setShowAccountExistsDialog(true);
+      } else {
+         toast({
+          title: 'Error',
+          description: 'There was an error registering. Please try again.',
+          variant: 'destructive',
+        });
       }
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
       setIsSubmitting(false);
     }
   }
@@ -123,70 +136,93 @@ function RegisterPageContent() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight font-headline">
-            Create Your Account
-          </CardTitle>
-          <CardDescription>Register to complete your ad purchase.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="e.g. jane.doe@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Set a password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                 {isSubmitting ? (
-                    <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Registering...
-                    </>
-                ) : (
-                    'Create Account & Proceed'
-                )}
-              </Button>
-            </form>
-          </Form>
+    <>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold tracking-tight font-headline">
+              Create Your Account
+            </CardTitle>
+            <CardDescription>Register to complete your ad purchase.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="e.g. jane.doe@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Set a password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                   {isSubmitting ? (
+                      <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registering...
+                      </>
+                  ) : (
+                      'Create Account & Proceed'
+                  )}
+                </Button>
+              </form>
+            </Form>
 
-           <div className="mt-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Button variant="link" className="p-0 h-auto" asChild>
-                 <Link href="/login">
-                    Sign In
-                </Link>
-              </Button>
-            </p>
-          </div>
+             <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Button variant="link" className="p-0 h-auto" asChild>
+                   <Link href="/login">
+                      Sign In
+                  </Link>
+                </Button>
+              </p>
+            </div>
 
-        </CardContent>
-      </Card>
-    </main>
+          </CardContent>
+        </Card>
+      </main>
+
+      <AlertDialog open={showAccountExistsDialog} onOpenChange={setShowAccountExistsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Account Exists</AlertDialogTitle>
+            <AlertDialogDescription>
+              An account with the email <span className="font-medium">{existingEmail}</span> already exists.
+              Would you like to log in or reset your password?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+             <Button variant="outline" onClick={() => router.push('/forgot-password')}>
+                Reset Password
+            </Button>
+            <AlertDialogAction asChild>
+                <Link href="/login">Login</Link>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
