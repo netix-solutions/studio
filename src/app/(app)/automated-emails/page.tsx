@@ -100,6 +100,34 @@ export const defaultTemplates: EmailTemplate[] = [
             { key: '{{contactName}}', description: "The full name of the lead or user." },
             { key: '{{businessName}}', description: "The business name of the lead or user." },
         ]
+    },
+    {
+        id: 'ad_proof_approval',
+        name: 'Ad Proof for Your Approval',
+        description: 'Sent to a customer with their ad proof for them to approve.',
+        subject: 'Your Ad Proof for {{businessName}} is Ready for Review!',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>Your ad creative is ready for your review! Please take a look at the proof below and let us know if you approve it or if you'd like any changes.</p>
+<div style="margin: 20px 0; padding: 20px; background-color: #f9f9f9; border: 1px solid #eee; text-align: center;">
+    <p><strong>Your Ad Creative:</strong></p>
+    <a href="{{adProofDestinationUrl}}" target="_blank">
+        <img src="{{adProofUrl}}" alt="Ad Proof for {{businessName}}" style="max-width: 100%; border: 1px solid #ccc;"/>
+    </a>
+    <p style="font-size: 12px; color: #666; margin-top: 10px;">The ad above will link to: <a href="{{adProofDestinationUrl}}" target="_blank">{{adProofDestinationUrl}}</a></p>
+</div>
+<p>If everything looks correct, please reply to this email with "Approved." If you need any adjustments, just let us know what you'd like to change.</p>
+<p>We're excited to get your ad live!</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. It must be sent manually from the customer detail page after an ad proof has been uploaded.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The customer's full name." },
+            { key: '{{businessName}}', description: "The customer's business name." },
+            { key: '{{adProofUrl}}', description: "The URL of the ad image creative." },
+            { key: '{{adProofDestinationUrl}}', description: "The URL the ad will link to." },
+        ]
     }
 ];
 
@@ -369,3 +397,5 @@ export default function AutomatedEmailsPage() {
         </div>
     );
 }
+
+    
