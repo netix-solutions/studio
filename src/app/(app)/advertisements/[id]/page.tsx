@@ -19,6 +19,7 @@ import { sendEmail } from '@/lib/firebase/email';
 import { SendCustomerEmailDialog } from '@/components/subscriptions/send-customer-email-dialog';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 interface UserDetails {
     id: string;
@@ -222,7 +223,13 @@ export default function AdvertisementDetailPage() {
                 Back to Advertisements
             </Button>
             
-            {/* Workflow Progress Tracker */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl">Advertisement for {user.businessName}</CardTitle>
+                    <CardDescription>Managing ad ticket ID: {advertisement.id}</CardDescription>
+                </CardHeader>
+            </Card>
+            
             <Card>
                 <CardHeader>
                     <CardTitle>Ad Workflow</CardTitle>
@@ -256,13 +263,6 @@ export default function AdvertisementDetailPage() {
 
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-2xl">Advertisement for {user.businessName}</CardTitle>
-                            <CardDescription>Managing ad ticket ID: {advertisement.id}</CardDescription>
-                        </CardHeader>
-                    </Card>
-
                     {advertisement.status === 'pending_ad_creation' && (
                         <Card>
                             <CardHeader>
@@ -325,32 +325,11 @@ export default function AdvertisementDetailPage() {
                             </CardContent>
                         </Card>
                     )}
-
-                    <Card>
-                        <CardHeader><CardTitle>Customer-Provided Ad Details</CardTitle></CardHeader>
-                        <CardContent className="text-sm space-y-4">
-                             <div className="flex items-start gap-2">
-                                <Globe className="h-4 w-4 mt-1 text-muted-foreground" />
-                                <div>
-                                    <p className="text-muted-foreground font-medium">Ad Link URL</p>
-                                    <p>{user.adWebsiteUrl ? <a href={user.adWebsiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{user.adWebsiteUrl}</a> : 'Not Provided'}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground font-medium">Ad Text / Slogan</p>
-                                <p className="whitespace-pre-wrap">{user.adText || 'Not Provided'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground font-medium">Ad Notes / Special Offers</p>
-                                <p className="whitespace-pre-wrap">{user.adNotes || 'Not Provided'}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
 
                 <div className="md:col-span-1 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle>Customer Details</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Customer & Ad Details</CardTitle></CardHeader>
                         <CardContent className="space-y-4 text-sm">
                             <div className="flex items-center gap-3">
                                 <User className="h-4 w-4 text-muted-foreground"/>
@@ -363,6 +342,22 @@ export default function AdvertisementDetailPage() {
                             <div className="flex items-center gap-3">
                                 <Phone className="h-4 w-4 text-muted-foreground"/>
                                 <span>{user.phone || 'Not Provided'}</span>
+                            </div>
+                            <Separator />
+                             <div className="flex items-start gap-3">
+                                <Globe className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                                <div>
+                                    <p className="text-muted-foreground font-medium">Ad Link URL</p>
+                                    <p>{user.adWebsiteUrl ? <a href={user.adWebsiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{user.adWebsiteUrl}</a> : 'Not Provided'}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-muted-foreground font-medium">Ad Text / Slogan</p>
+                                <p className="whitespace-pre-wrap pl-1">{user.adText || 'Not Provided'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-muted-foreground font-medium">Ad Notes / Special Offers</p>
+                                <p className="whitespace-pre-wrap pl-1">{user.adNotes || 'Not Provided'}</p>
                             </div>
                         </CardContent>
                     </Card>
