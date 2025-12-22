@@ -11,6 +11,7 @@ import { GetStartedForm } from '@/components/landing/get-started-form';
 import { Facebook, Twitter, Instagram } from 'lucide-react';
 import { sampleAds } from '@/lib/mock-data';
 import { StatsSection } from '@/components/landing/stats';
+import { Separator } from '@/components/ui/separator';
 
 export default function LandingPage() {
   const howItWorksSteps = [
@@ -296,7 +297,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border/50 bg-muted/50 text-card-foreground">
         <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 md:flex-row md:px-6">
-            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+            <div className="flex flex-col items-center text-center md:items-start md:text-left">
                 <div className="flex items-center gap-3">
                     <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
                     <span className="font-headline text-lg tracking-tight text-gray-700">Community-Websites.com</span>
@@ -305,14 +306,21 @@ export default function LandingPage() {
                     Call or Text 24/7: 813-544-8383
                 </a>
             </div>
-            <div className="text-sm text-muted-foreground text-center md:text-left">
-                &copy; {new Date().getFullYear()} Community-Websites.com. All rights reserved.
+            <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground md:items-end">
+                <div className="flex gap-4">
+                    <Link href="/terms-of-service" className="hover:text-primary">Terms of Service</Link>
+                    <Link href="/privacy-policy" className="hover:text-primary">Privacy Policy</Link>
+                </div>
+                <p>&copy; {new Date().getFullYear()} Community-Websites.com. All rights reserved.</p>
             </div>
         </div>
-        <div className="container mx-auto text-center pb-4">
+        <Separator />
+        <div className="container mx-auto text-center py-4">
             <Link href="/login" className="text-xs text-muted-foreground hover:text-primary">Existing Customer Login</Link>
         </div>
       </footer>
     </div>
   );
 }
+
+    
