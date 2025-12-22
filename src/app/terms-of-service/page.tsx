@@ -5,12 +5,10 @@ import { LegalPageLayout } from "@/components/layout/legal-page-layout";
 import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface LegalDoc {
     title: string;
     content: string;
-    lastUpdated: any;
 }
 
 export default function TermsOfServicePage() {
@@ -38,12 +36,8 @@ export default function TermsOfServicePage() {
 
     }, [firestore]);
 
-    const lastUpdatedDate = document?.lastUpdated 
-        ? format(document.lastUpdated.toDate(), 'MMMM d, yyyy') 
-        : 'N/A';
-
     return (
-        <LegalPageLayout title={document?.title || "Terms of Service"} lastUpdated={lastUpdatedDate}>
+        <LegalPageLayout title={document?.title || "Terms of Service"}>
             {loading ? (
                  <div className="flex justify-center items-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin" />
@@ -59,5 +53,3 @@ export default function TermsOfServicePage() {
         </LegalPageLayout>
     );
 }
-
-    

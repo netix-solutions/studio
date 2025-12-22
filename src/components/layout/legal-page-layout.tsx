@@ -8,11 +8,10 @@ import { Separator } from '../ui/separator';
 
 interface LegalPageLayoutProps {
   title: string;
-  lastUpdated: string;
   children: React.ReactNode;
 }
 
-export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayoutProps) {
+export function LegalPageLayout({ title, children }: LegalPageLayoutProps) {
   return (
     <div className="bg-background text-foreground">
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 px-4 shadow-sm backdrop-blur-sm md:px-6">
@@ -33,7 +32,6 @@ export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayou
       <main className="container mx-auto max-w-4xl py-16 px-4 md:px-6">
         <div className="space-y-4 mb-8">
             <h1 className="text-4xl font-bold tracking-tight font-headline sm:text-5xl">{title}</h1>
-            <p className="text-muted-foreground">Last Updated: {lastUpdated}</p>
         </div>
         <Separator />
         <div className="mt-8">
@@ -56,5 +54,3 @@ export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayou
     </div>
   );
 }
-
-    
