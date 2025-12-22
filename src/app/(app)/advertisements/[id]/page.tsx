@@ -119,8 +119,10 @@ export default function AdvertisementDetailPage() {
             toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
             return;
         }
-        if (!adProofFile && !adProofUrlInput) {
-            toast({ title: 'No Changes', description: 'Please select a file to upload or update the destination URL.', variant: 'destructive' });
+        
+        const hasNewUrl = adProofUrlInput !== (advertisement.adProofDestinationUrl || user.adWebsiteUrl || '');
+        if (!adProofFile && !hasNewUrl) {
+            toast({ title: 'No Changes', description: 'Please select a new file to upload or update the destination URL.', variant: 'default' });
             return;
         }
 
@@ -129,7 +131,6 @@ export default function AdvertisementDetailPage() {
             const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
             let downloadUrl = advertisement.adProofUrl;
 
-            // Step 1: Upload the file if a new one is selected.
             if (adProofFile) {
                 const storage = getStorage(firebaseApp);
                 const filePath = `advertisements/${advertisement.userId}/${advertisement.id}/${adProofFile.name}`;
@@ -139,14 +140,14 @@ export default function AdvertisementDetailPage() {
                 downloadUrl = await getDownloadURL(fileStorageRef);
             }
             
-            // Step 2: Update the advertisement document.
             await updateDoc(adDocRef, {
-                adProofUrl: downloadUrl,
-                adProofDestinationUrl: adProofUrlInput,
+                ...(downloadUrl && { adProofUrl: downloadUrl }),
+                ...(hasNewUrl && { adProofDestinationUrl: adProofUrlInput }),
                 updatedAt: serverTimestamp(),
             });
 
             setAdvertisement(prev => prev ? { ...prev, adProofUrl: downloadUrl, adProofDestinationUrl: adProofUrlInput } : null);
+            setAdProofFile(null); // Clear the selected file
 
             toast({ title: 'Success!', description: 'Advertisement proof has been saved.' });
 
