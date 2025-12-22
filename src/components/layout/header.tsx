@@ -77,8 +77,8 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
 
 
   return (
-    <header className="z-30 w-full px-4 md:px-6 mt-2">
-        <div className="flex h-[70px] items-center gap-4 rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
+    <header className="sticky top-0 z-30 w-full px-4 md:px-6">
+        <div className="flex h-[70px] mt-2 items-center gap-4 rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
             <div className="md:hidden">
                 <SidebarTrigger />
             </div>
@@ -112,4 +112,3 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
     </header>
   );
 }
-
