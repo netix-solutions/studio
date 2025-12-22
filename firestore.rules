@@ -122,14 +122,3 @@ service cloud.firestore {
     }
   }
 }
-
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Files for advertisements: User can only write to their own folder.
-    // Admins can read any file.
-    match /advertisements/{userId}/{allPaths=**} {
-      allow read: if isAdmin();
-      allow write: if isOwner(userId);
-    }
-  }
-}

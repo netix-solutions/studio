@@ -1,0 +1,30 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // It's not possible to read Firestore from Storage rules in this way.
+      // We will rely on custom claims or another method for admin checks if needed,
+      // but for now, we remove the direct dependency.
+      // A common pattern is to check for a custom claim:
+      return request.auth.token.admin == true;
+    }
+    
+    // Files for advertisements: User can only write to their own folder.
+    // Admins (with custom claims) can read any file.
+    match /advertisements/{userId}/{allPaths=**} {
+      allow read: if request.auth.token.admin == true;
+      allow write: if isOwner(userId);
+    }
+  }
+}
