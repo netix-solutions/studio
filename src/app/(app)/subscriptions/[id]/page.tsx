@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign } from 'lucide-react';
@@ -77,52 +77,89 @@ export default function SubscriptionDetailPage() {
         const findSubscriptionAndCustomer = async () => {
             try {
                 setLoading(true);
-                // We need to search for the subscription across all customers
-                const customersSnapshot = await getDocs(collection(firestore, 'customers'));
-                let foundSubData: any = null;
-                let foundCustomerId: string | null = null;
-
-                for (const customerDoc of customersSnapshot.docs) {
-                    const subDocRef = doc(firestore, 'customers', customerDoc.id, 'subscriptions', subscriptionId);
-                    const subDocSnap = await getDoc(subDocRef);
-                    if (subDocSnap.exists()) {
-                        foundSubData = subDocSnap.data();
-                        foundCustomerId = customerDoc.id;
-                        break;
-                    }
-                }
                 
-                if (!foundSubData || !foundCustomerId) {
-                    throw new Error("Subscription not found.");
+                // 1. Find the advertisement ticket that matches the subscription ID.
+                const adsQuery = query(
+                    collectionGroup(firestore, 'advertisements'), 
+                    where('subscriptionId', '==', subscriptionId)
+                );
+                const adSnapshot = await getDocs(adsQuery);
+
+                if (adSnapshot.empty) {
+                    // Fallback for subscriptions that might not have an ad ticket yet.
+                    // This part remains less efficient but necessary for edge cases.
+                    console.warn("No ad ticket found, falling back to customer scan.");
+                    const customersSnapshot = await getDocs(collection(firestore, 'customers'));
+                    let foundSubData: any = null;
+                    let foundCustomerId: string | null = null;
+
+                    for (const customerDoc of customersSnapshot.docs) {
+                        const subDocRef = doc(firestore, 'customers', customerDoc.id, 'subscriptions', subscriptionId);
+                        const subDocSnap = await getDoc(subDocRef);
+                        if (subDocSnap.exists()) {
+                            foundSubData = subDocSnap.data();
+                            foundCustomerId = customerDoc.id;
+                            break;
+                        }
+                    }
+                    if (!foundSubData || !foundCustomerId) throw new Error("Subscription not found.");
+                    
+                    const userDocRef = doc(firestore, 'users', foundCustomerId);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (!userDocSnap.exists()) throw new Error("Customer details not found.");
+                    
+                    const userData = userDocSnap.data() as UserDetails;
+                    const startDate = foundSubData.created?.seconds ? new Date(foundSubData.created.seconds * 1000) : new Date();
+                    const endDate = foundSubData.current_period_end?.seconds ? new Date(foundSubData.current_period_end.seconds * 1000) : new Date();
+                    setSubscription({
+                        id: subscriptionId,
+                        customerId: foundCustomerId,
+                        plan: foundSubData.items?.[0]?.price?.product?.name || 'N/A',
+                        status: foundSubData.status,
+                        amount: foundSubData.items?.[0]?.price?.unit_amount / 100 || 0,
+                        startDate: format(startDate, 'PPP'),
+                        endDate: format(endDate, 'PPP'),
+                        adStatus: 'Not Started',
+                    });
+                    setUser(userData);
+
+
+                } else {
+                    // Efficient path: We found the ad ticket.
+                    const adDoc = adSnapshot.docs[0];
+                    const adData = adDoc.data();
+                    const customerId = adData.userId;
+
+                    // 2. Fetch the corresponding subscription and user documents directly.
+                    const subDocRef = doc(firestore, 'customers', customerId, 'subscriptions', subscriptionId);
+                    const userDocRef = doc(firestore, 'users', customerId);
+
+                    const [subDocSnap, userDocSnap] = await Promise.all([
+                        getDoc(subDocRef),
+                        getDoc(userDocRef),
+                    ]);
+
+                    if (!subDocSnap.exists()) throw new Error("Subscription data could not be found for this customer.");
+                    if (!userDocSnap.exists()) throw new Error("Customer details not found.");
+
+                    const subData = subDocSnap.data();
+                    const userData = userDocSnap.data() as UserDetails;
+
+                    const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
+                    const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
+
+                    setSubscription({
+                        id: subscriptionId,
+                        customerId: customerId,
+                        plan: subData.items?.[0]?.price?.product?.name || 'N/A',
+                        status: subData.status,
+                        amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
+                        startDate: format(startDate, 'PPP'),
+                        endDate: format(endDate, 'PPP'),
+                        adStatus: adData?.status || 'Not Started',
+                    });
+                    setUser(userData);
                 }
-
-                // Fetch ad details
-                const adQuery = query(collection(firestore, 'advertisements'), where('subscriptionId', '==', subscriptionId));
-                const adSnapshot = await getDocs(adQuery);
-                const adData = adSnapshot.docs.length > 0 ? adSnapshot.docs[0].data() : null;
-
-                // Fetch user details
-                const userDocRef = doc(firestore, 'users', foundCustomerId);
-                const userDocSnap = await getDoc(userDocRef);
-                if (!userDocSnap.exists()) {
-                    throw new Error("Customer details not found.");
-                }
-                const userData = userDocSnap.data() as UserDetails;
-
-                const startDate = foundSubData.created?.seconds ? new Date(foundSubData.created.seconds * 1000) : new Date();
-                const endDate = foundSubData.current_period_end?.seconds ? new Date(foundSubData.current_period_end.seconds * 1000) : new Date();
-
-                setSubscription({
-                    id: subscriptionId,
-                    customerId: foundCustomerId,
-                    plan: foundSubData.items?.[0]?.price?.product?.name || 'N/A',
-                    status: foundSubData.status,
-                    amount: foundSubData.items?.[0]?.price?.unit_amount / 100 || 0,
-                    startDate: format(startDate, 'PPP'),
-                    endDate: format(endDate, 'PPP'),
-                    adStatus: adData?.status || 'Not Started',
-                });
-                setUser(userData);
 
             } catch (err: any) {
                 console.error("Error fetching subscription details:", err);
@@ -256,5 +293,5 @@ export default function SubscriptionDetailPage() {
             </div>
         </div>
     )
-}
+
     
