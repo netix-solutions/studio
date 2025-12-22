@@ -24,7 +24,7 @@ interface Price {
   active: boolean;
 }
 
-interface Product {
+interface Plan {
   id: string;
   name: string;
   description: string | null;
@@ -36,16 +36,16 @@ interface Product {
   };
 }
 
-async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
-  const productsColRef = collection(firestore, 'products');
-  const q = query(productsColRef, where('active', '==', true));
-  const productDocs = await getDocs(q);
+async function fetchPlansAndPrices(firestore: any): Promise<Plan[]> {
+  const plansColRef = collection(firestore, 'plans');
+  const q = query(plansColRef, where('active', '==', true));
+  const planDocs = await getDocs(q);
 
-  const allProducts: Product[] = await Promise.all(
-    productDocs.docs.map(async (productDoc) => {
-      const productData = productDoc.data();
+  const allPlans: Plan[] = await Promise.all(
+    planDocs.docs.map(async (planDoc) => {
+      const planData = planDoc.data();
       
-      const pricesColRef = collection(firestore, 'products', productDoc.id, 'prices');
+      const pricesColRef = collection(firestore, 'plans', planDoc.id, 'prices');
       const pricesQuery = query(pricesColRef, where('active', '==', true));
       const priceDocs = await getDocs(pricesQuery);
       
@@ -61,23 +61,23 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
       });
 
       return {
-        id: productDoc.id,
-        name: productData.name,
-        description: productData.description,
-        active: productData.active,
+        id: planDoc.id,
+        name: planData.name,
+        description: planData.description,
+        active: planData.active,
         prices: prices,
-        features: productData.features || [
+        features: planData.features || [
             "Rotating banner ad on high-traffic pages",
             "Clickable link to drive traffic",
             "Ad design support included",
             "Cancel anytime flexibility"
         ],
-        metadata: productData.metadata,
+        metadata: planData.metadata,
       };
     })
   );
   
-  const sortedProducts = allProducts
+  const sortedPlans = allPlans
     .filter(p => p.active && p.prices.length > 0)
     .sort((a, b) => {
         const aPrice = a.prices.find(p => p.interval === 'month')?.unit_amount || a.prices[0]?.unit_amount || 0;
@@ -85,14 +85,14 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
         return aPrice - bPrice;
     });
 
-  return sortedProducts;
+  return sortedPlans;
 }
 
-function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { product: Product; onPurchase: (priceId: string) => void; isPurchasing: string | null; isFeatured?: boolean }) {
+function PricingCard({ plan, onPurchase, isPurchasing, isFeatured }: { plan: Plan; onPurchase: (priceId: string) => void; isPurchasing: string | null; isFeatured?: boolean }) {
     const [billingCycle, setBillingCycle] = useState<'yearly' | 'monthly'>('yearly');
 
-    const monthlyPrice = product.prices.find(p => p.interval === 'month');
-    const yearlyPrice = product.prices.find(p => p.interval === 'year');
+    const monthlyPrice = plan.prices.find(p => p.interval === 'month');
+    const yearlyPrice = plan.prices.find(p => p.interval === 'year');
 
     const handleCycleChange = (value: 'yearly' | 'monthly') => {
         if (value) setBillingCycle(value);
@@ -114,7 +114,7 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                 <Badge className="absolute top-4 right-4" variant="secondary">Best Value</Badge>
             )}
             <CardHeader className="text-center">
-                <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
+                <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col">
                  <div className="flex justify-center my-6">
@@ -148,9 +148,9 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                     </div>
                 </div>
 
-                {product.description && (
+                {plan.description && (
                     <div className="my-8 flex-grow">
-                         <p className="text-muted-foreground text-center px-4">{product.description}</p>
+                         <p className="text-muted-foreground text-center px-4">{plan.description}</p>
                     </div>
                 )}
 
@@ -175,9 +175,8 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
 }
 
 function PricingPageContent() {
-  // Only get the services we need, intentionally omitting `user`
   const { firestore, user } = useFirebase();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState<string | null>(null);
   const router = useRouter();
@@ -187,13 +186,12 @@ function PricingPageContent() {
   const email = searchParams.get('email');
 
   useEffect(() => {
-    // Only proceed if firestore is available
     if (firestore) {
       setLoading(true);
-      fetchProductsAndPrices(firestore)
-        .then(setProducts)
+      fetchPlansAndPrices(firestore)
+        .then(setPlans)
         .catch(error => {
-          console.error("Error fetching products and prices:", error);
+          console.error("Error fetching plans and prices:", error);
           toast({
             title: 'Error Loading Plans',
             description: 'Could not fetch pricing information. Please try again later.',
@@ -207,7 +205,6 @@ function PricingPageContent() {
   }, [firestore, toast]);
 
   const handlePurchase = async (priceId: string) => {
-    // User and firestore are checked here, at the moment of action
     if (!firestore) {
       toast({ title: 'Error', description: 'Database not ready.', variant: 'destructive' });
       return;
@@ -215,24 +212,20 @@ function PricingPageContent() {
     
     setIsPurchasing(priceId);
 
-    // If the user is not logged in, redirect them to register
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
       const registerUrl = email ? `/register?email=${encodeURIComponent(email)}` : '/register';
       router.push(registerUrl);
-      // No need to set isPurchasing to null, as we are navigating away
       return;
     }
     
-    // If the user is logged in, proceed to checkout
     try {
       await createCheckout(firestore, user.uid, user.email, priceId, window.location.origin + '/account');
     } catch (error: any) {
       console.error('Stripe checkout error:', error);
       toast({ title: 'Error Starting Checkout', description: error.message || 'Could not redirect to checkout.', variant: 'destructive' });
-      setIsPurchasing(null); // Reset button state on error
+      setIsPurchasing(null);
     }
-    // On success, the user is redirected to Stripe, so no need to reset state here.
   };
   
   return (
@@ -264,15 +257,15 @@ function PricingPageContent() {
                 <div className="flex h-[50vh] items-center justify-center">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
-            ) : products.length > 0 ? (
+            ) : plans.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
-                    {products.map((product) => (
+                    {plans.map((plan) => (
                         <PricingCard 
-                            key={product.id}
-                            product={product}
+                            key={plan.id}
+                            plan={plan}
                             onPurchase={handlePurchase}
                             isPurchasing={isPurchasing}
-                            isFeatured={product.metadata?.isFeatured === 'true'}
+                            isFeatured={plan.metadata?.isFeatured === 'true'}
                         />
                     ))}
                 </div>

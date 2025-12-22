@@ -82,15 +82,15 @@ service cloud.firestore {
       allow read, list, write: if isAdmin();
     }
     
-    // STRIPE PRODUCTS & PLANS
+    // STRIPE PLANS & PRICES
     // These collections are managed in Stripe and synced to Firestore.
     // They should be publicly readable but not writable by any client.
-    match /products/{productId} {
-      allow read: if true;
+    match /plans/{planId} {
+      allow read, list: if true;
       allow write: if false;
 
       match /prices/{priceId} {
-        allow read: if true;
+        allow read, list: if true;
         allow write: if false;
       }
     }
@@ -118,3 +118,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
