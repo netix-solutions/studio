@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -174,6 +175,7 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
 }
 
 function PricingPageContent() {
+  // Only get the services we need, intentionally omitting `user`
   const { firestore, user } = useFirebase();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +187,7 @@ function PricingPageContent() {
   const email = searchParams.get('email');
 
   useEffect(() => {
+    // Only proceed if firestore is available
     if (firestore) {
       setLoading(true);
       fetchProductsAndPrices(firestore)
@@ -204,26 +207,32 @@ function PricingPageContent() {
   }, [firestore, toast]);
 
   const handlePurchase = async (priceId: string) => {
+    // User and firestore are checked here, at the moment of action
     if (!firestore) {
       toast({ title: 'Error', description: 'Database not ready.', variant: 'destructive' });
       return;
     }
-    setIsPurchasing(priceId);
     
+    setIsPurchasing(priceId);
+
+    // If the user is not logged in, redirect them to register
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
       const registerUrl = email ? `/register?email=${encodeURIComponent(email)}` : '/register';
       router.push(registerUrl);
+      // No need to set isPurchasing to null, as we are navigating away
       return;
     }
-
+    
+    // If the user is logged in, proceed to checkout
     try {
       await createCheckout(firestore, user.uid, user.email, priceId, window.location.origin + '/account');
     } catch (error: any) {
       console.error('Stripe checkout error:', error);
       toast({ title: 'Error Starting Checkout', description: error.message || 'Could not redirect to checkout.', variant: 'destructive' });
-      setIsPurchasing(null);
+      setIsPurchasing(null); // Reset button state on error
     }
+    // On success, the user is redirected to Stripe, so no need to reset state here.
   };
   
   return (
@@ -288,8 +297,10 @@ function PricingPageContent() {
 
 export default function PricingPage() {
     return (
-        <Suspense fallback={<div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
             <PricingPageContent />
         </Suspense>
     );
 }
+
+    
