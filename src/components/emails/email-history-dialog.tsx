@@ -50,14 +50,23 @@ function EmailHistoryContent({ recipient }: { recipient: Recipient }) {
         if (!firestore) return;
 
         setLoading(true);
+        // Modified query: Removed orderBy to avoid needing a composite index.
+        // Sorting will be handled on the client.
         const historyQuery = query(
             collection(firestore, 'sent_emails'),
-            where('recipientId', '==', recipient.id),
-            orderBy('sentAt', 'desc')
+            where('recipientId', '==', recipient.id)
         );
 
         const unsubscribe = onSnapshot(historyQuery, (snapshot) => {
             const historyData: SentEmail[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SentEmail));
+            
+            // Sort the emails by date on the client side.
+            historyData.sort((a, b) => {
+                const dateA = a.sentAt?.toDate ? a.sentAt.toDate().getTime() : 0;
+                const dateB = b.sentAt?.toDate ? b.sentAt.toDate().getTime() : 0;
+                return dateB - dateA;
+            });
+            
             setHistory(historyData);
             setLoading(false);
         }, (error) => {
