@@ -67,7 +67,9 @@ export default function ProtectedLayout({
         }
 
       }, (error) => {
-        console.error("Error checking admin status:", error);
+        // A 'permission-denied' error is expected for non-admin users.
+        // We can safely assume the user is not an admin and stop loading.
+        console.log("Admin check failed, likely due to permissions. User is not an admin.");
         setIsAdmin(false);
         setIsRoleLoading(false);
       });
