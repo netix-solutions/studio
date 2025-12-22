@@ -180,11 +180,11 @@ export default function SubscriptionDetailPage() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Billing Status</p>
-                                <p><Badge variant={statusVariantMap[subscription.status] || 'outline'}>{capitalize(subscription.status)}</Badge></p>
+                                <div><Badge variant={statusVariantMap[subscription.status] || 'outline'}>{capitalize(subscription.status)}</Badge></div>
                             </div>
                              <div className="space-y-1">
                                 <p className="text-muted-foreground font-medium flex items-center gap-2"><FileText className="h-4 w-4" /> Ad Status</p>
-                                <p><Badge variant={statusVariantMap[subscription.adStatus] || 'outline'}>{statusTextMap[subscription.adStatus] || subscription.adStatus}</Badge></p>
+                                <div><Badge variant={statusVariantMap[subscription.adStatus] || 'outline'}>{statusTextMap[subscription.adStatus] || subscription.adStatus}</Badge></div>
                             </div>
                              <div className="space-y-1">
                                 <p className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Current Period</p>
