@@ -20,7 +20,7 @@ const allMenuItems = [
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone, adminOnly: true },
   { href: '/account', label: 'Account', icon: User, adminOnly: false },
   { href: '/pricing', label: 'Change Plan', icon: ShoppingBag, adminOnly: false },
-  { href: '/subscriptions', label: 'Subscriptions', icon: Ticket, adminOnly: true },
+  { href: '/subscriptions', label: 'Customers', icon: Ticket, adminOnly: true },
   { href: '/users', label: 'Users', icon: Users, adminOnly: true },
   { href: '/automated-emails', label: 'Automated Emails', icon: Mail, adminOnly: true },
   { href: '/legal', label: 'Legal Documents', icon: FileText, adminOnly: true },

@@ -236,7 +236,7 @@ export default function SubscriptionDetailPage() {
             <div className="md:col-span-1 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Customer</CardTitle>
+                        <CardTitle>Customer Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
                         <div className="flex items-center gap-3">
@@ -257,5 +257,4 @@ export default function SubscriptionDetailPage() {
         </div>
     )
 }
-
     

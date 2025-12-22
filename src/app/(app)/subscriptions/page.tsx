@@ -224,7 +224,7 @@ export default function SubscriptionsPage() {
       return (
           <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error Loading Subscriptions</AlertTitle>
+              <AlertTitle>Error Loading Data</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
           </Alert>
       );
@@ -234,8 +234,8 @@ export default function SubscriptionsPage() {
     <>
     <Card>
       <CardHeader>
-        <CardTitle>{isAdmin ? 'All Subscriptions' : 'My Subscriptions'}</CardTitle>
-        <CardDescription>View and manage {isAdmin ? 'all customer' : 'your'} ad subscriptions.</CardDescription>
+        <CardTitle>{isAdmin ? 'All Customers' : 'My Subscriptions'}</CardTitle>
+        <CardDescription>View and manage {isAdmin ? 'all customer' : 'your ad'} subscriptions.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 mb-4">

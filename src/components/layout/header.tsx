@@ -20,7 +20,7 @@ import { SidebarTrigger } from '../ui/sidebar';
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
   '/account': 'My Account',
-  '/subscriptions': 'All Subscriptions',
+  '/subscriptions': 'All Customers',
   '/users': 'User Management',
   '/pricing': 'Change Plan',
   '/advertisements': 'Advertisements',
@@ -69,7 +69,7 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
 
   // For dynamic routes
   if (pathname.match(/^\/subscriptions\/[^/]+$/)) {
-      pageTitle = "Subscription Details";
+      pageTitle = "Customer Details";
   }
   if (pathname.match(/^\/leads\/[^/]+$/)) {
       pageTitle = "Lead Details";
