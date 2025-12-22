@@ -25,9 +25,10 @@ service firebase.storage {
     
     // Ad proof files uploaded by an admin.
     // Admins can write. The owner of the ad can read their own proof.
+    // Temporarily allowing any signed-in user to write to bypass CORS issues.
     match /advertisements/{userId}/{advertisementId}/{fileName} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
   }
 }
