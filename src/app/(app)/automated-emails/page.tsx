@@ -81,6 +81,25 @@ export const defaultTemplates: EmailTemplate[] = [
             { key: '{{contactName}}', description: "The customer's full name from their user profile." },
             { key: '{{accountLink}}', description: "A direct link to the user's account page." },
         ]
+    },
+    {
+        id: 'manual_follow_up',
+        name: 'Manual Follow-Up',
+        description: 'A general-purpose follow-up email to send to leads.',
+        subject: 'Following up from Community-Websites.com',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>Just wanted to follow up on your interest in advertising with us at Community-Websites.com. We help local businesses like yours connect with thousands of potential customers in the area.</p>
+<p>Is there any information I can provide to help you decide if our service is a good fit for your business, {{businessName}}?</p>
+<p>Feel free to reply to this email with any questions.</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. It must be sent manually from the lead or user detail page.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead or user." },
+            { key: '{{businessName}}', description: "The business name of the lead or user." },
+        ]
     }
 ];
 
@@ -350,5 +369,3 @@ export default function AutomatedEmailsPage() {
         </div>
     );
 }
-
-    
