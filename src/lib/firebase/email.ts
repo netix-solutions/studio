@@ -58,10 +58,12 @@ export async function sendEmail(firestore: Firestore, emailData: EmailData, logO
     const recipientEmail = Array.isArray(to) ? to.join(', ') : to;
     const emailLogPayload = {
         recipientEmail: recipientEmail,
+        recipientId: logOptions.recipientId || null,
         subject: subject,
         html: html || text || '',
         sentAt: serverTimestamp(),
-        ...logOptions,
+        templateId: logOptions.templateId || null,
+        triggerType: logOptions.triggerType || 'unknown',
     };
 
     try {
@@ -72,5 +74,3 @@ export async function sendEmail(firestore: Firestore, emailData: EmailData, logO
         console.error("Error adding document to sent_emails collection: ", error);
     }
 }
-
-    
