@@ -1,3 +1,4 @@
+
 import {
   Auth,
   createUserWithEmailAndPassword,
@@ -7,7 +8,7 @@ import {
   updateProfile,
   UserCredential,
 } from 'firebase/auth';
-import { doc, setDoc, getFirestore } from 'firebase/firestore';
+import { doc, setDoc, getFirestore, collection, query, where, getDocs, limit, writeBatch } from 'firebase/firestore';
 import { firebaseApp } from '@/firebase';
 
 export const signInWithEmail = (auth: Auth, email: string, password: string) => {
@@ -19,28 +20,54 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
     const user = userCredential.user;
 
     if (user) {
-        // Create a document in the 'users' collection
         const firestore = getFirestore(firebaseApp);
-        const userDocRef = doc(firestore, 'users', user.uid);
-        
-        const contactName = user.displayName || email.split('@')[0];
-        const nameParts = contactName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const batch = writeBatch(firestore);
 
+        // 1. Find the original lead document by email
+        const leadsRef = collection(firestore, 'leads');
+        const q = query(leadsRef, where('email', '==', email), limit(1));
+        const leadSnapshot = await getDocs(q);
 
-        await setDoc(userDocRef, {
+        let userData: { [key: string]: any } = {
             id: user.uid,
             email: user.email,
-            contactName: contactName,
-            firstName: firstName,
-            lastName: lastName,
             role: 'user', // Default role
-        }, { merge: true });
+        };
+
+        if (!leadSnapshot.empty) {
+            const leadDoc = leadSnapshot.docs[0];
+            const leadData = leadDoc.data();
+
+            // 2. Merge lead data into the new user data
+            userData = {
+                ...userData,
+                businessName: leadData.businessName || '',
+                contactName: leadData.contactName || `${leadData.firstName || ''} ${leadData.lastName || ''}`.trim(),
+                phone: leadData.phone || '',
+                // Carry over any other relevant fields from the lead
+            };
+        } else {
+             // Fallback if no lead is found (user registers directly)
+             const contactName = user.displayName || email.split('@')[0];
+             const nameParts = contactName.split(' ');
+             const firstName = nameParts[0] || '';
+             const lastName = nameParts.slice(1).join(' ') || '';
+             userData.contactName = contactName;
+             userData.firstName = firstName;
+             userData.lastName = lastName;
+        }
+
+        // 3. Create the user document in a batch write
+        const userDocRef = doc(firestore, 'users', user.uid);
+        batch.set(userDocRef, userData, { merge: true });
+
+        // Commit all batched writes to Firestore
+        await batch.commit();
     }
     
     return userCredential;
 };
+
 
 export const signOutUser = (auth: Auth) => {
   return signOut(auth);
@@ -49,5 +76,3 @@ export const signOutUser = (auth: Auth) => {
 export const sendPasswordReset = (auth: Auth, email: string) => {
     return sendPasswordResetEmail(auth, email);
 };
-
-    
