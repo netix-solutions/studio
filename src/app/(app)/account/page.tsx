@@ -109,7 +109,7 @@ export default function AccountPage() {
             const activeSubs = snapshot.docs.filter(doc => doc.data().status === 'active' || doc.data().status === 'trialing');
 
             if (activeSubs.length > 0) {
-                if (userDoc.exists() && !userDoc.data().businessName) {
+                 if (userDoc.exists() && !userDoc.data().businessName) {
                     setShowAdDetailsPrompt(true);
                 } else {
                     setShowAdDetailsPrompt(false);
@@ -544,5 +544,3 @@ export default function AccountPage() {
         </div>
     );
 }
-
-    
