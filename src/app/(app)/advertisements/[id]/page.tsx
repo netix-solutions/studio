@@ -1,7 +1,7 @@
 
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useFirebase, useUser as useAuthUser } from '@/firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -58,7 +58,10 @@ const statusTextMap: { [key: string]: string } = {
 export default function AdvertisementDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { id: adId } = params;
+    const userId = searchParams.get('userId');
+
     const { firestore, firebaseApp } = useFirebase();
     const { toast } = useToast();
 
@@ -73,9 +76,9 @@ export default function AdvertisementDetailPage() {
     const [isRequestingApproval, setIsRequestingApproval] = useState(false);
 
     useEffect(() => {
-        if (!firestore || typeof adId !== 'string') {
+        if (!firestore || typeof adId !== 'string' || !userId) {
             setLoading(false);
-            setError("Invalid advertisement ID.");
+            setError("Invalid advertisement or user ID.");
             return;
         }
 
@@ -83,33 +86,25 @@ export default function AdvertisementDetailPage() {
             try {
                 setLoading(true);
 
-                // Correctly query the collection group to find the document by its ID.
-                // The '__name__' property holds the full path, so we check if it ends with the ID.
-                const adQuery = query(collectionGroup(firestore, 'advertisements'), where('__name__', '==', `__name__`));
-                const adSnapshot = await getDocs(adQuery);
+                const adDocRef = doc(firestore, 'users', userId, 'advertisements', adId);
+                const userDocRef = doc(firestore, 'users', userId);
+
+                const [adDocSnap, userDocSnap] = await Promise.all([
+                    getDoc(adDocRef),
+                    getDoc(userDocRef),
+                ]);
                 
-                if (adSnapshot.empty) {
+                if (!adDocSnap.exists()) {
                     throw new Error("Advertisement not found.");
                 }
-                
-                const adDoc = adSnapshot.docs.find(doc => doc.id === adId);
-                if (!adDoc) {
-                    throw new Error("Advertisement not found in the results.");
-                }
-
-                const adData = adDoc.data() as Omit<AdDetails, 'id'>;
-                const userId = adData.userId;
-
-                const userDocRef = doc(firestore, 'users', userId);
-                const userDocSnap = await getDoc(userDocRef);
-
-                if (!userDocSnap.exists()) {
+                 if (!userDocSnap.exists()) {
                     throw new Error("Associated customer details not found.");
                 }
 
+                const adData = adDocSnap.data() as Omit<AdDetails, 'id'>;
                 const userData = userDocSnap.data() as Omit<UserDetails, 'id'>;
 
-                setAdvertisement({ id: adDoc.id, ...adData });
+                setAdvertisement({ id: adDocSnap.id, ...adData });
                 setUser({ id: userDocSnap.id, ...userData });
                 setAdProofUrlInput(adData.adProofDestinationUrl || userData.adWebsiteUrl || '');
 
@@ -123,7 +118,7 @@ export default function AdvertisementDetailPage() {
 
         fetchDetails();
 
-    }, [firestore, adId]);
+    }, [firestore, adId, userId]);
     
      const handleSaveProof = async () => {
         if (!firestore || !firebaseApp || !advertisement || !user) {
@@ -333,5 +328,5 @@ export default function AdvertisementDetailPage() {
             </div>
         </div>
     )
-
+}
     

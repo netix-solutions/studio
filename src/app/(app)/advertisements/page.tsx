@@ -83,8 +83,8 @@ export default function AdvertisementsPage() {
         return () => unsubscribe();
     }, [firestore]);
     
-    const handleViewDetails = (adId: string) => {
-        router.push(`/advertisements/${adId}`);
+    const handleViewDetails = (ad: Advertisement) => {
+        router.push(`/advertisements/${ad.id}?userId=${ad.userId}`);
     };
 
 
@@ -124,7 +124,7 @@ export default function AdvertisementsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {advertisements.length > 0 ? advertisements.map((ad) => (
-                                        <TableRow key={ad.id} onClick={() => handleViewDetails(ad.id)} className="cursor-pointer">
+                                        <TableRow key={ad.id} onClick={() => handleViewDetails(ad)} className="cursor-pointer">
                                             <TableCell>
                                               <div className="font-medium">{ad.contactName}</div>
                                               <div className="text-sm text-muted-foreground">{ad.email}</div>
@@ -147,7 +147,7 @@ export default function AdvertisementsPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleViewDetails(ad.id)}>View/Edit Details</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewDetails(ad)}>View/Edit Details</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -166,3 +166,5 @@ export default function AdvertisementsPage() {
         </>
     );
 }
+
+    
