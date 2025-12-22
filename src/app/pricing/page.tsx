@@ -211,8 +211,6 @@ function PricingPageContent() {
     }
     setIsPurchasing(priceId);
     
-    // The user object is available here from the useFirebase hook.
-    // We check for it at the time of action, not on page load.
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
       const registerUrl = email ? `/register?email=${encodeURIComponent(email)}` : '/register';
@@ -229,14 +227,6 @@ function PricingPageContent() {
     }
   };
   
-  if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="bg-background text-foreground">
         <header className="sticky top-0 z-40 w-full px-4 md:px-6">
@@ -262,7 +252,11 @@ function PricingPageContent() {
                 <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">Simple, transparent pricing to reach your community on WesleyChapelCommunity.com and PascoCommunity.com.</p>
             </div>
 
-            {products.length > 0 ? (
+            {loading ? (
+                <div className="flex h-[50vh] items-center justify-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                </div>
+            ) : products.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
                     {products.map((product) => (
                         <PricingCard 
@@ -300,5 +294,3 @@ export default function PricingPage() {
         </Suspense>
     );
 }
-
-    
