@@ -13,9 +13,7 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      // It's not possible to read Firestore from Storage rules in this way.
-      // We will rely on custom claims for admin checks.
-      return request.auth.token.admin == true;
+      return exists(/databases/(default)/documents/roles_admin/$(request.auth.uid));
     }
     
     // Original files from user ad submission. User can write to their own folder.
@@ -33,5 +31,3 @@ service firebase.storage {
     }
   }
 }
-
-    
