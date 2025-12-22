@@ -3,16 +3,22 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, Save, Upload } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
 import { Separator } from '@/components/ui/separator';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import Image from 'next/image';
 
 interface SubscriptionDetails {
     id: string;
@@ -23,6 +29,9 @@ interface SubscriptionDetails {
     startDate: string;
     endDate: string;
     adStatus: string;
+    adId?: string; // Add adId
+    adProofUrl?: string;
+    adProofDestinationUrl?: string;
 }
 
 interface UserDetails {
@@ -64,12 +73,18 @@ export default function SubscriptionDetailPage() {
     const searchParams = useSearchParams();
     const { id: subscriptionId } = params;
     const customerId = searchParams.get('customerId');
-    const { firestore } = useFirebase();
+    const { firestore, firebaseApp } = useFirebase();
+    const { toast } = useToast();
 
     const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
     const [user, setUser] = useState<UserDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // State for the new form
+    const [adProofFile, setAdProofFile] = useState<File | null>(null);
+    const [adProofUrl, setAdProofUrl] = useState('');
+    const [isSavingProof, setIsSavingProof] = useState(false);
 
     useEffect(() => {
         if (!firestore || !subscriptionId || typeof subscriptionId !== 'string' || !customerId) {
@@ -82,7 +97,6 @@ export default function SubscriptionDetailPage() {
             try {
                 setLoading(true);
                 
-                // 1. We have the IDs, so fetch everything directly.
                 const subDocRef = doc(firestore, 'customers', customerId, 'subscriptions', subscriptionId);
                 const userDocRef = doc(firestore, 'users', customerId);
                 const adQuery = query(collection(firestore, 'users', customerId, 'advertisements'), where('subscriptionId', '==', subscriptionId));
@@ -98,12 +112,13 @@ export default function SubscriptionDetailPage() {
 
                 const subData = subDocSnap.data();
                 const userData = userDocSnap.data() as UserDetails;
-                const adData = adSnapshot.empty ? null : adSnapshot.docs[0].data();
+                const adDoc = adSnapshot.empty ? null : adSnapshot.docs[0];
+                const adData = adDoc?.data();
 
                 const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
                 const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
 
-                setSubscription({
+                const subDetails: SubscriptionDetails = {
                     id: subscriptionId,
                     customerId: customerId,
                     plan: subData.items?.[0]?.price?.product?.name || 'N/A',
@@ -112,9 +127,14 @@ export default function SubscriptionDetailPage() {
                     startDate: format(startDate, 'PPP'),
                     endDate: format(endDate, 'PPP'),
                     adStatus: adData?.status || 'Not Started',
-                });
+                    adId: adDoc?.id,
+                    adProofUrl: adData?.adProofUrl,
+                    adProofDestinationUrl: adData?.adProofDestinationUrl,
+                };
+
+                setSubscription(subDetails);
                 setUser(userData);
-                
+                setAdProofUrl(adData?.adProofDestinationUrl || adData?.adWebsiteUrl || '');
 
             } catch (err: any) {
                 console.error("Error fetching subscription details:", err);
@@ -135,6 +155,46 @@ export default function SubscriptionDetailPage() {
         fetchDetails();
 
     }, [firestore, subscriptionId, customerId]);
+    
+    const handleSaveProof = async () => {
+        if (!firestore || !firebaseApp || !subscription?.adId || !customerId) {
+            toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
+            return;
+        }
+        if (!adProofFile) {
+            toast({ title: 'No File Selected', description: 'Please select an image file to upload.', variant: 'destructive' });
+            return;
+        }
+
+        setIsSavingProof(true);
+        try {
+            const storage = getStorage(firebaseApp);
+            const filePath = `advertisements/${customerId}/${subscription.adId}/${adProofFile.name}`;
+            const fileStorageRef = storageRef(storage, filePath);
+
+            await uploadBytes(fileStorageRef, adProofFile);
+            const downloadUrl = await getDownloadURL(fileStorageRef);
+            
+            const adDocRef = doc(firestore, 'users', customerId, 'advertisements', subscription.adId);
+            await updateDoc(adDocRef, {
+                adProofUrl: downloadUrl,
+                adProofDestinationUrl: adProofUrl,
+                status: 'pending_customer_approval',
+                updatedAt: new Date(),
+            });
+
+            setSubscription(prev => prev ? { ...prev, adProofUrl: downloadUrl, adProofDestinationUrl: adProofUrl, adStatus: 'pending_customer_approval' } : null);
+
+            toast({ title: 'Success!', description: 'Advertisement proof has been uploaded.' });
+
+        } catch (error: any) {
+            console.error("Error saving proof:", error);
+            toast({ title: 'Upload Failed', description: error.message || 'Could not save the ad proof.', variant: 'destructive' });
+        } finally {
+            setIsSavingProof(false);
+        }
+    };
+
 
     if (loading) {
         return (
@@ -226,11 +286,46 @@ export default function SubscriptionDetailPage() {
                     </CardContent>
                  </Card>
 
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Advertisement Proof</CardTitle>
+                        <CardDescription>Upload the final ad creative and destination URL for customer approval.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {subscription.adProofUrl && (
+                            <div className="space-y-4">
+                                <h4 className="font-medium">Current Proof</h4>
+                                <div className="border rounded-lg p-4 flex flex-col items-center gap-4">
+                                    <Image src={subscription.adProofUrl} alt="Advertisement Proof" width={468} height={60} className="border" />
+                                    <p className="text-xs text-muted-foreground break-all">
+                                        Destination: <a href={subscription.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{subscription.adProofDestinationUrl}</a>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="space-y-4">
+                            <h4 className="font-medium">{subscription.adProofUrl ? 'Upload New Proof' : 'Upload Proof'}</h4>
+                            <div className="space-y-2">
+                                <Label htmlFor="ad-proof-file">Ad Image File</Label>
+                                <Input id="ad-proof-file" type="file" accept="image/*" onChange={(e) => setAdProofFile(e.target.files?.[0] || null)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="ad-proof-url">Ad Destination URL</Label>
+                                <Input id="ad-proof-url" type="text" placeholder="https://example.com" value={adProofUrl} onChange={(e) => setAdProofUrl(e.target.value)} />
+                            </div>
+                            <Button onClick={handleSaveProof} disabled={isSavingProof}>
+                                {isSavingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                {isSavingProof ? 'Saving...' : 'Save Proof & Request Approval'}
+                            </Button>
+                        </div>
+                    </CardContent>
+                 </Card>
+
                  <CommentsDialog
                     subscription={{id: subscription.id, customerId: subscription.customerId}}
-                    isOpen={true} // Render it directly on the page
-                    onOpenChange={() => {}} // No-op, it's always open here
-                    renderAsCard={true} // New prop to render as Card
+                    isOpen={true}
+                    onOpenChange={() => {}}
+                    renderAsCard={true}
                 />
             </div>
             <div className="md:col-span-1 space-y-6">

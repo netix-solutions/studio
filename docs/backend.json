@@ -161,6 +161,16 @@
         "updatedAt": {
             "type": "string",
             "format": "date-time"
+        },
+        "adProofUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the final ad creative image for approval."
+        },
+        "adProofDestinationUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The destination URL for the final ad creative."
         }
       },
       "required": [
@@ -788,12 +798,16 @@
   "storage": {
     "structure": [
       {
-        "path": "/advertisements/{userId}/{fileName}",
-        "description": "Stores files uploaded by users for their advertisements. Path-based ownership is enforced so users can only write to their own folder.",
+        "path": "/advertisements/{userId}/{advertisementId}/{fileName}",
+        "description": "Stores final ad proof files uploaded by admins. Path-based ownership is enforced so admins can write and users can read their own proofs.",
         "params": [
           {
             "name": "userId",
             "description": "The user's unique ID."
+          },
+          {
+            "name": "advertisementId",
+            "description": "The advertisement's unique ID."
           },
           {
             "name": "fileName",
@@ -805,6 +819,5 @@
   }
 }
 
-    
 
     

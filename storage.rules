@@ -14,17 +14,24 @@ service firebase.storage {
 
     function isAdmin() {
       // It's not possible to read Firestore from Storage rules in this way.
-      // We will rely on custom claims or another method for admin checks if needed,
-      // but for now, we remove the direct dependency.
-      // A common pattern is to check for a custom claim:
+      // We will rely on custom claims for admin checks.
       return request.auth.token.admin == true;
     }
     
-    // Files for advertisements: User can only write to their own folder.
-    // Admins (with custom claims) can read any file.
-    match /advertisements/{userId}/{allPaths=**} {
-      allow read: if request.auth.token.admin == true;
+    // Original files from user ad submission. User can write to their own folder.
+    // Admins can read any file.
+    match /advertisements/{userId}/{fileName} {
+      allow read: if isAdmin();
       allow write: if isOwner(userId);
+    }
+    
+    // Ad proof files uploaded by an admin.
+    // Admins can write. The owner of the ad can read their own proof.
+    match /advertisements/{userId}/{advertisementId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
     }
   }
 }
+
+    
