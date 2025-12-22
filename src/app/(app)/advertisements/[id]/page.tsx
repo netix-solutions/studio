@@ -120,40 +120,50 @@ export default function AdvertisementDetailPage() {
             return;
         }
         
-        const hasNewUrl = adProofUrlInput !== (advertisement.adProofDestinationUrl || user.adWebsiteUrl || '');
-        if (!adProofFile && !hasNewUrl) {
-            toast({ title: 'No Changes', description: 'Please select a new file to upload or update the destination URL.', variant: 'default' });
+        const hasUrlChanged = adProofUrlInput !== (advertisement.adProofDestinationUrl || user.adWebsiteUrl || '');
+
+        if (!adProofFile && !hasUrlChanged) {
+            toast({ title: 'No Changes', description: 'Please select a file to upload or update the destination URL.' });
             return;
         }
 
         setIsSavingProof(true);
         try {
             const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
-            let downloadUrl = advertisement.adProofUrl;
-
+            let newProofUrl = advertisement.adProofUrl;
+            
+            // Step 1: Upload file if a new one is selected
             if (adProofFile) {
                 const storage = getStorage(firebaseApp);
                 const filePath = `advertisements/${advertisement.userId}/${advertisement.id}/${adProofFile.name}`;
                 const fileStorageRef = storageRef(storage, filePath);
-
                 await uploadBytes(fileStorageRef, adProofFile);
-                downloadUrl = await getDownloadURL(fileStorageRef);
+                newProofUrl = await getDownloadURL(fileStorageRef);
             }
             
-            await updateDoc(adDocRef, {
-                ...(downloadUrl && { adProofUrl: downloadUrl }),
-                ...(hasNewUrl && { adProofDestinationUrl: adProofUrlInput }),
+            // Step 2: Prepare data for Firestore update
+            const updateData: { [key: string]: any } = {
+                adProofUrl: newProofUrl, // Always include the URL (new or old)
+                adProofDestinationUrl: adProofUrlInput,
                 updatedAt: serverTimestamp(),
-            });
+            };
 
-            setAdvertisement(prev => prev ? { ...prev, adProofUrl: downloadUrl, adProofDestinationUrl: adProofUrlInput } : null);
-            setAdProofFile(null); // Clear the selected file
+            // Step 3: Update Firestore
+            await updateDoc(adDocRef, updateData);
 
+            // Step 4: Update local state to reflect changes
+            setAdvertisement(prev => prev ? { 
+                ...prev, 
+                adProofUrl: newProofUrl, 
+                adProofDestinationUrl: adProofUrlInput 
+            } : null);
+            
+            setAdProofFile(null); // Clear the selected file input
             toast({ title: 'Success!', description: 'Advertisement proof has been saved.' });
 
         } catch (error: any) {
             console.error("Error saving proof:", error);
-            toast({ title: 'Upload Failed', description: error.message || 'Could not save the ad proof.', variant: 'destructive' });
+            toast({ title: 'Save Failed', description: error.message || 'Could not save the ad proof.', variant: 'destructive' });
         } finally {
             setIsSavingProof(false);
         }
