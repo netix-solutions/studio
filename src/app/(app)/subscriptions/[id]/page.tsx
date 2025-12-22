@@ -89,7 +89,7 @@ export default function SubscriptionDetailPage() {
                 
                 const [subDocSnap, userDocSnap, adSnapshot] = await Promise.all([
                     getDoc(subDocRef),
-                    getDoc(userDocSnap),
+                    getDoc(userDocRef),
                     getDocs(adQuery),
                 ]);
 
