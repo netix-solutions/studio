@@ -15,9 +15,7 @@ export default function PrivacyPolicyPage() {
         </p>
 
         <h2>2. Information We Collect</h2>
-        <p>
-          <strong>Information you provide</strong>
-        </p>
+        <h3>Information you provide</h3>
         <ul>
           <li>
             Name, business name, email, phone number, billing details, and
@@ -30,17 +28,15 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>Messages you send to support.</li>
         </ul>
-        <p>
-          <strong>Payment information</strong>
-        </p>
+        
+        <h3>Payment information</h3>
         <p>
           Payments are processed by third-party payment processors. We do not
           store full credit card numbers. We may receive limited billing
           details, payment status, and transaction identifiers.
         </p>
-        <p>
-          <strong>Automatically collected information</strong>
-        </p>
+
+        <h3>Automatically collected information</h3>
         <p>
           We may collect technical and usage data such as IP address, device
           type, browser, pages viewed, referring pages, timestamps, and basic
@@ -93,7 +89,6 @@ export default function PrivacyPolicyPage() {
           If you buy advertising, your Advertiser Content may be displayed
           publicly and may be viewed, saved, shared, or accessed by others. Do
           not submit confidential or sensitive information for public ad
-
           display.
         </p>
 
@@ -123,6 +118,7 @@ export default function PrivacyPolicyPage() {
         <p>
           You may request access, correction, or deletion of certain personal
           information, subject to verification and legal limits. You can opt
+
           out of non-essential marketing emails by using the unsubscribe link.
           Service and billing emails may still be sent.
         </p>

@@ -70,7 +70,7 @@ export default function TermsOfServicePage() {
 
         <h2>9. Advertiser Content, Truthfulness, and Responsibility</h2>
         <p>
-          You may submit text, images, logos, videos, links, claims, offers, promotions, and other materials (Advertiser Content).
+          You may submit text, images, logos, videos, links, claims, offers, promotions, and other materials (<strong>Advertiser Content</strong>).
         </p>
         <p>You represent and warrant that:</p>
         <ul>
