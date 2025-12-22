@@ -7,12 +7,14 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LogIn } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import Image from 'next/image';
 
 interface Price {
   id: string;
@@ -127,21 +129,23 @@ function PricingCard({ product, onPurchase, isPurchasing, isFeatured }: { produc
                     ) : <div className="h-10"/> /* Spacer to keep alignment */}
                 </div>
                 <div className="text-center my-4">
-                    {displayPrice !== undefined ? (
-                        <>
-                            <span className="text-5xl font-bold tracking-tight">
-                                {(displayPrice / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </span>
-                            <span className="text-muted-foreground">/month</span>
-                            {billingCycle === 'yearly' && yearlyPrice && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Billed as {(yearlyPrice.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} per year
-                                </p>
-                            )}
-                        </>
-                    ) : (
-                         <p className="text-lg font-medium text-muted-foreground">Price not available</p>
-                    )}
+                     <div className="rounded-lg bg-green-500/10 backdrop-blur-sm border border-green-500/20 p-6 w-fit mx-auto">
+                        {displayPrice !== undefined ? (
+                            <>
+                                <span className="text-5xl font-bold tracking-tight text-foreground">
+                                    {(displayPrice / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                </span>
+                                <span className="text-muted-foreground">/month</span>
+                                {billingCycle === 'yearly' && yearlyPrice && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Billed as {(yearlyPrice.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} per year
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-lg font-medium text-muted-foreground">Price not available</p>
+                        )}
+                    </div>
                 </div>
 
                 {product.description && (
@@ -231,6 +235,21 @@ function PricingPageContent() {
 
   return (
     <div className="bg-background text-foreground">
+        <header className="sticky top-0 z-40 w-full px-4 md:px-6">
+            <div className="container mx-auto flex h-16 items-center justify-between rounded-b-xl border border-t-0 border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
+                <Link href="/" className="flex items-center gap-3 font-bold text-xl">
+                    <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
+                    <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
+                </Link>
+                <Button variant="outline" asChild>
+                    <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Existing Customer Login
+                    </Link>
+                </Button>
+            </div>
+        </header>
+
         <div className="container mx-auto py-16 px-4 md:px-6">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold tracking-tight font-headline sm:text-5xl">
@@ -277,3 +296,5 @@ export default function PricingPage() {
         </Suspense>
     );
 }
+
+    
