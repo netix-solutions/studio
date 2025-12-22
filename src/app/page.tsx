@@ -186,17 +186,19 @@ export default function LandingPage() {
                         Everything you need for effective local advertising.
                     </p>
                 </div>
-                <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                     {whatYouGet.map((item, index) => (
-                        <div key={index} className="flex items-start gap-4">
-                            <div className="rounded-full bg-primary/10 p-3 text-primary">
-                                <item.icon className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold font-headline">{item.title}</h3>
+                <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {whatYouGet.map((item, index) => (
+                        <Card key={index} className="bg-card">
+                            <CardHeader className="flex flex-row items-center gap-4">
+                                <div className="rounded-full bg-primary/10 p-3 text-primary">
+                                    <item.icon className="h-6 w-6" />
+                                </div>
+                                <CardTitle className="text-lg font-bold font-headline">{item.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
                                 <p className="text-muted-foreground">{item.description}</p>
-                            </div>
-                        </div>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
                 <div className="mt-12 text-center">
