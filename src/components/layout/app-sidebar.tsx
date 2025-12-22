@@ -17,10 +17,10 @@ import Image from 'next/image';
 const allMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
   { href: '/leads', label: 'Leads', icon: Handshake, adminOnly: true },
+  { href: '/subscriptions', label: 'Customers', icon: Ticket, adminOnly: true },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone, adminOnly: true },
   { href: '/account', label: 'Account', icon: User, adminOnly: false },
   { href: '/pricing', label: 'Change Plan', icon: ShoppingBag, adminOnly: false },
-  { href: '/subscriptions', label: 'Customers', icon: Ticket, adminOnly: true },
   { href: '/users', label: 'Users', icon: Users, adminOnly: true },
   { href: '/automated-emails', label: 'Automated Emails', icon: Mail, adminOnly: true },
   { href: '/legal', label: 'Legal Documents', icon: FileText, adminOnly: true },
@@ -62,5 +62,3 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
     </Sidebar>
   );
 }
-
-    

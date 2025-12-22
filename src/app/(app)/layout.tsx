@@ -111,14 +111,6 @@ export default function ProtectedLayout({
                     {children}
                 </main>
             </div>
-             <div className="fixed bottom-4 right-4 z-50">
-                <Button asChild size="lg" className="rounded-full shadow-lg">
-                    <Link href={isAdmin ? ADMIN_DEFAULT_ROUTE : USER_DEFAULT_ROUTE}>
-                        {isAdmin ? <LayoutDashboard className="mr-2 h-5 w-5" /> : <User className="mr-2 h-5 w-5" />}
-                        {isAdmin ? 'Admin Panel' : 'My Account'}
-                    </Link>
-                </Button>
-            </div>
         </div>
     </SidebarProvider>
   );

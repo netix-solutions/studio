@@ -11,11 +11,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, LayoutDashboard } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { signOutUser } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 import { SidebarTrigger } from '../ui/sidebar';
+import Link from 'next/link';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -83,6 +84,16 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
                 <SidebarTrigger />
             </div>
             <h1 className="text-xl font-semibold md:text-2xl font-headline text-foreground">{pageTitle}</h1>
+            
+            {isAdmin && (
+                 <Button asChild variant="outline" className="ml-4 hidden sm:flex">
+                    <Link href="/dashboard">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Admin Panel
+                    </Link>
+                </Button>
+            )}
+
             <div className="ml-auto">
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
