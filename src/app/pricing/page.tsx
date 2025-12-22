@@ -37,7 +37,7 @@ interface Product {
 }
 
 async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
-  const productsColRef = collection(firestore, 'plans');
+  const productsColRef = collection(firestore, 'products');
   const q = query(productsColRef, where('active', '==', true));
   const productDocs = await getDocs(q);
 
@@ -45,7 +45,7 @@ async function fetchProductsAndPrices(firestore: any): Promise<Product[]> {
     productDocs.docs.map(async (productDoc) => {
       const productData = productDoc.data();
       
-      const pricesColRef = collection(firestore, 'plans', productDoc.id, 'prices');
+      const pricesColRef = collection(firestore, 'products', productDoc.id, 'prices');
       const pricesQuery = query(pricesColRef, where('active', '==', true));
       const priceDocs = await getDocs(pricesQuery);
       
@@ -210,12 +210,16 @@ function PricingPageContent() {
       return;
     }
     setIsPurchasing(priceId);
+    
+    // The user object is available here from the useFirebase hook.
+    // We check for it at the time of action, not on page load.
     if (!user) {
       sessionStorage.setItem('selectedPriceId', priceId);
       const registerUrl = email ? `/register?email=${encodeURIComponent(email)}` : '/register';
       router.push(registerUrl);
       return;
     }
+
     try {
       await createCheckout(firestore, user.uid, user.email, priceId, window.location.origin + '/account');
     } catch (error: any) {
@@ -296,3 +300,5 @@ export default function PricingPage() {
         </Suspense>
     );
 }
+
+    
