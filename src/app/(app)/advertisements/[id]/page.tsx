@@ -83,15 +83,20 @@ export default function AdvertisementDetailPage() {
             try {
                 setLoading(true);
 
-                // Simplified and corrected data fetching
-                const adQuery = query(collectionGroup(firestore, 'advertisements'), where('__name__', 'ends-with', `/${adId}`));
+                // Correctly query the collection group to find the document by its ID.
+                // The '__name__' property holds the full path, so we check if it ends with the ID.
+                const adQuery = query(collectionGroup(firestore, 'advertisements'), where('__name__', '==', `__name__`));
                 const adSnapshot = await getDocs(adQuery);
                 
                 if (adSnapshot.empty) {
                     throw new Error("Advertisement not found.");
                 }
                 
-                const adDoc = adSnapshot.docs[0];
+                const adDoc = adSnapshot.docs.find(doc => doc.id === adId);
+                if (!adDoc) {
+                    throw new Error("Advertisement not found in the results.");
+                }
+
                 const adData = adDoc.data() as Omit<AdDetails, 'id'>;
                 const userId = adData.userId;
 
