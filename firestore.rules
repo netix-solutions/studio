@@ -14,6 +14,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Check for an admin document in a specific collection.
+      // This is more secure and flexible than using custom claims for this app.
       return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
     
@@ -42,11 +44,19 @@ service cloud.firestore {
       // ADVERTISEMENT TICKETS
       // Users can create/read their own tickets. Admins can manage all tickets.
       match /advertisements/{advertisementId} {
-        allow create, read, list: if isOwner(userId) || isAdmin();
+        // Grant create/read access to owners and admins.
+        // List is handled by the collectionGroup rule below.
+        allow create, read: if isOwner(userId) || isAdmin();
         allow update, delete: if isAdmin();
       }
     }
     
+    // This rule allows admins to perform a collectionGroup query on 'advertisements'
+    // across all users, which is necessary for the main admin advertisements page.
+    match /{path=**}/advertisements/{adId} {
+      allow list: if isAdmin();
+    }
+
     // STRIPE CUSTOMER DATA & ALL SUBCOLLECTIONS
     // A user can manage their own customer data, and so can an admin.
     // This includes checkout_sessions, subscriptions, and portal_links.
