@@ -180,6 +180,40 @@ export default function LandingPage() {
             </div>
         </section>
 
+        {/* Where your ad appears section */}
+        <section id="placements" className="bg-muted/50 py-20 lg:py-24">
+            <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center px-4 md:px-6">
+                <div className="space-y-4">
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
+                        Where Your Ad Appears
+                    </h2>
+                    <p className="text-muted-foreground md:text-lg">
+                        Your ad appears on pages residents visit for local news, events, and community updates. Ads rotate to keep exposure consistent across our network, reaching Pasco County residents where they are most engaged.
+                    </p>
+                    <ul className="space-y-2">
+                        <li className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <span>WesleyChapelCommunity.com</span>
+                        </li>
+                         <li className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <span>PascoCommunity.com</span>
+                        </li>
+                    </ul>
+                </div>
+                <div className="flex justify-center">
+                    <div className="relative w-full max-w-md rounded-lg overflow-hidden shadow-lg">
+                        <Image src="/adhere.png" alt="Community News Site Ad Example" width={600} height={500} layout="responsive" />
+                    </div>
+                </div>
+            </div>
+             <div className="mt-12 text-center">
+                <Button asChild size="lg">
+                    <Link href="#get-started">View Current Pricing</Link>
+                </Button>
+            </div>
+        </section>
+
         {/* What you get section */}
         <section id="what-you-get" className="py-20 lg:py-24">
             <div className="container mx-auto px-4 md:px-6">
@@ -215,40 +249,6 @@ export default function LandingPage() {
         </section>
 
         <StatsSection />
-
-        {/* Where your ad appears section */}
-        <section id="placements" className="bg-muted/50 py-20 lg:py-24">
-            <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center px-4 md:px-6">
-                <div className="space-y-4">
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline">
-                        Where Your Ad Appears
-                    </h2>
-                    <p className="text-muted-foreground md:text-lg">
-                        Your ad appears on pages residents visit for local news, events, and community updates. Ads rotate to keep exposure consistent across our network, reaching Pasco County residents where they are most engaged.
-                    </p>
-                    <ul className="space-y-2">
-                        <li className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <span>WesleyChapelCommunity.com</span>
-                        </li>
-                         <li className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                            <span>PascoCommunity.com</span>
-                        </li>
-                    </ul>
-                </div>
-                <div className="flex justify-center">
-                    <div className="relative w-full max-w-md rounded-lg overflow-hidden shadow-lg">
-                        <Image src="/adhere.png" alt="Community News Site Ad Example" width={600} height={500} layout="responsive" />
-                    </div>
-                </div>
-            </div>
-             <div className="mt-12 text-center">
-                <Button asChild size="lg">
-                    <Link href="#get-started">View Current Pricing</Link>
-                </Button>
-            </div>
-        </section>
 
         {/* Get Started Form Section */}
         <section id="get-started" className="bg-muted/50 py-20 lg:py-24">
@@ -347,3 +347,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
