@@ -212,7 +212,7 @@ export default function SubscriptionsPage() {
   const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
 
   const handleRowClick = (sub: EnrichedSubscription) => {
-    router.push(`/subscriptions/${sub.id}`);
+    router.push(`/subscriptions/${sub.id}?customerId=${sub.customerId}`);
   };
 
   if (loading) {
@@ -317,7 +317,10 @@ export default function SubscriptionsPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleRowClick(sub)}>
+                                <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRowClick(sub);
+                                }}>
                                     View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>Cancel Subscription</DropdownMenuItem>
@@ -346,3 +349,4 @@ export default function SubscriptionsPage() {
   );
 }
 
+    

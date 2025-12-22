@@ -1,9 +1,9 @@
 
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign } from 'lucide-react';
@@ -61,7 +61,9 @@ const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
 
 export default function SubscriptionDetailPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const { id: subscriptionId } = params;
+    const customerId = searchParams.get('customerId');
     const { firestore } = useFirebase();
 
     const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
@@ -70,43 +72,25 @@ export default function SubscriptionDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!firestore || !subscriptionId || typeof subscriptionId !== 'string') {
+        if (!firestore || !subscriptionId || typeof subscriptionId !== 'string' || !customerId) {
             setLoading(false);
-            setError("Invalid subscription ID.");
+            setError("Invalid subscription or customer ID.");
             return;
         }
 
-        const findSubscriptionAndCustomer = async () => {
+        const fetchDetails = async () => {
             try {
                 setLoading(true);
                 
-                // 1. Find the advertisement ticket that matches the subscription ID.
-                const adsQuery = query(
-                    collectionGroup(firestore, 'advertisements'), 
-                    where('subscriptionId', '==', subscriptionId)
-                );
-                const adSnapshot = await getDocs(adsQuery);
-
-                if (adSnapshot.empty) {
-                    throw new Error("Could not find an advertisement ticket associated with this subscription. It may not have been created yet.");
-                }
-                
-                // Efficient path: We found the ad ticket.
-                const adDoc = adSnapshot.docs[0];
-                const adData = adDoc.data();
-                const customerId = adData.userId;
-
-                if (!customerId) {
-                    throw new Error("Advertisement ticket is missing a user ID.");
-                }
-
-                // 2. Fetch the corresponding subscription and user documents directly.
+                // 1. We have the IDs, so fetch everything directly.
                 const subDocRef = doc(firestore, 'customers', customerId, 'subscriptions', subscriptionId);
                 const userDocRef = doc(firestore, 'users', customerId);
-
-                const [subDocSnap, userDocSnap] = await Promise.all([
+                const adQuery = query(collection(firestore, 'users', customerId, 'advertisements'), where('subscriptionId', '==', subscriptionId));
+                
+                const [subDocSnap, userDocSnap, adSnapshot] = await Promise.all([
                     getDoc(subDocRef),
-                    getDoc(userDocRef),
+                    getDoc(userDocSnap),
+                    getDocs(adQuery),
                 ]);
 
                 if (!subDocSnap.exists()) throw new Error("Subscription data could not be found for this customer.");
@@ -114,6 +98,7 @@ export default function SubscriptionDetailPage() {
 
                 const subData = subDocSnap.data();
                 const userData = userDocSnap.data() as UserDetails;
+                const adData = adSnapshot.empty ? null : adSnapshot.docs[0].data();
 
                 const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
                 const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
@@ -136,8 +121,8 @@ export default function SubscriptionDetailPage() {
                 if (err.code === 'permission-denied') {
                     setError("You do not have permission to view these details. Please contact an administrator.");
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
-                        path: `/advertisements`,
-                        operation: 'list',
+                        path: `/customers/${customerId}/subscriptions/${subscriptionId}`,
+                        operation: 'get',
                     }));
                 } else {
                     setError(err.message || "Failed to load subscription details.");
@@ -147,9 +132,9 @@ export default function SubscriptionDetailPage() {
             }
         };
 
-        findSubscriptionAndCustomer();
+        fetchDetails();
 
-    }, [firestore, subscriptionId]);
+    }, [firestore, subscriptionId, customerId]);
 
     if (loading) {
         return (
@@ -275,3 +260,4 @@ export default function SubscriptionDetailPage() {
     
 }
 
+    
