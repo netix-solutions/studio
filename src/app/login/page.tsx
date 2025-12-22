@@ -11,6 +11,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -26,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirebase } from '@/firebase';
 import { signInWithEmail } from '@/lib/firebase/auth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Home } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { createCheckout } from '@/lib/stripe';
@@ -166,6 +167,14 @@ export default function LoginPage() {
             </p>
           </div>
         </CardContent>
+        <CardFooter>
+            <Button variant="outline" className="w-full" asChild>
+                <Link href="/">
+                    <Home className="mr-2 h-4 w-4" />
+                    Return to Homepage
+                </Link>
+            </Button>
+        </CardFooter>
       </Card>
     </main>
   );
