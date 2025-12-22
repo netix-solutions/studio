@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
 import { useRouter } from 'next/navigation';
@@ -79,34 +79,37 @@ export default function SubscriptionsPage() {
                  getDocs(customersColRef).then(async (customerSnaps) => {
                      let allSubs: EnrichedSubscription[] = [];
                      
-                     // 1. Fetch all ads at once and map them by subscription ID
-                     const adsSnapshot = await getDocs(collection(firestore, 'advertisements'));
-                     const adsMap = new Map<string, any>();
-                     adsSnapshot.forEach(adDoc => {
-                         const adData = adDoc.data();
-                         if (adData.subscriptionId) {
-                            adsMap.set(adData.subscriptionId, adData);
-                         }
-                     });
-
-                     // 2. Fetch all users and map them by ID
                      const usersSnapshot = await getDocs(collection(firestore, 'users'));
                      const usersMap = new Map<string, any>();
                      usersSnapshot.forEach(userDoc => {
                          usersMap.set(userDoc.id, userDoc.data());
                      });
+                     
+                     const allSubscriptionsPromises = customerSnaps.docs.map(customerDoc => {
+                         const customerId = customerDoc.id;
+                         const subscriptionsColRef = collection(firestore, 'customers', customerId, 'subscriptions');
+                         return getDocs(subscriptionsColRef).then(subsSnaps => ({ subsSnaps, customerId }));
+                     });
 
-                     // 3. Process subscriptions
-                     for (const customerDoc of customerSnaps.docs) {
-                        const customerId = customerDoc.id;
-                        const subscriptionsColRef = collection(firestore, 'customers', customerId, 'subscriptions');
-                        const subsSnaps = await getDocs(subscriptionsColRef);
+                     const allSubscriptionsResults = await Promise.all(allSubscriptionsPromises);
+
+                     for (const { subsSnaps, customerId } of allSubscriptionsResults) {
                         const userData = usersMap.get(customerId);
+                        
+                        const adQuery = query(collection(firestore, 'users', customerId, 'advertisements'));
+                        const adsSnapshot = await getDocs(adQuery);
+                        const adsMap = new Map<string, any>();
+                        adsSnapshot.forEach(adDoc => {
+                            const adData = adDoc.data();
+                            if (adData.subscriptionId) {
+                                adsMap.set(adData.subscriptionId, adData);
+                            }
+                        });
 
                         subsSnaps.forEach(subDoc => {
                             const subData = subDoc.data();
                             const adData = adsMap.get(subDoc.id);
-                            
+
                             const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
                             const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
 
@@ -125,8 +128,8 @@ export default function SubscriptionsPage() {
                             });
                         });
                      }
-
-                    setSubscriptions(allSubs);
+                     
+                    setSubscriptions(allSubs.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()));
                     setLoading(false);
 
                  }).catch(err => {
@@ -343,4 +346,3 @@ export default function SubscriptionsPage() {
   );
 }
 
-    
