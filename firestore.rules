@@ -38,16 +38,15 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow list: if isAdmin();
       allow delete: if false; // Users should not be deletable from the client
+
+      // ADVERTISEMENT TICKETS
+      // Users can create/read their own tickets. Admins can manage all tickets.
+      match /advertisements/{advertisementId} {
+        allow create, read, list: if isOwner(userId) || isAdmin();
+        allow update, delete: if isAdmin();
+      }
     }
     
-    // ADVERTISEMENTS (TICKET SYSTEM)
-    // Only admins can read, write, or list the advertisement records.
-    // Creation would ideally be handled by a Cloud Function.
-    match /advertisements/{advertisementId} {
-        allow read, write, list: if isAdmin();
-        allow create: if isAdmin(); // Allow admins to create manually if needed
-    }
-
     // STRIPE CUSTOMER DATA & ALL SUBCOLLECTIONS
     // A user can manage their own customer data, and so can an admin.
     // This includes checkout_sessions, subscriptions, and portal_links.

@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useFirebase } from '@/firebase';
-import { collection, onSnapshot, query, Unsubscribe, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, Unsubscribe, doc, collectionGroup, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
@@ -52,7 +52,7 @@ export default function AdvertisementsPage() {
             return;
         }
 
-        const adsQuery = query(collection(firestore, 'advertisements'));
+        const adsQuery = query(collectionGroup(firestore, 'advertisements'));
         
         const unsubscribe = onSnapshot(adsQuery, (snapshot) => {
             const adsData: Advertisement[] = snapshot.docs.map(doc => {
@@ -67,7 +67,7 @@ export default function AdvertisementsPage() {
             setError(null);
         }, (err) => {
             const permissionError = new FirestorePermissionError({
-                path: '/advertisements',
+                path: '/users/{userId}/advertisements',
                 operation: 'list',
             } satisfies SecurityRuleContext);
             
@@ -159,3 +159,5 @@ export default function AdvertisementsPage() {
         </>
     );
 }
+
+    

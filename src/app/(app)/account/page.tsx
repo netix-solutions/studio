@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer, updateDoc, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2, AlertCircle, Edit, Save, FileText, Upload } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -96,7 +96,7 @@ export default function AccountPage() {
             setIsAdmin(docSnap.exists());
             setIsAdminLoading(false);
         }, (error) => {
-            console.log("Admin check failed, likely due to permissions. User is not an admin.");
+            // This is expected for non-admin users, so we can silently set admin to false.
             setIsAdmin(false);
             setIsAdminLoading(false);
         });
@@ -224,8 +224,9 @@ export default function AccountPage() {
             const activeSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'trialing');
 
             for (const sub of activeSubs) {
-                const adQuery = query(
-                    collection(firestore, 'advertisements'),
+                const adCollectionRef = collection(firestore, 'users', user.uid, 'advertisements');
+                 const adQuery = query(
+                    adCollectionRef,
                     where('subscriptionId', '==', sub.id)
                 );
                 const existingAds = await getDocsFromServer(adQuery);
@@ -242,7 +243,7 @@ export default function AccountPage() {
                 };
 
                 if (existingAds.empty) {
-                    await addDoc(collection(firestore, 'advertisements'), ticketData);
+                    await addDoc(adCollectionRef, ticketData);
                      toast({
                         title: "Ad Ticket Created",
                         description: "Our team has been notified and will begin working on your ad.",
