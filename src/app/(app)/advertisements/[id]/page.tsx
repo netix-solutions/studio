@@ -83,16 +83,15 @@ export default function AdvertisementDetailPage() {
             try {
                 setLoading(true);
 
-                // Find the advertisement document using a collectionGroup query
-                const adQuery = query(collectionGroup(firestore, 'advertisements'), where('__name__', '==', `users/${adId.split('_')[0]}/advertisements/${adId.split('_')[1]}`));
-                const adQuerySnapshot = await getDocs(query(collection(firestore, 'users', adId.split('_')[0], 'advertisements'), where('__name__', '==', `users/${adId.split('_')[0]}/advertisements/${adId.split('_')[1]}`)));
+                // Simplified and corrected data fetching
+                const adQuery = query(collectionGroup(firestore, 'advertisements'), where('__name__', 'ends-with', `/${adId}`));
+                const adSnapshot = await getDocs(adQuery);
                 
-                const adDoc = (await getDocs(query(collectionGroup(firestore, 'advertisements')))).docs.find(doc => doc.id === adId);
-                
-                if (!adDoc || !adDoc.exists()) {
+                if (adSnapshot.empty) {
                     throw new Error("Advertisement not found.");
                 }
-
+                
+                const adDoc = adSnapshot.docs[0];
                 const adData = adDoc.data() as Omit<AdDetails, 'id'>;
                 const userId = adData.userId;
 
@@ -329,4 +328,5 @@ export default function AdvertisementDetailPage() {
             </div>
         </div>
     )
-}
+
+    
