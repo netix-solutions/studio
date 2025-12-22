@@ -126,10 +126,10 @@ export default function LandingPage() {
           <div className="relative container mx-auto z-10 text-white drop-shadow-lg px-4 md:px-6 pt-20">
             <Image src="/logo.png" alt="Community-Websites.com Logo" width={150} height={83} priority className="mx-auto mb-4 drop-shadow-lg" />
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline [text-shadow:_0_2px_4px_rgb(0_0_0_/_50%)]">
-              Reach thousands of local readers every day.
+              Reach thousands of local residents every day.
             </h1>
             <p className="max-w-[700px] mx-auto text-gray-200 md:text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_50%)]">
-              Your clickable ad runs on WesleyChapelCommunity.com and PascoCommunity.com.
+              Your clickable, custom-designed advertisement will run on WesleyChapelCommunity.com and/or PascoCommunity.com.
             </p>
             <div className="text-lg text-gray-200 [text-shadow:_0_1px_2px_rgb(0_0_0_/_50%)]">Plans start from just $24 per month.</div>
             <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
@@ -347,5 +347,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
