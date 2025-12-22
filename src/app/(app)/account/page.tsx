@@ -21,8 +21,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { sendEmail } from '@/lib/firebase/email';
-import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
 interface Subscription {
     id: string;
@@ -107,43 +105,7 @@ export default function AccountPage() {
 
         const unsubSubs = onSnapshot(q, async (snapshot) => {
              const userDoc = await getDoc(userDocRef);
-             const userData = userDoc.data();
-            
-            const docChanges = snapshot.docChanges();
-            
-            for (const change of docChanges) {
-                if (change.type === "added" && !userData?.welcomeEmailSent) {
-                    const subData = change.doc.data();
-                     if (subData.status === 'active' || subData.status === 'trialing') {
-                         
-                        // Send welcome email
-                        const templatesQuery = query(
-                            collection(firestore, 'emailTemplates'), 
-                            where('triggerName', '==', 'new_subscription_purchase')
-                        );
-                        const templateSnap = await getDocs(templatesQuery);
-
-                        if (!templateSnap.empty) {
-                            const templateDoc = templateSnap.docs[0];
-                            const template = templateDoc.data() as EmailTemplate;
-                            
-                             const subject = template.subject.replace(/{{contactName}}/g, userData?.contactName || 'Valued Customer');
-                             const html = template.html.replace(/{{contactName}}/g, userData?.contactName || 'Valued Customer');
-                             
-                             await sendEmail(firestore, { to: user.email!, subject, html }, {
-                                 recipientId: user.uid,
-                                 templateId: template.id,
-                                 triggerType: 'new_subscription_purchase'
-                             });
-                             
-                             // Set flag to prevent re-sending
-                             await updateDoc(userDocRef, { welcomeEmailSent: true });
-                        }
-                    }
-                }
-            }
-
-
+             
             const activeSubs = snapshot.docs.filter(doc => doc.data().status === 'active' || doc.data().status === 'trialing');
 
             if (activeSubs.length > 0) {
