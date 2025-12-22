@@ -119,46 +119,55 @@ export default function AdvertisementDetailPage() {
             toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
             return;
         }
-        
-        const hasUrlChanged = adProofUrlInput !== (advertisement.adProofDestinationUrl || user.adWebsiteUrl || '');
 
+        const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
+        const originalAdProofUrl = advertisement.adProofUrl;
+        const originalAdDestinationUrl = advertisement.adProofDestinationUrl || user.adWebsiteUrl || '';
+        
+        const hasUrlChanged = adProofUrlInput !== originalAdDestinationUrl;
+
+        // Check if there is anything to save
         if (!adProofFile && !hasUrlChanged) {
-            toast({ title: 'No Changes', description: 'Please select a file to upload or update the destination URL.' });
+            toast({ title: 'No Changes', description: 'Please upload a new file or modify the destination URL to save.' });
             return;
         }
-
+        
         setIsSavingProof(true);
+
         try {
-            const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
-            let newProofUrl = advertisement.adProofUrl;
-            
-            // Step 1: Upload file if a new one is selected
+            let newProofUrl = originalAdProofUrl;
+
+            // Step 1: Upload the file if a new one is present
             if (adProofFile) {
                 const storage = getStorage(firebaseApp);
                 const filePath = `advertisements/${advertisement.userId}/${advertisement.id}/${adProofFile.name}`;
                 const fileStorageRef = storageRef(storage, filePath);
+
                 await uploadBytes(fileStorageRef, adProofFile);
                 newProofUrl = await getDownloadURL(fileStorageRef);
             }
-            
-            // Step 2: Prepare data for Firestore update
+
+            // Step 2: Prepare the data for Firestore update
             const updateData: { [key: string]: any } = {
-                adProofUrl: newProofUrl, // Always include the URL (new or old)
                 adProofDestinationUrl: adProofUrlInput,
                 updatedAt: serverTimestamp(),
             };
-
-            // Step 3: Update Firestore
+            if (newProofUrl) {
+                updateData.adProofUrl = newProofUrl;
+            }
+            
+            // Step 3: Update the document in Firestore
             await updateDoc(adDocRef, updateData);
-
-            // Step 4: Update local state to reflect changes
+            
+            // Step 4: Update the local state to reflect the changes immediately
             setAdvertisement(prev => prev ? { 
                 ...prev, 
                 adProofUrl: newProofUrl, 
                 adProofDestinationUrl: adProofUrlInput 
             } : null);
-            
-            setAdProofFile(null); // Clear the selected file input
+
+            // Step 5: Clear the file input and show success
+            setAdProofFile(null); // Important to clear the file input after successful upload
             toast({ title: 'Success!', description: 'Advertisement proof has been saved.' });
 
         } catch (error: any) {
