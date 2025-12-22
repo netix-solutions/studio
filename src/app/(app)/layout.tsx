@@ -10,6 +10,7 @@ import Header from '@/components/layout/header';
 import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal'];
 const USER_DEFAULT_ROUTE = '/account';
@@ -98,6 +99,8 @@ export default function ProtectedLayout({
 
   return (
     <SidebarProvider>
+        {/* The error listener is now scoped to the protected layout */}
+        <FirebaseErrorListener />
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             <div className="hidden border-r bg-muted/40 md:block">
                 <AppSidebar isAdmin={isAdmin} />

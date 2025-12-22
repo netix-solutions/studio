@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -62,7 +63,6 @@ export function FirebaseProvider({
 
   return (
     <FirebaseContext.Provider value={value}>
-        <FirebaseErrorListener />
         {children}
     </FirebaseContext.Provider>
   );
