@@ -42,8 +42,8 @@ export default function LandingPage() {
     },
     {
       icon: RefreshCw,
-      title: "Step 6: Renew Monthly",
-      description: "Your plan renews automatically, and you can cancel anytime."
+      title: "Step 6: Automatic Renewal",
+      description: "Your plan renews automatically based on your chosen term. You can cancel anytime without hidden fees."
     }
   ];
 
