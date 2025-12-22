@@ -7,7 +7,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimest
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, Save, Upload, Send, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, Save, Upload, Send, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { sendEmail } from '@/lib/firebase/email';
 import { SendCustomerEmailDialog } from '@/components/subscriptions/send-customer-email-dialog';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
+import { cn } from '@/lib/utils';
 
 interface UserDetails {
     id: string;
@@ -34,25 +35,17 @@ interface AdDetails {
     id: string;
     userId: string;
     subscriptionId: string;
-    status: string;
+    status: 'pending_ad_creation' | 'pending_customer_approval' | 'live' | 'canceled_inactive';
     adProofUrl?: string;
     adProofDestinationUrl?: string;
     [key: string]: any;
 }
 
-const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
-    pending_ad_creation: 'outline',
-    pending_customer_approval: 'default',
-    live: 'secondary',
-    canceled_inactive: 'destructive',
-};
-
-const statusTextMap: { [key: string]: string } = {
-    pending_ad_creation: 'Pending Ad Creation',
-    pending_customer_approval: 'Pending Approval',
-    live: 'Live',
-    canceled_inactive: 'Canceled/Inactive',
-};
+const workflowSteps = [
+  { id: 'pending_ad_creation', title: 'Pending Ad Creation' },
+  { id: 'pending_customer_approval', title: 'Pending Customer Approval' },
+  { id: 'live', title: 'Ad is Live' },
+];
 
 
 export default function AdvertisementDetailPage() {
@@ -220,6 +213,7 @@ export default function AdvertisementDetailPage() {
         return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Not Found</AlertTitle><AlertDescription>The requested advertisement could not be found.</AlertDescription></Alert>;
     }
 
+    const currentStepIndex = workflowSteps.findIndex(step => step.id === advertisement.status);
 
     return (
          <div className="space-y-6">
@@ -227,6 +221,39 @@ export default function AdvertisementDetailPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Advertisements
             </Button>
+            
+            {/* Workflow Progress Tracker */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Ad Workflow</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        {workflowSteps.map((step, index) => {
+                             const isCompleted = currentStepIndex > index;
+                             const isActive = currentStepIndex === index;
+                            return (
+                                <React.Fragment key={step.id}>
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className={cn(
+                                            "h-10 w-10 rounded-full flex items-center justify-center border-2",
+                                            isCompleted ? "bg-primary border-primary text-primary-foreground" : "",
+                                            isActive ? "bg-primary/20 border-primary text-primary" : "bg-muted text-muted-foreground",
+                                        )}>
+                                            {isCompleted ? <CheckCircle className="h-6 w-6" /> : <span className="font-bold">{index + 1}</span>}
+                                        </div>
+                                        <p className={cn("mt-2 text-xs md:text-sm font-medium", isActive ? "text-primary" : "text-muted-foreground")}>{step.title}</p>
+                                    </div>
+                                    {index < workflowSteps.length - 1 && (
+                                        <div className={cn("flex-1 h-1 mx-2", isCompleted ? "bg-primary" : "bg-border")}></div>
+                                    )}
+                                </React.Fragment>
+                            )
+                        })}
+                    </div>
+                </CardContent>
+            </Card>
+
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
                     <Card>
@@ -234,55 +261,70 @@ export default function AdvertisementDetailPage() {
                             <CardTitle className="text-2xl">Advertisement for {user.businessName}</CardTitle>
                             <CardDescription>Managing ad ticket ID: {advertisement.id}</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                             <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground font-medium">Ad Status:</span>
-                                <Badge variant={statusVariantMap[advertisement.status] || 'outline'}>
-                                    {statusTextMap[advertisement.status] || advertisement.status}
-                                </Badge>
-                             </div>
-                        </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Advertisement Proof</CardTitle>
-                            <CardDescription>Upload the final ad creative and destination URL for customer approval.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {advertisement.adProofUrl && (
+                    {advertisement.status === 'pending_ad_creation' && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Create Advertisement Proof</CardTitle>
+                                <CardDescription>Upload the final ad creative and destination URL for customer approval.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {advertisement.adProofUrl && (
+                                    <div className="space-y-4">
+                                        <h4 className="font-medium">Current Proof</h4>
+                                        <div className="border rounded-lg p-4 flex flex-col items-center gap-4 bg-muted/30">
+                                            <Image src={advertisement.adProofUrl} alt="Advertisement Proof" width={468} height={60} className="border bg-white" />
+                                            <p className="text-xs text-muted-foreground break-all">
+                                                Destination: <a href={advertisement.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{advertisement.adProofDestinationUrl}</a>
+                                            </p>
+                                        </div>
+                                        <Button onClick={handleRequestApproval} disabled={isRequestingApproval}>
+                                            {isRequestingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                            {isRequestingApproval ? 'Sending...' : 'Request Customer Approval'}
+                                        </Button>
+                                    </div>
+                                )}
                                 <div className="space-y-4">
-                                    <h4 className="font-medium">Current Proof</h4>
+                                    <h4 className="font-medium">{advertisement.adProofUrl ? 'Upload New Proof' : 'Upload Proof'}</h4>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="ad-proof-file">Ad Image File</Label>
+                                        <Input id="ad-proof-file" type="file" accept="image/*" onChange={(e) => setAdProofFile(e.target.files?.[0] || null)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="ad-proof-url">Ad Destination URL</Label>
+                                        <Input id="ad-proof-url" type="text" placeholder="https://example.com" value={adProofUrlInput} onChange={(e) => setAdProofUrlInput(e.target.value)} />
+                                    </div>
+                                    <Button onClick={handleSaveProof} disabled={isSavingProof}>
+                                        {isSavingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        {isSavingProof ? 'Saving...' : 'Save Proof'}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {advertisement.status === 'pending_customer_approval' && (
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>Pending Customer Approval</CardTitle>
+                                <CardDescription>An email has been sent to the customer. Waiting for their approval before the ad can go live.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <h4 className="font-medium">Sent Proof</h4>
                                     <div className="border rounded-lg p-4 flex flex-col items-center gap-4 bg-muted/30">
-                                        <Image src={advertisement.adProofUrl} alt="Advertisement Proof" width={468} height={60} className="border bg-white" />
+                                        <Image src={advertisement.adProofUrl!} alt="Advertisement Proof" width={468} height={60} className="border bg-white" />
                                         <p className="text-xs text-muted-foreground break-all">
                                             Destination: <a href={advertisement.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{advertisement.adProofDestinationUrl}</a>
                                         </p>
                                     </div>
-                                    <Button onClick={handleRequestApproval} disabled={isRequestingApproval}>
-                                        {isRequestingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                        {isRequestingApproval ? 'Sending...' : 'Request Customer Approval'}
-                                    </Button>
+                                    <Button variant="outline">Mark as Approved & Go Live</Button>
+                                    <Button variant="secondary">Resend Approval Email</Button>
                                 </div>
-                            )}
-                            <div className="space-y-4">
-                                <h4 className="font-medium">{advertisement.adProofUrl ? 'Upload New Proof' : 'Upload Proof'}</h4>
-                                <div className="space-y-2">
-                                    <Label htmlFor="ad-proof-file">Ad Image File</Label>
-                                    <Input id="ad-proof-file" type="file" accept="image/*" onChange={(e) => setAdProofFile(e.target.files?.[0] || null)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="ad-proof-url">Ad Destination URL</Label>
-                                    <Input id="ad-proof-url" type="text" placeholder="https://example.com" value={adProofUrlInput} onChange={(e) => setAdProofUrlInput(e.target.value)} />
-                                </div>
-                                <Button onClick={handleSaveProof} disabled={isSavingProof}>
-                                    {isSavingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                    {isSavingProof ? 'Saving...' : 'Save Proof'}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <Card>
                         <CardHeader><CardTitle>Customer-Provided Ad Details</CardTitle></CardHeader>
@@ -329,4 +371,6 @@ export default function AdvertisementDetailPage() {
         </div>
     )
 }
+    
+
     
