@@ -186,9 +186,9 @@ export default function LandingPage() {
                         Everything you need for effective local advertising.
                     </p>
                 </div>
-                <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 justify-items-center">
                     {whatYouGet.map((item, index) => (
-                        <Card key={index} className="bg-card">
+                        <Card key={index} className="bg-card max-w-sm">
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <div className="rounded-full bg-primary/10 p-3 text-primary">
                                     <item.icon className="h-6 w-6" />
