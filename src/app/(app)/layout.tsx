@@ -1,3 +1,4 @@
+
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -10,7 +11,7 @@ import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import'];
+const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/dashboard';
 
