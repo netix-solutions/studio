@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ export default function AdvertisementsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { firestore } = useFirebase();
+    const router = useRouter();
 
     useEffect(() => {
         if (!firestore) {
@@ -79,6 +81,11 @@ export default function AdvertisementsPage() {
 
         return () => unsubscribe();
     }, [firestore]);
+    
+    const handleViewDetails = (adId: string, userId: string) => {
+        // Construct a composite ID to help find the doc in the detail page
+        router.push(`/advertisements/${adId}`);
+    };
 
 
     return (
@@ -117,7 +124,7 @@ export default function AdvertisementsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {advertisements.length > 0 ? advertisements.map((ad) => (
-                                        <TableRow key={ad.id}>
+                                        <TableRow key={ad.id} onClick={() => handleViewDetails(ad.id, ad.userId)} className="cursor-pointer">
                                             <TableCell>
                                               <div className="font-medium">{ad.contactName}</div>
                                               <div className="text-sm text-muted-foreground">{ad.email}</div>
@@ -134,13 +141,13 @@ export default function AdvertisementsPage() {
                                             <TableCell className="text-right">
                                                  <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
                                                             <span className="sr-only">Open menu</span>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>View/Edit Details</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewDetails(ad.id, ad.userId)}>View/Edit Details</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -159,5 +166,3 @@ export default function AdvertisementsPage() {
         </>
     );
 }
-
-    

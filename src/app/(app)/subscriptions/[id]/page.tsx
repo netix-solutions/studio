@@ -1,13 +1,12 @@
 
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, Save, Upload, Send } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
@@ -16,10 +15,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Image from 'next/image';
-import { sendEmail } from '@/lib/firebase/email';
 import { SendCustomerEmailDialog } from '@/components/subscriptions/send-customer-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 
@@ -32,9 +27,7 @@ interface SubscriptionDetails {
     startDate: string;
     endDate: string;
     adStatus: string;
-    adId?: string; // Add adId
-    adProofUrl?: string;
-    adProofDestinationUrl?: string;
+    adId?: string;
 }
 
 export interface UserDetails {
@@ -75,9 +68,10 @@ const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
 export default function SubscriptionDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { id: subscriptionId } = params;
     const customerId = searchParams.get('customerId');
-    const { firestore, firebaseApp } = useFirebase();
+    const { firestore } = useFirebase();
     const { toast } = useToast();
 
     const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
@@ -85,11 +79,6 @@ export default function SubscriptionDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    // State for the new form
-    const [adProofFile, setAdProofFile] = useState<File | null>(null);
-    const [adProofUrl, setAdProofUrl] = useState('');
-    const [isSavingProof, setIsSavingProof] = useState(false);
-    const [isRequestingApproval, setIsRequestingApproval] = useState(false);
     const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
 
 
@@ -135,13 +124,10 @@ export default function SubscriptionDetailPage() {
                     endDate: format(endDate, 'PPP'),
                     adStatus: adData?.status || 'Not Started',
                     adId: adDoc?.id,
-                    adProofUrl: adData?.adProofUrl,
-                    adProofDestinationUrl: adData?.adProofDestinationUrl,
                 };
 
                 setUser({ id: userDocSnap.id, ...userData });
                 setSubscription(subDetails);
-                setAdProofUrl(adData?.adProofDestinationUrl || userData?.adWebsiteUrl || '');
 
             } catch (err: any) {
                 console.error("Error fetching subscription details:", err);
@@ -162,134 +148,6 @@ export default function SubscriptionDetailPage() {
         fetchDetails();
 
     }, [firestore, subscriptionId, customerId]);
-    
-    const handleSaveProof = async () => {
-        if (!firestore || !firebaseApp || !customerId || !user || !subscriptionId) {
-            toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
-            return;
-        }
-        if (!adProofFile) {
-            toast({ title: 'No File Selected', description: 'Please select an image file to upload.', variant: 'destructive' });
-            return;
-        }
-
-        setIsSavingProof(true);
-        try {
-            let adId = subscription?.adId;
-
-            // Step 1: Ensure an advertisement ticket exists.
-            if (!adId) {
-                const adCollectionRef = collection(firestore, 'users', customerId, 'advertisements');
-                const newAdDoc = await addDoc(adCollectionRef, {
-                    businessName: user.businessName || '',
-                    contactName: user.contactName || '',
-                    email: user.email || '',
-                    phone: user.phone || '',
-                    adWebsiteUrl: user.adWebsiteUrl || '',
-                    adText: user.adText || '',
-                    adNotes: user.adNotes || '',
-                    userId: customerId,
-                    subscriptionId: subscriptionId,
-                    status: 'pending_ad_creation',
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                });
-                adId = newAdDoc.id;
-                // Update component state with the new adId
-                setSubscription(prev => prev ? { ...prev, adId: adId, adStatus: 'pending_ad_creation' } : null);
-                toast({ title: 'Ad Ticket Created', description: 'A new ad ticket was created for this subscription.' });
-            }
-            
-            // Step 2: Upload the file.
-            const storage = getStorage(firebaseApp);
-            const filePath = `advertisements/${customerId}/${adId}/${adProofFile.name}`;
-            const fileStorageRef = storageRef(storage, filePath);
-
-            await uploadBytes(fileStorageRef, adProofFile);
-            const downloadUrl = await getDownloadURL(fileStorageRef);
-            
-            // Step 3: Update the advertisement document.
-            const adDocRef = doc(firestore, 'users', customerId, 'advertisements', adId);
-            await updateDoc(adDocRef, {
-                adProofUrl: downloadUrl,
-                adProofDestinationUrl: adProofUrl,
-                updatedAt: serverTimestamp(),
-            });
-
-            setSubscription(prev => prev ? { ...prev, adProofUrl: downloadUrl, adProofDestinationUrl: adProofUrl } : null);
-
-            toast({ title: 'Success!', description: 'Advertisement proof has been saved.' });
-
-        } catch (error: any) {
-            console.error("Error saving proof:", error);
-            toast({ title: 'Upload Failed', description: error.message || 'Could not save the ad proof.', variant: 'destructive' });
-        } finally {
-            setIsSavingProof(false);
-        }
-    };
-    
-    const handleRequestApproval = async () => {
-        if (!firestore || !user || !subscription?.adProofUrl || !subscription?.adProofDestinationUrl || !subscription.adId || !customerId) {
-            toast({ title: 'Error', description: 'A saved ad proof and destination URL are required before requesting approval.', variant: 'destructive' });
-            return;
-        }
-
-        setIsRequestingApproval(true);
-        try {
-            // Find the approval email template
-            const templateQuery = query(collection(firestore, 'emailTemplates'), where('id', '==', 'ad_proof_approval'));
-            const templateSnapshot = await getDocs(templateQuery);
-            if (templateSnapshot.empty) {
-                throw new Error("Ad proof approval email template not found.");
-            }
-            const template = templateSnapshot.docs[0].data();
-
-            // Replace placeholders
-            const subject = template.subject.replace(/{{businessName}}/g, user.businessName || '');
-            let html = template.html
-                .replace(/{{contactName}}/g, user.contactName)
-                .replace(/{{adProofUrl}}/g, subscription.adProofUrl)
-                .replace(/{{adProofDestinationUrl}}/g, subscription.adProofDestinationUrl);
-
-            if(user.businessName) {
-                html = html.replace(/{{businessName}}/g, user.businessName);
-            }
-
-            // Send the email
-            await sendEmail(firestore, {
-                to: user.email,
-                subject,
-                html,
-            }, {
-                recipientId: customerId,
-                templateId: 'ad_proof_approval',
-                triggerType: 'manual_send',
-            });
-            
-            // Update the ad status
-            const adDocRef = doc(firestore, 'users', customerId, 'advertisements', subscription.adId);
-            await updateDoc(adDocRef, {
-                status: 'pending_customer_approval',
-                updatedAt: new Date(),
-            });
-
-            setSubscription(prev => prev ? { ...prev, adStatus: 'pending_customer_approval' } : null);
-
-            toast({
-                title: 'Approval Requested',
-                description: `An email has been sent to ${user.email} for ad proof approval.`,
-            });
-        } catch (error: any) {
-            console.error("Error requesting approval:", error);
-            toast({
-                title: 'Request Failed',
-                description: error.message || 'Could not request approval.',
-                variant: 'destructive',
-            });
-        } finally {
-            setIsRequestingApproval(false);
-        }
-    };
 
 
     if (loading) {
@@ -329,7 +187,7 @@ export default function SubscriptionDetailPage() {
                         <CardDescription>Details for subscription ID: {subscription.id}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                             <div className="space-y-1">
                                 <div className="text-muted-foreground font-medium flex items-center gap-2"><DollarSign className="h-4 w-4" /> Amount</div>
                                 <div>${subscription.amount.toFixed(2)}</div>
@@ -342,10 +200,18 @@ export default function SubscriptionDetailPage() {
                                 <div className="text-muted-foreground font-medium flex items-center gap-2"><FileText className="h-4 w-4" /> Ad Status</div>
                                 <div><Badge variant={statusVariantMap[subscription.adStatus] || 'outline'}>{statusTextMap[subscription.adStatus] || subscription.adStatus}</Badge></div>
                             </div>
-                             <div className="space-y-1">
+                             <div className="space-y-1 col-span-2">
                                 <div className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Current Period</div>
                                 <div>{subscription.startDate} - {subscription.endDate}</div>
                             </div>
+                             {subscription.adId && (
+                                <div className="space-y-1">
+                                    <div className="text-muted-foreground font-medium flex items-center gap-2"><ExternalLink className="h-4 w-4" /> Ad Workflow</div>
+                                    <Button variant="outline" size="sm" onClick={() => router.push(`/advertisements/${subscription.adId}`)}>
+                                        Manage Ad
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -378,45 +244,6 @@ export default function SubscriptionDetailPage() {
                          <div>
                             <p className="text-muted-foreground font-medium">Ad Notes / Special Offers</p>
                             <p className="whitespace-pre-wrap">{user.adNotes || 'Not Provided'}</p>
-                        </div>
-                    </CardContent>
-                 </Card>
-
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Advertisement Proof</CardTitle>
-                        <CardDescription>Upload the final ad creative and destination URL for customer approval.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {subscription.adProofUrl && (
-                            <div className="space-y-4">
-                                <h4 className="font-medium">Current Proof</h4>
-                                <div className="border rounded-lg p-4 flex flex-col items-center gap-4">
-                                    <Image src={subscription.adProofUrl} alt="Advertisement Proof" width={468} height={60} className="border" />
-                                    <p className="text-xs text-muted-foreground break-all">
-                                        Destination: <a href={subscription.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{subscription.adProofDestinationUrl}</a>
-                                    </p>
-                                </div>
-                                 <Button onClick={handleRequestApproval} disabled={isRequestingApproval}>
-                                    {isRequestingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                    {isRequestingApproval ? 'Sending...' : 'Request Approval'}
-                                </Button>
-                            </div>
-                        )}
-                        <div className="space-y-4">
-                            <h4 className="font-medium">{subscription.adProofUrl ? 'Upload New Proof' : 'Upload Proof'}</h4>
-                            <div className="space-y-2">
-                                <Label htmlFor="ad-proof-file">Ad Image File</Label>
-                                <Input id="ad-proof-file" type="file" accept="image/*" onChange={(e) => setAdProofFile(e.target.files?.[0] || null)} />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="ad-proof-url">Ad Destination URL</Label>
-                                <Input id="ad-proof-url" type="text" placeholder="https://example.com" value={adProofUrl} onChange={(e) => setAdProofUrl(e.target.value)} />
-                            </div>
-                            <Button onClick={handleSaveProof} disabled={isSavingProof}>
-                                {isSavingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                {isSavingProof ? 'Saving...' : 'Save Proof'}
-                            </Button>
                         </div>
                     </CardContent>
                  </Card>
@@ -471,5 +298,3 @@ export default function SubscriptionDetailPage() {
         </div>
     )
 }
-
-    
