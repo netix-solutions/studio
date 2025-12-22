@@ -7,146 +7,154 @@ export default function PrivacyPolicyPage() {
   return (
     <LegalPageLayout title="Privacy Policy" lastUpdated={lastUpdated}>
       <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
-        <h2>1. Introduction</h2>
+        <h2>1. Overview</h2>
         <p>
-          Community-Websites.com ("we," "our," or "us") is committed to
-          protecting your privacy. This Privacy Policy explains how we
-          collect, use, disclose, and safeguard your information when you visit
-          our website and use our advertising services (collectively, the
-          "Services").
+          This Privacy Policy explains how Community-Websites.com (Company, we,
+          us, our) collects, uses, shares, and protects information when you use
+          our websites, dashboards, and services (the Service).
         </p>
 
         <h2>2. Information We Collect</h2>
         <p>
-          We may collect personal information about you in a variety of ways.
-          The information we may collect includes:
+          <strong>Information you provide</strong>
         </p>
         <ul>
           <li>
-            <strong>Personal Data:</strong> Personally identifiable
-            information, such as your name, business name, shipping address,
-            email address, and telephone number, and demographic information,
-            such as your age, gender, hometown, and interests, that you
-            voluntarily give to us when you register for the Services or when
-            you choose to participate in various activities related to the
-            Services.
+            Name, business name, email, phone number, billing details, and
+            contact preferences.
           </li>
+          <li>Account details and subscription selections.</li>
           <li>
-            <strong>Financial Data:</strong> Financial information, such as
-            data related to your payment method (e.g., valid credit card
-            number, card brand, expiration date) that we may collect when you
-            purchase, order, return, exchange, or request information about
-            our services. We store only very limited, if any, financial
-            information that we collect. Otherwise, all financial information
-            is stored by our payment processor, Stripe.
+            Advertiser Content you submit (ad copy, logos, images, links, and
+            related materials).
           </li>
-          <li>
-            <strong>Derivative Data:</strong> Information our servers
-            automatically collect when you access the Site, such as your IP
-            address, your browser type, your operating system, your access
-            times, and the pages you have viewed directly before and after
-            accessing the Site.
-          </li>
+          <li>Messages you send to support.</li>
         </ul>
-
-        <h2>3. Use of Your Information</h2>
         <p>
-          Having accurate information about you permits us to provide you with
-          a smooth, efficient, and customized experience. Specifically, we may
-          use information collected about you to:
+          <strong>Payment information</strong>
         </p>
+        <p>
+          Payments are processed by third-party payment processors. We do not
+          store full credit card numbers. We may receive limited billing
+          details, payment status, and transaction identifiers.
+        </p>
+        <p>
+          <strong>Automatically collected information</strong>
+        </p>
+        <p>
+          We may collect technical and usage data such as IP address, device
+          type, browser, pages viewed, referring pages, timestamps, and basic
+          analytics. We may use cookies or similar technologies for sessions,
+          preferences, security, and analytics.
+        </p>
+
+        <h2>3. How We Use Information</h2>
+        <p>We use information to:</p>
         <ul>
-          <li>Create and manage your account.</li>
+          <li>Create and manage accounts.</li>
+          <li>Process payments and manage subscriptions.</li>
+          <li>Provide advertising placements and operate the Service.</li>
           <li>
-            Process your payments and subscriptions and deliver the services
-            you have requested.
+            Provide support and communicate about billing or service issues.
           </li>
-          <li>Email you regarding your account or order.</li>
-          <li>
-            Notify you of updates to the Services and our associated
-            websites.
-          </li>
-          <li>
-            Prevent fraudulent transactions, monitor against theft, and
-            protect against criminal activity.
-          </li>
-          <li>Comply with legal and regulatory requirements.</li>
+          <li>Send service messages and limited marketing communications.</li>
+          <li>Prevent fraud, secure accounts, and enforce our Terms.</li>
+          <li>Improve the Service and user experience.</li>
+          <li>Comply with legal obligations.</li>
         </ul>
 
-        <h2>4. Disclosure of Your Information</h2>
-        <p>
-          We may share information we have collected about you in certain
-          situations. Your information may be disclosed as follows:
-        </p>
+        <h2>4. How We Share Information</h2>
+        <p>We may share information with:</p>
         <ul>
           <li>
-            <strong>By Law or to Protect Rights:</strong> If we believe the
-            release of information about you is necessary to respond to legal
-            process, to investigate or remedy potential violations of our
-            policies, or to protect the rights, property, and safety of
-            others, we may share your information as permitted or required by
-            any applicable law, rule, or regulation.
+            Payment processors to complete transactions and manage recurring
+            billing.
           </li>
           <li>
-            <strong>Third-Party Service Providers:</strong> We may share your
-            information with third parties that perform services for us or on
-            our behalf, including payment processing (Stripe), data analysis,
-            email delivery, hosting services, and customer service.
+            Service providers for hosting, analytics, communications, security,
+            and support.
+          </li>
+          <li>
+            Our publishing systems and sites where your Advertiser Content is
+            displayed.
+          </li>
+          <li>
+            Legal or compliance parties when required by law or to protect
+            rights and safety.
+          </li>
+          <li>
+            Successors in the event of a merger, acquisition, financing, or
+            asset sale.
           </li>
         </ul>
 
-        <h2>5. Security of Your Information</h2>
+        <h2>5. Public Display of Advertiser Content</h2>
         <p>
-          We use administrative, technical, and physical security measures to
-          help protect your personal information. While we have taken
-          reasonable steps to secure the personal information you provide to
-          us, please be aware that despite our efforts, no security measures
-          are perfect or impenetrable, and no method of data transmission can
-          be guaranteed against any interception or other type of misuse.
+          If you buy advertising, your Advertiser Content may be displayed
+          publicly and may be viewed, saved, shared, or accessed by others. Do
+          not submit confidential or sensitive information for public ad
+
+          display.
         </p>
 
-        <h2>6. Policy for Children</h2>
+        <h2>6. Data Retention</h2>
         <p>
-          We do not knowingly solicit information from or market to children
-          under the age of 13. If you become aware of any data we have
-          collected from children under age 13, please contact us using the
-          contact information provided below.
+          We retain information as long as needed for legitimate business
+          purposes, including providing the Service, maintaining records,
+          resolving disputes, enforcing agreements, and complying with law.
         </p>
 
-        <h2>7. Your Privacy Rights (Florida Residents)</h2>
+        <h2>7. Cookies and Tracking</h2>
         <p>
-          Under the Florida Digital Bill of Rights, residents of Florida have
-          specific rights regarding their personal information. These rights
-          include:
-        </p>
-        <ul>
-          <li>The right to know what personal information is being collected.</li>
-          <li>The right to access your personal information.</li>
-          <li>The right to correct inaccuracies in your personal information.</li>
-          <li>The right to delete your personal information.</li>
-          <li>The right to opt-out of the sale of personal information.</li>
-        </ul>
-        <p>
-          To exercise these rights, please contact us using the contact
-          information below.
-        </p>
-         <p>
-          <strong>LEGAL DISCLAIMER:</strong> THIS IS A TEMPLATE AND DOES NOT
-          CONSTITUTE LEGAL ADVICE. YOU SHOULD CONSULT WITH A QUALIFIED
-          ATTORNEY TO ENSURE THIS PRIVACY POLICY IS APPROPRIATE AND
-          LEGALLY SOUND FOR YOUR SPECIFIC BUSINESS NEEDS AND JURISDICTION,
-          PARTICULARLY CONCERNING GDPR, CCPA, the Florida Digital Bill of
-          Rights, and other privacy regulations.
+          We use cookies and similar technologies to support login sessions,
+          security, site functionality, and analytics. You can adjust cookie
+          settings in your browser, but some features may not function
+          properly if disabled.
         </p>
 
-        <h2>8. Contact Us</h2>
+        <h2>8. Security</h2>
         <p>
-          If you have questions or comments about this Privacy Policy, please
-          contact us at: [Your Contact Email] or by calling/texting 813-544-8383.
+          We use reasonable safeguards designed to protect information. No
+          method of transmission or storage is completely secure. You use the
+          Service at your own risk.
+        </p>
+
+        <h2>9. Your Choices</h2>
+        <p>
+          You may request access, correction, or deletion of certain personal
+          information, subject to verification and legal limits. You can opt
+          out of non-essential marketing emails by using the unsubscribe link.
+          Service and billing emails may still be sent.
+        </p>
+
+        <h2>10. Children’s Privacy</h2>
+        <p>
+          The Service is not intended for children under 13 and we do not
+          knowingly collect personal information from children under 13.
+        </p>
+
+        <h2>11. International Users</h2>
+        <p>
+          If you access the Service from outside the United States, you
+          understand your information may be processed and stored in the United
+          States.
+        </p>
+
+        <h2>12. Changes to This Policy</h2>
+        <p>
+          We may update this Privacy Policy at any time. Changes take effect
+          when posted.
+        </p>
+
+        <h2>13. Contact</h2>
+        <p>
+          Community-Websites.com
+          <br />
+          Email: email@community-websites.com
+          <br />
+          Phone (24/7): 813-544-8383
         </p>
       </div>
     </LegalPageLayout>
   );
 }
-
-    
