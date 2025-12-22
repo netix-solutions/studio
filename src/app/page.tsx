@@ -123,7 +123,7 @@ export default function LandingPage() {
               />
               <div className="absolute inset-0 bg-black/30"></div>
           </div>
-          <div className="relative container mx-auto z-10 text-white drop-shadow-lg px-4 md:px-6">
+          <div className="relative container mx-auto z-10 text-white drop-shadow-lg px-4 md:px-6 pt-20">
             <Image src="/logo.png" alt="Community-Websites.com Logo" width={150} height={83} priority className="mx-auto mb-4 drop-shadow-lg" />
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline [text-shadow:_0_2px_4px_rgb(0_0_0_/_50%)]">
               Reach thousands of local readers every day.
