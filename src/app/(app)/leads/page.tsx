@@ -128,7 +128,10 @@ export default function LeadsPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleRowClick(lead.id)}>
+                                                        <DropdownMenuItem onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRowClick(lead.id)
+                                                        }}>
                                                             View Details
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
