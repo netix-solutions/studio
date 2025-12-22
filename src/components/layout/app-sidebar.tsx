@@ -9,7 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Ticket, Users, User, ShoppingBag, Megaphone, Mail, Handshake } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, User, ShoppingBag, Megaphone, Mail, Handshake, UploadCloud } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
 
@@ -22,6 +22,7 @@ const allMenuItems = [
   { href: '/subscriptions', label: 'Subscriptions', icon: Ticket, adminOnly: true },
   { href: '/users', label: 'Users', icon: Users, adminOnly: true },
   { href: '/automated-emails', label: 'Automated Emails', icon: Mail, adminOnly: true },
+  { href: '/import', label: 'Import', icon: UploadCloud, adminOnly: true },
 ];
 
 export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
