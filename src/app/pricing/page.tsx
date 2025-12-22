@@ -150,7 +150,7 @@ function PricingCard({ plan, onPurchase, isPurchasing, isFeatured }: { plan: Pla
 
                 {plan.description && (
                     <div className="my-8 flex-grow">
-                         <p className="text-muted-foreground text-center px-4">{plan.description}</p>
+                         <p className="text-muted-foreground text-center px-4 text-sm">{plan.description}</p>
                     </div>
                 )}
 
@@ -189,7 +189,17 @@ function PricingPageContent() {
     if (firestore) {
       setLoading(true);
       fetchPlansAndPrices(firestore)
-        .then(setPlans)
+        .then(fetchedPlans => {
+            const updatedPlans = fetchedPlans.map(plan => {
+                if (plan.name === 'Single Site') {
+                    plan.description = "Great for targeting a specific community.";
+                } else if (plan.name === 'Multi-Site') {
+                    plan.description = "Maximize your reach across all our community sites.";
+                }
+                return plan;
+            });
+            setPlans(updatedPlans);
+        })
         .catch(error => {
           console.error("Error fetching plans and prices:", error);
           toast({
@@ -295,5 +305,3 @@ export default function PricingPage() {
         </Suspense>
     );
 }
-
-    
