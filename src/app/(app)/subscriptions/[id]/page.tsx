@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -141,7 +141,7 @@ export default function SubscriptionDetailPage() {
 
                 setUser({ id: userDocSnap.id, ...userData });
                 setSubscription(subDetails);
-                setAdProofUrl(adData?.adProofDestinationUrl || adData?.adWebsiteUrl || '');
+                setAdProofUrl(adData?.adProofDestinationUrl || userData?.adWebsiteUrl || '');
 
             } catch (err: any) {
                 console.error("Error fetching subscription details:", err);
@@ -164,7 +164,7 @@ export default function SubscriptionDetailPage() {
     }, [firestore, subscriptionId, customerId]);
     
     const handleSaveProof = async () => {
-        if (!firestore || !firebaseApp || !subscription?.adId || !customerId) {
+        if (!firestore || !firebaseApp || !customerId || !user || !subscriptionId) {
             toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
             return;
         }
@@ -175,18 +175,45 @@ export default function SubscriptionDetailPage() {
 
         setIsSavingProof(true);
         try {
+            let adId = subscription?.adId;
+
+            // Step 1: Ensure an advertisement ticket exists.
+            if (!adId) {
+                const adCollectionRef = collection(firestore, 'users', customerId, 'advertisements');
+                const newAdDoc = await addDoc(adCollectionRef, {
+                    businessName: user.businessName || '',
+                    contactName: user.contactName || '',
+                    email: user.email || '',
+                    phone: user.phone || '',
+                    adWebsiteUrl: user.adWebsiteUrl || '',
+                    adText: user.adText || '',
+                    adNotes: user.adNotes || '',
+                    userId: customerId,
+                    subscriptionId: subscriptionId,
+                    status: 'pending_ad_creation',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+                adId = newAdDoc.id;
+                // Update component state with the new adId
+                setSubscription(prev => prev ? { ...prev, adId: adId, adStatus: 'pending_ad_creation' } : null);
+                toast({ title: 'Ad Ticket Created', description: 'A new ad ticket was created for this subscription.' });
+            }
+            
+            // Step 2: Upload the file.
             const storage = getStorage(firebaseApp);
-            const filePath = `advertisements/${customerId}/${subscription.adId}/${adProofFile.name}`;
+            const filePath = `advertisements/${customerId}/${adId}/${adProofFile.name}`;
             const fileStorageRef = storageRef(storage, filePath);
 
             await uploadBytes(fileStorageRef, adProofFile);
             const downloadUrl = await getDownloadURL(fileStorageRef);
             
-            const adDocRef = doc(firestore, 'users', customerId, 'advertisements', subscription.adId);
+            // Step 3: Update the advertisement document.
+            const adDocRef = doc(firestore, 'users', customerId, 'advertisements', adId);
             await updateDoc(adDocRef, {
                 adProofUrl: downloadUrl,
                 adProofDestinationUrl: adProofUrl,
-                updatedAt: new Date(),
+                updatedAt: serverTimestamp(),
             });
 
             setSubscription(prev => prev ? { ...prev, adProofUrl: downloadUrl, adProofDestinationUrl: adProofUrl } : null);
@@ -444,3 +471,5 @@ export default function SubscriptionDetailPage() {
         </div>
     )
 }
+
+    
