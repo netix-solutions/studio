@@ -3,7 +3,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone, Globe, User } from 'lucide-react';
+import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone, Globe, User, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -70,16 +70,21 @@ export default function LandingPage() {
       },
       {
           icon: Calendar,
-          title: "Month-to-Month Billing",
-          description: "No long-term contracts. Your plan renews monthly and you can cancel anytime."
+          title: "Choose Your Term",
+          description: "Select the billing cycle that works for you, with no long-term contracts required."
+      },
+      {
+          icon: ShieldCheck,
+          title: "No Hidden Fees",
+          description: "The price you see is the price you pay. Cancel your subscription easily at any time."
       }
   ];
 
   return (
     <div className="bg-background text-foreground">
       {/* Header */}
-       <header className="sticky top-0 z-40 w-full px-4 md:px-6">
-        <div className="container mx-auto flex h-16 items-center justify-between rounded-b-xl border border-t-0 border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
+       <header className="sticky top-2 z-30 w-full px-4 md:px-6">
+        <div className="flex h-[70px] items-center gap-4 rounded-xl border border-border/40 bg-background/80 px-4 shadow-lg backdrop-blur-sm md:px-6">
           <Link href="/" className="flex items-center gap-3 font-bold text-xl">
             <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
             <span className="font-headline text-lg tracking-tight text-gray-700 hidden sm:inline">Community-Websites.com</span>
