@@ -281,19 +281,37 @@ export default function LandingPage() {
                     <AccordionItem value="item-1">
                         <AccordionTrigger>What kind of businesses do you work with?</AccordionTrigger>
                         <AccordionContent>
-                        We work with all types of local businesses targeting residents in Pasco County, including restaurants, real estate agents, home service providers, medical offices, and local retailers.
+                        We work with all types of local businesses targeting residents in Pasco County, including restaurants, real estate agents, home service providers, medical offices, and local retailers. Our platform is ideal for anyone looking to increase their visibility within the community.
+                        </AccordionContent>
+                    </AccordionItem>
+                     <AccordionItem value="item-2">
+                        <AccordionTrigger>Do I need to have my own ad banner?</AccordionTrigger>
+                        <AccordionContent>
+                        Not at all! If you have an ad banner, that's great. If you don't, our talented design team will create a clean, professional, and mobile-friendly ad for you at no extra cost. We'll make sure your business looks its best.
                         </AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="item-3">
-                        <AccordionTrigger>What if I need to change my ad?</AccordionTrigger>
+                        <AccordionTrigger>Can I track how my ad is performing?</AccordionTrigger>
                         <AccordionContent>
-                        It's easy! Just email us your updated banner, link, or message, and we will refresh it for you. We typically process updates within 1-2 business days.
+                        While we don't provide a public-facing analytics dashboard, we focus on driving real-world results: clicks to your website and calls to your business. The most effective way to track performance is to monitor the increase in your own website traffic, calls, and customer inquiries after your ad goes live.
                         </AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="item-4">
+                        <AccordionTrigger>Is my ad placement exclusive for my industry?</AccordionTrigger>
+                        <AccordionContent>
+                        To keep our advertising affordable for everyone, we don't offer industry exclusivity. However, our ad rotation system ensures all advertisers receive fair and consistent visibility to our large audience of local readers. This model helps a wide variety of businesses thrive.
+                        </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="item-5">
+                        <AccordionTrigger>What if I need to change my ad?</AccordionTrigger>
+                        <AccordionContent>
+                        It's easy! Just email us your updated banner, link, or message, and we will refresh it for you. We typically process updates within 1-2 business days to ensure your advertising stays current.
+                        </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="item-6">
                         <AccordionTrigger>How do I cancel my subscription?</AccordionTrigger>
                         <AccordionContent>
-                        You can cancel your month-to-month subscription at any time before your next billing date. Simply contact us, and we'll take care of it.
+                        You are in complete control. You can cancel your subscription at any time through your secure customer portal. There are no long-term contracts or cancellation fees.
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
