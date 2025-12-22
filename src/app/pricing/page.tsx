@@ -7,7 +7,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { createCheckout } from '@/lib/stripe';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, LogIn } from 'lucide-react';
+import { Loader2, User } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -243,7 +243,7 @@ function PricingPageContent() {
                 </Link>
                 <Button variant="outline" asChild>
                     <Link href="/login">
-                        <LogIn className="mr-2 h-4 w-4" />
+                        <User className="mr-2 h-4 w-4" />
                         Existing Customer Login
                     </Link>
                 </Button>
@@ -296,5 +296,3 @@ export default function PricingPage() {
         </Suspense>
     );
 }
-
-    

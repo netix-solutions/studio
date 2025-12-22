@@ -3,7 +3,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone, Globe, LogIn } from 'lucide-react';
+import { ArrowRight, CheckCircle, Target, Users, Newspaper, PenTool, RefreshCw, Calendar, FileCheck, DollarSign, Smartphone, Monitor, Phone, Globe, User } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -92,7 +92,7 @@ export default function LandingPage() {
             </Button>
             <Button variant="ghost" size="icon" asChild>
                 <Link href="/login">
-                  <LogIn className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                   <span className="sr-only">Login</span>
                 </Link>
             </Button>
