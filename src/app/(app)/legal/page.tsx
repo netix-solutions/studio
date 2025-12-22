@@ -8,9 +8,9 @@ import { collection, doc, getDoc, onSnapshot, setDoc, serverTimestamp, updateDoc
 import { Loader2, AlertCircle, Save, PlusCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Textarea } from '@/components/ui/textarea';
 
 interface LegalDocument {
   id: string;
@@ -127,12 +127,14 @@ export default function LegalDocsPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Editing: {editingDoc.title}</CardTitle>
-                <CardDescription>Paste your HTML content below. The page will be updated in real-time.</CardDescription>
+                <CardDescription>Paste your raw HTML content below. The page will be updated in real-time.</CardDescription>
             </CardHeader>
             <CardContent>
-                <RichTextEditor 
-                    content={editingDoc.content}
-                    onChange={(newContent) => setEditingDoc({...editingDoc, content: newContent})}
+                <Textarea
+                    value={editingDoc.content}
+                    onChange={(e) => setEditingDoc({...editingDoc, content: e.target.value})}
+                    className="min-h-[400px] font-mono text-xs"
+                    placeholder="<html>...</html>"
                 />
             </CardContent>
             <CardFooter className="justify-end gap-2">
@@ -186,5 +188,3 @@ export default function LegalDocsPage() {
     </div>
   );
 }
-
-    
