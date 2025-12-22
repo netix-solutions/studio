@@ -20,6 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { sendEmail } from '@/lib/firebase/email';
+import { SendCustomerEmailDialog } from '@/components/subscriptions/send-customer-email-dialog';
+import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 
 interface SubscriptionDetails {
     id: string;
@@ -35,7 +37,8 @@ interface SubscriptionDetails {
     adProofDestinationUrl?: string;
 }
 
-interface UserDetails {
+export interface UserDetails {
+    id: string;
     contactName: string;
     email: string;
     businessName?: string;
@@ -87,6 +90,7 @@ export default function SubscriptionDetailPage() {
     const [adProofUrl, setAdProofUrl] = useState('');
     const [isSavingProof, setIsSavingProof] = useState(false);
     const [isRequestingApproval, setIsRequestingApproval] = useState(false);
+    const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
 
 
     useEffect(() => {
@@ -114,7 +118,7 @@ export default function SubscriptionDetailPage() {
                 if (!userDocSnap.exists()) throw new Error("Customer details not found.");
 
                 const subData = subDocSnap.data();
-                const userData = userDocSnap.data() as UserDetails;
+                const userData = userDocSnap.data() as Omit<UserDetails, 'id'>;
                 const adDoc = adSnapshot.empty ? null : adSnapshot.docs[0];
                 const adData = adDoc?.data();
 
@@ -135,8 +139,8 @@ export default function SubscriptionDetailPage() {
                     adProofDestinationUrl: adData?.adProofDestinationUrl,
                 };
 
+                setUser({ id: userDocSnap.id, ...userData });
                 setSubscription(subDetails);
-                setUser(userData);
                 setAdProofUrl(adData?.adProofDestinationUrl || adData?.adWebsiteUrl || '');
 
             } catch (err: any) {
@@ -215,10 +219,14 @@ export default function SubscriptionDetailPage() {
 
             // Replace placeholders
             const subject = template.subject.replace(/{{businessName}}/g, user.businessName || '');
-            const html = template.html
+            let html = template.html
                 .replace(/{{contactName}}/g, user.contactName)
                 .replace(/{{adProofUrl}}/g, subscription.adProofUrl)
                 .replace(/{{adProofDestinationUrl}}/g, subscription.adProofDestinationUrl);
+
+            if(user.businessName) {
+                html = html.replace(/{{businessName}}/g, user.businessName);
+            }
 
             // Send the email
             await sendEmail(firestore, {
@@ -296,20 +304,20 @@ export default function SubscriptionDetailPage() {
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div className="space-y-1">
-                                <p className="text-muted-foreground font-medium flex items-center gap-2"><DollarSign className="h-4 w-4" /> Amount</p>
-                                <p>${subscription.amount.toFixed(2)}</p>
+                                <div className="text-muted-foreground font-medium flex items-center gap-2"><DollarSign className="h-4 w-4" /> Amount</div>
+                                <div>${subscription.amount.toFixed(2)}</div>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Billing Status</p>
+                                <div className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Billing Status</div>
                                 <div><Badge variant={statusVariantMap[subscription.status] || 'outline'}>{capitalize(subscription.status)}</Badge></div>
                             </div>
                              <div className="space-y-1">
-                                <p className="text-muted-foreground font-medium flex items-center gap-2"><FileText className="h-4 w-4" /> Ad Status</p>
+                                <div className="text-muted-foreground font-medium flex items-center gap-2"><FileText className="h-4 w-4" /> Ad Status</div>
                                 <div><Badge variant={statusVariantMap[subscription.adStatus] || 'outline'}>{statusTextMap[subscription.adStatus] || subscription.adStatus}</Badge></div>
                             </div>
                              <div className="space-y-1">
-                                <p className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Current Period</p>
-                                <p>{subscription.startDate} - {subscription.endDate}</p>
+                                <div className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Current Period</div>
+                                <div>{subscription.startDate} - {subscription.endDate}</div>
                             </div>
                         </div>
                     </CardContent>
@@ -385,6 +393,13 @@ export default function SubscriptionDetailPage() {
                         </div>
                     </CardContent>
                  </Card>
+                 
+                 <EmailHistoryDialog
+                    recipient={{ id: user.id, email: user.email }}
+                    isOpen={true}
+                    onOpenChange={() => {}}
+                    renderAsCard={true}
+                />
 
                  <CommentsDialog
                     subscription={{id: subscription.id, customerId: subscription.customerId}}
@@ -411,14 +426,21 @@ export default function SubscriptionDetailPage() {
                             <Phone className="h-4 w-4 text-muted-foreground"/>
                             <span>{user.phone || 'Not Provided'}</span>
                         </div>
+                         <div className="mt-4">
+                            <Button className="w-full" onClick={() => setIsManualEmailDialogOpen(true)}>
+                                Send Manual Email
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
+            
+            <SendCustomerEmailDialog
+                customer={user}
+                isOpen={isManualEmailDialogOpen}
+                onOpenChange={setIsManualEmailDialogOpen}
+            />
+
         </div>
     )
-
-    
 }
-
-
-    
