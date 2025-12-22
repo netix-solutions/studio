@@ -1,6 +1,29 @@
 
 {
   "entities": {
+    "LegalDocument": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LegalDocument",
+      "type": "object",
+      "description": "Represents a legal document like Terms of Service or Privacy Policy.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "description": "The HTML content of the document."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "title", "content"]
+    },
     "Lead": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Lead",
@@ -529,6 +552,22 @@
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/legalDocuments/{documentId}",
+        "definition": {
+          "entityName": "LegalDocument",
+          "schema": {
+            "$ref": "#/backend/entities/LegalDocument"
+          },
+          "description": "Stores content for legal pages like Terms of Service and Privacy Policy. Globally readable, admin-writable.",
+          "params": [
+            {
+              "name": "documentId",
+              "description": "The unique identifier for the legal document (e.g., 'terms-of-service')."
+            }
+          ]
+        }
+      },
       {
         "path": "/leads/{leadId}",
         "definition": {

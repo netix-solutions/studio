@@ -27,6 +27,7 @@ const pathToTitle: { [key: string]: string } = {
   '/automated-emails': 'Automated Emails',
   '/leads': 'Leads',
   '/import': 'Import Customers',
+  '/legal': 'Legal Documents',
 };
 
 export default function Header({ isAdmin }: { isAdmin: boolean }) {
@@ -111,3 +112,5 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
     </header>
   );
 }
+
+    
