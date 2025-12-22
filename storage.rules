@@ -13,21 +13,20 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      return exists(/databases/(default)/documents/roles_admin/$(request.auth.uid));
+      // This is now checking the custom claim as per your suggestion.
+      return isSignedIn() && request.auth.token.admin == true;
     }
     
-    // Original files from user ad submission. User can write to their own folder.
-    // Admins can read any file.
+    // User ad submissions (logos, etc.)
     match /advertisements/{userId}/{fileName} {
-      allow read: if isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId);
     }
     
     // Ad proof files uploaded by an admin.
-    // Admins can write. The owner of the ad can read their own proof.
     match /advertisements/{userId}/{advertisementId}/{fileName} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
