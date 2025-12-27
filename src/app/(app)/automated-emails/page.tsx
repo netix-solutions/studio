@@ -44,24 +44,87 @@ export const defaultTemplates: EmailTemplate[] = [
         id: 'pricing_link',
         name: 'Pricing Link (Auto-response)',
         description: 'Sent to users after they fill out the "Get Started" interest form.',
-        subject: 'Here is your link to our pricing, {{contactName}}!',
+        subject: '{{contactName}}, your personalized pricing is ready!',
         html: `
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thanks for your interest in advertising with Community-Websites.com! We're excited to help <strong>{{businessName}}</strong> reach more local customers.</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">You can view our current plans and get started by clicking the button below:</p>
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+<p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
+
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #3f3f46;">Thank you for your interest in growing <strong style="color: #0284c7;">{{businessName}}</strong> with Community-Websites.com! You're one step away from reaching thousands of local customers in your area.</p>
+
+<!-- Highlight Box -->
+<div style="margin: 28px 0; padding: 24px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; border-left: 4px solid #0284c7;">
+    <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Your Personalized Pricing</p>
+    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #0c4a6e;">Click below to view plans tailored for {{businessName}} and choose the coverage that works best for your goals.</p>
+</div>
+
+<!-- CTA Button -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 28px 0;">
     <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                View Pricing &amp; Sign Up
+        <td align="center">
+            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 18px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);">
+                View My Pricing Options
             </a>
         </td>
     </tr>
 </table>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, feel free to reply to this email or call/text us at <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
-<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
-    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
-    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+
+<!-- Benefits Section -->
+<p style="margin: 32px 0 16px 0; font-size: 17px; font-weight: 600; color: #18181b;">Why local businesses choose us:</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 24px 0;">
+    <tr>
+        <td style="padding: 12px 0; border-bottom: 1px solid #f4f4f5;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td style="width: 32px; vertical-align: top;">
+                        <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</div>
+                    </td>
+                    <td style="vertical-align: top;">
+                        <p style="margin: 0; font-size: 15px; color: #3f3f46;"><strong style="color: #18181b;">Hyper-local reach</strong> &mdash; Your ads appear on community sites residents actually visit</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0; border-bottom: 1px solid #f4f4f5;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td style="width: 32px; vertical-align: top;">
+                        <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</div>
+                    </td>
+                    <td style="vertical-align: top;">
+                        <p style="margin: 0; font-size: 15px; color: #3f3f46;"><strong style="color: #18181b;">Affordable pricing</strong> &mdash; Plans starting at just $49/month</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td style="width: 32px; vertical-align: top;">
+                        <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</div>
+                    </td>
+                    <td style="vertical-align: top;">
+                        <p style="margin: 0; font-size: 15px; color: #3f3f46;"><strong style="color: #18181b;">No long-term contracts</strong> &mdash; Cancel anytime, no questions asked</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Personal Touch -->
+<div style="margin: 28px 0; padding: 20px; background-color: #fafafa; border-radius: 8px;">
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #52525b;">
+        <strong style="color: #18181b;">Have questions?</strong> I'm personally here to help. Reply to this email or give me a call at <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 600;">813-544-8383</a> &mdash; I'd love to learn more about {{businessName}} and help you find the perfect plan.
+    </p>
+</div>
+
+<div style="margin: 28px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Looking forward to helping you grow,</p>
+    <p style="margin: 6px 0 0 0; font-size: 17px; font-weight: 700; color: #18181b;">The Community-Websites.com Team</p>
 </div>
         `.trim(),
         triggerName: 'interest_form_submission',
