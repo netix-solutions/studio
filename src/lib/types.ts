@@ -245,24 +245,65 @@ export interface Activity {
 // ============================================================================
 
 /**
- * Advertisement status options
+ * Sample ad dimensions (in pixels)
+ */
+export const AD_DIMENSIONS = {
+  WIDTH: 600,
+  HEIGHT: 200,
+} as const;
+
+/**
+ * Customer onboarding status - tracks where customer is in the onboarding workflow
+ */
+export const CUSTOMER_ONBOARDING_STATUSES = {
+  PENDING_BUSINESS_INFO: 'pending_business_info',
+  PENDING_AD_DESIGN: 'pending_ad_design',
+  INFO_SUBMITTED: 'info_submitted',
+  COMPLETE: 'complete',
+} as const;
+
+export type CustomerOnboardingStatus = typeof CUSTOMER_ONBOARDING_STATUSES[keyof typeof CUSTOMER_ONBOARDING_STATUSES];
+
+export const CUSTOMER_ONBOARDING_LABELS: Record<CustomerOnboardingStatus, string> = {
+  pending_business_info: 'Waiting for Business Info',
+  pending_ad_design: 'Waiting for Ad Design Preferences',
+  info_submitted: 'Info Submitted - Under Review',
+  complete: 'Onboarding Complete',
+};
+
+/**
+ * Advertisement status options - full workflow
  */
 export const AD_STATUSES = {
+  // Customer needs to submit business info
+  PENDING_INFO: 'pending_info',
+  // Customer has submitted info, waiting for internal review
+  PENDING_INTERNAL_REVIEW: 'pending_internal_review',
+  // Ad is being created by external application
   PENDING_AD_CREATION: 'pending_ad_creation',
+  // Ad proof ready, sent to customer for approval
   PENDING_CUSTOMER_APPROVAL: 'pending_customer_approval',
+  // Customer requested changes
   REVISION_REQUESTED: 'revision_requested',
+  // Customer approved the ad
   APPROVED: 'approved',
+  // Ad is live on the websites
   LIVE: 'live',
+  // Ad temporarily paused
   PAUSED: 'paused',
+  // Subscription ended, ad completed
   COMPLETED: 'completed',
+  // Subscription canceled
   CANCELED_INACTIVE: 'canceled_inactive',
 } as const;
 
 export type AdStatus = typeof AD_STATUSES[keyof typeof AD_STATUSES];
 
 export const AD_STATUS_LABELS: Record<AdStatus, string> = {
-  pending_ad_creation: 'Pending Creation',
-  pending_customer_approval: 'Awaiting Approval',
+  pending_info: 'Awaiting Customer Info',
+  pending_internal_review: 'Under Internal Review',
+  pending_ad_creation: 'Ad Being Created',
+  pending_customer_approval: 'Awaiting Customer Approval',
   revision_requested: 'Revision Requested',
   approved: 'Approved',
   live: 'Live',
@@ -272,7 +313,9 @@ export const AD_STATUS_LABELS: Record<AdStatus, string> = {
 };
 
 export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending_ad_creation: { variant: 'outline' },
+  pending_info: { variant: 'outline' },
+  pending_internal_review: { variant: 'default' },
+  pending_ad_creation: { variant: 'default' },
   pending_customer_approval: { variant: 'default' },
   revision_requested: { variant: 'destructive' },
   approved: { variant: 'secondary' },
@@ -281,6 +324,29 @@ export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondar
   completed: { variant: 'outline' },
   canceled_inactive: { variant: 'destructive' },
 };
+
+/**
+ * Workflow steps for the advertisement lifecycle
+ */
+export const AD_WORKFLOW_STEPS = [
+  { id: 'pending_info', title: 'Submit Info', description: 'Customer provides business details' },
+  { id: 'pending_internal_review', title: 'Under Review', description: 'Team reviews submission' },
+  { id: 'pending_ad_creation', title: 'Ad Creation', description: 'Design team creates ad' },
+  { id: 'pending_customer_approval', title: 'Approval', description: 'Customer reviews proof' },
+  { id: 'live', title: 'Live', description: 'Ad is active' },
+] as const;
+
+/**
+ * Ad design preferences for color scheme
+ */
+export interface AdDesignPreferences {
+  primaryColor?: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fontStyle?: 'modern' | 'classic' | 'bold' | 'elegant';
+  additionalNotes?: string;
+}
 
 /**
  * Enhanced Advertisement interface
@@ -297,16 +363,36 @@ export interface Advertisement {
   adProofUrl?: string;
   adProofDestinationUrl?: string;
 
+  // Customer-provided sample ad (600x200)
+  customerSampleAdUrl?: string;
+
+  // Design preferences from Ad Designer
+  designPreferences?: AdDesignPreferences;
+
   // Customer info (denormalized)
   businessName?: string;
   contactName?: string;
   email?: string;
   phone?: string;
+  adWebsiteUrl?: string;
+  adText?: string;
+  adNotes?: string;
 
-  // Tracking
+  // Customer uploads (logos, images)
+  customerUploads?: string[];
+
+  // Tracking timestamps
+  infoSubmittedAt?: any;
+  sentForReviewAt?: any;
+  sentForApprovalAt?: any;
   approvedAt?: any;
+  autoApprovalAt?: any; // 48 hours from sentForApprovalAt
   liveAt?: any;
   completedAt?: any;
+
+  // Revision tracking
+  revisionCount?: number;
+  revisionNotes?: string;
 
   // Performance (for future ad tracking)
   impressions?: number;
@@ -315,6 +401,23 @@ export interface Advertisement {
   // Timestamps
   createdAt: any;
   updatedAt?: any;
+}
+
+/**
+ * Helper function to calculate auto-approval deadline (48 hours from sent for approval)
+ */
+export function calculateAutoApprovalDeadline(sentForApprovalAt: any): Date {
+  const sentDate = sentForApprovalAt?.toDate ? sentForApprovalAt.toDate() : new Date(sentForApprovalAt);
+  return new Date(sentDate.getTime() + 48 * 60 * 60 * 1000);
+}
+
+/**
+ * Check if an ad should be auto-approved (48 hours have passed)
+ */
+export function shouldAutoApprove(sentForApprovalAt: any): boolean {
+  if (!sentForApprovalAt) return false;
+  const deadline = calculateAutoApprovalDeadline(sentForApprovalAt);
+  return new Date() >= deadline;
 }
 
 // ============================================================================
