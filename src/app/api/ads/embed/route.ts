@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
 
         // Create clickable link
         var link = document.createElement('a');
-        link.href = AD_SERVER_BASE + data.clickUrl;
+        // Use absolute URL from server (already includes base URL)
+        link.href = data.clickUrl;
         link.target = '_blank';
         link.rel = 'noopener sponsored';
         link.style.display = 'block';
@@ -114,7 +115,8 @@ export async function GET(request: NextRequest) {
 
         // Create impression tracking pixel
         var pixel = document.createElement('img');
-        pixel.src = AD_SERVER_BASE + data.impressionUrl;
+        // Use absolute URL from server (already includes base URL)
+        pixel.src = data.impressionUrl;
         pixel.alt = '';
         pixel.style.position = 'absolute';
         pixel.style.width = '1px';

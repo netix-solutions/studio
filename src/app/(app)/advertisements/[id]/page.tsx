@@ -7,7 +7,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimest
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink, Radio } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -26,11 +26,13 @@ import {
     AD_STATUS_COLORS,
     AD_WORKFLOW_STEPS,
     AD_DIMENSIONS,
+    AD_PLACEMENT_DIMENSIONS,
     calculateAutoApprovalDeadline,
     shouldAutoApprove,
     type AdStatus,
     type Advertisement,
-    type AdDesignPreferences
+    type AdDesignPreferences,
+    type AdPlacement,
 } from '@/lib/types';
 
 interface UserDetails {
@@ -176,6 +178,8 @@ export default function AdvertisementDetailPage() {
     const [isGoingLive, setIsGoingLive] = useState(false);
     const [isResendingApproval, setIsResendingApproval] = useState(false);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [isPushingToAdServer, setIsPushingToAdServer] = useState(false);
+    const [pushedToAdServer, setPushedToAdServer] = useState(false);
 
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
@@ -562,6 +566,68 @@ export default function AdvertisementDetailPage() {
         }
     };
 
+    const handlePushToAdServer = async () => {
+        if (!firestore || !user || !advertisement?.adProofUrl || !advertisement?.adProofDestinationUrl) {
+            toast({ title: 'Error', description: 'Ad proof and destination URL are required.', variant: 'destructive' });
+            return;
+        }
+
+        setIsPushingToAdServer(true);
+        try {
+            // Determine placement type based on ad dimensions (default to inline for 600x200)
+            const placement: AdPlacement = 'inline';
+            const dimensions = AD_PLACEMENT_DIMENSIONS[placement];
+
+            // Create a new live ad document
+            const liveAdData = {
+                name: `${user.businessName || 'Advertisement'} - ${advertisement.id.slice(0, 6)}`,
+                description: `Customer advertisement for ${user.businessName}`,
+                imageUrl: advertisement.adProofUrl,
+                targetUrl: advertisement.adProofDestinationUrl,
+                altText: `Advertisement for ${user.businessName}`,
+                placement,
+                width: dimensions.width,
+                height: dimensions.height,
+                weight: 50, // Default weight
+                status: 'active',
+                targetSites: [], // No specific site targeting by default
+                startDate: null,
+                endDate: null,
+                // Link back to source
+                sourceAdvertisementId: advertisement.id,
+                customerId: advertisement.userId,
+                customerName: user.businessName || user.contactName,
+                // Analytics
+                impressions: 0,
+                clicks: 0,
+                // Timestamps
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
+            const docRef = await addDoc(collection(firestore, 'live_ads'), liveAdData);
+
+            // Update the advertisement to mark it as pushed to ad server
+            const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
+            await updateDoc(adDocRef, {
+                pushedToAdServerId: docRef.id,
+                pushedToAdServerAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            setPushedToAdServer(true);
+            toast({
+                title: 'Pushed to Ad Server!',
+                description: `The ad is now live on the ad server. You can manage it from the Ad Server page.`,
+            });
+        } catch (error: any) {
+            console.error("Error pushing to ad server:", error);
+            toast({ title: 'Error', description: error.message || 'Could not push to ad server.', variant: 'destructive' });
+        } finally {
+            setIsPushingToAdServer(false);
+        }
+    };
+
     if (loading) {
         return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
     }
@@ -829,7 +895,31 @@ export default function AdvertisementDetailPage() {
                                         Live since: {format(advertisement.liveAt.toDate ? advertisement.liveAt.toDate() : new Date(advertisement.liveAt), 'PPP')}
                                     </p>
                                 )}
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 flex-wrap">
+                                    {!pushedToAdServer && (
+                                        <Button
+                                            onClick={handlePushToAdServer}
+                                            disabled={isPushingToAdServer}
+                                            className="bg-indigo-600 hover:bg-indigo-700"
+                                        >
+                                            {isPushingToAdServer ? (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Radio className="mr-2 h-4 w-4" />
+                                            )}
+                                            Push to Ad Server
+                                        </Button>
+                                    )}
+                                    {pushedToAdServer && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => router.push('/ad-server')}
+                                            className="text-indigo-600 border-indigo-300"
+                                        >
+                                            <Radio className="mr-2 h-4 w-4" />
+                                            View in Ad Server
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="outline"
                                         onClick={() => handleUpdateStatus('paused')}

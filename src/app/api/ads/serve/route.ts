@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
     const placement = searchParams.get('placement') as AdPlacement | null;
     const site = searchParams.get('site');
 
+    // Build absolute base URL for tracking endpoints
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('host') || request.nextUrl.host;
+    const baseUrl = `${protocol}://${host}`;
+
     const db = getAdminFirestore();
     const now = new Date();
 
@@ -92,10 +97,10 @@ export async function GET(request: NextRequest) {
         height: selectedAd.height,
         placement: selectedAd.placement,
       },
-      // Provide click tracking URL
-      clickUrl: `/api/ads/click?id=${selectedAd.id}`,
-      // Provide impression tracking URL
-      impressionUrl: `/api/ads/impression?id=${selectedAd.id}`,
+      // Provide absolute click tracking URL for cross-origin usage
+      clickUrl: `${baseUrl}/api/ads/click?id=${selectedAd.id}`,
+      // Provide absolute impression tracking URL for cross-origin usage
+      impressionUrl: `${baseUrl}/api/ads/impression?id=${selectedAd.id}`,
     };
 
     return NextResponse.json(response, { status: 200, headers: corsHeaders });
