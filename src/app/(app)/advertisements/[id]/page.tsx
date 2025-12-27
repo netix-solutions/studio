@@ -325,7 +325,22 @@ export default function AdvertisementDetailPage() {
 
         } catch (error: any) {
             console.error("Error saving proof:", error);
-            toast({ title: 'Save Failed', description: error.message || 'Could not save the ad proof.', variant: 'destructive' });
+            const errorMessage = error?.message || String(error);
+            const isCorsError =
+                errorMessage.includes('CORS') ||
+                errorMessage.includes('Failed to fetch') ||
+                errorMessage.includes('NetworkError') ||
+                errorMessage.includes('preflight');
+
+            if (isCorsError) {
+                toast({
+                    title: 'Upload Error - CORS Configuration Required',
+                    description: 'File upload failed due to CORS policy. Please run: npx firebase-tools@latest storage cors set cors.json --project studio-4614023416-d45cd',
+                    variant: 'destructive',
+                });
+            } else {
+                toast({ title: 'Save Failed', description: errorMessage || 'Could not save the ad proof.', variant: 'destructive' });
+            }
         } finally {
             setIsSavingProof(false);
         }
