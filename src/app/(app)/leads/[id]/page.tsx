@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   collection,
   query,
@@ -39,7 +40,18 @@ import {
   PhoneCall,
   Users,
   FileText,
+  Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { SendManualEmailDialog } from '@/components/leads/send-manual-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
@@ -94,6 +106,8 @@ export default function LeadDetailPage() {
   const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch lead data
   useEffect(() => {
@@ -231,6 +245,32 @@ export default function LeadDetailPage() {
     } catch (err) {
       console.error("Error updating lead:", err);
       toast({ title: 'Error', description: 'Failed to update lead.', variant: 'destructive' });
+    }
+  };
+
+  // Handle marking as spam and deleting
+  const handleDeleteSpamLead = async () => {
+    if (!firestore || !lead) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(firestore, 'leads', lead.id));
+
+      toast({
+        title: 'Lead Deleted',
+        description: `"${lead.businessName}" has been marked as spam and deleted.`,
+      });
+
+      // Navigate back to leads list
+      router.push('/leads');
+    } catch (err) {
+      console.error("Error deleting lead:", err);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete lead. Please try again.',
+        variant: 'destructive',
+      });
+      setIsDeleting(false);
     }
   };
 
@@ -516,6 +556,14 @@ export default function LeadDetailPage() {
                   Call Lead
                 </a>
               </Button>
+              <Button
+                variant="outline"
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Mark as Spam & Delete
+              </Button>
             </CardContent>
           </Card>
 
@@ -556,6 +604,33 @@ export default function LeadDetailPage() {
         isOpen={isManualEmailDialogOpen}
         onOpenChange={setIsManualEmailDialogOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark as Spam & Delete</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark &quot;{lead.businessName}&quot; as spam and permanently delete it? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteSpamLead}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Delete Lead
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
