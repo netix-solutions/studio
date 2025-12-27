@@ -303,7 +303,7 @@ export default function AccountPage() {
 
     // Handle business info submission
     const onBusinessInfoSubmit = async (data: BusinessInfoFormData) => {
-        if (!user || !firestore || !firebaseApp) return;
+        if (!user || !firestore) return;
         setIsSavingBusinessInfo(true);
 
         const userDocRef = doc(firestore, 'users', user.uid);

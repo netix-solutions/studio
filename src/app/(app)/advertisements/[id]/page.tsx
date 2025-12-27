@@ -382,13 +382,13 @@ export default function AdvertisementDetailPage() {
     </p>
 </div>
 <div style="margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
-    <p style="margin: 0; font-size: 16px; color: #854d0e;"><strong>Important:</strong> Please log in to your account to approve or request changes to your ad. If you don't respond within 48 hours, your ad will be automatically approved and go live.</p>
+    <p style="margin: 0; font-size: 16px; color: #854d0e;"><strong>Important:</strong> Please click the button below to approve or request changes to your ad. If you don't respond within 48 hours, your ad will be automatically approved and go live.</p>
 </div>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
         <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                Log In to Approve Your Ad
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/approve-ad/${advertisement.id}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                Review & Approve Your Ad
             </a>
         </td>
     </tr>
@@ -536,8 +536,8 @@ export default function AdvertisementDetailPage() {
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
         <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                Log In to Approve Your Ad
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/approve-ad/${advertisement.id}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                Review & Approve Your Ad
             </a>
         </td>
     </tr>

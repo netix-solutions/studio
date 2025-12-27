@@ -8,7 +8,7 @@ import {
   updateProfile,
   UserCredential,
 } from 'firebase/auth';
-import { doc, setDoc, getFirestore, collection, query, where, getDocs, limit, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getFirestore, collection, query, where, getDocs, limit, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { firebaseApp } from '@/firebase';
 
 export const signInWithEmail = (auth: Auth, email: string, password: string) => {
@@ -46,6 +46,15 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
                 phone: leadData.phone || '',
                 // Carry over any other relevant fields from the lead
             };
+
+            // 3. Mark the lead as converted
+            const leadDocRef = doc(firestore, 'leads', leadDoc.id);
+            batch.update(leadDocRef, {
+                convertedToCustomerId: user.uid,
+                convertedAt: serverTimestamp(),
+                stage: 'won',
+                updatedAt: serverTimestamp(),
+            });
         } else {
              // Fallback if no lead is found (user registers directly)
              const contactName = user.displayName || email.split('@')[0];
@@ -57,11 +66,11 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
              userData.lastName = lastName;
         }
 
-        // 3. Create the user document in a batch write
+        // 4. Create the user document in a batch write
         const userDocRef = doc(firestore, 'users', user.uid);
         batch.set(userDocRef, userData, { merge: true });
 
-        // Commit all batched writes to Firestore
+        // Commit all batched writes (user creation and lead update if applicable)
         await batch.commit();
     }
     
