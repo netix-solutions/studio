@@ -62,10 +62,10 @@ import { Label } from '@/components/ui/label';
 import { useCallback, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
-// Email-specific style presets
+// Email-specific style presets (matches website primary: HSL 217 65% 28%)
 const emailColors = [
   { name: 'Default', value: '#3f3f46' },
-  { name: 'Primary', value: '#0284c7' },
+  { name: 'Primary', value: '#1e3a5f' },
   { name: 'Success', value: '#166534' },
   { name: 'Warning', value: '#854d0e' },
   { name: 'Danger', value: '#dc2626' },
@@ -84,8 +84,8 @@ const highlightColors = [
 const emailComponents = {
   primaryButton: `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 16px 0;">
     <tr>
-      <td style="border-radius: 6px;" bgcolor="#0284c7">
-        <a href="#" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+      <td style="border-radius: 6px;" bgcolor="#1e3a5f">
+        <a href="#" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
           Button Text
         </a>
       </td>
@@ -100,9 +100,9 @@ const emailComponents = {
       </td>
     </tr>
   </table>`,
-  infoBox: `<div style="margin: 24px 0; padding: 20px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
-    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #0369a1;">Info Title</p>
-    <p style="margin: 0; font-size: 15px; color: #0369a1;">Your information text here.</p>
+  infoBox: `<div style="margin: 24px 0; padding: 20px; background-color: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1;">
+    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e3a5f;">Info Title</p>
+    <p style="margin: 0; font-size: 15px; color: #334155;">Your information text here.</p>
   </div>`,
   successBox: `<div style="margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
     <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #166534;">Success Title</p>
@@ -117,7 +117,7 @@ const emailComponents = {
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
   </div>`,
-  featureBlock: `<div style="margin: 0 0 16px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #0284c7; border-radius: 0 6px 6px 0;">
+  featureBlock: `<div style="margin: 0 0 16px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #1e3a5f; border-radius: 0 6px 6px 0;">
     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">Feature Title</p>
     <p style="margin: 0; font-size: 15px; color: #64748b;">Feature description here.</p>
   </div>`,
@@ -440,7 +440,7 @@ const Toolbar = ({ editor, placeholders = [], showPlaceholders = true }: Toolbar
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => insertEmailComponent(emailComponents.primaryButton)}>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-sky-600" />
+                <div className="w-4 h-4 rounded bg-primary" />
                 Primary Button
               </div>
             </DropdownMenuItem>
@@ -482,7 +482,7 @@ const Toolbar = ({ editor, placeholders = [], showPlaceholders = true }: Toolbar
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => insertEmailComponent(emailComponents.featureBlock)}>
               <div className="flex items-center gap-2">
-                <RectangleHorizontal className="h-4 w-4 text-sky-600" />
+                <RectangleHorizontal className="h-4 w-4 text-primary" />
                 Feature Block
               </div>
             </DropdownMenuItem>
@@ -579,7 +579,7 @@ export function EmailEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          style: 'color: #0284c7; text-decoration: underline;',
+          style: 'color: #1e3a5f; text-decoration: underline;',
         },
       }),
       Placeholder.configure({
@@ -596,10 +596,10 @@ export function EmailEditor({
           'prose-h1:text-2xl prose-h1:mb-4',
           'prose-h2:text-xl prose-h2:mb-3',
           'prose-h3:text-lg prose-h3:mb-2',
-          'prose-a:text-sky-600 prose-a:no-underline hover:prose-a:underline',
+          'prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
           'prose-ul:my-2 prose-ol:my-2',
           'prose-li:my-0.5',
-          'prose-blockquote:border-l-4 prose-blockquote:border-sky-500 prose-blockquote:pl-4 prose-blockquote:italic',
+          'prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic',
           'prose-img:rounded-lg prose-img:mx-auto',
         ),
         style: `min-height: ${minHeight}`,

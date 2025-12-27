@@ -21,14 +21,14 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">You can view our current plans and get started by clicking the button below:</p>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        <td style="border-radius: 6px;" bgcolor="#1e3a5f">
+            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 View Pricing &amp; Sign Up
             </a>
         </td>
     </tr>
 </table>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, feel free to reply to this email or call/text us at <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, feel free to reply to this email or call/text us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -56,8 +56,8 @@ export const defaultTemplates: EmailTemplate[] = [
 </div>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="{{accountLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        <td style="border-radius: 6px;" bgcolor="#1e3a5f">
+            <a href="{{accountLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 Go to My Account
             </a>
         </td>
@@ -86,7 +86,7 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just wanted to follow up on your interest in advertising with us at Community-Websites.com. We help local businesses like <strong>{{businessName}}</strong> connect with thousands of potential customers in the area.</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Is there any information I can provide to help you decide if our service is a good fit for your business?</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Feel free to reply to this email with any questions, or give us a call at <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Feel free to reply to this email with any questions, or give us a call at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -113,7 +113,7 @@ export const defaultTemplates: EmailTemplate[] = [
         <img src="{{adProofUrl}}" alt="Ad Proof for {{businessName}}" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
     </a>
     <p style="margin: 16px 0 0 0; font-size: 14px; color: #64748b;">
-        <strong>Click destination:</strong> <a href="{{adProofDestinationUrl}}" target="_blank" style="color: #0284c7; text-decoration: underline;">{{adProofDestinationUrl}}</a>
+        <strong>Click destination:</strong> <a href="{{adProofDestinationUrl}}" target="_blank" style="color: #1e3a5f; text-decoration: underline;">{{adProofDestinationUrl}}</a>
     </p>
 </div>
 <div style="margin: 24px 0; padding: 20px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
@@ -153,7 +153,7 @@ export const defaultTemplates: EmailTemplate[] = [
     <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">You'd like me to walk you through the process</li>
 </ul>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Our local advertising platform reaches thousands of residents in your community, and we'd love to help {{businessName}} connect with more customers.</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just reply to this email or give me a call at <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 500;">813-544-8383</a> - I'm happy to help!</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just reply to this email or give me a call at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a> - I'm happy to help!</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -173,10 +173,10 @@ export const defaultTemplates: EmailTemplate[] = [
         subject: 'A special offer for {{businessName}} - 10% off your first month',
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to share an exclusive offer with you. As a thank you for your interest in Community-Websites.com, we'd like to offer <strong>{{businessName}}</strong> <strong style="color: #0284c7;">10% off your first month</strong> of advertising.</p>
-<div style="margin: 24px 0; padding: 24px; background-color: #f0f9ff; border: 2px dashed #0284c7; border-radius: 8px; text-align: center;">
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to share an exclusive offer with you. As a thank you for your interest in Community-Websites.com, we'd like to offer <strong>{{businessName}}</strong> <strong style="color: #1e3a5f;">10% off your first month</strong> of advertising.</p>
+<div style="margin: 24px 0; padding: 24px; background-color: #f0f9ff; border: 2px dashed #1e3a5f; border-radius: 8px; text-align: center;">
     <p style="margin: 0 0 8px 0; font-size: 14px; color: #0369a1;">Your exclusive discount code:</p>
-    <p style="margin: 0; font-size: 32px; font-weight: bold; color: #0284c7; letter-spacing: 3px; font-family: monospace;">TAKE10OFF</p>
+    <p style="margin: 0; font-size: 32px; font-weight: bold; color: #1e3a5f; letter-spacing: 3px; font-family: monospace;">TAKE10OFF</p>
     <p style="margin: 12px 0 0 0; font-size: 13px; color: #64748b;">Enter this code at checkout</p>
 </div>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">This is a great opportunity to get your business in front of local customers at a reduced rate. Our advertising packages help businesses like yours:</p>
@@ -187,14 +187,14 @@ export const defaultTemplates: EmailTemplate[] = [
 </ul>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        <td style="border-radius: 6px;" bgcolor="#1e3a5f">
+            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 View Plans &amp; Use Your Discount
             </a>
         </td>
     </tr>
 </table>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, just reply to this email or call us at <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, just reply to this email or call us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -243,23 +243,23 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to share some insights on how local advertising through Community-Websites.com can help grow <strong>{{businessName}}</strong>.</p>
 <p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #18181b;">Here's what our advertising partners typically see:</p>
-<div style="margin: 0 0 16px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #0284c7; border-radius: 0 6px 6px 0;">
+<div style="margin: 0 0 16px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #1e3a5f; border-radius: 0 6px 6px 0;">
     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">1. Increased Local Visibility</p>
     <p style="margin: 0; font-size: 15px; color: #64748b;">Your business appears on community websites that local residents visit regularly for news and information.</p>
 </div>
-<div style="margin: 0 0 16px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #0284c7; border-radius: 0 6px 6px 0;">
+<div style="margin: 0 0 16px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #1e3a5f; border-radius: 0 6px 6px 0;">
     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">2. Targeted Reach</p>
     <p style="margin: 0; font-size: 15px; color: #64748b;">Your ads are seen by people who actually live and shop in your area - not random clicks from across the country.</p>
 </div>
-<div style="margin: 0 0 24px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #0284c7; border-radius: 0 6px 6px 0;">
+<div style="margin: 0 0 24px 0; padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #1e3a5f; border-radius: 0 6px 6px 0;">
     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">3. Cost-Effective Marketing</p>
     <p style="margin: 0; font-size: 15px; color: #64748b;">Get your message in front of thousands of local residents for a fraction of what traditional advertising costs.</p>
 </div>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Would you like to learn more about how this could work for {{businessName}}? I'm happy to answer any questions.</p>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        <td style="border-radius: 6px;" bgcolor="#1e3a5f">
+            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 See Our Advertising Options
             </a>
         </td>
@@ -290,7 +290,7 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">In the meantime, feel free to:</p>
 <ul style="margin: 16px 0; padding-left: 24px; color: #3f3f46;">
     <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Save our contact info for when you're ready</li>
-    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Browse our <a href="{{pricingLink}}" style="color: #0284c7; text-decoration: underline;">advertising options</a> at your convenience</li>
+    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Browse our <a href="{{pricingLink}}" style="color: #1e3a5f; text-decoration: underline;">advertising options</a> at your convenience</li>
     <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Reach out anytime with questions - no pressure, ever</li>
 </ul>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">We're a small team that genuinely cares about helping local businesses succeed. Whenever you're ready, we'll be here.</p>

@@ -44,7 +44,7 @@ export function wrapEmailContent(bodyContent: string): string {
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="max-width: 600px; width: 100%; margin: 0 auto;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #0284c7; padding: 24px 40px; border-radius: 8px 8px 0 0;">
+                        <td style="background-color: #1e3a5f; padding: 24px 40px; border-radius: 8px 8px 0 0;">
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                 <tr>
                                     <td>
@@ -75,9 +75,9 @@ export function wrapEmailContent(bodyContent: string): string {
                                             Questions? We're here to help!
                                         </p>
                                         <p style="margin: 0 0 16px 0; font-size: 14px; color: #3f3f46;">
-                                            <a href="tel:813-544-8383" style="color: #0284c7; text-decoration: none; font-weight: 500;">813-544-8383</a>
+                                            <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>
                                             &nbsp;&bull;&nbsp;
-                                            <a href="mailto:support@community-websites.com" style="color: #0284c7; text-decoration: none; font-weight: 500;">support@community-websites.com</a>
+                                            <a href="mailto:support@community-websites.com" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">support@community-websites.com</a>
                                         </p>
                                         <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
                                             &copy; ${new Date().getFullYear()} Community-Websites.com. All rights reserved.
@@ -102,13 +102,13 @@ export function wrapEmailContent(bodyContent: string): string {
 export const emailStyles = {
     paragraph: 'margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;',
     heading: 'margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #18181b;',
-    link: 'color: #0284c7; text-decoration: underline;',
-    button: 'display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;',
+    link: 'color: #1e3a5f; text-decoration: underline;',
+    button: 'display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;',
     buttonSecondary: 'display: inline-block; padding: 14px 28px; background-color: #f4f4f5; color: #3f3f46; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; border: 1px solid #e4e4e7;',
     list: 'margin: 16px 0; padding-left: 24px; color: #3f3f46;',
     listItem: 'margin: 8px 0; font-size: 16px; line-height: 1.6;',
     divider: 'border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;',
-    infoBox: 'margin: 24px 0; padding: 20px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;',
+    infoBox: 'margin: 24px 0; padding: 20px; background-color: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1;',
     warningBox: 'margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;',
     successBox: 'margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;',
     signature: 'margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;',
@@ -122,7 +122,7 @@ export function createEmailButton(text: string, href: string, variant: 'primary'
     return `
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
             <tr>
-                <td style="border-radius: 6px;" bgcolor="${variant === 'primary' ? '#0284c7' : '#f4f4f5'}">
+                <td style="border-radius: 6px;" bgcolor="${variant === 'primary' ? '#1e3a5f' : '#f4f4f5'}">
                     <a href="${href}" target="_blank" style="${style}">
                         ${text}
                     </a>

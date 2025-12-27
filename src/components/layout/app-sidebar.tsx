@@ -31,6 +31,7 @@ import {
   LogOut,
   Radio,
   DatabaseZap,
+  Bell,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -95,6 +96,7 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/users', label: 'Users', icon: Users },
       { href: '/automated-emails', label: 'Email Templates', icon: Mail },
+      { href: '/admin-notifications', label: 'Admin Notifications', icon: Bell },
       { href: '/legal', label: 'Legal Documents', icon: FileText },
       { href: '/reconciliation', label: 'Data Reconciliation', icon: DatabaseZap },
     ],
