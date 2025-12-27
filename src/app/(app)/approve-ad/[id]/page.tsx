@@ -17,6 +17,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { sendEmail } from '@/lib/firebase/email';
+import { wrapEmailContent } from '@/lib/email-utils';
 import {
     AD_STATUSES,
     AD_STATUS_LABELS,
@@ -158,16 +159,23 @@ export default function ApproveAdPage() {
 
             // Send notification email to admin
             const subject = `Revision Requested - ${advertisement.businessName}`;
-            const html = `
-                <p>A customer has requested revisions to their advertisement.</p>
-                <p><strong>Business:</strong> ${advertisement.businessName}</p>
-                <p><strong>Contact:</strong> ${advertisement.contactName} (${advertisement.email})</p>
-                <p><strong>Revision Notes:</strong></p>
-                <blockquote style="background: #f5f5f5; padding: 15px; border-left: 4px solid #ccc; margin: 10px 0;">
-                    ${revisionNotes.replace(/\n/g, '<br/>')}
-                </blockquote>
-                <p>Please review and make the necessary changes.</p>
+            let html = `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">A customer has requested revisions to their advertisement.</p>
+<div style="margin: 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+    <p style="margin: 0 0 8px 0; font-size: 15px; color: #3f3f46;"><strong>Business:</strong> ${advertisement.businessName}</p>
+    <p style="margin: 0; font-size: 15px; color: #3f3f46;"><strong>Contact:</strong> ${advertisement.contactName} (<a href="mailto:${advertisement.email}" style="color: #0284c7;">${advertisement.email}</a>)</p>
+</div>
+<p style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #18181b;">Revision Notes:</p>
+<div style="margin: 0 0 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border-left: 4px solid #eab308;">
+    <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #854d0e;">
+        ${revisionNotes.replace(/\n/g, '<br/>')}
+    </p>
+</div>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Please review and make the necessary changes.</p>
             `;
+
+            // Wrap email in professional template
+            html = wrapEmailContent(html);
 
             // Note: In production, this would go to an admin email
             await sendEmail(firestore, {
@@ -328,10 +336,10 @@ export default function ApproveAdPage() {
         : null;
 
     return (
-        <div className="max-w-3xl mx-auto py-8 space-y-6">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-2">Review Your Advertisement</h1>
-                <p className="text-muted-foreground">
+        <div className="max-w-3xl mx-auto py-4 md:py-8 space-y-4 md:space-y-6 px-4 md:px-0">
+            <div className="text-center mb-4 md:mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">Review Your Advertisement</h1>
+                <p className="text-muted-foreground text-sm md:text-base">
                     Please review the ad proof below and let us know if you're happy with it.
                 </p>
             </div>
@@ -350,12 +358,12 @@ export default function ApproveAdPage() {
 
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                         <div>
-                            <CardTitle>{advertisement.businessName}</CardTitle>
+                            <CardTitle className="text-lg md:text-xl">{advertisement.businessName}</CardTitle>
                             <CardDescription>Advertisement Proof</CardDescription>
                         </div>
-                        <Badge variant="default">Awaiting Your Approval</Badge>
+                        <Badge variant="default" className="w-fit">Awaiting Your Approval</Badge>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">

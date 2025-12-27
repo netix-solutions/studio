@@ -254,15 +254,15 @@ export default function SubscriptionsPage() {
         <CardDescription>View and manage {isAdmin ? 'all customer' : 'your ad'} subscriptions.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <Input
             placeholder={isAdmin ? "Search by customer, ID, or plan..." : "Search by plan..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="flex-1 sm:max-w-sm"
           />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>

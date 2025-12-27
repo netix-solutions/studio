@@ -27,6 +27,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { sendEmail } from '@/lib/firebase/email';
+import { generateEmailUrls, wrapEmailContent } from '@/lib/email-utils';
 import type { UserDetails } from '@/app/(app)/subscriptions/[id]/page';
 import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
@@ -85,14 +86,22 @@ export function SendCustomerEmailDialog({ customer, isOpen, onOpenChange }: Send
         throw new Error("Selected template not found.");
       }
 
-      // Replace placeholders
-      let subject = selectedTemplate.subject
-        .replace(/{{contactName}}/g, customer.contactName)
-        .replace(/{{businessName}}/g, customer.businessName || '');
-      
+      // Generate URLs for placeholders
+      const urls = generateEmailUrls(undefined, customer.id);
+
+      // Replace all placeholders in subject and body
+      const subject = selectedTemplate.subject
+        .replace(/\{\{contactName\}\}/g, customer.contactName)
+        .replace(/\{\{businessName\}\}/g, customer.businessName || '');
+
       let html = selectedTemplate.html
-        .replace(/{{contactName}}/g, customer.contactName)
-        .replace(/{{businessName}}/g, customer.businessName || '');
+        .replace(/\{\{contactName\}\}/g, customer.contactName)
+        .replace(/\{\{businessName\}\}/g, customer.businessName || '')
+        .replace(/\{\{pricingLink\}\}/g, urls.pricingLink)
+        .replace(/\{\{accountLink\}\}/g, urls.accountLink);
+
+      // Wrap the email content in the professional email template
+      html = wrapEmailContent(html);
 
       await sendEmail(firestore, {
         to: customer.email,

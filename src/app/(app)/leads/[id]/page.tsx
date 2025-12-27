@@ -276,41 +276,39 @@ export default function LeadDetailPage() {
       {/* Header Card */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div>
-              <CardTitle className="text-2xl flex items-center gap-3">
-                {lead.businessName}
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <CardTitle className="text-xl md:text-2xl">{lead.businessName}</CardTitle>
                 <Badge className={cn(stageColors.bg, stageColors.text, stageColors.border)}>
                   {LEAD_STAGE_LABELS[lead.stage as LeadStage] || lead.stage}
                 </Badge>
-              </CardTitle>
-              <CardDescription className="mt-1">
+              </div>
+              <CardDescription>
                 {lead.contactName} &bull; Created {lead.createdAt ? format(lead.createdAt.toDate(), 'PPP') : 'N/A'}
               </CardDescription>
             </div>
 
-            <div className="flex items-center gap-2">
-              {lead.stage !== 'won' && lead.stage !== 'lost' && (
-                <>
-                  <Button
-                    variant="default"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleMarkAsWonLost('won')}
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Mark as Won
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => handleMarkAsWonLost('lost')}
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Mark as Lost
-                  </Button>
-                </>
-              )}
-            </div>
+            {lead.stage !== 'won' && lead.stage !== 'lost' && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
+                  onClick={() => handleMarkAsWonLost('won')}
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Mark as Won
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-200 hover:bg-red-50 flex-1 sm:flex-none"
+                  onClick={() => handleMarkAsWonLost('lost')}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Mark as Lost
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>

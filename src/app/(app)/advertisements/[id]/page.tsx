@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { sendEmail } from '@/lib/firebase/email';
+import { wrapEmailContent } from '@/lib/email-utils';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -73,7 +74,44 @@ function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdS
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* Mobile view - vertical stepper */}
+            <div className="md:hidden space-y-3">
+                {adminWorkflowSteps.map((step, index) => {
+                    const isCompleted = currentIndex > index;
+                    const isActive = currentIndex === index;
+                    const isPending = currentIndex < index;
+
+                    return (
+                        <div key={step.id} className="flex items-center gap-3">
+                            <div className={cn(
+                                "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
+                                isCompleted && "bg-green-500 border-green-500 text-white",
+                                isActive && "bg-primary border-primary text-primary-foreground",
+                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
+                            )}>
+                                {isCompleted ? (
+                                    <CheckCircle className="h-4 w-4" />
+                                ) : (
+                                    <span className="font-bold text-sm">{index + 1}</span>
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <p className={cn(
+                                    "text-sm font-medium",
+                                    isActive && "text-primary",
+                                    isCompleted && "text-green-600",
+                                    isPending && "text-muted-foreground"
+                                )}>
+                                    {step.title}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Desktop view - horizontal stepper */}
+            <div className="hidden md:flex items-center justify-between">
                 {adminWorkflowSteps.map((step, index) => {
                     const isCompleted = currentIndex > index;
                     const isActive = currentIndex === index;
@@ -102,7 +140,7 @@ function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdS
                                 )}>
                                     {step.title}
                                 </p>
-                                <p className="text-xs text-muted-foreground hidden md:block">{step.description}</p>
+                                <p className="text-xs text-muted-foreground">{step.description}</p>
                             </div>
                             {index < adminWorkflowSteps.length - 1 && (
                                 <div className={cn(
@@ -332,28 +370,50 @@ export default function AdvertisementDetailPage() {
 
             let subject = `Your Ad Proof is Ready - ${user.businessName || 'Community-Websites.com'}`;
             let html = `
-                <p>Hi ${user.contactName},</p>
-                <p>Great news! Your advertisement proof for <strong>${user.businessName}</strong> is ready for your review.</p>
-                <p><strong>Please review your ad proof:</strong></p>
-                <p><a href="${advertisement.adProofUrl}" target="_blank">View Your Ad Proof</a></p>
-                <p><strong>Your ad will link to:</strong> <a href="${advertisement.adProofDestinationUrl}">${advertisement.adProofDestinationUrl}</a></p>
-                <p><strong>Important:</strong> Please log in to your account to approve or request changes to your ad. If you don't respond within 48 hours, your ad will be automatically approved and go live.</p>
-                <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account">Log In to Approve Your Ad</a></p>
-                <p>Thank you for advertising with us!</p>
-                <p>Best regards,<br/>The Community-Websites.com Team</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi ${user.contactName},</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your advertisement proof for <strong>${user.businessName}</strong> is ready for your review.</p>
+<div style="margin: 24px 0; padding: 24px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+    <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Your Ad Creative</p>
+    <a href="${advertisement.adProofDestinationUrl}" target="_blank" style="display: inline-block;">
+        <img src="${advertisement.adProofUrl}" alt="Ad Proof for ${user.businessName}" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+    </a>
+    <p style="margin: 16px 0 0 0; font-size: 14px; color: #64748b;">
+        <strong>Click destination:</strong> <a href="${advertisement.adProofDestinationUrl}" target="_blank" style="color: #0284c7; text-decoration: underline;">${advertisement.adProofDestinationUrl}</a>
+    </p>
+</div>
+<div style="margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
+    <p style="margin: 0; font-size: 16px; color: #854d0e;"><strong>Important:</strong> Please log in to your account to approve or request changes to your ad. If you don't respond within 48 hours, your ad will be automatically approved and go live.</p>
+</div>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td style="border-radius: 6px;" bgcolor="#0284c7">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                Log In to Approve Your Ad
+            </a>
+        </td>
+    </tr>
+</table>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thank you for advertising with us!</p>
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
             `;
 
             if (!templateSnapshot.empty) {
                 const template = templateSnapshot.docs[0].data();
                 subject = template.subject
-                    .replace(/{{businessName}}/g, user.businessName || '')
-                    .replace(/{{contactName}}/g, user.contactName);
+                    .replace(/\{\{businessName\}\}/g, user.businessName || '')
+                    .replace(/\{\{contactName\}\}/g, user.contactName);
                 html = template.html
-                    .replace(/{{contactName}}/g, user.contactName)
-                    .replace(/{{adProofUrl}}/g, advertisement.adProofUrl)
-                    .replace(/{{adProofDestinationUrl}}/g, advertisement.adProofDestinationUrl)
-                    .replace(/{{businessName}}/g, user.businessName || '');
+                    .replace(/\{\{contactName\}\}/g, user.contactName)
+                    .replace(/\{\{adProofUrl\}\}/g, advertisement.adProofUrl)
+                    .replace(/\{\{adProofDestinationUrl\}\}/g, advertisement.adProofDestinationUrl)
+                    .replace(/\{\{businessName\}\}/g, user.businessName || '');
             }
+
+            // Wrap email in professional template
+            html = wrapEmailContent(html);
 
             await sendEmail(firestore, { to: user.email, subject, html }, {
                 recipientId: user.id,
@@ -405,18 +465,36 @@ export default function AdvertisementDetailPage() {
 
             // Send confirmation email
             const subject = `Your Ad is Now Live! - ${user.businessName || 'Community-Websites.com'}`;
-            const html = `
-                <p>Hi ${user.contactName},</p>
-                <p>Great news! Your advertisement for <strong>${user.businessName}</strong> is now live on our community websites.</p>
-                <p>Your ad is now being displayed to thousands of local residents.</p>
-                <p><strong>Ad Details:</strong></p>
-                <ul>
-                    <li><strong>Ad Link:</strong> <a href="${advertisement.adProofDestinationUrl}">${advertisement.adProofDestinationUrl}</a></li>
-                </ul>
-                <p>You can view and manage your advertisement anytime by logging into your account.</p>
-                <p>Thank you for advertising with us!</p>
-                <p>Best regards,<br/>The Community-Websites.com Team</p>
+            let html = `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi ${user.contactName},</p>
+<div style="margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #86efac; text-align: center;">
+    <p style="margin: 0; font-size: 20px; font-weight: 600; color: #166534;">Your Ad is Now Live!</p>
+</div>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your advertisement for <strong>${user.businessName}</strong> is now live on our community websites.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Your ad is now being displayed to thousands of local residents.</p>
+<div style="margin: 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #18181b;">Ad Details:</p>
+    <p style="margin: 0; font-size: 15px; color: #3f3f46;"><strong>Ad Link:</strong> <a href="${advertisement.adProofDestinationUrl}" style="color: #0284c7; text-decoration: underline;">${advertisement.adProofDestinationUrl}</a></p>
+</div>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">You can view and manage your advertisement anytime by logging into your account.</p>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td style="border-radius: 6px;" bgcolor="#0284c7">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                View My Account
+            </a>
+        </td>
+    </tr>
+</table>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thank you for advertising with us!</p>
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
             `;
+
+            // Wrap email in professional template
+            html = wrapEmailContent(html);
 
             await sendEmail(firestore, { to: user.email, subject, html }, {
                 recipientId: user.id,
@@ -443,14 +521,35 @@ export default function AdvertisementDetailPage() {
         setIsResendingApproval(true);
         try {
             const subject = `Reminder: Your Ad Proof is Ready - ${user.businessName || 'Community-Websites.com'}`;
-            const html = `
-                <p>Hi ${user.contactName},</p>
-                <p>This is a reminder that your advertisement proof for <strong>${user.businessName}</strong> is still awaiting your approval.</p>
-                <p><a href="${advertisement.adProofUrl}" target="_blank">View Your Ad Proof</a></p>
-                <p>Please log in to your account to approve your ad. If you don't respond within 48 hours from the original request, your ad will be automatically approved.</p>
-                <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account">Log In to Approve Your Ad</a></p>
-                <p>Best regards,<br/>The Community-Websites.com Team</p>
+            let html = `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi ${user.contactName},</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">This is a friendly reminder that your advertisement proof for <strong>${user.businessName}</strong> is still awaiting your approval.</p>
+<div style="margin: 24px 0; padding: 24px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+    <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Your Ad Proof</p>
+    <a href="${advertisement.adProofUrl}" target="_blank" style="display: inline-block;">
+        <img src="${advertisement.adProofUrl}" alt="Ad Proof for ${user.businessName}" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+    </a>
+</div>
+<div style="margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
+    <p style="margin: 0; font-size: 16px; color: #854d0e;"><strong>Note:</strong> If you don't respond within 48 hours from the original request, your ad will be automatically approved and go live.</p>
+</div>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td style="border-radius: 6px;" bgcolor="#0284c7">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/account" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                Log In to Approve Your Ad
+            </a>
+        </td>
+    </tr>
+</table>
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
             `;
+
+            // Wrap email in professional template
+            html = wrapEmailContent(html);
 
             await sendEmail(firestore, { to: user.email, subject, html }, {
                 recipientId: user.id,
@@ -547,30 +646,29 @@ export default function AdvertisementDetailPage() {
         shouldAutoApprove(advertisement.sentForApprovalAt);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={() => router.back()}>
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <Button variant="outline" onClick={() => router.back()} className="w-full sm:w-auto">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Advertisements
                 </Button>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => window.location.href = `mailto:${user.email}`}>
-                        Email Customer
-                    </Button>
-                </div>
+                <Button variant="outline" onClick={() => window.location.href = `mailto:${user.email}`} className="w-full sm:w-auto">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email Customer
+                </Button>
             </div>
 
             {/* Header Card */}
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                         <div>
-                            <CardTitle className="text-2xl">{user.businessName || 'Advertisement'}</CardTitle>
-                            <CardDescription>Ad ID: {advertisement.id}</CardDescription>
+                            <CardTitle className="text-xl md:text-2xl">{user.businessName || 'Advertisement'}</CardTitle>
+                            <CardDescription className="break-all">Ad ID: {advertisement.id}</CardDescription>
                         </div>
                         <Badge
                             variant={AD_STATUS_COLORS[advertisement.status]?.variant || 'outline'}
-                            className="text-sm"
+                            className="text-sm w-fit"
                         >
                             {AD_STATUS_LABELS[advertisement.status] || advertisement.status}
                         </Badge>

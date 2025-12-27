@@ -221,13 +221,13 @@ export default function LeadsPage() {
             {/* Header with stats */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">Leads</h1>
+                    <p className="text-muted-foreground text-sm md:text-base">
                         Manage and track all potential customers
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-lg px-3 py-1">
+                    <Badge variant="outline" className="text-base md:text-lg px-2 md:px-3 py-1">
                         {stats.total} leads
                     </Badge>
                     {stats.byStage['new'] > 0 && (
@@ -252,46 +252,48 @@ export default function LeadsPage() {
                             />
                         </div>
 
-                        <Select value={selectedStage} onValueChange={setSelectedStage}>
-                            <SelectTrigger className="w-[160px]">
-                                <SelectValue placeholder="Stage" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Stages</SelectItem>
-                                {LEAD_STAGE_ORDER.map((stage) => (
-                                    <SelectItem key={stage} value={stage}>
-                                        {LEAD_STAGE_LABELS[stage]}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-3 gap-2 md:flex md:gap-4">
+                            <Select value={selectedStage} onValueChange={setSelectedStage}>
+                                <SelectTrigger className="w-full md:w-[160px]">
+                                    <SelectValue placeholder="Stage" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Stages</SelectItem>
+                                    {LEAD_STAGE_ORDER.map((stage) => (
+                                        <SelectItem key={stage} value={stage}>
+                                            {LEAD_STAGE_LABELS[stage]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                        <Select value={selectedSource} onValueChange={setSelectedSource}>
-                            <SelectTrigger className="w-[160px]">
-                                <SelectValue placeholder="Source" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Sources</SelectItem>
-                                {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <Select value={selectedSource} onValueChange={setSelectedSource}>
+                                <SelectTrigger className="w-full md:w-[160px]">
+                                    <SelectValue placeholder="Source" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Sources</SelectItem>
+                                    {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                        <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-                            <SelectTrigger className="w-[140px]">
-                                <SelectValue placeholder="Priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Priority</SelectItem>
-                                {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                                <SelectTrigger className="w-full md:w-[140px]">
+                                    <SelectValue placeholder="Priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Priority</SelectItem>
+                                    {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
                         {hasActiveFilters && (
-                            <Button variant="ghost" onClick={clearFilters} className="shrink-0">
+                            <Button variant="ghost" onClick={clearFilters} className="shrink-0 w-full md:w-auto">
                                 Clear filters
                             </Button>
                         )}

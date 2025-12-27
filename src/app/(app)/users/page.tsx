@@ -108,8 +108,8 @@ export default function UsersPage() {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>View and manage all registered users.</CardDescription>
+                    <CardTitle className="text-xl md:text-2xl">User Management</CardTitle>
+                    <CardDescription className="text-sm">View and manage all registered users.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading && (
