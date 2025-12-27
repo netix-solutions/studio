@@ -101,7 +101,7 @@ function StageColumn({ stage, ads, onMoveToStage, onAdClick, isFirst, isLast }: 
   };
 
   return (
-    <div className="flex flex-col min-w-[280px] max-w-[280px] h-full">
+    <div className="flex flex-col min-w-[240px] md:min-w-[280px] max-w-[240px] md:max-w-[280px] h-full">
       {/* Column Header */}
       <div className={cn('rounded-t-lg p-3 border-b-2', colors.bg, colors.border)}>
         <div className="flex items-center justify-between">
@@ -411,31 +411,31 @@ export default function PipelinePage() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Ad Pipeline</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Ad Pipeline</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Track advertisements through the customer workflow
           </p>
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-6 text-sm">
-          <div className="text-center">
-            <p className="text-2xl font-bold">{stats.totalAds}</p>
-            <p className="text-muted-foreground">Total</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <div className="text-center p-3 bg-muted/50 rounded-lg">
+            <p className="text-xl md:text-2xl font-bold">{stats.totalAds}</p>
+            <p className="text-muted-foreground text-xs md:text-sm">Total</p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-amber-600">{stats.actionRequired}</p>
-            <p className="text-muted-foreground">Action Needed</p>
+          <div className="text-center p-3 bg-amber-50 rounded-lg">
+            <p className="text-xl md:text-2xl font-bold text-amber-600">{stats.actionRequired}</p>
+            <p className="text-muted-foreground text-xs md:text-sm">Action Needed</p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{stats.pendingApprovalAds}</p>
-            <p className="text-muted-foreground">Pending Approval</p>
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <p className="text-xl md:text-2xl font-bold text-blue-600">{stats.pendingApprovalAds}</p>
+            <p className="text-muted-foreground text-xs md:text-sm">Pending Approval</p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">{stats.liveAds}</p>
-            <p className="text-muted-foreground">Live</p>
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <p className="text-xl md:text-2xl font-bold text-green-600">{stats.liveAds}</p>
+            <p className="text-muted-foreground text-xs md:text-sm">Live</p>
           </div>
         </div>
       </div>

@@ -71,7 +71,44 @@ function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdS
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* Mobile view - vertical stepper */}
+            <div className="md:hidden space-y-3">
+                {adminWorkflowSteps.map((step, index) => {
+                    const isCompleted = currentIndex > index;
+                    const isActive = currentIndex === index;
+                    const isPending = currentIndex < index;
+
+                    return (
+                        <div key={step.id} className="flex items-center gap-3">
+                            <div className={cn(
+                                "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
+                                isCompleted && "bg-green-500 border-green-500 text-white",
+                                isActive && "bg-primary border-primary text-primary-foreground",
+                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
+                            )}>
+                                {isCompleted ? (
+                                    <CheckCircle className="h-4 w-4" />
+                                ) : (
+                                    <span className="font-bold text-sm">{index + 1}</span>
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <p className={cn(
+                                    "text-sm font-medium",
+                                    isActive && "text-primary",
+                                    isCompleted && "text-green-600",
+                                    isPending && "text-muted-foreground"
+                                )}>
+                                    {step.title}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Desktop view - horizontal stepper */}
+            <div className="hidden md:flex items-center justify-between">
                 {adminWorkflowSteps.map((step, index) => {
                     const isCompleted = currentIndex > index;
                     const isActive = currentIndex === index;
@@ -100,7 +137,7 @@ function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdS
                                 )}>
                                     {step.title}
                                 </p>
-                                <p className="text-xs text-muted-foreground hidden md:block">{step.description}</p>
+                                <p className="text-xs text-muted-foreground">{step.description}</p>
                             </div>
                             {index < adminWorkflowSteps.length - 1 && (
                                 <div className={cn(
@@ -481,30 +518,29 @@ export default function AdvertisementDetailPage() {
         shouldAutoApprove(advertisement.sentForApprovalAt);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={() => router.back()}>
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <Button variant="outline" onClick={() => router.back()} className="w-full sm:w-auto">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Advertisements
                 </Button>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => window.location.href = `mailto:${user.email}`}>
-                        Email Customer
-                    </Button>
-                </div>
+                <Button variant="outline" onClick={() => window.location.href = `mailto:${user.email}`} className="w-full sm:w-auto">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email Customer
+                </Button>
             </div>
 
             {/* Header Card */}
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                         <div>
-                            <CardTitle className="text-2xl">{user.businessName || 'Advertisement'}</CardTitle>
-                            <CardDescription>Ad ID: {advertisement.id}</CardDescription>
+                            <CardTitle className="text-xl md:text-2xl">{user.businessName || 'Advertisement'}</CardTitle>
+                            <CardDescription className="break-all">Ad ID: {advertisement.id}</CardDescription>
                         </div>
                         <Badge
                             variant={AD_STATUS_COLORS[advertisement.status]?.variant || 'outline'}
-                            className="text-sm"
+                            className="text-sm w-fit"
                         >
                             {AD_STATUS_LABELS[advertisement.status] || advertisement.status}
                         </Badge>

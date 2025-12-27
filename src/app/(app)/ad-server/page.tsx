@@ -395,19 +395,19 @@ export default function AdServerPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Ad Server</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">Ad Server</h1>
+                    <p className="text-muted-foreground text-sm md:text-base">
                         Manage live advertisements served to external websites
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setShowEmbedDialog(true)}>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <Button variant="outline" onClick={() => setShowEmbedDialog(true)} className="flex-1 sm:flex-none">
                         <Code className="mr-2 h-4 w-4" />
                         Get Embed Code
                     </Button>
-                    <Button onClick={handleOpenCreate}>
+                    <Button onClick={handleOpenCreate} className="flex-1 sm:flex-none">
                         <Plus className="mr-2 h-4 w-4" />
                         Create Ad
                     </Button>
@@ -415,7 +415,7 @@ export default function AdServerPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-1">
@@ -469,7 +469,7 @@ export default function AdServerPage() {
             {/* Filters */}
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:gap-4">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -481,7 +481,7 @@ export default function AdServerPage() {
                         </div>
 
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full md:w-[180px]">
                                 <SelectValue placeholder="Filter by status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -495,6 +495,7 @@ export default function AdServerPage() {
                         {(searchQuery || statusFilter !== 'all') && (
                             <Button
                                 variant="ghost"
+                                className="w-full md:w-auto"
                                 onClick={() => {
                                     setSearchQuery('');
                                     setStatusFilter('all');

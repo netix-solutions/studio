@@ -328,10 +328,10 @@ export default function ApproveAdPage() {
         : null;
 
     return (
-        <div className="max-w-3xl mx-auto py-8 space-y-6">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-2">Review Your Advertisement</h1>
-                <p className="text-muted-foreground">
+        <div className="max-w-3xl mx-auto py-4 md:py-8 space-y-4 md:space-y-6 px-4 md:px-0">
+            <div className="text-center mb-4 md:mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">Review Your Advertisement</h1>
+                <p className="text-muted-foreground text-sm md:text-base">
                     Please review the ad proof below and let us know if you're happy with it.
                 </p>
             </div>
@@ -350,12 +350,12 @@ export default function ApproveAdPage() {
 
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                         <div>
-                            <CardTitle>{advertisement.businessName}</CardTitle>
+                            <CardTitle className="text-lg md:text-xl">{advertisement.businessName}</CardTitle>
                             <CardDescription>Advertisement Proof</CardDescription>
                         </div>
-                        <Badge variant="default">Awaiting Your Approval</Badge>
+                        <Badge variant="default" className="w-fit">Awaiting Your Approval</Badge>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
