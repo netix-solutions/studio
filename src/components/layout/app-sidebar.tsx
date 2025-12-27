@@ -28,6 +28,7 @@ import {
   Workflow,
   BarChart3,
   LogOut,
+  Radio,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -75,6 +76,14 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/leads', label: 'Leads', icon: Handshake },
       { href: '/subscriptions', label: 'Customers', icon: Ticket },
+    ],
+  },
+  {
+    title: 'Ad Server',
+    icon: Radio,
+    defaultOpen: false,
+    items: [
+      { href: '/ad-server', label: 'Manage Ads', icon: Megaphone },
     ],
   },
   {

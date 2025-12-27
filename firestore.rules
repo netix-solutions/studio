@@ -133,5 +133,22 @@ service cloud.firestore {
       allow read, list: if isAdmin();
       allow update, delete: if false;
     }
+
+    // LIVE ADS (Ad Server)
+    // Public read access for serving ads to external websites.
+    // Only admins can create/update/delete ads.
+    match /live_ads/{adId} {
+      allow read, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // AD EVENTS (Impressions & Clicks)
+    // Anyone can create events (for tracking).
+    // Only admins can read analytics.
+    match /ad_events/{eventId} {
+      allow create: if true;
+      allow read, list: if isAdmin();
+      allow update, delete: if false;
+    }
   }
 }
