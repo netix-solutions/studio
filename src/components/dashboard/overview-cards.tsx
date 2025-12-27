@@ -38,15 +38,24 @@ export default function OverviewCards() {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        const totalRevenue = allSubscriptions.reduce((acc, sub) => acc + (sub.items?.[0].price.unit_amount / 100 || 0), 0);
+        // Safely access nested properties with null coalescing
+        const totalRevenue = allSubscriptions.reduce((acc, sub) => {
+            const amount = sub.items?.[0]?.price?.unit_amount ?? 0;
+            return acc + (amount / 100);
+        }, 0);
         const activeSubscriptions = allSubscriptions.filter(sub => sub.status === 'active' || sub.status === 'trialing').length;
         const newThisMonth = allSubscriptions.filter(sub => {
+            if (!sub.created) return false;
             const createdDate = new Date(sub.created * 1000);
             return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
         }).length;
-        const yearlyRevenue = allSubscriptions.filter(sub => sub.items?.[0].price.recurring?.interval === 'year' && (sub.status === 'active' || sub.status === 'trialing'))
-          .reduce((acc, sub) => acc + (sub.items?.[0].price.unit_amount / 100 || 0), 0);
-        
+        const yearlyRevenue = allSubscriptions
+          .filter(sub => sub.items?.[0]?.price?.recurring?.interval === 'year' && (sub.status === 'active' || sub.status === 'trialing'))
+          .reduce((acc, sub) => {
+              const amount = sub.items?.[0]?.price?.unit_amount ?? 0;
+              return acc + (amount / 100);
+          }, 0);
+
         setStats({ totalRevenue, activeSubscriptions, newThisMonth, yearlyRevenue });
         setLoading(false);
       }).catch(error => {

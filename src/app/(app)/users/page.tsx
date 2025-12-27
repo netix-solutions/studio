@@ -26,7 +26,7 @@ export interface AppUser {
 }
 
 export default function UsersPage() {
-    const [users, setUsers] = useState<AppUser[]>([]);
+    const [rawUsers, setRawUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { firestore } = useFirebase();
@@ -35,6 +35,7 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
     const [adminRoles, setAdminRoles] = useState<{[key: string]: boolean}>({});
 
+    // Subscribe to admin roles separately
     useEffect(() => {
         if (!firestore) return;
 
@@ -50,6 +51,7 @@ export default function UsersPage() {
         return () => unsubscribeAdmins();
     }, [firestore]);
 
+    // Subscribe to users separately (no dependency on adminRoles)
     useEffect(() => {
         if (!firestore) {
             setError("Firestore is not available.");
@@ -58,20 +60,13 @@ export default function UsersPage() {
         }
 
         const usersQuery = query(collection(firestore, 'users'));
-        
+
         const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
-            const usersData: AppUser[] = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    email: data.email || null,
-                    firstName: data.firstName || null,
-                    lastName: data.lastName || null,
-                    role: adminRoles[doc.id] ? 'admin' : 'user',
-                    ...data
-                } as AppUser;
-            });
-            setUsers(usersData);
+            const usersData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setRawUsers(usersData);
             setLoading(false);
             setError(null);
         }, (err) => {
@@ -79,7 +74,7 @@ export default function UsersPage() {
                 path: '/users',
                 operation: 'list',
             } satisfies SecurityRuleContext);
-            
+
             errorEmitter.emit('permission-error', permissionError);
 
             setError("You do not have permission to view this data. Please contact an administrator to be granted the 'admin' role.");
@@ -87,7 +82,17 @@ export default function UsersPage() {
         });
 
         return () => unsubscribeUsers();
-    }, [firestore, adminRoles]);
+    }, [firestore]);
+
+    // Compute users with roles at render time to avoid race conditions
+    const users: AppUser[] = rawUsers.map(data => ({
+        id: data.id,
+        email: data.email || null,
+        firstName: data.firstName || null,
+        lastName: data.lastName || null,
+        role: adminRoles[data.id] ? 'admin' : 'user',
+        ...data
+    }));
 
     const handleEditUser = (user: AppUser) => {
         setSelectedUser(user);

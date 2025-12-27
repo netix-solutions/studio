@@ -65,7 +65,12 @@ export default function AdvertisementsPage() {
                     ...data
                 } as Advertisement;
             });
-            setAdvertisements(adsData.sort((a,b) => b.createdAt.seconds - a.createdAt.seconds));
+            // Sort by createdAt with null-safety
+            setAdvertisements(adsData.sort((a, b) => {
+                const aTime = a.createdAt?.seconds ?? 0;
+                const bTime = b.createdAt?.seconds ?? 0;
+                return bTime - aTime;
+            }));
             setLoading(false);
             setError(null);
         }, (err) => {

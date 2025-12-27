@@ -11,6 +11,8 @@ import {
   setDoc,
 } from 'firebase/firestore';
 
+const STRIPE_TIMEOUT_MS = 30000; // 30 second timeout for Stripe operations
+
 export const createCheckout = async (
   firestore: Firestore,
   userId: string,
@@ -43,8 +45,10 @@ export const createCheckout = async (
     createdAt: serverTimestamp(),
   });
 
-  // 3) Wait for extension to attach url (or error)
+  // 3) Wait for extension to attach url (or error) with timeout
   await new Promise<void>((resolve, reject) => {
+    let timeoutId: NodeJS.Timeout;
+
     const unsub = onSnapshot(
       docRef,
       (snap) => {
@@ -53,6 +57,7 @@ export const createCheckout = async (
 
         // Instead of a generic error, check for the specific error from the extension
         if (data.error) {
+          clearTimeout(timeoutId);
           unsub();
           // Safely access the error message, providing a fallback.
           const errorMessage = data.error.message || 'An unknown Stripe error occurred.';
@@ -61,16 +66,24 @@ export const createCheckout = async (
         }
 
         if (data.url) {
+          clearTimeout(timeoutId);
           unsub();
           window.location.assign(data.url);
           resolve();
         }
       },
       (err) => {
+        clearTimeout(timeoutId);
         unsub();
         reject(err);
       }
     );
+
+    // Set timeout to prevent infinite waiting
+    timeoutId = setTimeout(() => {
+      unsub();
+      reject(new Error('Checkout session timed out. Please try again.'));
+    }, STRIPE_TIMEOUT_MS);
   });
 };
 
@@ -82,24 +95,35 @@ export const goToBillingPortal = async (firestore: Firestore, userId: string, re
     createdAt: serverTimestamp(),
   });
 
-  // 2. Wait for the Stripe extension to write the URL to the document
+  // 2. Wait for the Stripe extension to write the URL to the document with timeout
   return new Promise<void>((resolve, reject) => {
+    let timeoutId: NodeJS.Timeout;
+
     const unsub = onSnapshot(docRef, (snap) => {
       const data = snap.data();
       if (data?.url) {
+        clearTimeout(timeoutId);
         unsub();
         window.location.assign(data.url);
         resolve();
       }
       if (data?.error) {
+        clearTimeout(timeoutId);
         unsub();
         const errorMessage = data.error.message || 'Could not create billing portal link.';
         reject(new Error(errorMessage));
       }
     }, (error) => {
+      clearTimeout(timeoutId);
       unsub();
       console.error("onSnapshot error:", error);
       reject(new Error("Permission denied. Could not listen for billing portal link."));
     });
+
+    // Set timeout to prevent infinite waiting
+    timeoutId = setTimeout(() => {
+      unsub();
+      reject(new Error('Billing portal request timed out. Please try again.'));
+    }, STRIPE_TIMEOUT_MS);
   });
 };
