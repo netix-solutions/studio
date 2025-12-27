@@ -126,10 +126,12 @@ service cloud.firestore {
     }
 
     // ADMIN ROLES
-    // A user can check their own admin status. Only admins can modify roles.
+    // A user can check their own admin status.
+    // Signed-in users can list admins (needed for admin pages before token claim refresh).
+    // Only admins can modify roles.
     match /roles_admin/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write, list: if isAdmin();
+      allow read, list: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // EMAIL TRIGGER
