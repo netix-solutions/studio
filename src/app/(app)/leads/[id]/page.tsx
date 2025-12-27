@@ -19,32 +19,18 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Loader2,
   AlertCircle,
   Mail,
   Phone,
   Briefcase,
-  Globe,
-  Calendar,
   ArrowLeft,
-  Save,
   MessageSquare,
   TrendingUp,
   Clock,
   Target,
-  DollarSign,
   Tag,
   User,
   CheckCircle2,
@@ -67,7 +53,6 @@ import {
   LeadSource,
   LEAD_STAGES,
   LEAD_STAGE_LABELS,
-  LEAD_STAGE_ORDER,
   LEAD_STAGE_COLORS,
   LEAD_PRIORITIES,
   LEAD_PRIORITY_LABELS,
@@ -75,8 +60,6 @@ import {
   LEAD_SOURCES,
   LEAD_SOURCE_LABELS,
   ACTIVITY_TYPES,
-  ACTIVITY_TYPE_LABELS,
-  calculateLeadScore,
   getTimeSinceLastContact,
 } from '@/lib/types';
 
@@ -109,12 +92,6 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Editable fields
-  const [editedStage, setEditedStage] = useState<LeadStage>(LEAD_STAGES.NEW);
-  const [editedPriority, setEditedPriority] = useState<LeadPriority>(LEAD_PRIORITIES.MEDIUM);
-  const [editedEstimatedValue, setEditedEstimatedValue] = useState<string>('');
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
 
@@ -158,9 +135,6 @@ export default function LeadDetailPage() {
           notes: leadData.notes,
         };
         setLead(fullLead);
-        setEditedStage(fullLead.stage);
-        setEditedPriority(fullLead.priority);
-        setEditedEstimatedValue(fullLead.estimatedValue?.toString() || '');
       } catch (err: any) {
         console.error("Error fetching lead:", err);
         setError(err.message || "Failed to load lead details.");
@@ -191,93 +165,6 @@ export default function LeadDetailPage() {
 
     return () => unsubscribe();
   }, [firestore, leadId]);
-
-  // Handle saving lead changes
-  const handleSaveChanges = async () => {
-    if (!firestore || !lead || !user) return;
-
-    const changes: { field: string; from: any; to: any }[] = [];
-
-    if (editedStage !== lead.stage) {
-      changes.push({ field: 'stage', from: lead.stage, to: editedStage });
-    }
-    if (editedPriority !== lead.priority) {
-      changes.push({ field: 'priority', from: lead.priority, to: editedPriority });
-    }
-
-    const newEstimatedValue = editedEstimatedValue ? parseFloat(editedEstimatedValue) : undefined;
-    if (newEstimatedValue !== lead.estimatedValue) {
-      changes.push({ field: 'estimatedValue', from: lead.estimatedValue, to: newEstimatedValue });
-    }
-
-    if (changes.length === 0) {
-      toast({ title: 'No Changes', description: 'No changes to save.' });
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const leadRef = doc(firestore, 'leads', lead.id);
-
-      // Calculate new score
-      const newScore = calculateLeadScore({
-        ...lead,
-        stage: editedStage,
-        priority: editedPriority,
-        estimatedValue: newEstimatedValue,
-      });
-
-      await updateDoc(leadRef, {
-        stage: editedStage,
-        priority: editedPriority,
-        estimatedValue: newEstimatedValue || null,
-        score: newScore,
-        updatedAt: serverTimestamp(),
-      });
-
-      // Log activities for each change
-      for (const change of changes) {
-        if (change.field === 'stage') {
-          await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
-            leadId: lead.id,
-            type: ACTIVITY_TYPES.STAGE_CHANGE,
-            title: `Stage changed from ${LEAD_STAGE_LABELS[change.from as LeadStage]} to ${LEAD_STAGE_LABELS[change.to as LeadStage]}`,
-            metadata: { fromStage: change.from, toStage: change.to },
-            createdBy: user.uid,
-            createdByName: user.displayName || user.email || 'Unknown',
-            createdAt: serverTimestamp(),
-          });
-        } else if (change.field === 'priority') {
-          await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
-            leadId: lead.id,
-            type: ACTIVITY_TYPES.PRIORITY_CHANGE,
-            title: `Priority changed from ${LEAD_PRIORITY_LABELS[change.from as LeadPriority]} to ${LEAD_PRIORITY_LABELS[change.to as LeadPriority]}`,
-            metadata: { fromPriority: change.from, toPriority: change.to },
-            createdBy: user.uid,
-            createdByName: user.displayName || user.email || 'Unknown',
-            createdAt: serverTimestamp(),
-          });
-        }
-      }
-
-      // Update local state
-      setLead(prev => prev ? {
-        ...prev,
-        stage: editedStage,
-        priority: editedPriority,
-        estimatedValue: newEstimatedValue,
-        score: newScore,
-      } : null);
-
-      toast({ title: 'Lead Updated', description: 'Changes saved successfully.' });
-    } catch (err) {
-      console.error("Error saving lead:", err);
-      toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // Handle adding a note
   const handleAddNote = async () => {
@@ -336,7 +223,6 @@ export default function LeadDetailPage() {
       });
 
       setLead(prev => prev ? { ...prev, stage: newStage } : null);
-      setEditedStage(newStage);
 
       toast({
         title: newStage === 'won' ? 'Congratulations!' : 'Lead Marked as Lost',
@@ -631,66 +517,6 @@ export default function LeadDetailPage() {
                   <Phone className="mr-2 h-4 w-4" />
                   Call Lead
                 </a>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Lead Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Lead</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="stage">Stage</Label>
-                <Select value={editedStage} onValueChange={(v) => setEditedStage(v as LeadStage)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LEAD_STAGE_ORDER.map((stage) => (
-                      <SelectItem key={stage} value={stage}>
-                        {LEAD_STAGE_LABELS[stage]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={editedPriority} onValueChange={(v) => setEditedPriority(v as LeadPriority)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="value">Estimated Value ($)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  placeholder="0.00"
-                  value={editedEstimatedValue}
-                  onChange={(e) => setEditedEstimatedValue(e.target.value)}
-                />
-              </div>
-
-              <Button className="w-full" onClick={handleSaveChanges} disabled={isSaving}>
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Save Changes
               </Button>
             </CardContent>
           </Card>
