@@ -28,12 +28,17 @@ service cloud.firestore {
     }
 
     // LEADS
-    // Anyone can create a lead. Only admins can read/manage them.
+    // Anyone can create a lead.
+    // Signed-in users can read/query/update leads (needed for lead-to-customer conversion during registration).
+    // Only admins can delete leads.
     match /leads/{leadId} {
       allow create: if true;
-      allow read, list, update, delete: if isAdmin();
+      // Allow signed-in users to read and query leads for registration conversion
+      // This enables the auth.ts lead lookup by email and conversion marking
+      allow read, list, update: if isSignedIn();
+      allow delete: if isAdmin();
 
-      // Lead activities subcollection
+      // Lead activities subcollection - admin only
       match /activities/{activityId} {
         allow read, list: if isAdmin();
         allow create: if isAdmin();
