@@ -507,13 +507,15 @@ export default function AdServerPage() {
                 createdBy: user?.uid || '',
             };
 
-            await addDoc(collection(firestore, 'live_ads'), liveAdData);
+            const liveAdDocRef = await addDoc(collection(firestore, 'live_ads'), liveAdData);
 
             // Update the customer ad to mark it as pushed to ad server
             const adDocRef = doc(firestore, 'users', ad.userId, 'advertisements', ad.id);
             await updateDoc(adDocRef, {
-                pushedToAdServerId: ad.id,
+                pushedToAdServerId: liveAdDocRef.id,
                 pushedToAdServerAt: serverTimestamp(),
+                status: 'live',
+                liveAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
 

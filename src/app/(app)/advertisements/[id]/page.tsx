@@ -257,6 +257,11 @@ export default function AdvertisementDetailPage() {
                 setUser(fullUser);
                 setAdProofUrlInput(fullAd.adProofDestinationUrl || fullUser.adWebsiteUrl || '');
 
+                // Check if already pushed to ad server
+                if (adData.pushedToAdServerId) {
+                    setPushedToAdServer(true);
+                }
+
             } catch (err: any) {
                 console.error("Error fetching details:", err);
                 setError(err.message || "Failed to load details.");
@@ -590,7 +595,7 @@ export default function AdvertisementDetailPage() {
                 height: dimensions.height,
                 weight: 50, // Default weight
                 status: 'active',
-                targetSites: [], // No specific site targeting by default
+                targetWebsites: [], // Empty array means show on all websites
                 startDate: null,
                 endDate: null,
                 // Link back to source
@@ -605,12 +610,12 @@ export default function AdvertisementDetailPage() {
                 updatedAt: serverTimestamp(),
             };
 
-            const docRef = await addDoc(collection(firestore, 'live_ads'), liveAdData);
+            const liveAdDocRef = await addDoc(collection(firestore, 'live_ads'), liveAdData);
 
             // Update the advertisement to mark it as pushed to ad server
             const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
             await updateDoc(adDocRef, {
-                pushedToAdServerId: docRef.id,
+                pushedToAdServerId: liveAdDocRef.id,
                 pushedToAdServerAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
