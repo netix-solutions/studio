@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFirebase } from '@/firebase';
 import {
     collection,
@@ -84,6 +85,7 @@ import {
     type LiveAdStatus,
     type AdPlacement,
     type Advertisement,
+    type CommunityWebsiteId,
     AD_PLACEMENTS,
     AD_PLACEMENT_LABELS,
     AD_PLACEMENT_DIMENSIONS,
@@ -91,6 +93,8 @@ import {
     LIVE_AD_STATUS_LABELS,
     LIVE_AD_STATUS_COLORS,
     AD_STATUS_LABELS,
+    COMMUNITY_WEBSITE_LIST,
+    COMMUNITY_WEBSITE_CONFIG,
     calculateCTR,
 } from '@/lib/types';
 
@@ -104,7 +108,7 @@ type FormData = {
     status: LiveAdStatus;
     startDate: string;
     endDate: string;
-    targetSites: string;
+    targetWebsites: CommunityWebsiteId[];
 };
 
 const defaultFormData: FormData = {
@@ -117,7 +121,7 @@ const defaultFormData: FormData = {
     status: 'active',
     startDate: '',
     endDate: '',
-    targetSites: '',
+    targetWebsites: [],
 };
 
 export default function AdServerPage() {
@@ -141,6 +145,9 @@ export default function AdServerPage() {
     const [customerAds, setCustomerAds] = useState<(Advertisement & { userName?: string })[]>([]);
     const [loadingCustomerAds, setLoadingCustomerAds] = useState(false);
     const [importingAdId, setImportingAdId] = useState<string | null>(null);
+
+    // Embed code dialog state
+    const [selectedEmbedWebsite, setSelectedEmbedWebsite] = useState<CommunityWebsiteId | null>(null);
 
     const { firestore, storage, user } = useFirebase();
     const { toast } = useToast();
@@ -225,7 +232,7 @@ export default function AdServerPage() {
             status: ad.status || 'active',
             startDate: ad.startDate ? format(ad.startDate.toDate ? ad.startDate.toDate() : new Date(ad.startDate), 'yyyy-MM-dd') : '',
             endDate: ad.endDate ? format(ad.endDate.toDate ? ad.endDate.toDate() : new Date(ad.endDate), 'yyyy-MM-dd') : '',
-            targetSites: ad.targetSites?.join(', ') || '',
+            targetWebsites: ad.targetWebsites || [],
         });
         setImagePreview(ad.imageUrl || null);
         setImageFile(null);
@@ -294,9 +301,7 @@ export default function AdServerPage() {
                 status: formData.status,
                 startDate: formData.startDate ? new Date(formData.startDate) : null,
                 endDate: formData.endDate ? new Date(formData.endDate) : null,
-                targetSites: formData.targetSites
-                    ? formData.targetSites.split(',').map(s => s.trim()).filter(Boolean)
-                    : [],
+                targetWebsites: formData.targetWebsites,
                 updatedAt: serverTimestamp(),
             };
 
@@ -380,28 +385,30 @@ export default function AdServerPage() {
         }
     };
 
-    const copyEmbedCode = (type: 'script' | 'div' | 'full') => {
+    const copyEmbedCode = (type: 'script' | 'div' | 'full', websiteId?: CommunityWebsiteId) => {
         const baseUrl = window.location.origin;
+        const websiteParam = websiteId ? `?website=${websiteId}` : '';
+        const dataSiteAttr = websiteId ? ` data-site="${websiteId}"` : '';
         let code = '';
 
         switch (type) {
             case 'script':
-                code = `<script src="${baseUrl}/api/ads/embed"></script>`;
+                code = `<script src="${baseUrl}/api/ads/embed${websiteParam}"></script>`;
                 break;
             case 'div':
-                code = `<div data-community-ad data-placement="banner"></div>`;
+                code = `<div data-community-ad data-placement="banner"${dataSiteAttr}></div>`;
                 break;
             case 'full':
-                code = `<!-- Community Ads Embed -->
-<script src="${baseUrl}/api/ads/embed"></script>
-<div data-community-ad data-placement="banner"></div>`;
+                code = `<!-- Community Ads Embed${websiteId ? ` - ${COMMUNITY_WEBSITE_CONFIG[websiteId].name}` : ''} -->
+<script src="${baseUrl}/api/ads/embed${websiteParam}"></script>
+<div data-community-ad data-placement="banner"${dataSiteAttr}></div>`;
                 break;
         }
 
         navigator.clipboard.writeText(code);
         toast({
             title: 'Copied!',
-            description: 'Embed code copied to clipboard.',
+            description: `Embed code${websiteId ? ` for ${COMMUNITY_WEBSITE_CONFIG[websiteId].shortName}` : ''} copied to clipboard.`,
         });
     };
 
@@ -480,7 +487,7 @@ export default function AdServerPage() {
                 height: dimensions.height,
                 weight: 50,
                 status: 'active' as LiveAdStatus,
-                targetSites: [],
+                targetWebsites: [], // Empty means show on all websites
                 startDate: null,
                 endDate: null,
                 sourceAdvertisementId: ad.id,
@@ -672,6 +679,7 @@ export default function AdServerPage() {
                                     <TableRow>
                                         <TableHead className="w-20">Preview</TableHead>
                                         <TableHead>Name</TableHead>
+                                        <TableHead>Websites</TableHead>
                                         <TableHead>Placement</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Impressions</TableHead>
@@ -704,6 +712,25 @@ export default function AdServerPage() {
                                                     <div className="font-medium">{ad.name}</div>
                                                     <div className="text-sm text-muted-foreground truncate max-w-[200px]">
                                                         {ad.targetUrl}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {ad.targetWebsites && ad.targetWebsites.length > 0 ? (
+                                                            ad.targetWebsites.map((websiteId) => {
+                                                                const website = COMMUNITY_WEBSITE_CONFIG[websiteId];
+                                                                return website ? (
+                                                                    <Badge
+                                                                        key={websiteId}
+                                                                        className={cn(website.color.bg, website.color.text, "text-xs")}
+                                                                    >
+                                                                        {website.shortName}
+                                                                    </Badge>
+                                                                ) : null;
+                                                            })
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-sm">All websites</span>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -774,7 +801,7 @@ export default function AdServerPage() {
                                         );
                                     }) : (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                                            <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">
                                                 {searchQuery || statusFilter !== 'all'
                                                     ? 'No ads match your filters.'
                                                     : 'No live ads yet. Create your first ad to get started.'}
@@ -965,18 +992,44 @@ export default function AdServerPage() {
                             </div>
                         </div>
 
-                        {/* Target Sites */}
-                        <div className="space-y-2">
-                            <Label htmlFor="targetSites">Target Sites (Optional)</Label>
-                            <Input
-                                id="targetSites"
-                                value={formData.targetSites}
-                                onChange={(e) => setFormData({ ...formData, targetSites: e.target.value })}
-                                placeholder="site1.com, site2.com (leave empty for all sites)"
-                            />
+                        {/* Target Websites */}
+                        <div className="space-y-3">
+                            <Label>Target Websites</Label>
                             <p className="text-xs text-muted-foreground">
-                                Comma-separated list of domains. Leave empty to show on all sites.
+                                Select which community websites should display this ad. Leave all unchecked to show on all websites.
                             </p>
+                            <div className="grid gap-3">
+                                {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                    <div key={website.id} className="flex items-center space-x-3">
+                                        <Checkbox
+                                            id={`website-${website.id}`}
+                                            checked={formData.targetWebsites.includes(website.id)}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        targetWebsites: [...formData.targetWebsites, website.id],
+                                                    });
+                                                } else {
+                                                    setFormData({
+                                                        ...formData,
+                                                        targetWebsites: formData.targetWebsites.filter(id => id !== website.id),
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                        <Label
+                                            htmlFor={`website-${website.id}`}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Badge className={cn(website.color.bg, website.color.text, "text-xs")}>
+                                                {website.shortName}
+                                            </Badge>
+                                            <span className="text-sm text-muted-foreground">{website.name}</span>
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
@@ -993,26 +1046,105 @@ export default function AdServerPage() {
             </Dialog>
 
             {/* Embed Code Dialog */}
-            <Dialog open={showEmbedDialog} onOpenChange={setShowEmbedDialog}>
-                <DialogContent className="max-w-2xl">
+            <Dialog open={showEmbedDialog} onOpenChange={(open) => {
+                setShowEmbedDialog(open);
+                if (!open) setSelectedEmbedWebsite(null);
+            }}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Embed Code</DialogTitle>
                         <DialogDescription>
-                            Add these snippets to your external websites to display ads.
+                            Get unique embed codes for each community website to display targeted ads.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <Tabs defaultValue="simple">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="simple">Simple Integration</TabsTrigger>
+                    <Tabs defaultValue="websites">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="websites">By Website</TabsTrigger>
+                            <TabsTrigger value="simple">Generic</TabsTrigger>
                             <TabsTrigger value="advanced">Advanced</TabsTrigger>
                         </TabsList>
 
+                        <TabsContent value="websites" className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Select a Website</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Each website has unique embed code. Select a website to get its specific code.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-4">
+                                {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                    <Card
+                                        key={website.id}
+                                        className={cn(
+                                            "cursor-pointer transition-all hover:shadow-md",
+                                            selectedEmbedWebsite === website.id && "ring-2 ring-primary"
+                                        )}
+                                        onClick={() => setSelectedEmbedWebsite(
+                                            selectedEmbedWebsite === website.id ? null : website.id
+                                        )}
+                                    >
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <Badge className={cn(website.color.bg, website.color.text)}>
+                                                        {website.shortName}
+                                                    </Badge>
+                                                    <div>
+                                                        <CardTitle className="text-base">{website.name}</CardTitle>
+                                                        <CardDescription>{website.description}</CardDescription>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        copyEmbedCode('full', website.id);
+                                                    }}
+                                                >
+                                                    <Copy className="h-4 w-4 mr-2" />
+                                                    Copy Code
+                                                </Button>
+                                            </div>
+                                        </CardHeader>
+                                        {selectedEmbedWebsite === website.id && (
+                                            <CardContent className="pt-0">
+                                                <div className="relative">
+                                                    <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+{`<!-- Community Ads - ${website.name} -->
+<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/embed?website=${website.id}"></script>
+<div data-community-ad data-placement="banner" data-site="${website.id}"></div>`}
+                                                    </pre>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    This code will only show ads targeted to {website.name}.
+                                                </p>
+                                            </CardContent>
+                                        )}
+                                    </Card>
+                                ))}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Available Placements</Label>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    {Object.entries(AD_PLACEMENT_LABELS).map(([key, label]) => (
+                                        <div key={key} className="flex justify-between p-2 bg-muted rounded">
+                                            <code>{key}</code>
+                                            <span className="text-muted-foreground">{label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </TabsContent>
+
                         <TabsContent value="simple" className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Quick Start</Label>
+                                <Label>Generic Embed (All Websites)</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    Add this code where you want the ad to appear:
+                                    This code shows all ads regardless of website targeting:
                                 </p>
                                 <div className="relative">
                                     <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
@@ -1048,15 +1180,15 @@ export default function AdServerPage() {
                             <div className="space-y-2">
                                 <Label>JavaScript API</Label>
                                 <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-{`// Load the script first
-<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/embed"></script>
+{`// Load the script first (use website-specific URL)
+<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/embed?website=wesley-chapel"></script>
 
 // Then call the API
 <script>
   CommunityAds.load({
     container: '#my-ad-container',
     placement: 'sidebar',
-    site: 'mysite.com', // optional
+    site: 'wesley-chapel', // website ID for targeting
     onLoad: function(ad) {
       console.log('Ad loaded:', ad);
     },
@@ -1073,7 +1205,7 @@ export default function AdServerPage() {
                             <div className="space-y-2">
                                 <Label>Direct API Endpoint</Label>
                                 <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-{`GET /api/ads/serve?placement=banner&site=example.com
+{`GET /api/ads/serve?placement=banner&website=wesley-chapel
 
 Response:
 {
@@ -1089,6 +1221,18 @@ Response:
   "impressionUrl": "/api/ads/impression?id=abc123"
 }`}
                                 </pre>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Website IDs</Label>
+                                <div className="grid gap-2 text-sm">
+                                    {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                        <div key={website.id} className="flex items-center gap-2 p-2 bg-muted rounded">
+                                            <code className="font-mono">{website.id}</code>
+                                            <span className="text-muted-foreground">- {website.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </TabsContent>
                     </Tabs>

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import { type LiveAd, type AdPlacement, selectAdByWeight } from '@/lib/types';
+import { type LiveAd, type AdPlacement, type CommunityWebsiteId, selectAdByWeight, COMMUNITY_WEBSITES } from '@/lib/types';
+
+// Valid website IDs for validation
+const VALID_WEBSITE_IDS = Object.values(COMMUNITY_WEBSITES) as string[];
 
 // CORS headers for cross-origin requests
 const corsHeaders = {
@@ -18,7 +21,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const placement = searchParams.get('placement') as AdPlacement | null;
-    const site = searchParams.get('site');
+    const website = searchParams.get('website') as CommunityWebsiteId | null;
+    const site = searchParams.get('site'); // Legacy support - can be website ID or domain
 
     // Build absolute base URL for tracking endpoints
     const protocol = request.headers.get('x-forwarded-proto') || 'https';
@@ -44,7 +48,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Filter ads based on schedule and site targeting
+    // Determine the website ID to filter by
+    // Priority: 1) explicit website param, 2) site param if it's a valid website ID
+    const targetWebsiteId = website || (site && VALID_WEBSITE_IDS.includes(site) ? site as CommunityWebsiteId : null);
+
+    // Filter ads based on schedule and website targeting
     const eligibleAds: LiveAd[] = [];
 
     snapshot.forEach((doc) => {
@@ -61,9 +69,18 @@ export async function GET(request: NextRequest) {
         if (now > endDate) return; // Already ended
       }
 
-      // Check site targeting if specified
-      if (ad.targetSites && ad.targetSites.length > 0 && site) {
-        if (!ad.targetSites.includes(site)) return; // Not targeted to this site
+      // Check website targeting if a specific website is requested
+      if (targetWebsiteId) {
+        // If ad has targetWebsites specified, it must include the requested website
+        if (ad.targetWebsites && ad.targetWebsites.length > 0) {
+          if (!ad.targetWebsites.includes(targetWebsiteId)) return; // Not targeted to this website
+        }
+        // If ad has no targetWebsites, it shows on all websites (pass through)
+      }
+
+      // Legacy: Check site targeting if specified (for backwards compatibility with domains)
+      if (ad.targetSites && ad.targetSites.length > 0 && site && !VALID_WEBSITE_IDS.includes(site)) {
+        if (!ad.targetSites.includes(site)) return; // Not targeted to this site domain
       }
 
       eligibleAds.push(ad);

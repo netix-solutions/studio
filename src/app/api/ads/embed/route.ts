@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
   const host = request.headers.get('host') || request.nextUrl.host;
   const baseUrl = `${protocol}://${host}`;
 
+  // Get the website parameter from the embed script URL
+  const websiteParam = request.nextUrl.searchParams.get('website') || '';
+
   // The embed script that will be served to external sites
   const embedScript = `
 (function() {
@@ -27,6 +30,7 @@ export async function GET(request: NextRequest) {
   // Configuration
   var AD_SERVER_BASE = '${baseUrl}';
   var AD_SERVE_ENDPOINT = AD_SERVER_BASE + '/api/ads/serve';
+  var DEFAULT_WEBSITE = '${websiteParam}'; // Website ID passed via script URL
 
   // CommunityAds global object
   window.CommunityAds = window.CommunityAds || {};
@@ -36,7 +40,7 @@ export async function GET(request: NextRequest) {
    * @param {Object} options - Configuration options
    * @param {string} options.container - CSS selector for the container element
    * @param {string} options.placement - Ad placement type (banner, sidebar, inline, popup, footer)
-   * @param {string} [options.site] - Optional site identifier for targeting
+   * @param {string} [options.site] - Optional website ID for targeting (e.g., 'wesley-chapel', 'pasco-county')
    * @param {Object} [options.style] - Optional custom styles for the ad container
    */
   window.CommunityAds.load = function(options) {
@@ -52,10 +56,14 @@ export async function GET(request: NextRequest) {
     }
 
     var placement = options.placement || 'inline';
-    var site = options.site || window.location.hostname;
+    // Use website from: 1) options.site, 2) DEFAULT_WEBSITE from script URL, 3) hostname as fallback
+    var website = options.site || DEFAULT_WEBSITE || '';
 
-    // Build the API URL
-    var url = AD_SERVE_ENDPOINT + '?placement=' + encodeURIComponent(placement) + '&site=' + encodeURIComponent(site);
+    // Build the API URL with website parameter
+    var url = AD_SERVE_ENDPOINT + '?placement=' + encodeURIComponent(placement);
+    if (website) {
+      url += '&website=' + encodeURIComponent(website);
+    }
 
     // Fetch ad from server
     fetch(url)
@@ -148,13 +156,14 @@ export async function GET(request: NextRequest) {
 
   /**
    * Auto-initialize ads with data attributes
-   * Usage: <div data-community-ad data-placement="banner"></div>
+   * Usage: <div data-community-ad data-placement="banner" data-site="wesley-chapel"></div>
    */
   function autoInit() {
     var adContainers = document.querySelectorAll('[data-community-ad]');
     adContainers.forEach(function(container, index) {
       var placement = container.getAttribute('data-placement') || 'inline';
-      var site = container.getAttribute('data-site');
+      // data-site can be a website ID (e.g., 'wesley-chapel') for targeting
+      var site = container.getAttribute('data-site') || DEFAULT_WEBSITE;
       var containerId = 'community-ad-' + index + '-' + Date.now();
       container.id = containerId;
 
