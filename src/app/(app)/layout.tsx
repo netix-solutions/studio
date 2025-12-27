@@ -7,12 +7,13 @@ import { Loader2, LayoutDashboard, User } from 'lucide-react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
+import { CommandPalette } from '@/components/layout/command-palette';
 import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
-const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal'];
+const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal', '/pipeline'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/dashboard';
 
@@ -101,6 +102,8 @@ export default function ProtectedLayout({
     <SidebarProvider>
         {/* The error listener is now scoped to the protected layout */}
         <FirebaseErrorListener />
+        {/* Command palette for quick navigation */}
+        <CommandPalette isAdmin={isAdmin} />
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             <div className="hidden border-r bg-muted/40 md:block">
                 <AppSidebar isAdmin={isAdmin} />
