@@ -24,11 +24,16 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { Loader2, Info } from 'lucide-react';
-import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
+import { Loader2, Info, Eye, Pencil, Columns, Maximize2 } from 'lucide-react';
+import type { EmailTemplate } from '@/lib/email-templates';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { RichTextEditor } from '../ui/rich-text-editor';
+import { EmailEditor } from '../ui/email-editor';
+import { EmailPreview } from './email-preview';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { ScrollArea } from '../ui/scroll-area';
+import { Badge } from '../ui/badge';
+import { Toggle } from '../ui/toggle';
 
 const formSchema = z.object({
   subject: z.string().min(1, 'Subject cannot be empty.'),
@@ -46,6 +51,8 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split');
+  const [currentHtml, setCurrentHtml] = useState(template.html);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,8 +70,15 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
         html: template.html,
         triggerName: template.triggerName || 'none',
       });
+      setCurrentHtml(template.html);
     }
   }, [template, form]);
+
+  // Watch for HTML changes
+  const watchedHtml = form.watch('html');
+  useEffect(() => {
+    setCurrentHtml(watchedHtml);
+  }, [watchedHtml]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore || !template) return;
@@ -72,7 +86,7 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
     setIsSubmitting(true);
     try {
       const templateDocRef = doc(firestore, 'emailTemplates', template.id);
-      
+
       await setDoc(templateDocRef, {
         subject: values.subject,
         html: values.html,
@@ -98,107 +112,191 @@ export function EditEmailTemplateDialog({ template, isOpen, onOpenChange }: Edit
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Edit: {template.name}</DialogTitle>
-          <DialogDescription>
-            {template.description}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-4">
-            <div className="md:col-span-1 space-y-4">
-                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                           <Info className="h-4 w-4" /> Trigger
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            {template.triggerDescription || 'This email is not sent automatically. It must be sent manually.'}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {template.placeholders && template.placeholders.length > 0 && (
-                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Placeholders</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                           <ul className="space-y-2 text-sm">
-                                {template.placeholders.map((p) => (
-                                    <li key={p.key}>
-                                        <code className="font-mono text-xs bg-muted p-1 rounded">{p.key}</code>
-                                        <p className="text-muted-foreground text-xs">{p.description}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-                )}
+      <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl">{template.name}</DialogTitle>
+              <DialogDescription className="mt-1">
+                {template.description}
+              </DialogDescription>
             </div>
-            <div className="md:col-span-2">
-                <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <FormField
-                      control={form.control}
-                      name="triggerName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Trigger</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a trigger" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="none">None (Manual Send Only)</SelectItem>
-                                <SelectItem value="interest_form_submission">Interest Form Submission</SelectItem>
-                                <SelectItem value="new_subscription_purchase">New Subscription Purchase</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Email Subject</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Your email subject" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="html"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Email Body</FormLabel>
-                        <FormControl>
-                            <RichTextEditor content={field.value} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                </form>
-                </Form>
-             </div>
+            <div className="flex items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center border rounded-md mr-4">
+                <Toggle
+                  size="sm"
+                  pressed={viewMode === 'editor'}
+                  onPressedChange={() => setViewMode('editor')}
+                  className="rounded-r-none"
+                  title="Editor Only"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Toggle>
+                <Toggle
+                  size="sm"
+                  pressed={viewMode === 'split'}
+                  onPressedChange={() => setViewMode('split')}
+                  title="Split View"
+                >
+                  <Columns className="h-4 w-4" />
+                </Toggle>
+                <Toggle
+                  size="sm"
+                  pressed={viewMode === 'preview'}
+                  onPressedChange={() => setViewMode('preview')}
+                  className="rounded-l-none"
+                  title="Preview Only"
+                >
+                  <Eye className="h-4 w-4" />
+                </Toggle>
+              </div>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden">
+          <div className={`h-full grid ${viewMode === 'split' ? 'grid-cols-2' : 'grid-cols-1'} gap-0`}>
+            {/* Editor Panel */}
+            {(viewMode === 'editor' || viewMode === 'split') && (
+              <div className="flex flex-col border-r overflow-hidden">
+                <div className="px-4 py-2 bg-muted/30 border-b flex items-center justify-between">
+                  <span className="text-sm font-medium">Editor</span>
+                  {template.triggerName && template.triggerName !== 'none' && (
+                    <Badge variant="default" className="bg-green-600 text-xs">Automated</Badge>
+                  )}
+                </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-4">
+                    <Form {...form}>
+                      <form className="space-y-4">
+                        {/* Template Info Cards */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <Card className="bg-muted/30">
+                            <CardHeader className="p-3 pb-1">
+                              <CardTitle className="text-xs font-medium flex items-center gap-1">
+                                <Info className="h-3 w-3" /> Trigger
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 pt-0">
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {template.triggerDescription || 'Manual send only'}
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          {template.placeholders && template.placeholders.length > 0 && (
+                            <Card className="bg-muted/30">
+                              <CardHeader className="p-3 pb-1">
+                                <CardTitle className="text-xs font-medium">Placeholders</CardTitle>
+                              </CardHeader>
+                              <CardContent className="p-3 pt-0">
+                                <div className="flex flex-wrap gap-1">
+                                  {template.placeholders.slice(0, 3).map((p: { key: string; description: string }) => (
+                                    <code key={p.key} className="text-[10px] bg-muted px-1 py-0.5 rounded">
+                                      {p.key}
+                                    </code>
+                                  ))}
+                                  {template.placeholders.length > 3 && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      +{template.placeholders.length - 3} more
+                                    </span>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="triggerName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Trigger</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a trigger" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="none">None (Manual Send Only)</SelectItem>
+                                  <SelectItem value="interest_form_submission">Interest Form Submission</SelectItem>
+                                  <SelectItem value="new_subscription_purchase">New Subscription Purchase</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="subject"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Subject</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Your email subject" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="html"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Body</FormLabel>
+                              <FormControl>
+                                <EmailEditor
+                                  content={field.value}
+                                  onChange={field.onChange}
+                                  placeholders={template.placeholders}
+                                  minHeight="350px"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </form>
+                    </Form>
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Preview Panel */}
+            {(viewMode === 'preview' || viewMode === 'split') && (
+              <div className="flex flex-col overflow-hidden bg-zinc-50">
+                <div className="px-4 py-2 bg-muted/30 border-b">
+                  <span className="text-sm font-medium">Live Preview</span>
+                </div>
+                <div className="flex-1 overflow-auto p-4">
+                  <EmailPreview
+                    content={currentHtml}
+                    subject={form.watch('subject')}
+                    showToolbar={true}
+                    maxHeight="calc(100vh - 280px)"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
+
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
-            </Button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

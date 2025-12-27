@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { sendEmail } from '@/lib/firebase/email';
 import { generateEmailUrls, wrapEmailContent } from '@/lib/email-utils';
 import type { Lead } from '@/lib/types';
-import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
+import type { EmailTemplate } from '@/lib/email-templates';
 
 const formSchema = z.object({
   templateId: z.string().min(1, 'You must select an email template.'),
