@@ -182,15 +182,15 @@ export default function SubscriptionDetailPage() {
     }
 
     return (
-        <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-6">
+        <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-6 order-2 md:order-1">
                  <Card>
                     <CardHeader>
                         <CardTitle className="text-2xl">Subscription: {subscription.plan}</CardTitle>
                         <CardDescription>Details for subscription ID: {subscription.id}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                             <div className="space-y-1">
                                 <div className="text-muted-foreground font-medium flex items-center gap-2"><DollarSign className="h-4 w-4" /> Amount</div>
                                 <div>${subscription.amount.toFixed(2)}</div>
@@ -300,7 +300,7 @@ export default function SubscriptionDetailPage() {
                     renderAsCard={true}
                 />
             </div>
-            <div className="md:col-span-1 space-y-6">
+            <div className="md:col-span-1 space-y-6 order-1 md:order-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>Customer Details</CardTitle>

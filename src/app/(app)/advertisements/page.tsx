@@ -264,21 +264,21 @@ export default function AdvertisementsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Advertisements</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">Advertisements</h1>
+                    <p className="text-muted-foreground text-sm md:text-base">
                         Manage all customer advertisements across the workflow
                     </p>
                 </div>
-                <Button onClick={() => router.push('/pipeline')}>
+                <Button onClick={() => router.push('/pipeline')} className="w-full sm:w-auto">
                     View Pipeline
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>
 
             {/* Quick Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
                 <Card
                     className={cn(
                         "cursor-pointer transition-all hover:shadow-md",
@@ -353,7 +353,7 @@ export default function AdvertisementsPage() {
                         </div>
 
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[200px]">
+                            <SelectTrigger className="w-full sm:w-[200px]">
                                 <Filter className="h-4 w-4 mr-2" />
                                 <SelectValue placeholder="Filter by status" />
                             </SelectTrigger>
