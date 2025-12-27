@@ -19,7 +19,7 @@ export default function LandingPage() {
           <div className="flex h-14 md:h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={48} height={27} className="h-[27px] md:h-[33px] w-auto" />
-              <span className="font-headline font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
+              <span className="font-headline font-semibold text-gray-900 text-[11px] sm:text-sm md:text-base tracking-tight">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2 md:gap-3">
               {/* Mobile: Icon only phone button */}
