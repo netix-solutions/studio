@@ -304,23 +304,6 @@ function TrustIndicators() {
   );
 }
 
-// Social proof component
-function SocialProof() {
-  return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4">
-      <div className="container mx-auto flex items-center justify-center gap-2 text-sm">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
-        </span>
-        <span className="font-medium">12 businesses signed up this week</span>
-        <span className="text-blue-200">•</span>
-        <span>Limited availability</span>
-      </div>
-    </div>
-  );
-}
-
 // FAQ Section
 function PricingFAQ() {
   const faqs = [
@@ -536,9 +519,6 @@ function PricingPageContent() {
           </div>
         </div>
       </header>
-
-      {/* Social Proof Bar */}
-      <SocialProof />
 
       {/* Main Content */}
       <main className="pb-32 md:pb-16">
