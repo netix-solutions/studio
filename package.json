@@ -7,7 +7,8 @@
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "setup-cors": "npx firebase-tools@latest storage cors set cors.json --project studio-4614023416-d45cd"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

@@ -339,11 +339,28 @@ export default function AdServerPage() {
             setEditingAd(null);
         } catch (err) {
             console.error('Error saving ad:', err);
-            toast({
-                title: 'Error',
-                description: 'Failed to save the advertisement.',
-                variant: 'destructive',
-            });
+
+            // Check if this is a CORS error (typically shows as network/fetch error)
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            const isCorsError =
+                errorMessage.includes('CORS') ||
+                errorMessage.includes('Failed to fetch') ||
+                errorMessage.includes('NetworkError') ||
+                errorMessage.includes('preflight');
+
+            if (isCorsError) {
+                toast({
+                    title: 'Upload Error - CORS Configuration Required',
+                    description: 'The file upload failed due to CORS policy. Please run: npx firebase-tools@latest storage cors set cors.json --project studio-4614023416-d45cd',
+                    variant: 'destructive',
+                });
+            } else {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to save the advertisement. ' + errorMessage,
+                    variant: 'destructive',
+                });
+            }
         } finally {
             setSubmitting(false);
         }
