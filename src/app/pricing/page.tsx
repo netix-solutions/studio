@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -508,7 +509,7 @@ function PricingPageContent() {
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
-              <span className="font-headline font-semibold text-gray-900 text-sm hidden sm:inline">Community-Websites.com</span>
+              <span className="font-bebas font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2 md:gap-3">
               {/* Mobile: Icon-only phone */}
@@ -539,7 +540,7 @@ function PricingPageContent() {
       </header>
 
       {/* Main Content */}
-      <main className="pb-28 md:pb-16">
+      <main className="pb-40 md:pb-16">
         {/* Hero Section */}
         <section className="bg-white py-6 md:py-12 border-b border-gray-100">
           <div className="container mx-auto px-4 text-center">
@@ -716,7 +717,7 @@ function PricingPageContent() {
 
       {/* Sticky Mobile CTA - Enhanced for better mobile UX */}
       {!loading && plans.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-inset-bottom">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-shrink-0 min-w-0">
               <p className="text-[10px] text-gray-500 truncate">
@@ -747,6 +748,52 @@ function PricingPageContent() {
           </p>
         </div>
       )}
+
+      {/* Dark Blue Footer */}
+      <footer className="py-8 bg-blue-900 text-blue-200">
+        <div className="container mx-auto px-4 md:px-6">
+            <div className="grid md:grid-cols-3 gap-8">
+                {/* Branding */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
+                         <span className="font-bebas text-white text-lg tracking-wider">Community-Websites.com</span>
+                    </div>
+                    <p className="text-sm text-blue-300 max-w-xs">
+                        Affordable, effective local advertising for Pasco County small businesses.
+                    </p>
+                </div>
+
+                {/* Links */}
+                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Legal</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Account</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><Link href="/login" className="hover:text-white transition-colors">Customer Login</Link></li>
+                            <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                        </ul>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold text-white mb-3">Contact</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><a href="tel:813-544-8383" className="hover:text-white transition-colors">813-544-8383</a></li>
+                            <li><a href="mailto:support@community-websites.com" className="hover:text-white transition-colors">support@community-websites.com</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-8 pt-6 border-t border-blue-800 text-center text-xs text-blue-400">
+                &copy; {new Date().getFullYear()} Community-Websites.com. All Rights Reserved.
+            </div>
+        </div>
+      </footer>
     </div>
   );
 }

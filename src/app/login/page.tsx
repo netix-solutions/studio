@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -98,7 +99,7 @@ export default function LoginPage() {
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
-              <span className="font-headline font-semibold text-gray-900 text-sm hidden sm:inline">Community-Websites.com</span>
+              <span className="font-bebas font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2">
               <a
@@ -249,15 +250,48 @@ export default function LoginPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 border-t border-gray-100 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
-            <Link href="/terms-of-service" className="hover:text-gray-900 touch-manipulation">Terms</Link>
-            <span>•</span>
-            <Link href="/privacy-policy" className="hover:text-gray-900 touch-manipulation">Privacy</Link>
-            <span>•</span>
-            <span>© {new Date().getFullYear()}</span>
-          </div>
+      <footer className="py-8 bg-blue-900 text-blue-200">
+        <div className="container mx-auto px-4 md:px-6">
+            <div className="grid md:grid-cols-3 gap-8">
+                {/* Branding */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
+                         <span className="font-bebas text-white text-lg tracking-wider">Community-Websites.com</span>
+                    </div>
+                    <p className="text-sm text-blue-300 max-w-xs">
+                        Affordable, effective local advertising for Pasco County small businesses.
+                    </p>
+                </div>
+
+                {/* Links */}
+                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Legal</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Account</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><Link href="/login" className="hover:text-white transition-colors">Customer Login</Link></li>
+                            <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                        </ul>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold text-white mb-3">Contact</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><a href="tel:813-544-8383" className="hover:text-white transition-colors">813-544-8383</a></li>
+                            <li><a href="mailto:support@community-websites.com" className="hover:text-white transition-colors">support@community-websites.com</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-8 pt-6 border-t border-blue-800 text-center text-xs text-blue-400">
+                &copy; {new Date().getFullYear()} Community-Websites.com. All Rights Reserved.
+            </div>
         </div>
       </footer>
     </div>
