@@ -252,7 +252,14 @@ export default function AdServerPage() {
     };
 
     const handleSubmit = async () => {
-        if (!firestore || !storage) return;
+        if (!firestore || !storage) {
+            toast({
+                title: 'Error',
+                description: 'Firebase is not initialized. Please try again.',
+                variant: 'destructive',
+            });
+            return;
+        }
 
         if (!formData.name || !formData.targetUrl) {
             toast({
@@ -1034,10 +1041,10 @@ export default function AdServerPage() {
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                        <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={handleSubmit} disabled={submitting}>
+                        <Button type="button" onClick={handleSubmit} disabled={submitting}>
                             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {editingAd ? 'Update Ad' : 'Create Ad'}
                         </Button>
