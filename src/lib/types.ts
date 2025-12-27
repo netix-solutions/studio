@@ -558,6 +558,51 @@ export function getStageProgressPercentage(stage: LeadStage): number {
 }
 
 // ============================================================================
+// COMMUNITY WEBSITES CONFIGURATION
+// ============================================================================
+
+/**
+ * Community websites where ads can be deployed
+ * Each website has a unique ID and configuration
+ */
+export const COMMUNITY_WEBSITES = {
+  WESLEY_CHAPEL: 'wesley-chapel',
+  PASCO_COUNTY: 'pasco-county',
+} as const;
+
+export type CommunityWebsiteId = typeof COMMUNITY_WEBSITES[keyof typeof COMMUNITY_WEBSITES];
+
+export interface CommunityWebsite {
+  id: CommunityWebsiteId;
+  name: string;
+  shortName: string;
+  description: string;
+  domain?: string;
+  color: { bg: string; text: string; border: string };
+}
+
+export const COMMUNITY_WEBSITE_CONFIG: Record<CommunityWebsiteId, CommunityWebsite> = {
+  'wesley-chapel': {
+    id: 'wesley-chapel',
+    name: 'Wesley Chapel Community',
+    shortName: 'Wesley Chapel',
+    description: 'Wesley Chapel community website',
+    domain: 'wesleychapelcommunity.com',
+    color: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  },
+  'pasco-county': {
+    id: 'pasco-county',
+    name: 'Pasco County Community',
+    shortName: 'Pasco County',
+    description: 'Pasco County community website',
+    domain: 'pascocountycommunity.com',
+    color: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  },
+};
+
+export const COMMUNITY_WEBSITE_LIST: CommunityWebsite[] = Object.values(COMMUNITY_WEBSITE_CONFIG);
+
+// ============================================================================
 // LIVE AD SERVER TYPES & CONSTANTS
 // ============================================================================
 
@@ -639,7 +684,10 @@ export interface LiveAd {
   width?: number;
   height?: number;
 
-  // Targeting
+  // Website Targeting - which community websites to show on
+  targetWebsites?: CommunityWebsiteId[]; // Array of website IDs (e.g., ['wesley-chapel', 'pasco-county'])
+
+  // Legacy targeting (deprecated - use targetWebsites instead)
   targetSites?: string[]; // Optional: specific sites to show on
 
   // Display settings
