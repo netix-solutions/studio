@@ -556,3 +556,175 @@ export function getStageProgressPercentage(stage: LeadStage): number {
   if (activeIndex === -1) return 0;
   return Math.round((activeIndex / (activeStages.length - 1)) * 100);
 }
+
+// ============================================================================
+// LIVE AD SERVER TYPES & CONSTANTS
+// ============================================================================
+
+/**
+ * Ad placement types - where ads can be displayed
+ */
+export const AD_PLACEMENTS = {
+  BANNER: 'banner',
+  SIDEBAR: 'sidebar',
+  INLINE: 'inline',
+  POPUP: 'popup',
+  FOOTER: 'footer',
+} as const;
+
+export type AdPlacement = typeof AD_PLACEMENTS[keyof typeof AD_PLACEMENTS];
+
+export const AD_PLACEMENT_LABELS: Record<AdPlacement, string> = {
+  banner: 'Banner (Header)',
+  sidebar: 'Sidebar',
+  inline: 'Inline (Content)',
+  popup: 'Popup',
+  footer: 'Footer',
+};
+
+export const AD_PLACEMENT_DIMENSIONS: Record<AdPlacement, { width: number; height: number }> = {
+  banner: { width: 728, height: 90 },
+  sidebar: { width: 300, height: 250 },
+  inline: { width: 600, height: 200 },
+  popup: { width: 400, height: 300 },
+  footer: { width: 728, height: 90 },
+};
+
+/**
+ * Live ad status options
+ */
+export const LIVE_AD_STATUSES = {
+  ACTIVE: 'active',
+  PAUSED: 'paused',
+  SCHEDULED: 'scheduled',
+  EXPIRED: 'expired',
+  ARCHIVED: 'archived',
+} as const;
+
+export type LiveAdStatus = typeof LIVE_AD_STATUSES[keyof typeof LIVE_AD_STATUSES];
+
+export const LIVE_AD_STATUS_LABELS: Record<LiveAdStatus, string> = {
+  active: 'Active',
+  paused: 'Paused',
+  scheduled: 'Scheduled',
+  expired: 'Expired',
+  archived: 'Archived',
+};
+
+export const LIVE_AD_STATUS_COLORS: Record<LiveAdStatus, { bg: string; text: string }> = {
+  active: { bg: 'bg-green-100', text: 'text-green-700' },
+  paused: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  scheduled: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  expired: { bg: 'bg-slate-100', text: 'text-slate-600' },
+  archived: { bg: 'bg-red-100', text: 'text-red-600' },
+};
+
+/**
+ * Live Ad interface - ads that are served to external websites
+ */
+export interface LiveAd {
+  id: string;
+
+  // Basic info
+  name: string;
+  description?: string;
+
+  // Creative
+  imageUrl: string;
+  targetUrl: string;
+  altText?: string;
+
+  // Placement & sizing
+  placement: AdPlacement;
+  width?: number;
+  height?: number;
+
+  // Targeting
+  targetSites?: string[]; // Optional: specific sites to show on
+
+  // Display settings
+  weight: number; // 1-100, higher = more likely to be shown
+  status: LiveAdStatus;
+
+  // Scheduling
+  startDate?: any; // Firestore Timestamp
+  endDate?: any; // Firestore Timestamp
+
+  // Link to customer advertisement (optional)
+  sourceAdvertisementId?: string;
+  customerId?: string;
+  customerName?: string;
+
+  // Analytics
+  impressions: number;
+  clicks: number;
+
+  // Timestamps
+  createdAt: any;
+  updatedAt?: any;
+  createdBy?: string;
+}
+
+/**
+ * Ad impression/click event for analytics
+ */
+export interface AdEvent {
+  id: string;
+  adId: string;
+  type: 'impression' | 'click';
+
+  // Context
+  referrer?: string;
+  userAgent?: string;
+  ipHash?: string; // Hashed for privacy
+
+  // Timestamp
+  timestamp: any;
+}
+
+/**
+ * Calculate click-through rate
+ */
+export function calculateCTR(impressions: number, clicks: number): number {
+  if (impressions === 0) return 0;
+  return Math.round((clicks / impressions) * 10000) / 100; // Returns percentage with 2 decimals
+}
+
+/**
+ * Check if a live ad is currently active based on status and schedule
+ */
+export function isAdCurrentlyActive(ad: LiveAd): boolean {
+  if (ad.status !== 'active' && ad.status !== 'scheduled') return false;
+
+  const now = new Date();
+
+  if (ad.startDate) {
+    const startDate = ad.startDate?.toDate ? ad.startDate.toDate() : new Date(ad.startDate);
+    if (now < startDate) return false;
+  }
+
+  if (ad.endDate) {
+    const endDate = ad.endDate?.toDate ? ad.endDate.toDate() : new Date(ad.endDate);
+    if (now > endDate) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Select an ad based on weights (weighted random selection)
+ */
+export function selectAdByWeight(ads: LiveAd[]): LiveAd | null {
+  if (ads.length === 0) return null;
+  if (ads.length === 1) return ads[0];
+
+  const totalWeight = ads.reduce((sum, ad) => sum + (ad.weight || 1), 0);
+  let random = Math.random() * totalWeight;
+
+  for (const ad of ads) {
+    random -= ad.weight || 1;
+    if (random <= 0) return ad;
+  }
+
+  return ads[ads.length - 1];
+}
