@@ -27,7 +27,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { sendEmail } from '@/lib/firebase/email';
-import type { Lead } from '@/app/(app)/leads/page';
+import type { Lead } from '@/lib/types';
 import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
 const formSchema = z.object({
