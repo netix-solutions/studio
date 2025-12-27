@@ -728,3 +728,112 @@ export function selectAdByWeight(ads: LiveAd[]): LiveAd | null {
 
   return ads[ads.length - 1];
 }
+
+// ============================================================================
+// DATABASE RECONCILIATION TYPES & CONSTANTS
+// ============================================================================
+
+/**
+ * Issue severity levels
+ */
+export const ISSUE_SEVERITY = {
+  INFO: 'info',
+  WARNING: 'warning',
+  ERROR: 'error',
+  CRITICAL: 'critical',
+} as const;
+
+export type IssueSeverity = typeof ISSUE_SEVERITY[keyof typeof ISSUE_SEVERITY];
+
+export const ISSUE_SEVERITY_COLORS: Record<IssueSeverity, { bg: string; text: string; border: string }> = {
+  info: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  warning: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  error: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+  critical: { bg: 'bg-red-200', text: 'text-red-800', border: 'border-red-500' },
+};
+
+/**
+ * Issue categories for reconciliation
+ */
+export const ISSUE_CATEGORIES = {
+  CUSTOMER_DATA: 'customer_data',
+  SUBSCRIPTION_DATA: 'subscription_data',
+  REVENUE_DATA: 'revenue_data',
+  ADVERTISEMENT_DATA: 'advertisement_data',
+  LEAD_DATA: 'lead_data',
+  USER_DATA: 'user_data',
+} as const;
+
+export type IssueCategory = typeof ISSUE_CATEGORIES[keyof typeof ISSUE_CATEGORIES];
+
+export const ISSUE_CATEGORY_LABELS: Record<IssueCategory, string> = {
+  customer_data: 'Customer Data',
+  subscription_data: 'Subscription Data',
+  revenue_data: 'Revenue Metrics',
+  advertisement_data: 'Advertisement Data',
+  lead_data: 'Lead Data',
+  user_data: 'User Data',
+};
+
+/**
+ * A single reconciliation issue found during the check
+ */
+export interface ReconciliationIssue {
+  id: string;
+  category: IssueCategory;
+  severity: IssueSeverity;
+  title: string;
+  description: string;
+  affectedEntityId?: string;
+  affectedEntityType?: 'customer' | 'subscription' | 'advertisement' | 'lead' | 'user';
+  suggestedFix?: string;
+  canAutoFix: boolean;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Summary of a reconciliation run
+ */
+export interface ReconciliationSummary {
+  totalCustomers: number;
+  totalSubscriptions: number;
+  totalActiveSubscriptions: number;
+  totalAdvertisements: number;
+  totalLeads: number;
+  totalUsers: number;
+  calculatedMRR: number;
+  calculatedARR: number;
+  issuesCount: {
+    info: number;
+    warning: number;
+    error: number;
+    critical: number;
+  };
+}
+
+/**
+ * Complete reconciliation report
+ */
+export interface ReconciliationReport {
+  id: string;
+  createdAt: any; // Firestore Timestamp
+  completedAt?: any;
+  status: 'running' | 'completed' | 'failed';
+  summary: ReconciliationSummary;
+  issues: ReconciliationIssue[];
+  fixesApplied: number;
+  error?: string;
+}
+
+/**
+ * Options for running reconciliation
+ */
+export interface ReconciliationOptions {
+  checkCustomers: boolean;
+  checkSubscriptions: boolean;
+  checkRevenue: boolean;
+  checkAdvertisements: boolean;
+  checkLeads: boolean;
+  checkUsers: boolean;
+  autoFixEnabled: boolean;
+}
