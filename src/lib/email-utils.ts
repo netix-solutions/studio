@@ -47,9 +47,18 @@ export function wrapEmailContent(bodyContent: string): string {
                         <td style="background-color: #1e3a5f; padding: 24px 40px; border-radius: 8px 8px 0 0;">
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                 <tr>
-                                    <td>
-                                        <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
-                                            Community-Websites.com
+                                    <td style="vertical-align: middle; padding-right: 16px;" width="60">
+                                        <a href="${APP_URL}" target="_blank" style="text-decoration: none;">
+                                            <img src="${APP_URL}/logo.png" alt="Community-Websites.com" width="50" height="50" style="display: block; border: 0; border-radius: 8px;">
+                                        </a>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
+                                            <a href="${APP_URL}" target="_blank" style="color: #ffffff !important; text-decoration: none !important; font-weight: 700;">
+                                                <!--[if mso]><span style="color: #ffffff;"><![endif]-->
+                                                Community-Websites.com
+                                                <!--[if mso]></span><![endif]-->
+                                            </a>
                                         </h1>
                                         <p style="margin: 4px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.85);">
                                             Local Advertising Made Simple
@@ -74,10 +83,13 @@ export function wrapEmailContent(bodyContent: string): string {
                                         <p style="margin: 0 0 8px 0; font-size: 14px; color: #71717a;">
                                             Questions? We're here to help!
                                         </p>
+                                        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1e3a5f;">
+                                            Call or Text 24/7
+                                        </p>
                                         <p style="margin: 0 0 16px 0; font-size: 14px; color: #3f3f46;">
                                             <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>
                                             &nbsp;&bull;&nbsp;
-                                            <a href="mailto:support@community-websites.com" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">support@community-websites.com</a>
+                                            <a href="mailto:email@community-websites.com" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">email@community-websites.com</a>
                                         </p>
                                         <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
                                             &copy; ${new Date().getFullYear()} Community-Websites.com. All rights reserved.
