@@ -19,7 +19,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowRight, Check } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { sendEmail } from '@/lib/firebase/email';
+import { wrapEmailContent, replaceEmailPlaceholders, generateEmailUrls } from '@/lib/email-utils';
 import {
   LEAD_STAGES,
   LEAD_SOURCES,
@@ -163,8 +165,44 @@ export function GetStartedForm() {
         updatedAt: serverTimestamp(),
       };
 
-      // The ONLY action is to create the lead.
-      await addDoc(collection(firestore, 'leads'), leadData);
+      // Create the lead document
+      const leadDocRef = await addDoc(collection(firestore, 'leads'), leadData);
+
+      // Send auto-response email with pricing link
+      try {
+        // Fetch the pricing_link email template
+        const templateRef = doc(firestore, 'emailTemplates', 'pricing_link');
+        const templateSnap = await getDoc(templateRef);
+
+        if (templateSnap.exists()) {
+          const template = templateSnap.data();
+          const urls = generateEmailUrls(leadDocRef.id);
+
+          // Replace placeholders in subject and body
+          const emailData = {
+            contactName: contactName,
+            businessName: values.businessName,
+            pricingLink: urls.pricingLink,
+          };
+
+          const processedSubject = replaceEmailPlaceholders(template.subject, emailData);
+          const processedHtml = wrapEmailContent(replaceEmailPlaceholders(template.html, emailData));
+
+          // Send the email
+          await sendEmail(firestore, {
+            to: values.email,
+            subject: processedSubject,
+            html: processedHtml,
+          }, {
+            recipientId: leadDocRef.id,
+            templateId: 'pricing_link',
+            triggerType: 'interest_form_submission',
+          });
+        }
+      } catch (emailError) {
+        // Log but don't fail the form submission if email fails
+        console.error('Error sending auto-response email:', emailError);
+      }
 
       toast({
         title: 'Success!',
