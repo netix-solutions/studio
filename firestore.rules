@@ -14,10 +14,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Use custom claims for admin checks. This is the most secure and reliable method.
-      // A Cloud Function must be in place to set the 'admin: true' custom claim
-      // when a user is added to the /roles_admin collection.
-      return isSignedIn() && request.auth.token.admin == true;
+      // Check if the user has a document in the roles_admin collection.
+      // This matches the app-level admin check in layout.tsx.
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
     
     // LEGAL DOCUMENTS
