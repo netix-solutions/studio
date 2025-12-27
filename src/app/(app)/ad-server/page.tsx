@@ -11,12 +11,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { useFirebase } from '@/firebase';
 import {
     collection,
+    collectionGroup,
     onSnapshot,
     query,
     doc,
     addDoc,
     updateDoc,
     deleteDoc,
+    getDocs,
+    where,
     serverTimestamp,
     orderBy,
 } from 'firebase/firestore';
@@ -41,6 +44,8 @@ import {
     Archive,
     Upload,
     CheckCircle,
+    Users,
+    Import,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -78,12 +83,14 @@ import {
     type LiveAd,
     type LiveAdStatus,
     type AdPlacement,
+    type Advertisement,
     AD_PLACEMENTS,
     AD_PLACEMENT_LABELS,
     AD_PLACEMENT_DIMENSIONS,
     LIVE_AD_STATUSES,
     LIVE_AD_STATUS_LABELS,
     LIVE_AD_STATUS_COLORS,
+    AD_STATUS_LABELS,
     calculateCTR,
 } from '@/lib/types';
 
@@ -123,11 +130,17 @@ export default function AdServerPage() {
     // Dialog states
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showEmbedDialog, setShowEmbedDialog] = useState(false);
+    const [showImportDialog, setShowImportDialog] = useState(false);
     const [editingAd, setEditingAd] = useState<LiveAd | null>(null);
     const [formData, setFormData] = useState<FormData>(defaultFormData);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
+
+    // Import from customer ads states
+    const [customerAds, setCustomerAds] = useState<(Advertisement & { userName?: string })[]>([]);
+    const [loadingCustomerAds, setLoadingCustomerAds] = useState(false);
+    const [importingAdId, setImportingAdId] = useState<string | null>(null);
 
     const { firestore, storage, user } = useFirebase();
     const { toast } = useToast();
@@ -392,6 +405,123 @@ export default function AdServerPage() {
         });
     };
 
+    const handleOpenImport = async () => {
+        setShowImportDialog(true);
+        await fetchCustomerAds();
+    };
+
+    const fetchCustomerAds = async () => {
+        if (!firestore) return;
+
+        setLoadingCustomerAds(true);
+        try {
+            // Get all approved or live customer ads that have an ad proof
+            const adsQuery = query(
+                collectionGroup(firestore, 'advertisements'),
+                where('status', 'in', ['approved', 'live']),
+            );
+
+            const snapshot = await getDocs(adsQuery);
+            const adsWithProofs: (Advertisement & { userName?: string })[] = [];
+
+            // Get existing live_ads to check which are already imported
+            const existingLiveAds = ads.map(a => a.sourceAdvertisementId).filter(Boolean);
+
+            for (const docSnap of snapshot.docs) {
+                const data = docSnap.data();
+                // Only include ads with a proof URL that haven't been imported yet
+                if (data.adProofUrl && !existingLiveAds.includes(docSnap.id)) {
+                    adsWithProofs.push({
+                        id: docSnap.id,
+                        userId: data.userId,
+                        subscriptionId: data.subscriptionId || '',
+                        status: data.status,
+                        adProofUrl: data.adProofUrl,
+                        adProofDestinationUrl: data.adProofDestinationUrl,
+                        businessName: data.businessName,
+                        contactName: data.contactName,
+                        email: data.email,
+                        createdAt: data.createdAt,
+                        userName: data.businessName || data.contactName || 'Unknown',
+                    });
+                }
+            }
+
+            setCustomerAds(adsWithProofs);
+        } catch (err) {
+            console.error('Error fetching customer ads:', err);
+            toast({
+                title: 'Error',
+                description: 'Failed to load customer advertisements.',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoadingCustomerAds(false);
+        }
+    };
+
+    const handleImportAd = async (ad: Advertisement & { userName?: string }) => {
+        if (!firestore) return;
+
+        setImportingAdId(ad.id);
+        try {
+            // Create live ad from customer ad
+            const placement: AdPlacement = 'inline';
+            const dimensions = AD_PLACEMENT_DIMENSIONS[placement];
+
+            const liveAdData = {
+                name: `${ad.businessName || ad.userName || 'Advertisement'} - ${ad.id.slice(0, 6)}`,
+                description: `Customer advertisement for ${ad.businessName || ad.userName}`,
+                imageUrl: ad.adProofUrl,
+                targetUrl: ad.adProofDestinationUrl || '',
+                altText: `Advertisement for ${ad.businessName || ad.userName}`,
+                placement,
+                width: dimensions.width,
+                height: dimensions.height,
+                weight: 50,
+                status: 'active' as LiveAdStatus,
+                targetSites: [],
+                startDate: null,
+                endDate: null,
+                sourceAdvertisementId: ad.id,
+                customerId: ad.userId,
+                customerName: ad.businessName || ad.userName,
+                impressions: 0,
+                clicks: 0,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                createdBy: user?.uid || '',
+            };
+
+            await addDoc(collection(firestore, 'live_ads'), liveAdData);
+
+            // Update the customer ad to mark it as pushed to ad server
+            const adDocRef = doc(firestore, 'users', ad.userId, 'advertisements', ad.id);
+            await updateDoc(adDocRef, {
+                pushedToAdServerId: ad.id,
+                pushedToAdServerAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            // Remove from the list
+            setCustomerAds(prev => prev.filter(a => a.id !== ad.id));
+
+            toast({
+                title: 'Ad Imported!',
+                description: `${ad.businessName || ad.userName} ad is now live on the ad server.`,
+            });
+        } catch (err) {
+            console.error('Error importing ad:', err);
+            toast({
+                title: 'Error',
+                description: 'Failed to import the advertisement.',
+                variant: 'destructive',
+            });
+        } finally {
+            setImportingAdId(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -406,6 +536,10 @@ export default function AdServerPage() {
                     <Button variant="outline" onClick={() => setShowEmbedDialog(true)}>
                         <Code className="mr-2 h-4 w-4" />
                         Get Embed Code
+                    </Button>
+                    <Button variant="outline" onClick={handleOpenImport}>
+                        <Users className="mr-2 h-4 w-4" />
+                        Import from Customers
                     </Button>
                     <Button onClick={handleOpenCreate}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -960,6 +1094,97 @@ Response:
 
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowEmbedDialog(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Import from Customers Dialog */}
+            <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5" />
+                            Import from Customer Ads
+                        </DialogTitle>
+                        <DialogDescription>
+                            Select approved customer advertisements to add to the ad server.
+                            Only ads with completed proofs that haven't been imported yet are shown.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        {loadingCustomerAds ? (
+                            <div className="flex items-center justify-center h-40">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        ) : customerAds.length === 0 ? (
+                            <div className="text-center py-8">
+                                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                <h3 className="text-lg font-medium mb-2">No Ads to Import</h3>
+                                <p className="text-muted-foreground">
+                                    All approved customer ads have already been imported, or there are no approved ads with completed proofs.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Found {customerAds.length} approved ad{customerAds.length !== 1 ? 's' : ''} ready to import
+                                </p>
+                                <div className="grid gap-4">
+                                    {customerAds.map((ad) => (
+                                        <Card key={ad.id} className="overflow-hidden">
+                                            <div className="flex">
+                                                <div className="w-40 h-28 flex-shrink-0 bg-muted">
+                                                    {ad.adProofUrl && (
+                                                        <img
+                                                            src={ad.adProofUrl}
+                                                            alt={ad.businessName || 'Ad preview'}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 p-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="font-medium">{ad.businessName || ad.contactName || 'Unknown Business'}</h4>
+                                                            <p className="text-sm text-muted-foreground truncate max-w-[300px]">
+                                                                {ad.adProofDestinationUrl || 'No destination URL'}
+                                                            </p>
+                                                            <div className="flex gap-2 mt-2">
+                                                                <Badge variant="outline">
+                                                                    {AD_STATUS_LABELS[ad.status] || ad.status}
+                                                                </Badge>
+                                                                {ad.email && (
+                                                                    <span className="text-xs text-muted-foreground">{ad.email}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleImportAd(ad)}
+                                                            disabled={importingAdId === ad.id}
+                                                        >
+                                                            {importingAdId === ad.id ? (
+                                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <Import className="mr-2 h-4 w-4" />
+                                                            )}
+                                                            Import
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowImportDialog(false)}>
                             Close
                         </Button>
                     </DialogFooter>
