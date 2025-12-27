@@ -326,6 +326,22 @@ export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondar
 };
 
 /**
+ * Pipeline stage colors for the Kanban board visualization
+ */
+export const AD_PIPELINE_STAGE_COLORS: Record<AdStatus, { bg: string; text: string; border: string }> = {
+  pending_info: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
+  pending_internal_review: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  pending_ad_creation: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+  pending_customer_approval: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  revision_requested: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  approved: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
+  live: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  paused: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
+  completed: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-300' },
+  canceled_inactive: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+};
+
+/**
  * Workflow steps for the advertisement lifecycle
  */
 export const AD_WORKFLOW_STEPS = [
