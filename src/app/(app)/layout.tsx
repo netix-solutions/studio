@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
-const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal', '/pipeline', '/ad-server'];
+const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/notification-triggers', '/leads', '/import', '/legal', '/pipeline', '/ad-server'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/dashboard';
 

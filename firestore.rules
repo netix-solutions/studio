@@ -110,6 +110,12 @@ service cloud.firestore {
     match /emailTemplates/{templateId} {
       allow read, list, write: if isAdmin();
     }
+
+    // ADMIN NOTIFICATION TRIGGERS
+    // Only admins can read or write notification triggers.
+    match /adminNotificationTriggers/{triggerId} {
+      allow read, list, write: if isAdmin();
+    }
     
     // STRIPE PLANS & PRICES
     // These collections are managed in Stripe and synced to Firestore.
