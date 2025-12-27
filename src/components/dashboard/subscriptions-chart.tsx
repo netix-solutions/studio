@@ -57,6 +57,7 @@ export default function SubscriptionsChart() {
 
             let cumulativeTotal = 0;
             const subsBeforeWindow = allSubscriptions.filter(sub => {
+                if (!sub.created) return false;
                 const createdDate = new Date(sub.created * 1000);
                 return createdDate < startOfMonth(sixMonthsAgo) && (sub.status === 'active' || sub.status === 'trialing');
             }).length;
@@ -70,11 +71,13 @@ export default function SubscriptionsChart() {
                 const end = endOfMonth(date);
 
                 const newThisMonth = allSubscriptions.filter(sub => {
+                    if (!sub.created) return false;
                     const createdDate = new Date(sub.created * 1000);
                     return createdDate >= start && createdDate <= end;
                 }).length;
 
                 const activeThisMonth = allSubscriptions.filter(sub => {
+                     if (!sub.created) return false;
                      const createdDate = new Date(sub.created * 1000);
                      const endDate = sub.ended_at ? new Date(sub.ended_at * 1000) : null;
                      return createdDate <= end && (!endDate || endDate >= start);

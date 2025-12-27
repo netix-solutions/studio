@@ -1,6 +1,14 @@
 
 rules_version = '2';
 
+// IMPORTANT: Storage rules cannot query Firestore, so admin checks must use custom claims.
+// To enable admin functionality for storage, you must set the 'admin' custom claim on user tokens.
+// This can be done via a Cloud Function that triggers when a document is added to /roles_admin/{userId}.
+// Example Cloud Function code:
+//   exports.setAdminClaim = functions.firestore.document('roles_admin/{userId}').onCreate(async (snap, context) => {
+//     await admin.auth().setCustomUserClaims(context.params.userId, { admin: true });
+//   });
+
 service firebase.storage {
   match /b/{bucket}/o {
     // Helper functions
@@ -13,7 +21,8 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      // This is now checking the custom claim as per your suggestion.
+      // Storage rules cannot access Firestore, so we use custom claims for admin check.
+      // Ensure admin custom claims are set when adding users to roles_admin collection.
       return isSignedIn() && request.auth.token.admin == true;
     }
     

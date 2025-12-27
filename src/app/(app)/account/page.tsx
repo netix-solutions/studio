@@ -7,7 +7,7 @@ import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, Unsubscribe, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer, updateDoc, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2, AlertCircle, Edit, Save, FileText, Upload } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -70,21 +70,25 @@ export default function AccountPage() {
         }
     });
 
+    // Memoize the reset function to avoid dependency issues
+    const resetForm = useCallback((userData: any) => {
+        adDetailsForm.reset({
+            businessName: userData.businessName || '',
+            contactName: userData.contactName || '',
+            phone: userData.phone || '',
+            adWebsiteUrl: userData.adWebsiteUrl || '',
+            adText: userData.adText || '',
+            adNotes: userData.adNotes || '',
+        });
+    }, [adDetailsForm]);
+
     useEffect(() => {
         if (!user || !firestore) return;
 
         const userDocRef = doc(firestore, 'users', user.uid);
         const unsubUser = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                const userData = docSnap.data();
-                adDetailsForm.reset({
-                    businessName: userData.businessName || '',
-                    contactName: userData.contactName || '',
-                    phone: userData.phone || '',
-                    adWebsiteUrl: userData.adWebsiteUrl || '',
-                    adText: userData.adText || '',
-                    adNotes: userData.adNotes || '',
-                });
+                resetForm(docSnap.data());
             }
         });
 
@@ -98,14 +102,14 @@ export default function AccountPage() {
             setIsAdmin(false);
             setIsAdminLoading(false);
         });
-        
+
         setSubsLoading(true);
         const subsCollectionRef = collection(firestore, 'customers', user.uid, 'subscriptions');
         const q = query(subsCollectionRef);
 
         const unsubSubs = onSnapshot(q, async (snapshot) => {
              const userDoc = await getDoc(userDocRef);
-             
+
             const activeSubs = snapshot.docs.filter(doc => doc.data().status === 'active' || doc.data().status === 'trialing');
 
             if (activeSubs.length > 0) {
@@ -122,11 +126,15 @@ export default function AccountPage() {
                 const data = doc.data();
                 const priceData = data.items?.[0]?.price;
                 const periodEndDate = data.current_period_end?.seconds ? new Date(data.current_period_end.seconds * 1000) : new Date();
+                // Safely access nested price properties
+                const unitAmount = priceData?.unit_amount ?? 0;
+                const currency = priceData?.currency || 'USD';
+                const interval = priceData?.recurring?.interval || 'month';
                 return {
                     id: doc.id,
-                    status: data.status,
+                    status: data.status || 'unknown',
                     planName: data.items?.[0]?.price?.product?.name || 'N/A',
-                    price: priceData ? `${(priceData.unit_amount / 100).toLocaleString('en-US', { style: 'currency', currency: priceData.currency || 'USD' })}/${priceData.recurring?.interval}`: 'N/A',
+                    price: priceData ? `${(unitAmount / 100).toLocaleString('en-US', { style: 'currency', currency })}/${interval}` : 'N/A',
                     periodEnd: format(periodEndDate, 'MMM d, yyyy'),
                 };
             });
@@ -145,7 +153,7 @@ export default function AccountPage() {
             unsubAdmin();
             unsubSubs();
         };
-    }, [user, firestore, adDetailsForm.reset]);
+    }, [user, firestore, resetForm]);
     
     const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
         if (!user || !firestore || !firebaseApp) return;
@@ -169,15 +177,11 @@ export default function AccountPage() {
                 uploadedFileUrls = await Promise.all(uploadPromises);
             }
             
-            const userDetailsToSave = {
-                ...data,
-                fileUploads: uploadedFileUrls, // Save URLs instead of file objects
-            };
-            
-            delete userDetailsToSave.fileUploads;
+            // Prepare user details to save (exclude file input, only save URLs)
+            const { fileUploads: _fileInput, ...userDetailsToSave } = data;
 
             // 1. Save details to user's profile
-            await setDoc(userDocRef, { 
+            await setDoc(userDocRef, {
                 ...userDetailsToSave,
                 ...(uploadedFileUrls.length > 0 && { fileUploads: uploadedFileUrls })
             }, { merge: true });

@@ -63,28 +63,35 @@ export default function SubscriptionsPage() {
   useEffect(() => {
     if (!user || !firestore) return;
 
+    let subsUnsubscribe: Unsubscribe | null = null;
+
     // Check admin status to determine which query to run
     const adminDocRef = doc(firestore, 'roles_admin', user.uid);
     const unsubAdmin = onSnapshot(adminDocRef, (snap) => {
         const userIsAdmin = snap.exists();
         setIsAdmin(userIsAdmin);
 
-        let unsubscribe: Unsubscribe = () => {};
+        // Clean up previous subscription listener if it exists
+        if (subsUnsubscribe) {
+            subsUnsubscribe();
+            subsUnsubscribe = null;
+        }
+
         setLoading(true);
 
         try {
             if (userIsAdmin) {
-                // Admin: Fetch all subscriptions from all users
+                // Admin: Fetch all subscriptions from all users (one-time fetch, no listener)
                 const customersColRef = collection(firestore, 'customers');
-                 getDocs(customersColRef).then(async (customerSnaps) => {
+                getDocs(customersColRef).then(async (customerSnaps) => {
                      let allSubs: EnrichedSubscription[] = [];
-                     
+
                      const usersSnapshot = await getDocs(collection(firestore, 'users'));
                      const usersMap = new Map<string, any>();
                      usersSnapshot.forEach(userDoc => {
                          usersMap.set(userDoc.id, userDoc.data());
                      });
-                     
+
                      const allSubscriptionsPromises = customerSnaps.docs.map(customerDoc => {
                          const customerId = customerDoc.id;
                          const subscriptionsColRef = collection(firestore, 'customers', customerId, 'subscriptions');
@@ -95,7 +102,7 @@ export default function SubscriptionsPage() {
 
                      for (const { subsSnaps, customerId } of allSubscriptionsResults) {
                         const userData = usersMap.get(customerId);
-                        
+
                         const adQuery = query(collection(firestore, 'users', customerId, 'advertisements'));
                         const adsSnapshot = await getDocs(adQuery);
                         const adsMap = new Map<string, any>();
@@ -112,6 +119,8 @@ export default function SubscriptionsPage() {
 
                             const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
                             const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
+                            // Safely access nested price properties
+                            const unitAmount = subData.items?.[0]?.price?.unit_amount ?? 0;
 
                             allSubs.push({
                                 id: subDoc.id,
@@ -122,13 +131,13 @@ export default function SubscriptionsPage() {
                                 plan: subData.items?.[0]?.price?.product?.name || 'N/A',
                                 startDate: format(startDate, 'yyyy-MM-dd'),
                                 endDate: format(endDate, 'yyyy-MM-dd'),
-                                status: subData.status,
+                                status: subData.status || 'unknown',
                                 adStatus: adData?.status || 'Not Started',
-                                amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
+                                amount: unitAmount / 100,
                             });
                         });
                      }
-                     
+
                     setSubscriptions(allSubs.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()));
                     setLoading(false);
 
@@ -140,17 +149,19 @@ export default function SubscriptionsPage() {
 
 
             } else {
-                // Non-admin: Fetch only the current user's subscriptions
+                // Non-admin: Fetch only the current user's subscriptions with real-time listener
                 const subsCollectionRef = collection(firestore, 'customers', user.uid, 'subscriptions');
                 const q = query(subsCollectionRef, where('status', 'in', ['active', 'trialing', 'past_due']));
-                
-                unsubscribe = onSnapshot(q, (snapshot) => {
-                    const subsData: EnrichedSubscription[] = snapshot.docs.map(doc => {
-                        const data = doc.data();
+
+                subsUnsubscribe = onSnapshot(q, (snapshot) => {
+                    const subsData: EnrichedSubscription[] = snapshot.docs.map(docSnap => {
+                        const data = docSnap.data();
                         const startDate = data.created?.seconds ? new Date(data.created.seconds * 1000) : new Date();
                         const endDate = data.current_period_end?.seconds ? new Date(data.current_period_end.seconds * 1000) : new Date();
+                        // Safely access nested price properties
+                        const unitAmount = data.items?.[0]?.price?.unit_amount ?? 0;
                         return {
-                            id: doc.id,
+                            id: docSnap.id,
                             customerId: user.uid,
                             customerName: user.displayName || user.email || 'Me',
                             customerEmail: user.email || 'N/A',
@@ -158,9 +169,9 @@ export default function SubscriptionsPage() {
                             plan: data.items?.[0]?.price?.product?.name || 'N/A',
                             startDate: format(startDate, 'yyyy-MM-dd'),
                             endDate: format(endDate, 'yyyy-MM-dd'),
-                            status: data.status,
+                            status: data.status || 'unknown',
                             adStatus: 'Not Started', // Non-admins don't see this
-                            amount: data.items?.[0]?.price?.unit_amount / 100 || 0,
+                            amount: unitAmount / 100,
                         };
                     });
                     setSubscriptions(subsData);
@@ -174,13 +185,15 @@ export default function SubscriptionsPage() {
              setError("An unexpected error occurred while fetching subscriptions.");
              setLoading(false);
         }
-
-        return () => {
-            unsubscribe();
-        };
-
     });
-     return () => unsubAdmin();
+
+    // Cleanup function properly handles both subscriptions
+    return () => {
+        unsubAdmin();
+        if (subsUnsubscribe) {
+            subsUnsubscribe();
+        }
+    };
 
   }, [user, firestore]);
 
