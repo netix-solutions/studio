@@ -441,6 +441,28 @@ export function shouldAutoApprove(sentForApprovalAt: any): boolean {
 }
 
 // ============================================================================
+// USER/CUSTOMER TYPES
+// ============================================================================
+
+/**
+ * User details interface - used for customer information display
+ */
+export interface UserDetails {
+  id: string;
+  email: string;
+  contactName: string;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  phone?: string;
+  adWebsiteUrl?: string;
+  adText?: string;
+  adNotes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+// ============================================================================
 // TASK TYPES (for follow-up reminders)
 // ============================================================================
 
