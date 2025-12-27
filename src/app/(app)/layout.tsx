@@ -12,6 +12,7 @@ import { doc, getDoc, onSnapshot, setDoc, Unsubscribe } from 'firebase/firestore
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { usePageVisitTracking } from '@/hooks/use-page-visit-tracking';
 
 const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal', '/pipeline', '/ad-server'];
 const USER_DEFAULT_ROUTE = '/account';
@@ -28,6 +29,9 @@ export default function ProtectedLayout({
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isRoleLoading, setIsRoleLoading] = useState(true);
+
+  // Track page visits for logged-in users (records in lead activity timeline)
+  usePageVisitTracking();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
