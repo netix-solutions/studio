@@ -1,5 +1,5 @@
-
 'use client';
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,22 +17,31 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowRight, Check } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { LEAD_STAGES, LEAD_SOURCES, LEAD_PRIORITIES, calculateLeadScore, type LeadSource } from '@/lib/types';
+import {
+  LEAD_STAGES,
+  LEAD_SOURCES,
+  LEAD_PRIORITIES,
+  calculateLeadScore,
+  type LeadSource,
+} from '@/lib/types';
 
 const formSchema = z.object({
-  businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
-  firstName: z.string().min(1, { message: "First name is required." }),
-  lastName: z.string().min(1, { message: "Last name is required." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().min(10, { message: "Please enter a valid cell phone number." }),
+  businessName: z
+    .string()
+    .min(2, { message: 'Business name must be at least 2 characters.' }),
+  firstName: z.string().min(1, { message: 'First name is required.' }),
+  lastName: z.string().min(1, { message: 'Last name is required.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  phone: z
+    .string()
+    .min(10, { message: 'Please enter a valid phone number.' }),
   siteCoverage: z.array(z.string()).refine((value) => value && value.length > 0, {
-    message: "You have to select at least one site.",
+    message: 'Please select at least one site.',
   }),
 });
-
 
 export function GetStartedForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,9 +76,20 @@ export function GetStartedForm() {
     if (utmSource) {
       const sourceLower = utmSource.toLowerCase();
       if (sourceLower.includes('google')) source = LEAD_SOURCES.GOOGLE_ADS;
-      else if (sourceLower.includes('facebook') || sourceLower.includes('fb') || sourceLower.includes('instagram')) source = LEAD_SOURCES.FACEBOOK_ADS;
-      else if (sourceLower.includes('twitter') || sourceLower.includes('linkedin') || sourceLower.includes('social')) source = LEAD_SOURCES.SOCIAL_MEDIA;
-      else if (sourceLower.includes('email') || sourceLower.includes('newsletter')) source = LEAD_SOURCES.EMAIL_CAMPAIGN;
+      else if (
+        sourceLower.includes('facebook') ||
+        sourceLower.includes('fb') ||
+        sourceLower.includes('instagram')
+      )
+        source = LEAD_SOURCES.FACEBOOK_ADS;
+      else if (
+        sourceLower.includes('twitter') ||
+        sourceLower.includes('linkedin') ||
+        sourceLower.includes('social')
+      )
+        source = LEAD_SOURCES.SOCIAL_MEDIA;
+      else if (sourceLower.includes('email') || sourceLower.includes('newsletter'))
+        source = LEAD_SOURCES.EMAIL_CAMPAIGN;
       else if (sourceLower.includes('partner')) source = LEAD_SOURCES.PARTNER;
     }
     if (ref) source = LEAD_SOURCES.REFERRAL;
@@ -95,14 +115,14 @@ export function GetStartedForm() {
       siteCoverage: [],
     },
   });
-  
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     if (!firestore) {
       toast({
-        title: "Error",
-        description: "Services are not available. Please try again later.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Services are not available. Please try again later.',
+        variant: 'destructive',
       });
       setIsSubmitting(false);
       return;
@@ -144,166 +164,233 @@ export function GetStartedForm() {
       };
 
       // The ONLY action is to create the lead.
-      // This is the most critical step and removing other DB writes
-      // will prevent permission errors for unauthenticated users.
-      await addDoc(collection(firestore, "leads"), leadData);
+      await addDoc(collection(firestore, 'leads'), leadData);
 
       toast({
-        title: "Information Received!",
-        description: "We've sent you an email with a link to our pricing. Let's find a plan that works for you.",
+        title: 'Success!',
+        description: "We've received your information. Redirecting to pricing...",
       });
-      
+
       // Redirect to pricing page after successful submission
       const params = new URLSearchParams({
         businessName: values.businessName,
         email: values.email,
       });
       router.push(`/pricing?${params.toString()}`);
-
-    } catch(error: any) {
-       console.error("Error creating lead:", error);
-       toast({
-         title: "An Error Occurred",
-         description: "Could not submit your information. Please try again.",
-         variant: 'destructive'
-       });
+    } catch (error: any) {
+      console.error('Error creating lead:', error);
+      toast({
+        title: 'An Error Occurred',
+        description: 'Could not submit your information. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   const siteCoverageOptions = [
-      { id: 'wesley-chapel', label: 'WesleyChapelCommunity.com' },
-      { id: 'pasco', label: 'PascoCommunity.com' },
+    { id: 'wesley-chapel', label: 'WesleyChapelCommunity.com' },
+    { id: 'pasco', label: 'PascoCommunity.com' },
   ];
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid md:grid-cols-2 gap-6">
-            <FormField
-            control={form.control}
-            name="businessName"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Business Name</FormLabel>
-                <FormControl>
-                    <Input placeholder="e.g. The Local Cafe" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-               <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. Jane" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* Business Name - Full Width */}
+        <FormField
+          control={form.control}
+          name="businessName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700 font-medium">
+                Business Name
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Your business name"
+                  className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                  {...field}
                 />
-                 <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            <FormField
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* First Name / Last Name Row */}
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
             control={form.control}
-            name="email"
+            name="firstName"
             render={({ field }) => (
-                <FormItem>
-                <FormLabel>Email Address</FormLabel>
+              <FormItem>
+                <FormLabel className="text-gray-700 font-medium">
+                  First Name
+                </FormLabel>
                 <FormControl>
-                    <Input type="email" placeholder="e.g. jane.doe@example.com" {...field} />
+                  <Input
+                    placeholder="First"
+                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
-                </FormItem>
+              </FormItem>
             )}
-            />
-            <FormField
+          />
+          <FormField
             control={form.control}
-            name="phone"
+            name="lastName"
             render={({ field }) => (
-                <FormItem>
-                <FormLabel>Cell Phone Number</FormLabel>
+              <FormItem>
+                <FormLabel className="text-gray-700 font-medium">
+                  Last Name
+                </FormLabel>
                 <FormControl>
-                    <Input type="tel" placeholder="e.g. (555) 123-4567" {...field} />
+                  <Input
+                    placeholder="Last"
+                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
-                </FormItem>
+              </FormItem>
             )}
-            />
+          />
         </div>
-        
+
+        {/* Email */}
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700 font-medium">
+                Email Address
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="you@company.com"
+                  className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Phone */}
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700 font-medium">
+                Phone Number
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Site Selection - Styled as cards */}
         <FormField
           control={form.control}
           name="siteCoverage"
           render={() => (
             <FormItem>
-              <FormLabel>Which site(s) are you interested in?</FormLabel>
-              {siteCoverageOptions.map((item) => (
-                <FormField
-                  key={item.id}
-                  control={form.control}
-                  name="siteCoverage"
-                  render={({ field }) => {
-                    return (
-                      <FormItem
-                        key={item.id}
-                        className="flex flex-row items-start space-x-3 space-y-0"
-                      >
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value?.includes(item.id)}
-                            onCheckedChange={(checked) => {
-                              return checked
-                                ? field.onChange([...(field.value || []), item.id])
-                                : field.onChange(
-                                    field.value?.filter(
-                                      (value) => value !== item.id
-                                    )
-                                  )
-                            }}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {item.label}
-                        </FormLabel>
-                      </FormItem>
-                    )
-                  }}
-                />
-              ))}
-               <FormMessage />
+              <FormLabel className="text-gray-700 font-medium">
+                Which sites interest you?
+              </FormLabel>
+              <div className="grid grid-cols-1 gap-3 mt-2">
+                {siteCoverageOptions.map((item) => (
+                  <FormField
+                    key={item.id}
+                    control={form.control}
+                    name="siteCoverage"
+                    render={({ field }) => {
+                      const isChecked = field.value?.includes(item.id);
+                      return (
+                        <FormItem key={item.id}>
+                          <FormControl>
+                            <label
+                              className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                isChecked
+                                  ? 'border-blue-500 bg-blue-50'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                            >
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), item.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item.id
+                                        )
+                                      );
+                                }}
+                                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                              />
+                              <span
+                                className={`font-medium ${
+                                  isChecked ? 'text-blue-900' : 'text-gray-700'
+                                }`}
+                              >
+                                {item.label}
+                              </span>
+                              {isChecked && (
+                                <Check className="h-4 w-4 text-blue-600 ml-auto" />
+                              )}
+                            </label>
+                          </FormControl>
+                        </FormItem>
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+              <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Processing...
             </>
           ) : (
-            'View Pricing & Continue'
+            <>
+              See Pricing & Plans
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </>
           )}
         </Button>
+
+        {/* Micro-copy for trust */}
+        <p className="text-center text-xs text-gray-500">
+          No credit card required. View pricing instantly.
+        </p>
       </form>
     </Form>
   );
