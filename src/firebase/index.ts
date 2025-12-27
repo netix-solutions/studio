@@ -4,6 +4,7 @@ import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 let firebaseApp: FirebaseApp;
 
@@ -19,8 +20,9 @@ if (!getApps().length) {
 
 const auth = getAuth(firebaseApp);
 const firestore = getFirestore(firebaseApp);
+const storage = getStorage(firebaseApp);
 
-export { firebaseApp, auth, firestore };
+export { firebaseApp, auth, firestore, storage };
 export * from './provider';
 export * from './client-provider';
 export * from './errors';

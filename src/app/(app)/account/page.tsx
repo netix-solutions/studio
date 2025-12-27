@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
 import { doc, onSnapshot, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer, updateDoc } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2, AlertCircle, Save, FileText, Upload, CheckCircle, Clock, Palette, Image as ImageIcon, ArrowRight, ExternalLink, Info } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -140,7 +140,7 @@ function WorkflowProgress({ currentStatus }: { currentStatus: AdStatus }) {
 
 export default function AccountPage() {
     const { user } = useUser();
-    const { firestore, firebaseApp } = useFirebase();
+    const { firestore, storage } = useFirebase();
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminLoading, setIsAdminLoading] = useState(true);
@@ -352,7 +352,7 @@ export default function AccountPage() {
 
     // Handle sample ad upload
     const handleSampleAdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!user || !firestore || !firebaseApp || !e.target.files?.[0]) return;
+        if (!user || !firestore || !storage || !e.target.files?.[0]) return;
 
         const file = e.target.files[0];
 
@@ -376,7 +376,6 @@ export default function AccountPage() {
         setIsUploadingSampleAd(true);
 
         try {
-            const storage = getStorage(firebaseApp);
             const filePath = `advertisements/${user.uid}/sample-ad/${file.name}`;
             const fileRef = storageRef(storage, filePath);
 
@@ -419,13 +418,12 @@ export default function AccountPage() {
 
     // Handle additional file uploads (logos, images)
     const handleFilesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!user || !firestore || !firebaseApp || !e.target.files?.length) return;
+        if (!user || !firestore || !storage || !e.target.files?.length) return;
 
         setIsUploadingFiles(true);
         const files = Array.from(e.target.files);
 
         try {
-            const storage = getStorage(firebaseApp);
             const uploadPromises = files.map(async (file) => {
                 const filePath = `advertisements/${user.uid}/uploads/${Date.now()}-${file.name}`;
                 const fileRef = storageRef(storage, filePath);

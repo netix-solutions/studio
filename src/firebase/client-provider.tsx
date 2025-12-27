@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
-import { firebaseApp, auth, firestore } from '@/firebase';
+import { firebaseApp, auth, firestore, storage } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -30,7 +30,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <FirebaseProvider firebaseApp={firebaseApp} auth={auth} firestore={firestore}>
+    <FirebaseProvider firebaseApp={firebaseApp} auth={auth} firestore={firestore} storage={storage}>
       {children}
     </FirebaseProvider>
   );
