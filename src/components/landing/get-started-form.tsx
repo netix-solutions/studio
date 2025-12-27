@@ -196,46 +196,46 @@ export function GetStartedForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-5">
         {/* Business Name - Full Width */}
         <FormField
           control={form.control}
           name="businessName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700 font-medium">
+              <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
                 Business Name
               </FormLabel>
               <FormControl>
                 <Input
                   placeholder="Your business name"
-                  className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs md:text-sm" />
             </FormItem>
           )}
         />
 
         {/* First Name / Last Name Row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           <FormField
             control={form.control}
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">
+                <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
                   First Name
                 </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="First"
-                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                    className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs md:text-sm" />
               </FormItem>
             )}
           />
@@ -244,17 +244,17 @@ export function GetStartedForm() {
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">
+                <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
                   Last Name
                 </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Last"
-                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                    className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs md:text-sm" />
               </FormItem>
             )}
           />
@@ -266,18 +266,21 @@ export function GetStartedForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700 font-medium">
+              <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
                 Email Address
               </FormLabel>
               <FormControl>
                 <Input
                   type="email"
                   placeholder="you@company.com"
-                  className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                  inputMode="email"
+                  autoCapitalize="off"
+                  autoCorrect="off"
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs md:text-sm" />
             </FormItem>
           )}
         />
@@ -288,32 +291,33 @@ export function GetStartedForm() {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700 font-medium">
+              <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
                 Phone Number
               </FormLabel>
               <FormControl>
                 <Input
                   type="tel"
                   placeholder="(555) 123-4567"
-                  className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors"
+                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                  inputMode="tel"
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs md:text-sm" />
             </FormItem>
           )}
         />
 
-        {/* Site Selection - Styled as cards */}
+        {/* Site Selection - Mobile-optimized touch targets */}
         <FormField
           control={form.control}
           name="siteCoverage"
           render={() => (
             <FormItem>
-              <FormLabel className="text-gray-700 font-medium">
+              <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
                 Which sites interest you?
               </FormLabel>
-              <div className="grid grid-cols-1 gap-3 mt-2">
+              <div className="grid grid-cols-1 gap-2 md:gap-3 mt-2">
                 {siteCoverageOptions.map((item) => (
                   <FormField
                     key={item.id}
@@ -325,10 +329,10 @@ export function GetStartedForm() {
                         <FormItem key={item.id}>
                           <FormControl>
                             <label
-                              className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                              className={`flex items-center gap-3 p-3.5 md:p-4 rounded-xl border-2 cursor-pointer transition-all touch-manipulation active:scale-[0.98] ${
                                 isChecked
                                   ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300 active:border-gray-400'
                               }`}
                             >
                               <Checkbox
@@ -342,17 +346,17 @@ export function GetStartedForm() {
                                         )
                                       );
                                 }}
-                                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                className="h-5 w-5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                               />
                               <span
-                                className={`font-medium ${
+                                className={`font-medium text-sm md:text-base ${
                                   isChecked ? 'text-blue-900' : 'text-gray-700'
                                 }`}
                               >
                                 {item.label}
                               </span>
                               {isChecked && (
-                                <Check className="h-4 w-4 text-blue-600 ml-auto" />
+                                <Check className="h-4 w-4 text-blue-600 ml-auto flex-shrink-0" />
                               )}
                             </label>
                           </FormControl>
@@ -362,16 +366,16 @@ export function GetStartedForm() {
                   />
                 ))}
               </div>
-              <FormMessage />
+              <FormMessage className="text-xs md:text-sm" />
             </FormItem>
           )}
         />
 
-        {/* Submit Button */}
+        {/* Submit Button - Large touch target */}
         <Button
           type="submit"
           size="lg"
-          className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors"
+          className="w-full h-12 md:h-14 text-base md:text-lg font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation rounded-xl"
           disabled={isSubmitting}
         >
           {isSubmitting ? (
@@ -388,7 +392,7 @@ export function GetStartedForm() {
         </Button>
 
         {/* Micro-copy for trust */}
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-gray-500 pt-1">
           No credit card required. View pricing instantly.
         </p>
       </form>

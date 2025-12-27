@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -7,14 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -27,10 +19,9 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirebase } from '@/firebase';
 import { signInWithEmail } from '@/lib/firebase/auth';
-import { Loader2, Home } from 'lucide-react';
+import { Loader2, ArrowLeft, Phone, Shield, Lock } from 'lucide-react';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
-import { createCheckout } from '@/lib/stripe';
+import Image from 'next/image';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -90,92 +81,185 @@ export default function LoginPage() {
 
   if (isUserLoading || user) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex h-[100dvh] items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+          <p className="mt-3 text-sm text-gray-600">Signing you in...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight font-headline">
-            Advertiser Login
-          </CardTitle>
-          <CardDescription>Access your account portal.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="e.g. jane.doe@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                     <div className="flex items-center justify-between">
-                        <FormLabel>Password</FormLabel>
-                        <Button variant="link" className="p-0 h-auto text-sm" asChild>
-                            <Link href="/forgot-password">
-                                Forgot password?
-                            </Link>
-                        </Button>
-                    </div>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                 {isSubmitting ? (
-                    <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing In...
-                    </>
-                ) : (
-                    'Sign In'
-                )}
-              </Button>
-            </form>
-          </Form>
-
-          <Separator className="my-6" />
-
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Button variant="link" className="p-0 h-auto" asChild>
-                 <Link href="/register">
-                    Register here
-                </Link>
-              </Button>
-            </p>
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col">
+      {/* Mobile-First Header */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 safe-area-inset">
+        <div className="container mx-auto px-4">
+          <div className="flex h-14 items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
+              <span className="font-headline font-semibold text-gray-900 text-sm hidden sm:inline">Community-Websites.com</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <a
+                href="tel:813-544-8383"
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-colors md:hidden"
+                aria-label="Call us"
+              >
+                <Phone className="h-4 w-4" />
+              </a>
+              <a
+                href="tel:813-544-8383"
+                className="hidden md:flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+              >
+                <Phone className="h-4 w-4" />
+                <span>813-544-8383</span>
+              </a>
+            </div>
           </div>
-        </CardContent>
-        <CardFooter>
-            <Button variant="outline" className="w-full" asChild>
-                <Link href="/">
-                    <Home className="mr-2 h-4 w-4" />
-                    Return to Homepage
-                </Link>
-            </Button>
-        </CardFooter>
-      </Card>
-    </main>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-4 py-8 md:py-12">
+        <div className="w-full max-w-md">
+          {/* Back Button */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 mb-6 touch-manipulation"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to homepage
+          </Link>
+
+          {/* Login Card */}
+          <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
+            <CardContent className="p-5 md:p-8">
+              <div className="text-center mb-6">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900 font-headline">
+                  Advertiser Login
+                </h1>
+                <p className="text-gray-600 mt-1.5 text-sm md:text-base">
+                  Access your account portal
+                </p>
+              </div>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Email Address</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="you@company.com"
+                            className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                            inputMode="email"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs md:text-sm" />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Password</FormLabel>
+                          <Link
+                            href="/forgot-password"
+                            className="text-sm text-blue-600 hover:underline touch-manipulation"
+                          >
+                            Forgot password?
+                          </Link>
+                        </div>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Enter your password"
+                            className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs md:text-sm" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 md:h-14 text-base md:text-lg font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation rounded-xl mt-2"
+                    disabled={isSubmitting}
+                  >
+                     {isSubmitting ? (
+                        <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Signing In...
+                        </>
+                    ) : (
+                        'Sign In'
+                    )}
+                  </Button>
+                </form>
+              </Form>
+
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <p className="text-center text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <Link href="/register" className="text-blue-600 font-medium hover:underline touch-manipulation">
+                    Register here
+                  </Link>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trust Indicators */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 text-xs md:text-sm text-gray-500">
+            <div className="flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5 text-green-500" />
+              <span>Secure Login</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-blue-500" />
+              <span>256-bit SSL</span>
+            </div>
+          </div>
+
+          {/* Help Section */}
+          <div className="text-center mt-8">
+            <p className="text-gray-500 text-sm mb-2">Need help?</p>
+            <a
+              href="tel:813-544-8383"
+              className="inline-flex items-center gap-2 text-blue-600 font-medium hover:underline touch-manipulation"
+            >
+              <Phone className="h-4 w-4" />
+              Call 813-544-8383
+            </a>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="py-4 border-t border-gray-100 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+            <Link href="/terms-of-service" className="hover:text-gray-900 touch-manipulation">Terms</Link>
+            <span>•</span>
+            <Link href="/privacy-policy" className="hover:text-gray-900 touch-manipulation">Privacy</Link>
+            <span>•</span>
+            <span>© {new Date().getFullYear()}</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
