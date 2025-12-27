@@ -97,7 +97,7 @@ async function fetchPlansAndPrices(firestore: any): Promise<Plan[]> {
   return sortedPlans;
 }
 
-// Mobile-optimized pricing card
+// Mobile-optimized pricing card with improved touch targets
 function MobilePricingCard({
   plan,
   onSelect,
@@ -152,26 +152,26 @@ function MobilePricingCard({
     <div
       onClick={onSelect}
       className={cn(
-        "relative rounded-2xl border-2 p-5 transition-all duration-200 cursor-pointer",
+        "relative rounded-2xl border-2 p-4 md:p-5 transition-all duration-200 cursor-pointer touch-manipulation active:scale-[0.99]",
         isSelected
           ? "border-blue-600 bg-blue-50/50 shadow-lg shadow-blue-100"
-          : "border-gray-200 bg-white hover:border-gray-300",
+          : "border-gray-200 bg-white hover:border-gray-300 active:border-gray-400",
         isFeatured && !isSelected && "border-blue-200"
       )}
     >
       {/* Best Value Badge */}
       {isFeatured && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-1 text-xs font-semibold shadow-md">
+          <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-4 py-1 text-[10px] md:text-xs font-semibold shadow-md whitespace-nowrap">
             <Star className="h-3 w-3 mr-1 fill-current" />
             BEST VALUE
           </Badge>
         </div>
       )}
 
-      {/* Selection indicator */}
+      {/* Selection indicator - larger touch target */}
       <div className={cn(
-        "absolute top-4 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+        "absolute top-3 md:top-4 right-3 md:right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
         isSelected
           ? "border-blue-600 bg-blue-600"
           : "border-gray-300 bg-white"
@@ -179,60 +179,60 @@ function MobilePricingCard({
         {isSelected && <Check className="h-4 w-4 text-white" />}
       </div>
 
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 md:gap-4">
         {/* Plan Icon */}
         <div className={cn(
-          "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+          "w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0",
           isFeatured ? "bg-blue-100" : "bg-gray-100"
         )}>
           {isFeatured ? (
-            <Sparkles className="h-6 w-6 text-blue-600" />
+            <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
           ) : (
-            <TrendingUp className="h-6 w-6 text-gray-600" />
+            <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-gray-600" />
           )}
         </div>
 
         {/* Plan Details */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-lg text-gray-900 font-headline">{plan.name}</h3>
+        <div className="flex-1 min-w-0 pr-6">
+          <div className="flex items-center gap-2 mb-0.5 md:mb-1 flex-wrap">
+            <h3 className="font-bold text-base md:text-lg text-gray-900 font-headline">{plan.name}</h3>
             {savings > 0 && billingCycle === 'yearly' && (
-              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+              <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px] md:text-xs">
                 Save {savings}%
               </Badge>
             )}
           </div>
-          <p className="text-sm text-gray-600">{planDetails.description}</p>
+          <p className="text-xs md:text-sm text-gray-600">{planDetails.description}</p>
         </div>
       </div>
 
       {/* Price Display */}
-      <div className="mt-4 pt-4 border-t border-gray-100">
+      <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
         <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-gray-900">
+          <span className="text-2xl md:text-3xl font-bold text-gray-900">
             {displayPrice !== undefined
               ? `$${Math.round(displayPrice / 100)}`
               : 'N/A'}
           </span>
-          <span className="text-gray-500 text-sm">/month</span>
+          <span className="text-gray-500 text-xs md:text-sm">/month</span>
         </div>
         {billingCycle === 'yearly' && yearlyPrice && (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1">
             Billed as ${(yearlyPrice.unit_amount / 100).toFixed(0)}/year
           </p>
         )}
       </div>
 
       {/* Features Preview */}
-      <div className="mt-4 space-y-2">
+      <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2">
         {planDetails.features.slice(0, 3).map((feature, idx) => (
-          <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-            <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+          <div key={idx} className="flex items-center gap-2 text-xs md:text-sm text-gray-600">
+            <Check className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-500 flex-shrink-0" />
             <span>{feature}</span>
           </div>
         ))}
         {planDetails.features.length > 3 && (
-          <p className="text-xs text-blue-600 font-medium pl-6">
+          <p className="text-[10px] md:text-xs text-blue-600 font-medium pl-5 md:pl-6">
             +{planDetails.features.length - 3} more benefits
           </p>
         )}
@@ -241,7 +241,7 @@ function MobilePricingCard({
   );
 }
 
-// Billing toggle component
+// Billing toggle component - Mobile optimized with larger touch targets
 function BillingToggle({
   value,
   onChange,
@@ -252,11 +252,11 @@ function BillingToggle({
   savings: number;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 p-1 bg-gray-100 rounded-full w-fit mx-auto">
+    <div className="flex items-center justify-center gap-1.5 p-1 bg-gray-100 rounded-full w-fit mx-auto">
       <button
         onClick={() => onChange('monthly')}
         className={cn(
-          "px-5 py-2.5 rounded-full text-sm font-medium transition-all",
+          "px-4 md:px-5 py-2.5 md:py-2.5 rounded-full text-sm font-medium transition-all touch-manipulation active:scale-[0.98]",
           value === 'monthly'
             ? "bg-white shadow-sm text-gray-900"
             : "text-gray-600 hover:text-gray-900"
@@ -267,7 +267,7 @@ function BillingToggle({
       <button
         onClick={() => onChange('yearly')}
         className={cn(
-          "px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2",
+          "px-4 md:px-5 py-2.5 md:py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 touch-manipulation active:scale-[0.98]",
           value === 'yearly'
             ? "bg-white shadow-sm text-gray-900"
             : "text-gray-600 hover:text-gray-900"
@@ -275,7 +275,7 @@ function BillingToggle({
       >
         Yearly
         {savings > 0 && (
-          <Badge className="bg-green-500 text-white text-xs px-2 py-0.5">
+          <Badge className="bg-green-500 text-white text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
             -{savings}%
           </Badge>
         )}
@@ -284,27 +284,27 @@ function BillingToggle({
   );
 }
 
-// Trust indicators component
+// Trust indicators component - Mobile optimized
 function TrustIndicators() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-gray-500">
+    <div className="flex flex-wrap items-center justify-center gap-x-4 md:gap-x-6 gap-y-2 md:gap-y-3 text-xs md:text-sm text-gray-500">
       <div className="flex items-center gap-1.5">
-        <Shield className="h-4 w-4 text-green-500" />
+        <Shield className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-500" />
         <span>Secure Checkout</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <Clock className="h-4 w-4 text-blue-500" />
+        <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
         <span>Cancel Anytime</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <Zap className="h-4 w-4 text-yellow-500" />
+        <Zap className="h-3.5 w-3.5 md:h-4 md:w-4 text-yellow-500" />
         <span>Live in 48 Hours</span>
       </div>
     </div>
   );
 }
 
-// FAQ Section
+// FAQ Section - Mobile optimized
 function PricingFAQ() {
   const faqs = [
     {
@@ -331,20 +331,20 @@ function PricingFAQ() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-6 font-headline text-gray-900">
+      <h2 className="text-xl md:text-2xl font-bold text-center mb-5 md:mb-6 font-headline text-gray-900">
         Common Questions
       </h2>
-      <Accordion type="single" collapsible className="space-y-3">
+      <Accordion type="single" collapsible className="space-y-2 md:space-y-3">
         {faqs.map((faq, i) => (
           <AccordionItem
             key={i}
             value={`faq-${i}`}
-            className="bg-white rounded-xl px-5 shadow-sm border border-gray-100"
+            className="bg-white rounded-xl px-4 md:px-5 shadow-sm border border-gray-100"
           >
-            <AccordionTrigger className="hover:no-underline py-4 text-left">
-              <span className="font-semibold text-gray-900 text-sm">{faq.q}</span>
+            <AccordionTrigger className="hover:no-underline py-3.5 md:py-4 text-left">
+              <span className="font-semibold text-gray-900 text-sm pr-4">{faq.q}</span>
             </AccordionTrigger>
-            <AccordionContent className="text-gray-600 pb-4 text-sm">
+            <AccordionContent className="text-gray-600 pb-3.5 md:pb-4 text-sm">
               {faq.a}
             </AccordionContent>
           </AccordionItem>
@@ -354,7 +354,7 @@ function PricingFAQ() {
   );
 }
 
-// Feature comparison for selected plan
+// Feature comparison for selected plan - Mobile optimized
 function SelectedPlanDetails({ plan, billingCycle }: { plan: Plan; billingCycle: 'monthly' | 'yearly' }) {
   const isMultiSite = plan.name === 'Multi-Site';
 
@@ -378,16 +378,16 @@ function SelectedPlanDetails({ plan, billingCycle }: { plan: Plan; billingCycle:
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-6">
-      <h3 className="font-bold text-lg mb-4 font-headline text-gray-900 flex items-center gap-2">
-        <CheckCircle className="h-5 w-5 text-green-500" />
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 mt-4 md:mt-6">
+      <h3 className="font-bold text-base md:text-lg mb-3 md:mb-4 font-headline text-gray-900 flex items-center gap-2">
+        <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
         What's Included
       </h3>
-      <div className="space-y-3">
+      <div className="space-y-2.5 md:space-y-3">
         {allFeatures.map((feature, idx) => (
-          <div key={idx} className="flex items-start gap-3">
-            <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <span className="text-gray-700">{feature.text}</span>
+          <div key={idx} className="flex items-start gap-2.5 md:gap-3">
+            <Check className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <span className="text-gray-700 text-sm md:text-base">{feature.text}</span>
           </div>
         ))}
       </div>
@@ -407,6 +407,15 @@ function PricingPageContent() {
   const searchParams = useSearchParams();
   const businessName = searchParams.get('businessName');
   const email = searchParams.get('email');
+
+  // Prevent body scroll when sticky footer is visible on mobile
+  useEffect(() => {
+    // Add safe area padding for iOS
+    document.body.classList.add('pb-safe');
+    return () => {
+      document.body.classList.remove('pb-safe');
+    };
+  }, []);
 
   useEffect(() => {
     if (firestore) {
@@ -492,27 +501,36 @@ function PricingPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+    <div className="min-h-[100dvh] bg-gray-50">
+      {/* Mobile-First Header */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 safe-area-inset">
         <div className="container mx-auto px-4">
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Community-Websites.com" width={50} height={28} style={{height: '28px', width: 'auto'}} />
+              <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
               <span className="font-headline font-semibold text-gray-900 text-sm hidden sm:inline">Community-Websites.com</span>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Mobile: Icon-only phone */}
               <a
                 href="tel:813-544-8383"
-                className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+                className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                aria-label="Call us"
               >
                 <Phone className="h-4 w-4" />
-                <span className="hidden sm:inline">813-544-8383</span>
               </a>
-              <Button variant="ghost" size="sm" asChild>
+              {/* Desktop: Full phone number */}
+              <a
+                href="tel:813-544-8383"
+                className="hidden md:flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+              >
+                <Phone className="h-4 w-4" />
+                <span>813-544-8383</span>
+              </a>
+              <Button variant="ghost" size="sm" asChild className="h-9 px-3">
                 <Link href="/login">
-                  <User className="h-4 w-4 mr-1.5" />
-                  <span className="hidden sm:inline">Login</span>
+                  <User className="h-4 w-4 md:mr-1.5" />
+                  <span className="hidden md:inline">Login</span>
                 </Link>
               </Button>
             </div>
@@ -521,27 +539,27 @@ function PricingPageContent() {
       </header>
 
       {/* Main Content */}
-      <main className="pb-32 md:pb-16">
+      <main className="pb-28 md:pb-16">
         {/* Hero Section */}
-        <section className="bg-white py-8 md:py-12 border-b border-gray-100">
+        <section className="bg-white py-6 md:py-12 border-b border-gray-100">
           <div className="container mx-auto px-4 text-center">
             {businessName && (
-              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 rounded-full px-4 py-2 text-sm font-medium mb-4">
-                <Sparkles className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium mb-3 md:mb-4">
+                <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 Special pricing for {businessName}
               </div>
             )}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-headline text-gray-900 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-headline text-gray-900 leading-tight">
               {businessName
                 ? `Get ${businessName} in Front of Local Customers`
                 : 'Simple, Affordable Local Advertising'}
             </h1>
-            <p className="mt-4 text-gray-600 text-lg max-w-2xl mx-auto">
+            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
               Choose your plan and start reaching thousands of Pasco County residents today. No contracts, cancel anytime.
             </p>
 
             {/* Trust indicators */}
-            <div className="mt-6">
+            <div className="mt-5 md:mt-6">
               <TrustIndicators />
             </div>
           </div>
@@ -696,21 +714,21 @@ function PricingPageContent() {
         )}
       </main>
 
-      {/* Sticky Mobile CTA */}
+      {/* Sticky Mobile CTA - Enhanced for better mobile UX */}
       {!loading && plans.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-shrink-0">
-              <p className="text-xs text-gray-500">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-inset-bottom">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-shrink-0 min-w-0">
+              <p className="text-[10px] text-gray-500 truncate">
                 {selectedPlan?.name || 'Select a plan'}
               </p>
-              <p className="font-bold text-lg text-gray-900">
+              <p className="font-bold text-base text-gray-900">
                 {getSelectedPrice() ? `$${getSelectedPrice()}/mo` : '—'}
               </p>
             </div>
             <Button
               size="lg"
-              className="flex-1 h-12 font-semibold bg-blue-600 hover:bg-blue-700"
+              className="flex-1 h-11 font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 touch-manipulation rounded-xl max-w-[200px]"
               onClick={handlePurchase}
               disabled={!selectedPlan || !!isPurchasing}
             >
@@ -719,12 +737,12 @@ function PricingPageContent() {
               ) : (
                 <>
                   Continue
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </>
               )}
             </Button>
           </div>
-          <p className="text-xs text-center text-gray-500 mt-2">
+          <p className="text-[10px] text-center text-gray-500 mt-1.5">
             Secure checkout • Cancel anytime
           </p>
         </div>
