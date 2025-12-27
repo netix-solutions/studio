@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, MessageCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, DollarSign, Target, BarChart3, Clock, Award, Building2, Utensils, Briefcase, Home, Heart, Car, Scissors, ShoppingBag, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -149,6 +149,34 @@ export default function LandingPage() {
       {/* Live Stats Bar */}
       <LiveStatsBar />
 
+      {/* Business Types We Serve */}
+      <section className="py-10 md:py-16 bg-white border-b border-gray-100">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-6 md:mb-10">
+            <p className="text-gray-600 text-sm md:text-base font-medium">
+              Trusted by Local Businesses Across Pasco County
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 lg:gap-12">
+            {[
+              { icon: Utensils, label: 'Restaurants' },
+              { icon: Home, label: 'Real Estate' },
+              { icon: Stethoscope, label: 'Medical' },
+              { icon: Car, label: 'Auto Services' },
+              { icon: Scissors, label: 'Salons & Spas' },
+              { icon: Briefcase, label: 'Professional Services' },
+              { icon: ShoppingBag, label: 'Retail' },
+              { icon: Building2, label: 'Home Services' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors">
+                <item.icon className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="text-xs md:text-sm font-medium">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Value Propositions */}
       <section className="py-12 md:py-24 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
@@ -249,10 +277,161 @@ export default function LandingPage() {
                   width={600}
                   height={500}
                   className="w-full h-auto"
+                  loading="lazy"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Comparison - Why Community Ads Beat Traditional */}
+      <section className="py-12 md:py-24 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-8 md:mb-14">
+            <span className="inline-flex items-center gap-2 text-green-600 font-semibold text-xs md:text-sm uppercase tracking-wide mb-3">
+              <DollarSign className="h-4 w-4" />
+              Smart Investment
+            </span>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-gray-900">
+              Get More Reach for Your Dollar
+            </h2>
+            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg">
+              See how community website advertising compares to traditional marketing
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
+            {/* Community Websites - Highlighted */}
+            <div className="relative bg-white rounded-2xl p-5 md:p-6 shadow-lg border-2 border-green-500 md:scale-105">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">BEST VALUE</span>
+              </div>
+              <div className="text-center pt-2">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Target className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Community Websites</h3>
+                <div className="text-2xl md:text-3xl font-bold text-green-600 mb-2">$16<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                <ul className="text-xs md:text-sm text-gray-600 space-y-1.5 text-left">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>20,000+ monthly impressions</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Hyper-local targeting</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Clickable to your website</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Update anytime free</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Billboard */}
+            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Building2 className="h-6 w-6 text-gray-400" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Billboard</h3>
+                <div className="text-2xl md:text-3xl font-bold text-gray-400 mb-2">$1,500<span className="text-sm font-normal text-gray-400">+/mo</span></div>
+                <ul className="text-xs md:text-sm text-gray-500 space-y-1.5 text-left">
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>Expensive production costs</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>Can't target specific areas</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>No clickable links</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>Months-long contracts</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Newspaper */}
+            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Briefcase className="h-6 w-6 text-gray-400" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Local Newspaper</h3>
+                <div className="text-2xl md:text-3xl font-bold text-gray-400 mb-2">$300<span className="text-sm font-normal text-gray-400">+/issue</span></div>
+                <ul className="text-xs md:text-sm text-gray-500 space-y-1.5 text-left">
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>Declining readership</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>One-time exposure</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>No clickable links</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>Paper gets discarded</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Direct Mail */}
+            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <ShoppingBag className="h-6 w-6 text-gray-400" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Direct Mail</h3>
+                <div className="text-2xl md:text-3xl font-bold text-gray-400 mb-2">$500<span className="text-sm font-normal text-gray-400">+/drop</span></div>
+                <ul className="text-xs md:text-sm text-gray-500 space-y-1.5 text-left">
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>High print & postage costs</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>97% goes straight to trash</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>One-time exposure</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-300">✕</span>
+                    <span>Weeks of lead time</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8 md:mt-12">
+            <p className="text-gray-600 text-sm md:text-base mb-4">
+              Why pay more for less effective advertising?
+            </p>
+            <Button size="lg" asChild className="bg-green-600 hover:bg-green-700 active:bg-green-800 h-12 md:h-14 px-6 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation">
+              <Link href="#get-started">
+                Start Saving Today <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -305,6 +484,111 @@ export default function LandingPage() {
             <Button size="lg" asChild className="bg-white text-gray-900 hover:bg-gray-100 active:bg-gray-200 h-12 md:h-14 px-6 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation">
               <Link href="#get-started">
                 Start Now <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-12 md:py-24 bg-white">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-8 md:mb-14">
+            <span className="inline-flex items-center gap-2 text-blue-600 font-semibold text-xs md:text-sm uppercase tracking-wide mb-3">
+              <Star className="h-4 w-4 fill-current" />
+              Success Stories
+            </span>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-gray-900">
+              Hear From Local Business Owners
+            </h2>
+            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg">
+              Join businesses already growing with community advertising
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                quote: "We saw an increase in new customers within the first week. The local targeting is exactly what our restaurant needed.",
+                name: "Maria S.",
+                business: "Family Restaurant",
+                type: "Wesley Chapel",
+                icon: Utensils,
+              },
+              {
+                quote: "At $16 a month, this is the most cost-effective advertising we've found. Our phone started ringing from day one.",
+                name: "James T.",
+                business: "HVAC Services",
+                type: "Pasco County",
+                icon: Building2,
+              },
+              {
+                quote: "The team designed a beautiful ad for us and it was live in 2 days. We've already renewed for a second year!",
+                name: "Dr. Sarah K.",
+                business: "Family Dentistry",
+                type: "Wesley Chapel",
+                icon: Stethoscope,
+              },
+            ].map((testimonial, i) => (
+              <Card key={i} className="bg-gray-50 border-0 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-5 md:p-6">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={j} className="h-4 w-4 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm md:text-base mb-4 leading-relaxed">
+                    "{testimonial.quote}"
+                  </p>
+                  <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <testimonial.icon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900 text-sm">{testimonial.name}</div>
+                      <div className="text-xs text-gray-500">{testimonial.business} • {testimonial.type}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Local Advertising Works - Statistics */}
+      <section className="py-12 md:py-24 bg-blue-600 text-white">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-8 md:mb-14">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline">
+              Why Local Advertising Works
+            </h2>
+            <p className="mt-3 md:mt-4 text-blue-100 text-base md:text-lg">
+              The numbers don't lie—local consumers prefer local businesses
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 max-w-5xl mx-auto">
+            {[
+              { stat: "82%", label: "of consumers use search engines to find local businesses", icon: Target },
+              { stat: "72%", label: "of local searches result in a visit within 5 miles", icon: BarChart3 },
+              { stat: "88%", label: "of consumers trust online reviews as much as personal recommendations", icon: Star },
+              { stat: "46%", label: "of all Google searches are looking for local information", icon: Users },
+            ].map((item, i) => (
+              <div key={i} className="text-center p-4 md:p-6">
+                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <item.icon className="h-6 w-6 text-blue-200" />
+                </div>
+                <div className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">{item.stat}</div>
+                <p className="text-blue-100 text-xs md:text-sm leading-snug">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10 md:mt-14">
+            <Button size="lg" asChild className="bg-white text-blue-600 hover:bg-blue-50 active:bg-blue-100 h-12 md:h-14 px-6 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation font-semibold">
+              <Link href="#get-started">
+                Get Found by Local Customers <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
@@ -383,6 +667,69 @@ export default function LandingPage() {
               <div className="flex items-center gap-1.5 md:gap-2">
                 <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 <span>No Spam</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Guarantee Section */}
+      <section className="py-12 md:py-20 bg-white">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl md:rounded-3xl p-6 md:p-10 border border-green-100">
+              <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                <div className="flex-shrink-0">
+                  <div className="w-20 h-20 md:w-28 md:h-28 bg-green-100 rounded-full flex items-center justify-center">
+                    <Award className="h-10 w-10 md:h-14 md:w-14 text-green-600" />
+                  </div>
+                </div>
+                <div className="text-center md:text-left flex-grow">
+                  <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 font-headline mb-2 md:mb-3">
+                    Our Satisfaction Promise
+                  </h3>
+                  <p className="text-gray-600 text-sm md:text-base lg:text-lg mb-4 md:mb-5 leading-relaxed">
+                    We're confident you'll love advertising with us. If you're not completely satisfied with your ad within the first 30 days, we'll work with you to make it right—no questions asked. Your success is our success.
+                  </p>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-4 md:gap-6">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm md:text-base font-medium">30-Day Guarantee</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm md:text-base font-medium">No Lock-In Contracts</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm md:text-base font-medium">Cancel Anytime</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Trust Badges */}
+            <div className="mt-8 md:mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900 text-sm">48-Hour Launch</div>
+                <div className="text-xs text-gray-500">Go live in 2 days</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <Users className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900 text-sm">Local Support</div>
+                <div className="text-xs text-gray-500">Real people, real help</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <Shield className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900 text-sm">Secure Payments</div>
+                <div className="text-xs text-gray-500">SSL encrypted</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <Star className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900 text-sm">5-Star Rated</div>
+                <div className="text-xs text-gray-500">By local businesses</div>
               </div>
             </div>
           </div>
@@ -482,7 +829,7 @@ export default function LandingPage() {
                 {/* Branding */}
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
+                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" loading="lazy" />
                          <span className="font-headline text-white text-lg tracking-wider">Community-Websites.com</span>
                     </div>
                     <p className="text-sm text-blue-300 max-w-xs">
