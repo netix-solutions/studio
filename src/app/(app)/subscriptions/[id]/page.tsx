@@ -6,7 +6,7 @@ import { useFirebase } from '@/firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, ExternalLink } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, ExternalLink, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
@@ -17,6 +17,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { SendCustomerEmailDialog } from '@/components/subscriptions/send-customer-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
+import {
+    AD_STATUS_LABELS,
+    AD_STATUS_COLORS,
+    type AdStatus
+} from '@/lib/types';
 
 interface SubscriptionDetails {
     id: string;
@@ -47,19 +52,17 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
     past_due: 'destructive',
     canceled: 'destructive',
     unpaid: 'destructive',
-    pending_ad_creation: 'outline',
-    pending_customer_approval: 'default',
-    live: 'secondary',
-    canceled_inactive: 'destructive',
     'Not Started': 'outline',
+    // Include ad status variants
+    ...Object.entries(AD_STATUS_COLORS).reduce((acc, [key, value]) => {
+        acc[key] = value.variant;
+        return acc;
+    }, {} as Record<string, 'default' | 'secondary' | 'destructive' | 'outline'>),
 };
 
 const statusTextMap: { [key: string]: string } = {
-    pending_ad_creation: 'Pending Ad Creation',
-    pending_customer_approval: 'Pending Approval',
-    live: 'Live',
-    canceled_inactive: 'Canceled/Inactive',
     'Not Started': 'Not Started',
+    ...AD_STATUS_LABELS,
 };
 
 const capitalize = (s:string) => s && s[0].toUpperCase() + s.slice(1);
@@ -207,8 +210,43 @@ export default function SubscriptionDetailPage() {
                              {subscription.adId && (
                                 <div className="space-y-1">
                                     <div className="text-muted-foreground font-medium flex items-center gap-2"><ExternalLink className="h-4 w-4" /> Ad Workflow</div>
-                                    <Button variant="outline" size="sm" onClick={() => router.push(`/advertisements/${subscription.adId}`)}>
+                                    <Button variant="outline" size="sm" onClick={() => router.push(`/advertisements/${subscription.adId}?userId=${subscription.customerId}`)}>
                                         Manage Ad
+                                    </Button>
+                                </div>
+                            )}
+                            {!subscription.adId && (
+                                <div className="space-y-1">
+                                    <div className="text-muted-foreground font-medium flex items-center gap-2"><FileText className="h-4 w-4" /> Ad Workflow</div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={async () => {
+                                            if (!firestore) return;
+                                            try {
+                                                const adsRef = collection(firestore, 'users', subscription.customerId, 'advertisements');
+                                                const newAd = await addDoc(adsRef, {
+                                                    userId: subscription.customerId,
+                                                    email: user.email,
+                                                    subscriptionId: subscription.id,
+                                                    status: 'pending_info',
+                                                    businessName: user.businessName,
+                                                    contactName: user.contactName,
+                                                    phone: user.phone,
+                                                    adWebsiteUrl: user.adWebsiteUrl,
+                                                    adText: user.adText,
+                                                    adNotes: user.adNotes,
+                                                    createdAt: serverTimestamp(),
+                                                    updatedAt: serverTimestamp(),
+                                                });
+                                                router.push(`/advertisements/${newAd.id}?userId=${subscription.customerId}`);
+                                                toast({ title: 'Success', description: 'Advertisement workflow created.' });
+                                            } catch (error: any) {
+                                                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                                            }
+                                        }}
+                                    >
+                                        <Plus className="h-4 w-4 mr-1" /> Start Ad Workflow
                                     </Button>
                                 </div>
                             )}
