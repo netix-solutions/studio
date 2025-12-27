@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -37,10 +38,9 @@ export default function LandingPage() {
                 <Phone className="h-4 w-4" />
                 <span>813-544-8383</span>
               </a>
-              <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 h-10 px-4 md:px-5 text-sm font-medium">
+               <Button size="sm" asChild className="bg-green-600 hover:bg-green-700 active:bg-green-800 h-10 px-4 md:px-5 text-sm font-medium hidden sm:flex">
                 <Link href="#get-started">
-                  <span className="hidden sm:inline">Get Started</span>
-                  <span className="sm:hidden">Start</span>
+                  View Pricing
                   <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Link>
               </Button>
@@ -83,14 +83,14 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-base md:text-lg lg:text-xl text-gray-200 max-w-xl mx-auto lg:mx-0">
-                Affordable advertising on Pasco County's most visited community websites. Plans from just <span className="font-semibold text-white">$24/month</span>.
+                Affordable advertising on Pasco County's most visited community websites. Plans from just <span className="font-semibold text-white">$16/month</span>.
               </p>
 
               {/* Mobile: Single prominent CTA */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center lg:justify-start">
-                <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-base md:text-lg h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto touch-manipulation">
+                <Button size="lg" asChild variant="secondary" className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-base md:text-lg h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto touch-manipulation">
                   <Link href="#get-started">
-                    See Pricing <ArrowRight className="ml-2 h-5 w-5" />
+                    View Pricing <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
                 <a
@@ -407,13 +407,13 @@ export default function LandingPage() {
                 We work with all local businesses in Pasco County—restaurants, real estate agents, contractors, medical offices, retailers, and more. If you serve the local community, we can help you reach more customers.
               </AccordionContent>
             </AccordionItem>
-
+            
             <AccordionItem value="item-2" className="bg-white rounded-xl px-4 md:px-6 shadow-sm border-0">
               <AccordionTrigger className="hover:no-underline py-4 md:py-5">
-                <span className="text-left font-semibold text-sm md:text-base pr-4">Do I need to provide my own ad design?</span>
+                <span className="text-left font-semibold text-sm md:text-base pr-4">How many times will my ad be shown?</span>
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base">
-                No! Our design team will create a professional, mobile-friendly banner for your business at no extra cost. Just provide your logo, website, and any messaging preferences.
+                In most cases, your ad will be shown over 20,000 times per month, if not more. This provides significant exposure to a targeted local audience.
               </AccordionContent>
             </AccordionItem>
 
@@ -475,21 +475,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Mobile-Friendly Footer */}
-      <footer className="py-6 md:py-8 bg-gray-950 text-gray-400">
+      {/* Dark Blue Footer */}
+      <footer className="py-8 bg-blue-900 text-blue-200">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 md:gap-3">
-              <Image src="/logo.png" alt="Community-Websites.com" width={40} height={22} className="h-[22px] md:h-[28px] w-auto" />
-              <span className="text-xs md:text-sm">© {new Date().getFullYear()} Community-Websites.com</span>
+            <div className="grid md:grid-cols-3 gap-8">
+                {/* Branding */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
+                         <span className="font-headline text-white text-lg tracking-wider">Community-Websites.com</span>
+                    </div>
+                    <p className="text-sm text-blue-300 max-w-xs">
+                        Affordable, effective local advertising for Pasco County small businesses.
+                    </p>
+                </div>
+
+                {/* Links */}
+                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Legal</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Account</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><Link href="/login" className="hover:text-white transition-colors">Customer Login</Link></li>
+                            <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                        </ul>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold text-white mb-3">Contact</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><a href="tel:813-544-8383" className="hover:text-white transition-colors">813-544-8383</a></li>
+                            <li><a href="mailto:support@community-websites.com" className="hover:text-white transition-colors">support@community-websites.com</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center gap-4 md:gap-6 text-xs md:text-sm">
-              <a href="tel:813-544-8383" className="hover:text-white active:text-white transition-colors touch-manipulation py-1">813-544-8383</a>
-              <Link href="/terms-of-service" className="hover:text-white active:text-white transition-colors touch-manipulation py-1">Terms</Link>
-              <Link href="/privacy-policy" className="hover:text-white active:text-white transition-colors touch-manipulation py-1">Privacy</Link>
-              <Link href="/login" className="hover:text-white active:text-white transition-colors touch-manipulation py-1">Login</Link>
+            <div className="mt-8 pt-6 border-t border-blue-800 text-center text-xs text-blue-400">
+                &copy; {new Date().getFullYear()} Community-Websites.com. All Rights Reserved.
             </div>
-          </div>
         </div>
       </footer>
     </div>
