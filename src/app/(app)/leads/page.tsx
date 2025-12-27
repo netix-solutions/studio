@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirebase, useUser } from '@/firebase';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, serverTimestamp, writeBatch, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, serverTimestamp, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
 import { Loader2, AlertCircle, MoreHorizontal, Search, Filter, ChevronDown, Mail, Trash2, Users, TrendingUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,16 @@ import {
     DropdownMenuTrigger,
     DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     Select,
     SelectContent,
@@ -56,6 +66,9 @@ export default function LeadsPage() {
     const [selectedPriority, setSelectedPriority] = useState<string>('all');
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
     const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+    const [deleteConfirmLead, setDeleteConfirmLead] = useState<Lead | null>(null);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const { firestore } = useFirebase();
     const { user } = useUser();
     const router = useRouter();
@@ -196,6 +209,63 @@ export default function LeadsPage() {
         }
     };
 
+    const handleDeleteSpamLead = async (lead: Lead) => {
+        if (!firestore) return;
+
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(firestore, 'leads', lead.id));
+
+            toast({
+                title: 'Lead Deleted',
+                description: `"${lead.businessName}" has been marked as spam and deleted.`,
+            });
+            setDeleteConfirmLead(null);
+        } catch (err) {
+            console.error("Error deleting lead:", err);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete lead. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleBulkDeleteSpam = async () => {
+        if (!firestore || selectedLeads.size === 0) return;
+
+        setIsDeleting(true);
+        try {
+            const batch = writeBatch(firestore);
+            const selectedLeadsList = leads.filter(l => selectedLeads.has(l.id));
+
+            for (const lead of selectedLeadsList) {
+                const leadRef = doc(firestore, 'leads', lead.id);
+                batch.delete(leadRef);
+            }
+
+            await batch.commit();
+
+            setSelectedLeads(new Set());
+            setShowBulkDeleteConfirm(false);
+            toast({
+                title: 'Leads Deleted',
+                description: `${selectedLeadsList.length} leads have been marked as spam and deleted.`,
+            });
+        } catch (err) {
+            console.error("Error deleting leads:", err);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete leads. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     // Calculate stats
     const stats = useMemo(() => {
         const total = filteredLeads.length;
@@ -329,6 +399,16 @@ export default function LeadsPage() {
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={() => setShowBulkDeleteConfirm(true)}
+                                disabled={isDeleting}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Mark as Spam & Delete
+                            </Button>
+                            <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedLeads(new Set())}
@@ -461,6 +541,17 @@ export default function LeadsPage() {
                                                                     {LEAD_STAGE_LABELS[stage]}
                                                                 </DropdownMenuItem>
                                                             ))}
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                className="text-red-600 focus:text-red-600"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setDeleteConfirmLead(lead);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Mark as Spam & Delete
+                                                            </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </TableCell>
@@ -479,6 +570,60 @@ export default function LeadsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Single Lead Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteConfirmLead} onOpenChange={(open) => !open && setDeleteConfirmLead(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mark as Spam & Delete</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to mark &quot;{deleteConfirmLead?.businessName}&quot; as spam and permanently delete it? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => deleteConfirmLead && handleDeleteSpamLead(deleteConfirmLead)}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete Lead
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Bulk Delete Confirmation Dialog */}
+            <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mark as Spam & Delete {selectedLeads.size} Leads</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to mark {selectedLeads.size} leads as spam and permanently delete them? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={handleBulkDeleteSpam}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete {selectedLeads.size} Leads
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
