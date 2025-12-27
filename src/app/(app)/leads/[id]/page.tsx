@@ -54,7 +54,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { SendManualEmailDialog } from '@/components/leads/send-manual-email-dialog';
+import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -601,8 +601,14 @@ export default function LeadDetailPage() {
       </div>
 
       {/* Email Dialog */}
-      <SendManualEmailDialog
-        lead={lead}
+      <SendEmailDialog
+        recipient={{
+          id: lead.id,
+          email: lead.email,
+          contactName: lead.contactName,
+          businessName: lead.businessName,
+        }}
+        recipientType="lead"
         isOpen={isManualEmailDialogOpen}
         onOpenChange={setIsManualEmailDialogOpen}
       />

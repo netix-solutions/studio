@@ -15,12 +15,13 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { SendCustomerEmailDialog } from '@/components/subscriptions/send-customer-email-dialog';
+import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 import {
     AD_STATUS_LABELS,
     AD_STATUS_COLORS,
-    type AdStatus
+    type AdStatus,
+    type UserDetails,
 } from '@/lib/types';
 
 interface SubscriptionDetails {
@@ -35,16 +36,7 @@ interface SubscriptionDetails {
     adId?: string;
 }
 
-export interface UserDetails {
-    id: string;
-    contactName: string;
-    email: string;
-    businessName?: string;
-    phone?: string;
-    adWebsiteUrl?: string;
-    adText?: string;
-    adNotes?: string;
-}
+// Using centralized UserDetails type from @/lib/types
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     active: 'secondary',
@@ -327,8 +319,14 @@ export default function SubscriptionDetailPage() {
                 </Card>
             </div>
             
-            <SendCustomerEmailDialog
-                customer={user}
+            <SendEmailDialog
+                recipient={{
+                    id: user.id,
+                    email: user.email,
+                    contactName: user.contactName,
+                    businessName: user.businessName,
+                }}
+                recipientType="customer"
                 isOpen={isManualEmailDialogOpen}
                 onOpenChange={setIsManualEmailDialogOpen}
             />

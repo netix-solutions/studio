@@ -32,6 +32,8 @@ import {
   Radio,
   DatabaseZap,
   Bell,
+  Upload,
+  Tag,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -79,6 +81,7 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/leads', label: 'Leads', icon: Handshake },
       { href: '/subscriptions', label: 'Customers', icon: Ticket },
+      { href: '/discounts', label: 'Discounts', icon: Tag },
     ],
   },
   {
@@ -99,6 +102,7 @@ const adminSections: NavSection[] = [
       { href: '/admin-notifications', label: 'Admin Notifications', icon: Bell },
       { href: '/legal', label: 'Legal Documents', icon: FileText },
       { href: '/reconciliation', label: 'Data Reconciliation', icon: DatabaseZap },
+      { href: '/import', label: 'Import Data', icon: Upload },
     ],
   },
 ];

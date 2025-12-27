@@ -25,23 +25,43 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/firebase/email';
-import { generateEmailUrls, wrapEmailContent } from '@/lib/email-utils';
-import type { UserDetails } from '@/app/(app)/subscriptions/[id]/page';
+import { generateEmailUrls, wrapEmailContent, replaceEmailPlaceholders } from '@/lib/email-utils';
 import type { EmailTemplate } from '@/lib/email-templates';
 
 const formSchema = z.object({
   templateId: z.string().min(1, 'You must select an email template.'),
 });
 
-type SendCustomerEmailDialogProps = {
-  customer: UserDetails;
+/**
+ * Common interface for email recipients - works with both leads and customers
+ */
+export interface EmailRecipient {
+  id: string;
+  email: string;
+  contactName: string;
+  businessName?: string;
+}
+
+type SendEmailDialogProps = {
+  recipient: EmailRecipient;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  /** Type of recipient for tracking purposes */
+  recipientType?: 'lead' | 'customer';
 };
 
-export function SendCustomerEmailDialog({ customer, isOpen, onOpenChange }: SendCustomerEmailDialogProps) {
+/**
+ * Unified email dialog component for sending manual emails to both leads and customers.
+ * This component consolidates the previously separate SendManualEmailDialog and SendCustomerEmailDialog.
+ */
+export function SendEmailDialog({
+  recipient,
+  isOpen,
+  onOpenChange,
+  recipientType = 'customer'
+}: SendEmailDialogProps) {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +97,7 @@ export function SendCustomerEmailDialog({ customer, isOpen, onOpenChange }: Send
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !customer) return;
+    if (!firestore || !recipient) return;
 
     setIsSubmitting(true);
     try {
@@ -86,36 +106,41 @@ export function SendCustomerEmailDialog({ customer, isOpen, onOpenChange }: Send
         throw new Error("Selected template not found.");
       }
 
-      // Generate URLs for placeholders
-      const urls = generateEmailUrls(undefined, customer.id);
+      // Generate URLs for placeholders based on recipient type
+      const urls = generateEmailUrls(
+        recipientType === 'lead' ? recipient.id : undefined,
+        recipientType === 'customer' ? recipient.id : undefined
+      );
 
-      // Replace all placeholders in subject and body
-      const subject = selectedTemplate.subject
-        .replace(/\{\{contactName\}\}/g, customer.contactName)
-        .replace(/\{\{businessName\}\}/g, customer.businessName || '');
+      // Use centralized placeholder replacement
+      const subject = replaceEmailPlaceholders(selectedTemplate.subject, {
+        contactName: recipient.contactName,
+        businessName: recipient.businessName || '',
+      });
 
-      let html = selectedTemplate.html
-        .replace(/\{\{contactName\}\}/g, customer.contactName)
-        .replace(/\{\{businessName\}\}/g, customer.businessName || '')
-        .replace(/\{\{pricingLink\}\}/g, urls.pricingLink)
-        .replace(/\{\{accountLink\}\}/g, urls.accountLink);
+      let html = replaceEmailPlaceholders(selectedTemplate.html, {
+        contactName: recipient.contactName,
+        businessName: recipient.businessName || '',
+        pricingLink: urls.pricingLink,
+        accountLink: urls.accountLink,
+      });
 
       // Wrap the email content in the professional email template
       html = wrapEmailContent(html);
 
       await sendEmail(firestore, {
-        to: customer.email,
+        to: recipient.email,
         subject,
         html,
       }, {
-        recipientId: customer.id,
+        recipientId: recipient.id,
         templateId: selectedTemplate.id,
         triggerType: 'manual_send',
       });
 
       toast({
         title: 'Email Queued',
-        description: `"${selectedTemplate.name}" is being sent to ${customer.email}.`,
+        description: `"${selectedTemplate.name}" is being sent to ${recipient.email}.`,
       });
       onOpenChange(false);
       form.reset();
@@ -137,7 +162,7 @@ export function SendCustomerEmailDialog({ customer, isOpen, onOpenChange }: Send
         <DialogHeader>
           <DialogTitle>Send Manual Email</DialogTitle>
           <DialogDescription>
-            Send a follow-up email to {customer.contactName} ({customer.email}).
+            Send a follow-up email to {recipient.contactName} ({recipient.email}).
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -182,4 +207,3 @@ export function SendCustomerEmailDialog({ customer, isOpen, onOpenChange }: Send
     </Dialog>
   );
 }
-
