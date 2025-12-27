@@ -31,6 +31,13 @@ service cloud.firestore {
     match /leads/{leadId} {
       allow create: if true;
       allow read, list, update, delete: if isAdmin();
+
+      // Lead activities subcollection
+      match /activities/{activityId} {
+        allow read, list: if isAdmin();
+        allow create: if isAdmin();
+        allow update, delete: if false; // Activities are immutable
+      }
     }
 
     // USER DATA

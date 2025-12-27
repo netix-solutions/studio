@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,10 +16,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { LEAD_STAGES, LEAD_SOURCES, LEAD_PRIORITIES, calculateLeadScore, type LeadSource } from '@/lib/types';
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: "Business name must be at least 2 characters." }),
@@ -37,7 +38,51 @@ export function GetStartedForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { firestore } = useFirebase();
+
+  // Capture UTM parameters on mount
+  const [utmParams, setUtmParams] = useState<{
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    utmTerm?: string;
+    utmContent?: string;
+    source: LeadSource;
+  }>({
+    source: LEAD_SOURCES.WEBSITE,
+  });
+
+  useEffect(() => {
+    // Extract UTM parameters from URL
+    const utmSource = searchParams.get('utm_source') || undefined;
+    const utmMedium = searchParams.get('utm_medium') || undefined;
+    const utmCampaign = searchParams.get('utm_campaign') || undefined;
+    const utmTerm = searchParams.get('utm_term') || undefined;
+    const utmContent = searchParams.get('utm_content') || undefined;
+    const ref = searchParams.get('ref') || undefined;
+
+    // Determine lead source based on UTM parameters
+    let source: LeadSource = LEAD_SOURCES.WEBSITE;
+    if (utmSource) {
+      const sourceLower = utmSource.toLowerCase();
+      if (sourceLower.includes('google')) source = LEAD_SOURCES.GOOGLE_ADS;
+      else if (sourceLower.includes('facebook') || sourceLower.includes('fb') || sourceLower.includes('instagram')) source = LEAD_SOURCES.FACEBOOK_ADS;
+      else if (sourceLower.includes('twitter') || sourceLower.includes('linkedin') || sourceLower.includes('social')) source = LEAD_SOURCES.SOCIAL_MEDIA;
+      else if (sourceLower.includes('email') || sourceLower.includes('newsletter')) source = LEAD_SOURCES.EMAIL_CAMPAIGN;
+      else if (sourceLower.includes('partner')) source = LEAD_SOURCES.PARTNER;
+    }
+    if (ref) source = LEAD_SOURCES.REFERRAL;
+
+    setUtmParams({
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
+      source,
+    });
+  }, [searchParams]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,15 +110,43 @@ export function GetStartedForm() {
 
     try {
       const contactName = `${values.firstName} ${values.lastName}`.trim();
-      
+
+      // Create lead data with enhanced tracking fields
+      const leadData = {
+        ...values,
+        contactName: contactName,
+
+        // Pipeline status - new leads start in 'new' stage
+        stage: LEAD_STAGES.NEW,
+        priority: LEAD_PRIORITIES.MEDIUM,
+
+        // Source tracking from UTM parameters
+        source: utmParams.source,
+        utmSource: utmParams.utmSource || null,
+        utmMedium: utmParams.utmMedium || null,
+        utmCampaign: utmParams.utmCampaign || null,
+        utmTerm: utmParams.utmTerm || null,
+        utmContent: utmParams.utmContent || null,
+
+        // Calculate initial lead score
+        score: calculateLeadScore({
+          email: values.email,
+          phone: values.phone,
+          businessName: values.businessName,
+          siteCoverage: values.siteCoverage,
+          source: utmParams.source,
+          stage: LEAD_STAGES.NEW,
+        }),
+
+        // Timestamps
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
       // The ONLY action is to create the lead.
       // This is the most critical step and removing other DB writes
       // will prevent permission errors for unauthenticated users.
-      await addDoc(collection(firestore, "leads"), {
-        ...values,
-        contactName: contactName,
-        createdAt: serverTimestamp(),
-      });
+      await addDoc(collection(firestore, "leads"), leadData);
 
       toast({
         title: "Information Received!",

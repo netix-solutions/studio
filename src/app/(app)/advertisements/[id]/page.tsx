@@ -39,7 +39,8 @@ interface AdDetails {
     status: 'pending_ad_creation' | 'pending_customer_approval' | 'live' | 'canceled_inactive';
     adProofUrl?: string;
     adProofDestinationUrl?: string;
-    [key: string]: any;
+    liveAt?: any;
+    approvedAt?: any;
 }
 
 const workflowSteps = [
@@ -68,6 +69,8 @@ export default function AdvertisementDetailPage() {
     const [adProofUrlInput, setAdProofUrlInput] = useState('');
     const [isSavingProof, setIsSavingProof] = useState(false);
     const [isRequestingApproval, setIsRequestingApproval] = useState(false);
+    const [isGoingLive, setIsGoingLive] = useState(false);
+    const [isResendingApproval, setIsResendingApproval] = useState(false);
 
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
@@ -95,12 +98,34 @@ export default function AdvertisementDetailPage() {
                     throw new Error("Associated customer details not found.");
                 }
 
-                const adData = adDocSnap.data() as Omit<AdDetails, 'id'>;
-                const userData = userDocSnap.data() as Omit<UserDetails, 'id'>;
+                const adData = adDocSnap.data();
+                const userData = userDocSnap.data();
 
-                setAdvertisement({ id: adDocSnap.id, ...adData });
-                setUser({ id: userDocSnap.id, ...userData });
-                setAdProofUrlInput(adData.adProofDestinationUrl || userData.adWebsiteUrl || '');
+                const fullAd: AdDetails = {
+                    id: adDocSnap.id,
+                    userId: adData.userId || userId!,
+                    subscriptionId: adData.subscriptionId || '',
+                    status: adData.status || 'pending_ad_creation',
+                    adProofUrl: adData.adProofUrl,
+                    adProofDestinationUrl: adData.adProofDestinationUrl,
+                    liveAt: adData.liveAt,
+                    approvedAt: adData.approvedAt,
+                };
+
+                const fullUser: UserDetails = {
+                    id: userDocSnap.id,
+                    contactName: userData.contactName || '',
+                    email: userData.email || '',
+                    businessName: userData.businessName,
+                    phone: userData.phone,
+                    adWebsiteUrl: userData.adWebsiteUrl,
+                    adText: userData.adText,
+                    adNotes: userData.adNotes,
+                };
+
+                setAdvertisement(fullAd);
+                setUser(fullUser);
+                setAdProofUrlInput(fullAd.adProofDestinationUrl || fullUser.adWebsiteUrl || '');
 
             } catch (err: any) {
                 console.error("Error fetching details:", err);
@@ -218,6 +243,91 @@ export default function AdvertisementDetailPage() {
             toast({ title: 'Request Failed', description: error.message || 'Could not request approval.', variant: 'destructive' });
         } finally {
             setIsRequestingApproval(false);
+        }
+    };
+
+    const handleGoLive = async () => {
+        if (!firestore || !user || !advertisement) {
+            toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
+            return;
+        }
+
+        setIsGoingLive(true);
+        try {
+            const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
+            await updateDoc(adDocRef, {
+                status: 'live',
+                approvedAt: serverTimestamp(),
+                liveAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            // Send confirmation email to customer
+            const templateQuery = query(collection(firestore, 'emailTemplates'), where('id', '==', 'new_customer_welcome'));
+            const templateSnapshot = await getDocs(templateQuery);
+            if (!templateSnapshot.empty) {
+                const template = templateSnapshot.docs[0].data();
+                const subject = `Your Ad is Now Live! - ${user.businessName || 'Community-Websites.com'}`;
+                const html = `
+                    <p>Hi ${user.contactName},</p>
+                    <p>Great news! Your advertisement for <strong>${user.businessName}</strong> is now live on our community websites.</p>
+                    <p>Your ad is now being displayed to thousands of local residents. Here are the details:</p>
+                    <ul>
+                        <li><strong>Ad Link:</strong> <a href="${advertisement.adProofDestinationUrl}">${advertisement.adProofDestinationUrl}</a></li>
+                    </ul>
+                    <p>Thank you for advertising with us!</p>
+                    <p>Best regards,<br/>The Community-Websites.com Team</p>
+                `;
+
+                await sendEmail(firestore, { to: user.email, subject, html }, {
+                    recipientId: user.id,
+                    templateId: 'ad_live_notification',
+                    triggerType: 'manual_send',
+                });
+            }
+
+            setAdvertisement(prev => prev ? { ...prev, status: 'live' } : null);
+            toast({ title: 'Ad is Live!', description: `The advertisement for ${user.businessName} is now live.` });
+        } catch (error: any) {
+            console.error("Error going live:", error);
+            toast({ title: 'Error', description: error.message || 'Could not set ad to live.', variant: 'destructive' });
+        } finally {
+            setIsGoingLive(false);
+        }
+    };
+
+    const handleResendApproval = async () => {
+        if (!firestore || !user || !advertisement?.adProofUrl || !advertisement?.adProofDestinationUrl) {
+            toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
+            return;
+        }
+
+        setIsResendingApproval(true);
+        try {
+            const templateQuery = query(collection(firestore, 'emailTemplates'), where('id', '==', 'ad_proof_approval'));
+            const templateSnapshot = await getDocs(templateQuery);
+            if (templateSnapshot.empty) throw new Error("Ad proof approval email template not found.");
+
+            const template = templateSnapshot.docs[0].data();
+            const subject = template.subject.replace(/{{businessName}}/g, user.businessName || '');
+            let html = template.html
+                .replace(/{{contactName}}/g, user.contactName)
+                .replace(/{{adProofUrl}}/g, advertisement.adProofUrl)
+                .replace(/{{adProofDestinationUrl}}/g, advertisement.adProofDestinationUrl)
+                .replace(/{{businessName}}/g, user.businessName || '');
+
+            await sendEmail(firestore, { to: user.email, subject, html }, {
+                recipientId: user.id,
+                templateId: 'ad_proof_approval',
+                triggerType: 'manual_send',
+            });
+
+            toast({ title: 'Email Resent', description: `Approval request sent to ${user.email}.` });
+        } catch (error: any) {
+            console.error("Error resending approval:", error);
+            toast({ title: 'Error', description: error.message || 'Could not resend approval email.', variant: 'destructive' });
+        } finally {
+            setIsResendingApproval(false);
         }
     };
 
@@ -339,8 +449,43 @@ export default function AdvertisementDetailPage() {
                                             Destination: <a href={advertisement.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{advertisement.adProofDestinationUrl}</a>
                                         </p>
                                     </div>
-                                    <Button variant="outline">Mark as Approved & Go Live</Button>
-                                    <Button variant="secondary">Resend Approval Email</Button>
+                                    <div className="flex gap-3">
+                                        <Button onClick={handleGoLive} disabled={isGoingLive} className="bg-green-600 hover:bg-green-700">
+                                            {isGoingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                            {isGoingLive ? 'Processing...' : 'Mark as Approved & Go Live'}
+                                        </Button>
+                                        <Button variant="secondary" onClick={handleResendApproval} disabled={isResendingApproval}>
+                                            {isResendingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                            {isResendingApproval ? 'Sending...' : 'Resend Approval Email'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {advertisement.status === 'live' && (
+                         <Card className="border-green-200 bg-green-50">
+                            <CardHeader>
+                                <CardTitle className="text-green-700 flex items-center gap-2">
+                                    <CheckCircle className="h-5 w-5" />
+                                    Advertisement is Live
+                                </CardTitle>
+                                <CardDescription>This ad is currently being displayed on community websites.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="border rounded-lg p-4 flex flex-col items-center gap-4 bg-white">
+                                        <Image src={advertisement.adProofUrl!} alt="Advertisement" width={468} height={60} className="border" />
+                                        <p className="text-sm text-muted-foreground break-all">
+                                            Links to: <a href={advertisement.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{advertisement.adProofDestinationUrl}</a>
+                                        </p>
+                                    </div>
+                                    {advertisement.liveAt && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Live since: {format(advertisement.liveAt.toDate ? advertisement.liveAt.toDate() : new Date(advertisement.liveAt), 'PPP')}
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

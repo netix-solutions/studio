@@ -1,140 +1,737 @@
-
 'use client';
+
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { useFirebase } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useParams, useRouter } from 'next/navigation';
+import { useFirebase, useUser } from '@/firebase';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+} from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Briefcase } from 'lucide-react';
-import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Loader2,
+  AlertCircle,
+  Mail,
+  Phone,
+  Briefcase,
+  Globe,
+  Calendar,
+  ArrowLeft,
+  Save,
+  MessageSquare,
+  TrendingUp,
+  Clock,
+  Target,
+  DollarSign,
+  Tag,
+  User,
+  CheckCircle2,
+  XCircle,
+  Send,
+  PhoneCall,
+  Users,
+  FileText,
+} from 'lucide-react';
+import { format } from 'date-fns';
 import { SendManualEmailDialog } from '@/components/leads/send-manual-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
-import type { Lead } from '../page';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import {
+  Lead,
+  Activity,
+  LeadStage,
+  LeadPriority,
+  LeadSource,
+  LEAD_STAGES,
+  LEAD_STAGE_LABELS,
+  LEAD_STAGE_ORDER,
+  LEAD_STAGE_COLORS,
+  LEAD_PRIORITIES,
+  LEAD_PRIORITY_LABELS,
+  LEAD_PRIORITY_COLORS,
+  LEAD_SOURCES,
+  LEAD_SOURCE_LABELS,
+  ACTIVITY_TYPES,
+  ACTIVITY_TYPE_LABELS,
+  calculateLeadScore,
+  getTimeSinceLastContact,
+} from '@/lib/types';
+
+// Activity type icon mapping
+const activityIcons: Record<string, any> = {
+  note: MessageSquare,
+  email_sent: Send,
+  email_received: Mail,
+  call: PhoneCall,
+  meeting: Users,
+  stage_change: TrendingUp,
+  priority_change: Target,
+  score_change: TrendingUp,
+  conversion: CheckCircle2,
+  task_created: FileText,
+  task_completed: CheckCircle2,
+  assignment_change: User,
+};
 
 export default function LeadDetailPage() {
-    const params = useParams();
-    const { id: leadId } = params;
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const router = useRouter();
+  const { id: leadId } = params;
+  const { firestore } = useFirebase();
+  const { user } = useUser();
+  const { toast } = useToast();
 
-    const [lead, setLead] = useState<Lead | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
+  const [lead, setLead] = useState<Lead | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        if (!firestore || !leadId || typeof leadId !== 'string') {
-            setLoading(false);
-            setError("Invalid lead ID.");
-            return;
+  // Editable fields
+  const [editedStage, setEditedStage] = useState<LeadStage>(LEAD_STAGES.NEW);
+  const [editedPriority, setEditedPriority] = useState<LeadPriority>(LEAD_PRIORITIES.MEDIUM);
+  const [editedEstimatedValue, setEditedEstimatedValue] = useState<string>('');
+  const [newNote, setNewNote] = useState('');
+  const [isAddingNote, setIsAddingNote] = useState(false);
+
+  // Fetch lead data
+  useEffect(() => {
+    if (!firestore || !leadId || typeof leadId !== 'string') {
+      setLoading(false);
+      setError("Invalid lead ID.");
+      return;
+    }
+
+    const fetchLead = async () => {
+      try {
+        setLoading(true);
+        const leadDocRef = doc(firestore, 'leads', leadId);
+        const leadDocSnap = await getDoc(leadDocRef);
+
+        if (!leadDocSnap.exists()) {
+          throw new Error("Lead not found.");
         }
 
-        const findLead = async () => {
-            try {
-                setLoading(true);
-                const leadDocRef = doc(firestore, 'leads', leadId);
-                const leadDocSnap = await getDoc(leadDocRef);
-
-                if (!leadDocSnap.exists()) {
-                    throw new Error("Lead not found.");
-                }
-
-                const leadData = leadDocSnap.data() as Omit<Lead, 'id'>;
-                setLead({ id: leadDocSnap.id, ...leadData });
-
-            } catch (err: any) {
-                console.error("Error fetching lead details:", err);
-                setError(err.message || "Failed to load lead details.");
-            } finally {
-                setLoading(false);
-            }
+        const leadData = leadDocSnap.data();
+        const fullLead: Lead = {
+          id: leadDocSnap.id,
+          businessName: leadData.businessName || '',
+          contactName: leadData.contactName || '',
+          email: leadData.email || '',
+          phone: leadData.phone || '',
+          siteCoverage: leadData.siteCoverage || [],
+          stage: leadData.stage || LEAD_STAGES.NEW,
+          priority: leadData.priority || LEAD_PRIORITIES.MEDIUM,
+          source: leadData.source || LEAD_SOURCES.WEBSITE,
+          score: leadData.score || 0,
+          createdAt: leadData.createdAt,
+          updatedAt: leadData.updatedAt,
+          lastContactedAt: leadData.lastContactedAt,
+          estimatedValue: leadData.estimatedValue,
+          utmSource: leadData.utmSource,
+          utmMedium: leadData.utmMedium,
+          utmCampaign: leadData.utmCampaign,
+          notes: leadData.notes,
         };
+        setLead(fullLead);
+        setEditedStage(fullLead.stage);
+        setEditedPriority(fullLead.priority);
+        setEditedEstimatedValue(fullLead.estimatedValue?.toString() || '');
+      } catch (err: any) {
+        console.error("Error fetching lead:", err);
+        setError(err.message || "Failed to load lead details.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        findLead();
+    fetchLead();
+  }, [firestore, leadId]);
 
-    }, [firestore, leadId]);
+  // Subscribe to activities
+  useEffect(() => {
+    if (!firestore || !leadId || typeof leadId !== 'string') return;
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+    const activitiesQuery = query(
+      collection(firestore, 'leads', leadId, 'activities'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(activitiesQuery, (snapshot) => {
+      const activitiesData: Activity[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Activity));
+      setActivities(activitiesData);
+    });
+
+    return () => unsubscribe();
+  }, [firestore, leadId]);
+
+  // Handle saving lead changes
+  const handleSaveChanges = async () => {
+    if (!firestore || !lead || !user) return;
+
+    const changes: { field: string; from: any; to: any }[] = [];
+
+    if (editedStage !== lead.stage) {
+      changes.push({ field: 'stage', from: lead.stage, to: editedStage });
+    }
+    if (editedPriority !== lead.priority) {
+      changes.push({ field: 'priority', from: lead.priority, to: editedPriority });
     }
 
-    if (error) {
-        return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-            </Alert>
-        );
+    const newEstimatedValue = editedEstimatedValue ? parseFloat(editedEstimatedValue) : undefined;
+    if (newEstimatedValue !== lead.estimatedValue) {
+      changes.push({ field: 'estimatedValue', from: lead.estimatedValue, to: newEstimatedValue });
     }
 
-    if (!lead) {
-        return (
-             <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Not Found</AlertTitle>
-                <AlertDescription>The requested lead could not be found.</AlertDescription>
-            </Alert>
-        );
+    if (changes.length === 0) {
+      toast({ title: 'No Changes', description: 'No changes to save.' });
+      return;
     }
 
+    setIsSaving(true);
+
+    try {
+      const leadRef = doc(firestore, 'leads', lead.id);
+
+      // Calculate new score
+      const newScore = calculateLeadScore({
+        ...lead,
+        stage: editedStage,
+        priority: editedPriority,
+        estimatedValue: newEstimatedValue,
+      });
+
+      await updateDoc(leadRef, {
+        stage: editedStage,
+        priority: editedPriority,
+        estimatedValue: newEstimatedValue || null,
+        score: newScore,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Log activities for each change
+      for (const change of changes) {
+        if (change.field === 'stage') {
+          await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
+            leadId: lead.id,
+            type: ACTIVITY_TYPES.STAGE_CHANGE,
+            title: `Stage changed from ${LEAD_STAGE_LABELS[change.from as LeadStage]} to ${LEAD_STAGE_LABELS[change.to as LeadStage]}`,
+            metadata: { fromStage: change.from, toStage: change.to },
+            createdBy: user.uid,
+            createdByName: user.displayName || user.email || 'Unknown',
+            createdAt: serverTimestamp(),
+          });
+        } else if (change.field === 'priority') {
+          await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
+            leadId: lead.id,
+            type: ACTIVITY_TYPES.PRIORITY_CHANGE,
+            title: `Priority changed from ${LEAD_PRIORITY_LABELS[change.from as LeadPriority]} to ${LEAD_PRIORITY_LABELS[change.to as LeadPriority]}`,
+            metadata: { fromPriority: change.from, toPriority: change.to },
+            createdBy: user.uid,
+            createdByName: user.displayName || user.email || 'Unknown',
+            createdAt: serverTimestamp(),
+          });
+        }
+      }
+
+      // Update local state
+      setLead(prev => prev ? {
+        ...prev,
+        stage: editedStage,
+        priority: editedPriority,
+        estimatedValue: newEstimatedValue,
+        score: newScore,
+      } : null);
+
+      toast({ title: 'Lead Updated', description: 'Changes saved successfully.' });
+    } catch (err) {
+      console.error("Error saving lead:", err);
+      toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle adding a note
+  const handleAddNote = async () => {
+    if (!firestore || !lead || !user || !newNote.trim()) return;
+
+    setIsAddingNote(true);
+
+    try {
+      await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
+        leadId: lead.id,
+        type: ACTIVITY_TYPES.NOTE,
+        title: 'Note added',
+        description: newNote.trim(),
+        createdBy: user.uid,
+        createdByName: user.displayName || user.email || 'Unknown',
+        createdAt: serverTimestamp(),
+      });
+
+      // Update last contacted
+      const leadRef = doc(firestore, 'leads', lead.id);
+      await updateDoc(leadRef, {
+        lastContactedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setNewNote('');
+      toast({ title: 'Note Added', description: 'Your note has been saved.' });
+    } catch (err) {
+      console.error("Error adding note:", err);
+      toast({ title: 'Error', description: 'Failed to add note.', variant: 'destructive' });
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
+
+  // Handle marking as won/lost
+  const handleMarkAsWonLost = async (newStage: 'won' | 'lost') => {
+    if (!firestore || !lead || !user) return;
+
+    try {
+      const leadRef = doc(firestore, 'leads', lead.id);
+      await updateDoc(leadRef, {
+        stage: newStage,
+        updatedAt: serverTimestamp(),
+        ...(newStage === 'won' ? { convertedAt: serverTimestamp() } : {}),
+      });
+
+      await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
+        leadId: lead.id,
+        type: newStage === 'won' ? ACTIVITY_TYPES.CONVERSION : ACTIVITY_TYPES.STAGE_CHANGE,
+        title: newStage === 'won' ? 'Lead converted to customer!' : 'Lead marked as lost',
+        metadata: { fromStage: lead.stage, toStage: newStage },
+        createdBy: user.uid,
+        createdByName: user.displayName || user.email || 'Unknown',
+        createdAt: serverTimestamp(),
+      });
+
+      setLead(prev => prev ? { ...prev, stage: newStage } : null);
+      setEditedStage(newStage);
+
+      toast({
+        title: newStage === 'won' ? 'Congratulations!' : 'Lead Marked as Lost',
+        description: newStage === 'won' ? 'Lead has been converted to a customer.' : 'Lead has been marked as lost.',
+      });
+    } catch (err) {
+      console.error("Error updating lead:", err);
+      toast({ title: 'Error', description: 'Failed to update lead.', variant: 'destructive' });
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-6">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-2xl">{lead.contactName}</CardTitle>
-                        <CardDescription>Lead submitted on {lead.createdAt ? format(lead.createdAt.toDate(), 'PPP') : 'N/A'}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Briefcase className="h-4 w-4 text-muted-foreground"/>
-                            <span className='font-medium'>Business:</span>
-                            <span>{lead.businessName}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Mail className="h-4 w-4 text-muted-foreground"/>
-                            <span className='font-medium'>Email:</span>
-                            <a href={`mailto:${lead.email}`} className="text-primary hover:underline">{lead.email}</a>
-                        </div>
-                         <div className="flex items-center gap-3">
-                            <Phone className="h-4 w-4 text-muted-foreground"/>
-                             <span className='font-medium'>Phone:</span>
-                            <span>{lead.phone || 'Not Provided'}</span>
-                        </div>
-                    </CardContent>
-                </Card>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-                 <EmailHistoryDialog
-                    recipient={{ id: lead.id, email: lead.email }}
-                    isOpen={true} // Render it directly on the page
-                    onOpenChange={() => {}} // No-op, it's always open here
-                    renderAsCard={true} // New prop to render as Card
-                />
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Not Found</AlertTitle>
+        <AlertDescription>The requested lead could not be found.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const stageColors = LEAD_STAGE_COLORS[lead.stage as LeadStage] || LEAD_STAGE_COLORS.new;
+  const priorityColors = LEAD_PRIORITY_COLORS[lead.priority as LeadPriority] || LEAD_PRIORITY_COLORS.medium;
+
+  return (
+    <div className="space-y-6">
+      {/* Back Button */}
+      <Button variant="outline" onClick={() => router.back()}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+
+      {/* Header Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl flex items-center gap-3">
+                {lead.businessName}
+                <Badge className={cn(stageColors.bg, stageColors.text, stageColors.border)}>
+                  {LEAD_STAGE_LABELS[lead.stage as LeadStage] || lead.stage}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {lead.contactName} &bull; Created {lead.createdAt ? format(lead.createdAt.toDate(), 'PPP') : 'N/A'}
+              </CardDescription>
             </div>
-            <div className="md:col-span-1 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                         <Button className="w-full" onClick={() => setIsManualEmailDialogOpen(true)}>
-                            Send Manual Email
-                        </Button>
-                    </CardContent>
-                </Card>
+
+            <div className="flex items-center gap-2">
+              {lead.stage !== 'won' && lead.stage !== 'lost' && (
+                <>
+                  <Button
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => handleMarkAsWonLost('won')}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Mark as Won
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={() => handleMarkAsWonLost('lost')}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Mark as Lost
+                  </Button>
+                </>
+              )}
             </div>
-            
-            <SendManualEmailDialog
-                lead={lead}
-                isOpen={isManualEmailDialogOpen}
-                onOpenChange={setIsManualEmailDialogOpen}
-            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Score and Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Lead Score</p>
+                <p className="text-xl font-bold">{lead.score || 0}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", priorityColors.bg)}>
+                <TrendingUp className={cn("h-5 w-5", priorityColors.text)} />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Priority</p>
+                <p className="text-xl font-bold">{LEAD_PRIORITY_LABELS[lead.priority as LeadPriority] || 'Medium'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <Tag className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Source</p>
+                <p className="text-xl font-bold">{LEAD_SOURCE_LABELS[lead.source as LeadSource] || 'Website'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Last Contact</p>
+                <p className="text-xl font-bold">{getTimeSinceLastContact(lead.lastContactedAt)}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Main Content - Left Side */}
+        <div className="md:col-span-2 space-y-6">
+          {/* Contact Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contact Name</p>
+                    <p className="font-medium">{lead.contactName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Business</p>
+                    <p className="font-medium">{lead.businessName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <a href={`mailto:${lead.email}`} className="font-medium text-primary hover:underline">
+                      {lead.email}
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="font-medium">{lead.phone || 'Not Provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {lead.siteCoverage && lead.siteCoverage.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-sm text-muted-foreground mb-2">Interested Sites</p>
+                  <div className="flex flex-wrap gap-2">
+                    {lead.siteCoverage.map((site: string) => (
+                      <Badge key={site} variant="secondary">{site}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Add Note */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Note</CardTitle>
+              <CardDescription>Record interactions, calls, or important information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                placeholder="Enter your note here..."
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                rows={3}
+              />
+              <Button onClick={handleAddNote} disabled={isAddingNote || !newNote.trim()}>
+                {isAddingNote ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                )}
+                Add Note
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Activity Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Timeline</CardTitle>
+              <CardDescription>History of all interactions and changes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px] pr-4">
+                {activities.length > 0 ? (
+                  <div className="space-y-4">
+                    {activities.map((activity, index) => {
+                      const IconComponent = activityIcons[activity.type] || MessageSquare;
+                      return (
+                        <div key={activity.id} className="flex gap-4">
+                          <div className="relative">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                              <IconComponent className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            {index < activities.length - 1 && (
+                              <div className="absolute top-8 left-1/2 -translate-x-1/2 w-px h-full bg-border" />
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{activity.title}</p>
+                              <span className="text-xs text-muted-foreground">
+                                {activity.createdAt && format(
+                                  activity.createdAt.toDate ? activity.createdAt.toDate() : new Date(activity.createdAt),
+                                  'MMM d, yyyy h:mm a'
+                                )}
+                              </span>
+                            </div>
+                            {activity.description && (
+                              <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                                {activity.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              by {activity.createdByName}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No activity recorded yet</p>
+                    <p className="text-sm">Add a note or send an email to get started</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Email History */}
+          <EmailHistoryDialog
+            recipient={{ id: lead.id, email: lead.email }}
+            isOpen={true}
+            onOpenChange={() => {}}
+            renderAsCard={true}
+          />
         </div>
-    )
+
+        {/* Sidebar - Right Side */}
+        <div className="md:col-span-1 space-y-6">
+          {/* Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button className="w-full" onClick={() => setIsManualEmailDialogOpen(true)}>
+                <Mail className="mr-2 h-4 w-4" />
+                Send Email
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <a href={`tel:${lead.phone}`}>
+                  <Phone className="mr-2 h-4 w-4" />
+                  Call Lead
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Lead Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Lead</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="stage">Stage</Label>
+                <Select value={editedStage} onValueChange={(v) => setEditedStage(v as LeadStage)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LEAD_STAGE_ORDER.map((stage) => (
+                      <SelectItem key={stage} value={stage}>
+                        {LEAD_STAGE_LABELS[stage]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={editedPriority} onValueChange={(v) => setEditedPriority(v as LeadPriority)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="value">Estimated Value ($)</Label>
+                <Input
+                  id="value"
+                  type="number"
+                  placeholder="0.00"
+                  value={editedEstimatedValue}
+                  onChange={(e) => setEditedEstimatedValue(e.target.value)}
+                />
+              </div>
+
+              <Button className="w-full" onClick={handleSaveChanges} disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save Changes
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Source Information */}
+          {(lead.utmSource || lead.utmCampaign) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Source Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {lead.utmSource && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Source:</span>
+                    <span>{lead.utmSource}</span>
+                  </div>
+                )}
+                {lead.utmMedium && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Medium:</span>
+                    <span>{lead.utmMedium}</span>
+                  </div>
+                )}
+                {lead.utmCampaign && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Campaign:</span>
+                    <span>{lead.utmCampaign}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Email Dialog */}
+      <SendManualEmailDialog
+        lead={lead}
+        isOpen={isManualEmailDialogOpen}
+        onOpenChange={setIsManualEmailDialogOpen}
+      />
+    </div>
+  );
 }
