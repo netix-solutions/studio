@@ -49,12 +49,13 @@ service cloud.firestore {
       allow delete: if false; // Users should not be deletable from the client
 
       // ADVERTISEMENT TICKETS
-      // Users can create/read their own tickets. Admins can manage all tickets.
+      // Users can create/read/update their own tickets. Admins can manage all tickets.
       match /advertisements/{advertisementId} {
-        // Grant create/read access to owners and admins.
+        // Grant create/read/update access to owners and admins.
         // List is handled by the collectionGroup rule below.
-        allow create, read: if isOwner(userId) || isAdmin();
-        allow update, delete: if isAdmin();
+        allow create, read, update: if isOwner(userId) || isAdmin();
+        // Only admins can delete advertisements
+        allow delete: if isAdmin();
       }
     }
     
@@ -71,9 +72,10 @@ service cloud.firestore {
         allow read, write: if isOwner(userId) || isAdmin();
     }
 
-    // Comments on subscriptions can only be managed by admins.
+    // Comments on subscriptions can be read by owners and admins, but only admins can create.
     match /customers/{userId}/subscriptions/{subscriptionId}/comments/{commentId} {
-        allow read, list, create: if isAdmin();
+        allow read, list: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin();
         allow update, delete: if false; // Comments are immutable
     }
 
@@ -127,10 +129,11 @@ service cloud.firestore {
     }
 
     // SENT EMAILS LOG
-    // Anyone can create a log entry. Only admins can read.
+    // Anyone can create a log entry. Users can read emails sent to them. Admins can read all.
     match /sent_emails/{emailId} {
       allow create: if isSignedIn();
-      allow read, list: if isAdmin();
+      // Users can read emails where they are the recipient, admins can read all
+      allow read, list: if isAdmin() || (isSignedIn() && resource.data.recipientId == request.auth.uid);
       allow update, delete: if false;
     }
 
