@@ -8,13 +8,12 @@
 
 /**
  * Lead pipeline stages - represents the sales funnel
+ * Simplified pipeline: New -> Contacted -> Interested -> Won/Lost
  */
 export const LEAD_STAGES = {
   NEW: 'new',
   CONTACTED: 'contacted',
-  QUALIFIED: 'qualified',
-  PROPOSAL_SENT: 'proposal_sent',
-  NEGOTIATION: 'negotiation',
+  INTERESTED: 'interested',
   WON: 'won',
   LOST: 'lost',
 } as const;
@@ -24,9 +23,7 @@ export type LeadStage = typeof LEAD_STAGES[keyof typeof LEAD_STAGES];
 export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
   new: 'New Lead',
   contacted: 'Contacted',
-  qualified: 'Qualified',
-  proposal_sent: 'Proposal Sent',
-  negotiation: 'Negotiation',
+  interested: 'Interested',
   won: 'Won',
   lost: 'Lost',
 };
@@ -34,9 +31,7 @@ export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
 export const LEAD_STAGE_ORDER: LeadStage[] = [
   'new',
   'contacted',
-  'qualified',
-  'proposal_sent',
-  'negotiation',
+  'interested',
   'won',
   'lost',
 ];
@@ -44,9 +39,7 @@ export const LEAD_STAGE_ORDER: LeadStage[] = [
 export const LEAD_STAGE_COLORS: Record<LeadStage, { bg: string; text: string; border: string }> = {
   new: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
   contacted: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
-  qualified: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
-  proposal_sent: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
-  negotiation: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  interested: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
   won: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
   lost: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
 };
@@ -541,9 +534,7 @@ export function calculateLeadScore(lead: Partial<Lead>): number {
   const stageScores: Partial<Record<LeadStage, number>> = {
     new: 0,
     contacted: 10,
-    qualified: 20,
-    proposal_sent: 25,
-    negotiation: 30,
+    interested: 25,
   };
   score += stageScores[lead.stage as LeadStage] || 0;
 

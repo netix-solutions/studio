@@ -134,8 +134,8 @@ export default function LeadFunnelChart() {
 
   if (!stats) return null;
 
-  // Prepare funnel data (ordered stages)
-  const funnelStages: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'won'];
+  // Prepare funnel data (ordered stages - excluding 'lost' as it's an end state)
+  const funnelStages: LeadStage[] = ['new', 'contacted', 'interested', 'won'];
   const maxCount = Math.max(...funnelStages.map(s => stats.byStage[s] || 0), 1);
 
   // Calculate month-over-month change

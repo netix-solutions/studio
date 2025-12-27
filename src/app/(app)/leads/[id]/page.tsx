@@ -14,6 +14,8 @@ import {
   orderBy,
   onSnapshot,
   addDoc,
+  where,
+  getDocs,
 } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -42,6 +44,8 @@ import {
   FileText,
   Trash2,
   Eye,
+  Pencil,
+  UserCheck,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -56,6 +60,7 @@ import {
 import { format } from 'date-fns';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
+import { EditLeadDialog } from '@/components/leads/edit-lead-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -106,10 +111,12 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [linkedCustomer, setLinkedCustomer] = useState<{ id: string; email: string } | null>(null);
 
   // Fetch lead data
   useEffect(() => {
@@ -161,6 +168,43 @@ export default function LeadDetailPage() {
 
     fetchLead();
   }, [firestore, leadId]);
+
+  // Check if lead is already a customer (email match)
+  useEffect(() => {
+    if (!firestore || !lead?.email) {
+      setLinkedCustomer(null);
+      return;
+    }
+
+    const checkCustomerLink = async () => {
+      try {
+        // Check if lead already has a converted customer ID
+        if (lead.convertedToCustomerId) {
+          setLinkedCustomer({ id: lead.convertedToCustomerId, email: lead.email });
+          return;
+        }
+
+        // Search for a user with the same email
+        const usersQuery = query(
+          collection(firestore, 'users'),
+          where('email', '==', lead.email.toLowerCase())
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+
+        if (!usersSnapshot.empty) {
+          const customerDoc = usersSnapshot.docs[0];
+          setLinkedCustomer({ id: customerDoc.id, email: lead.email });
+        } else {
+          setLinkedCustomer(null);
+        }
+      } catch (err) {
+        console.error('Error checking customer link:', err);
+        setLinkedCustomer(null);
+      }
+    };
+
+    checkCustomerLink();
+  }, [firestore, lead?.email, lead?.convertedToCustomerId]);
 
   // Subscribe to activities
   useEffect(() => {
@@ -222,27 +266,68 @@ export default function LeadDetailPage() {
 
     try {
       const leadRef = doc(firestore, 'leads', lead.id);
+
+      // If marking as won, try to find and link to customer by email
+      let customerId: string | undefined;
+      if (newStage === 'won' && lead.email) {
+        // First check if already linked
+        if (linkedCustomer) {
+          customerId = linkedCustomer.id;
+        } else {
+          // Search for a user with matching email
+          const usersQuery = query(
+            collection(firestore, 'users'),
+            where('email', '==', lead.email.toLowerCase())
+          );
+          const usersSnapshot = await getDocs(usersQuery);
+
+          if (!usersSnapshot.empty) {
+            customerId = usersSnapshot.docs[0].id;
+          }
+        }
+      }
+
       await updateDoc(leadRef, {
         stage: newStage,
         updatedAt: serverTimestamp(),
-        ...(newStage === 'won' ? { convertedAt: serverTimestamp() } : {}),
+        ...(newStage === 'won' ? {
+          convertedAt: serverTimestamp(),
+          ...(customerId ? { convertedToCustomerId: customerId } : {})
+        } : {}),
       });
+
+      const activityDescription = newStage === 'won' && customerId
+        ? `Lead converted to customer! Linked to customer account (${lead.email})`
+        : newStage === 'won'
+          ? 'Lead converted to customer!'
+          : 'Lead marked as lost';
 
       await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
         leadId: lead.id,
         type: newStage === 'won' ? ACTIVITY_TYPES.CONVERSION : ACTIVITY_TYPES.STAGE_CHANGE,
-        title: newStage === 'won' ? 'Lead converted to customer!' : 'Lead marked as lost',
-        metadata: { fromStage: lead.stage, toStage: newStage },
+        title: activityDescription,
+        metadata: {
+          fromStage: lead.stage,
+          toStage: newStage,
+          ...(customerId ? { customerId } : {})
+        },
         createdBy: user.uid,
         createdByName: user.displayName || user.email || 'Unknown',
         createdAt: serverTimestamp(),
       });
 
-      setLead(prev => prev ? { ...prev, stage: newStage } : null);
+      setLead(prev => prev ? { ...prev, stage: newStage, convertedToCustomerId: customerId } : null);
+      if (customerId) {
+        setLinkedCustomer({ id: customerId, email: lead.email });
+      }
 
       toast({
         title: newStage === 'won' ? 'Congratulations!' : 'Lead Marked as Lost',
-        description: newStage === 'won' ? 'Lead has been converted to a customer.' : 'Lead has been marked as lost.',
+        description: newStage === 'won'
+          ? customerId
+            ? `Lead converted and linked to customer account!`
+            : 'Lead has been converted to a customer.'
+          : 'Lead has been marked as lost.',
       });
     } catch (err) {
       console.error("Error updating lead:", err);
@@ -542,12 +627,43 @@ export default function LeadDetailPage() {
 
         {/* Sidebar - Right Side */}
         <div className="md:col-span-1 space-y-6">
+          {/* Customer Link Indicator */}
+          {linkedCustomer && (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <UserCheck className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-green-800">Customer Account Found</p>
+                    <p className="text-sm text-green-600">
+                      This lead matches a registered customer
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3 border-green-300 text-green-700 hover:bg-green-100"
+                  onClick={() => router.push(`/subscriptions?search=${encodeURIComponent(lead.email)}`)}
+                >
+                  View Customer
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Actions */}
           <Card>
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <Button variant="outline" className="w-full" onClick={() => setIsEditDialogOpen(true)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Lead
+              </Button>
               <Button className="w-full" onClick={() => setIsManualEmailDialogOpen(true)}>
                 <Mail className="mr-2 h-4 w-4" />
                 Send Email
@@ -639,6 +755,16 @@ export default function LeadDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Lead Dialog */}
+      <EditLeadDialog
+        lead={lead}
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onLeadUpdated={(updatedLead) => {
+          setLead(prev => prev ? { ...prev, ...updatedLead } : null);
+        }}
+      />
     </div>
   );
 }
