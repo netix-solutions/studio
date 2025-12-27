@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { useFirebase, useUser } from '@/firebase';
 import { collection, onSnapshot, query, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { Loader2, AlertCircle, MoreHorizontal, Mail, PlusCircle, Pencil, Trash2, Copy, Eye, Zap, Send, ChevronDown, Grid3X3, List, Search } from 'lucide-react';
+import { Loader2, AlertCircle, MoreHorizontal, Mail, PlusCircle, Pencil, Trash2, Copy, Eye, Zap, Send, ChevronDown, Grid3X3, List, Search, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -68,6 +68,7 @@ export default function AutomatedEmailsPage() {
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
     const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
@@ -116,6 +117,28 @@ export default function AutomatedEmailsPage() {
             toast({ title: "Error", description: "Could not add default templates.", variant: "destructive" });
         } finally {
             setIsSeeding(false);
+        }
+    };
+
+    const resetToDefaults = async () => {
+        if (!firestore) return;
+        setIsResetting(true);
+        let updatedCount = 0;
+        try {
+            for (const template of defaultTemplates) {
+                const templateRef = doc(firestore, 'emailTemplates', template.id);
+                await setDoc(templateRef, template);
+                updatedCount++;
+            }
+            toast({
+                title: "Templates Reset",
+                description: `${updatedCount} email template(s) have been reset to their default values.`,
+            });
+        } catch (error) {
+            console.error("Error resetting templates:", error);
+            toast({ title: "Error", description: "Could not reset templates to defaults.", variant: "destructive" });
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -385,20 +408,33 @@ export default function AutomatedEmailsPage() {
                     <CardHeader>
                         <CardTitle className="text-lg">Template Management</CardTitle>
                         <CardDescription>
-                            Add missing default templates to your database.
+                            Manage default email templates. Use "Add Missing" to create templates that don't exist, or "Reset to Defaults" to restore all templates to their original content.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <Button onClick={seedDefaultTemplates} disabled={isSeeding} variant="outline">
+                    <CardContent className="flex flex-wrap gap-2">
+                        <Button onClick={seedDefaultTemplates} disabled={isSeeding || isResetting} variant="outline">
                             {isSeeding ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Please wait...
+                                    Adding...
                                 </>
                             ) : (
                                 <>
                                     <PlusCircle className="mr-2 h-4 w-4" />
-                                    Add Missing Default Templates
+                                    Add Missing
+                                </>
+                            )}
+                        </Button>
+                        <Button onClick={resetToDefaults} disabled={isSeeding || isResetting} variant="outline">
+                            {isResetting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Resetting...
+                                </>
+                            ) : (
+                                <>
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reset to Defaults
                                 </>
                             )}
                         </Button>
