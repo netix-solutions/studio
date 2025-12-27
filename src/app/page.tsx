@@ -19,7 +19,7 @@ export default function LandingPage() {
           <div className="flex h-14 md:h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={48} height={27} className="h-[27px] md:h-[33px] w-auto" />
-              <span className="font-bebas font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
+              <span className="font-headline font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2 md:gap-3">
               {/* Mobile: Icon only phone button */}
@@ -413,7 +413,7 @@ export default function LandingPage() {
                 <span className="text-left font-semibold text-sm md:text-base pr-4">How many times will my ad be shown?</span>
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base">
-                While impression counts vary based on site traffic, our advertisers typically see their ads displayed over 20,000 times per month across our network. This provides significant exposure to a targeted local audience.
+                In most cases, your ad will be shown over 20,000 times per month, if not more. This provides significant exposure to a targeted local audience.
               </AccordionContent>
             </AccordionItem>
 
@@ -483,7 +483,7 @@ export default function LandingPage() {
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
                          <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
-                         <span className="font-bebas text-white text-lg tracking-wider">Community-Websites.com</span>
+                         <span className="font-headline text-white text-lg tracking-wider">Community-Websites.com</span>
                     </div>
                     <p className="text-sm text-blue-300 max-w-xs">
                         Affordable, effective local advertising for Pasco County small businesses.

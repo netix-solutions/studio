@@ -208,7 +208,7 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
             style={{ height: '40px', width: 'auto' }}
           />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-bebas text-base tracking-wider text-foreground leading-tight">
+            <span className="font-headline text-base tracking-wider text-foreground leading-tight">
               Community-Websites
             </span>
             <span className="text-xs text-muted-foreground font-normal">

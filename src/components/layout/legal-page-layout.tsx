@@ -18,7 +18,7 @@ export function LegalPageLayout({ title, children }: LegalPageLayoutProps) {
         <div className="container mx-auto flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-3 font-bold text-xl">
             <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
-            <span className="font-bebas text-lg tracking-wider text-gray-700 hidden sm:inline">Community-Websites.com</span>
+            <span className="font-headline font-semibold text-gray-700 hidden sm:inline">Community-Websites.com</span>
           </Link>
           <Button variant="outline" asChild>
             <Link href="/login">
@@ -53,7 +53,7 @@ export function LegalPageLayout({ title, children }: LegalPageLayoutProps) {
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
                          <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
-                         <span className="font-bebas text-white text-lg tracking-wider">Community-Websites.com</span>
+                         <span className="font-headline text-white text-lg tracking-wider">Community-Websites.com</span>
                     </div>
                     <p className="text-sm text-blue-300 max-w-xs">
                         Affordable, effective local advertising for Pasco County small businesses.

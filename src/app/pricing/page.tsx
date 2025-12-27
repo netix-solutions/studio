@@ -509,7 +509,7 @@ function PricingPageContent() {
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
-              <span className="font-bebas font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
+              <span className="font-headline font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2 md:gap-3">
               {/* Mobile: Icon-only phone */}
@@ -757,7 +757,7 @@ function PricingPageContent() {
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
                          <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
-                         <span className="font-bebas text-white text-lg tracking-wider">Community-Websites.com</span>
+                         <span className="font-headline text-white text-lg tracking-wider">Community-Websites.com</span>
                     </div>
                     <p className="text-sm text-blue-300 max-w-xs">
                         Affordable, effective local advertising for Pasco County small businesses.
