@@ -158,6 +158,7 @@ export default function AccountPage() {
     const [activeTab, setActiveTab] = useState('business-info');
     const [sampleAdPreview, setSampleAdPreview] = useState<string | null>(null);
     const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+    const [isSubmittingForReview, setIsSubmittingForReview] = useState(false);
 
     const businessInfoForm = useForm<BusinessInfoFormData>({
         resolver: zodResolver(businessInfoSchema),
@@ -508,7 +509,14 @@ export default function AccountPage() {
 
     // Submit all info for review
     const handleSubmitForReview = async () => {
-        if (!user || !firestore) return;
+        if (!user || !firestore) {
+            toast({
+                title: "Error",
+                description: "You must be logged in to submit. Please refresh the page.",
+                variant: "destructive",
+            });
+            return;
+        }
 
         const businessData = businessInfoForm.getValues();
         if (!businessData.businessName || !businessData.contactName || !businessData.phone) {
@@ -521,28 +529,52 @@ export default function AccountPage() {
             return;
         }
 
+        // Check for active subscriptions
+        const activeSubs = subscriptions.filter(s =>
+            s.status === 'active' || s.status === 'trialing'
+        );
+
+        if (activeSubs.length === 0) {
+            toast({
+                title: "No Active Subscription",
+                description: "You need an active subscription to create an advertisement. Please subscribe first.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsSubmittingForReview(true);
+
         try {
             // Update all pending advertisements to pending_internal_review
             const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
             const adsSnapshot = await getDocs(adsRef);
 
+            let adsUpdated = 0;
             for (const adDoc of adsSnapshot.docs) {
                 const adData = adDoc.data();
                 if (adData.status === 'pending_info' || adData.status === 'pending_ad_creation') {
                     await updateDoc(doc(adsRef, adDoc.id), {
                         status: 'pending_internal_review',
+                        businessName: businessData.businessName,
+                        contactName: businessData.contactName,
+                        phone: businessData.phone,
+                        email: user.email,
+                        adWebsiteUrl: businessData.adWebsiteUrl,
+                        adText: businessData.adText,
+                        adNotes: businessData.adNotes,
+                        designPreferences: adDesignerForm.getValues(),
+                        customerSampleAdUrl: sampleAdPreview,
+                        customerUploads: uploadedFiles,
                         infoSubmittedAt: serverTimestamp(),
                         updatedAt: serverTimestamp(),
                     });
+                    adsUpdated++;
                 }
             }
 
             // If no ads exist, create one for each active subscription
             if (adsSnapshot.empty) {
-                const activeSubs = subscriptions.filter(s =>
-                    s.status === 'active' || s.status === 'trialing'
-                );
-
                 for (const sub of activeSubs) {
                     await addDoc(adsRef, {
                         userId: user.uid,
@@ -562,20 +594,31 @@ export default function AccountPage() {
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp(),
                     });
+                    adsUpdated++;
                 }
             }
 
-            toast({
-                title: "Submitted for Review",
-                description: "Your information has been submitted. Our team will begin working on your advertisement.",
-            });
+            if (adsUpdated > 0) {
+                toast({
+                    title: "Submitted for Review",
+                    description: "Your information has been submitted. Our team will begin working on your advertisement.",
+                });
+                setShowOnboarding(false);
+            } else {
+                toast({
+                    title: "Already Submitted",
+                    description: "Your advertisement is already in our review queue. We'll be in touch soon!",
+                });
+            }
         } catch (error: any) {
             console.error("Error submitting for review:", error);
             toast({
                 title: "Submission Error",
-                description: "Could not submit your information. Please try again.",
+                description: error.message || "Could not submit your information. Please try again.",
                 variant: "destructive",
             });
+        } finally {
+            setIsSubmittingForReview(false);
         }
     };
 
@@ -1212,9 +1255,19 @@ export default function AccountPage() {
                                         size="lg"
                                         className="w-full md:w-auto"
                                         onClick={handleSubmitForReview}
+                                        disabled={isSubmittingForReview}
                                     >
-                                        <CheckCircle className="mr-2 h-4 w-4" />
-                                        Submit All Information for Review
+                                        {isSubmittingForReview ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Submitting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="mr-2 h-4 w-4" />
+                                                Submit All Information for Review
+                                            </>
+                                        )}
                                     </Button>
                                     <p className="text-sm text-muted-foreground mt-2">
                                         Once submitted, our team will review your information and begin creating your advertisement.
