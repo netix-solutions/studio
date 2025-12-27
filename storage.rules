@@ -25,14 +25,29 @@ service firebase.storage {
       // Ensure admin custom claims are set when adding users to roles_admin collection.
       return isSignedIn() && request.auth.token.admin == true;
     }
-    
-    // User ad submissions (logos, etc.)
+
+    // User ad submissions - direct files (2-level path)
     match /advertisements/{userId}/{fileName} {
       allow read: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId);
     }
-    
-    // Ad proof files uploaded by an admin.
+
+    // Customer sample ad uploads (3-level path: userId/sample-ad/filename)
+    match /advertisements/{userId}/sample-ad/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+    }
+
+    // Customer file uploads like logos and images (3-level path: userId/uploads/filename)
+    match /advertisements/{userId}/uploads/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+    }
+
+    // Ad proof files uploaded by an admin (3-level path: userId/advertisementId/filename)
+    // Note: This rule also matches sample-ad and uploads paths, but since the customer
+    // rules above allow owner writes, customers can still upload to those paths.
+    // Admins with the 'admin' custom claim can upload to any advertisement subfolder.
     match /advertisements/{userId}/{advertisementId}/{fileName} {
       allow read: if isOwner(userId) || isAdmin();
       allow write: if isAdmin();

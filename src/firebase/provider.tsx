@@ -5,6 +5,7 @@ import React, { createContext, useContext, ReactNode, useMemo, useState, useEffe
 import type { FirebaseApp } from 'firebase/app';
 import type { Firestore } from 'firebase/firestore';
 import type { Auth, User } from 'firebase/auth';
+import type { FirebaseStorage } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
@@ -14,6 +15,7 @@ export interface FirebaseContextState {
   firebaseApp: FirebaseApp;
   firestore: Firestore;
   auth: Auth;
+  storage: FirebaseStorage;
   user: User | null;
   isUserLoading: boolean;
 }
@@ -28,11 +30,13 @@ export function FirebaseProvider({
   firebaseApp,
   auth,
   firestore,
+  storage,
 }: {
   children: ReactNode;
   firebaseApp: FirebaseApp;
   auth: Auth;
   firestore: Firestore;
+  storage: FirebaseStorage;
 }) {
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
@@ -55,10 +59,11 @@ export function FirebaseProvider({
       firebaseApp,
       auth,
       firestore,
+      storage,
       user,
       isUserLoading,
     }),
-    [firebaseApp, auth, firestore, user, isUserLoading]
+    [firebaseApp, auth, firestore, storage, user, isUserLoading]
   );
 
   return (
@@ -95,4 +100,10 @@ export function useAuth() {
 export function useFirestore() {
   const { firestore } = useFirebase();
   return firestore;
+}
+
+// A specific hook to get just the Storage service.
+export function useStorage() {
+  const { storage } = useFirebase();
+  return storage;
 }

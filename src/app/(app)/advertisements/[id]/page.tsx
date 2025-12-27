@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useFirebase, useUser as useAuthUser } from '@/firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink } from 'lucide-react';
@@ -123,7 +123,7 @@ export default function AdvertisementDetailPage() {
     const { id: adId } = params;
     const userId = searchParams.get('userId');
 
-    const { firestore, firebaseApp } = useFirebase();
+    const { firestore, storage } = useFirebase();
     const { toast } = useToast();
 
     const [advertisement, setAdvertisement] = useState<AdDetails | null>(null);
@@ -228,7 +228,7 @@ export default function AdvertisementDetailPage() {
     }, [firestore, adId, userId]);
 
     const handleSaveProof = async () => {
-        if (!firestore || !firebaseApp || !advertisement || !user) {
+        if (!firestore || !storage || !advertisement || !user) {
             toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
             return;
         }
@@ -250,7 +250,6 @@ export default function AdvertisementDetailPage() {
             let newProofUrl = originalAdProofUrl;
 
             if (adProofFile) {
-                const storage = getStorage(firebaseApp);
                 const filePath = `advertisements/${advertisement.userId}/${advertisement.id}/${adProofFile.name}`;
                 const fileStorageRef = storageRef(storage, filePath);
 
