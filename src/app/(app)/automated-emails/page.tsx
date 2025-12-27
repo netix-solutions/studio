@@ -128,6 +128,145 @@ export const defaultTemplates: EmailTemplate[] = [
             { key: '{{adProofUrl}}', description: "The URL of the ad image creative." },
             { key: '{{adProofDestinationUrl}}', description: "The URL the ad will link to." },
         ]
+    },
+    {
+        id: 'still_interested',
+        name: 'Still Interested Check-In',
+        description: 'A friendly check-in email to see if a lead is still interested in advertising.',
+        subject: 'Quick question about advertising for {{businessName}}',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>I wanted to reach out and see if you're still considering advertising with Community-Websites.com for {{businessName}}.</p>
+<p>I know things can get busy, so I just wanted to check in and see if:</p>
+<ul style="margin: 15px 0; padding-left: 20px;">
+    <li>You have any questions I can help answer</li>
+    <li>There's anything holding you back from getting started</li>
+    <li>You'd like me to walk you through the process</li>
+</ul>
+<p>Our local advertising platform reaches thousands of residents in your community, and we'd love to help {{businessName}} connect with more customers.</p>
+<p>Just reply to this email or give me a call at 813-544-8383 - I'm happy to help!</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to check in with leads who showed interest but haven\'t moved forward.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead." },
+            { key: '{{businessName}}', description: "The business name of the lead." },
+        ]
+    },
+    {
+        id: 'discount_offer',
+        name: 'Exclusive Discount Offer',
+        description: 'Offer a 10% discount to encourage leads to sign up.',
+        subject: 'A special offer for {{businessName}} - 10% off your first month',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>I wanted to share an exclusive offer with you. As a thank you for your interest in Community-Websites.com, we'd like to offer {{businessName}} <strong>10% off your first month</strong> of advertising.</p>
+<div style="margin: 25px 0; padding: 20px; background-color: #f0f9ff; border: 2px dashed #0284c7; border-radius: 8px; text-align: center;">
+    <p style="margin: 0 0 10px 0; font-size: 14px; color: #0369a1;">Your exclusive discount code:</p>
+    <p style="margin: 0; font-size: 28px; font-weight: bold; color: #0284c7; letter-spacing: 2px;">TAKE10OFF</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px; color: #64748b;">Enter this code at checkout</p>
+</div>
+<p>This is a great opportunity to get your business in front of local customers at a reduced rate. Our advertising packages help businesses like yours:</p>
+<ul style="margin: 15px 0; padding-left: 20px;">
+    <li>Reach thousands of local residents</li>
+    <li>Build brand recognition in your community</li>
+    <li>Drive more foot traffic and calls</li>
+</ul>
+<p><a href="{{pricingLink}}" style="display: inline-block; padding: 12px 24px; background-color: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">View Plans & Use Your Discount</a></p>
+<p style="margin-top: 20px;">If you have any questions, just reply to this email or call us at 813-544-8383.</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to offer the TAKE10OFF discount code (10% off) to leads who need an extra incentive.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead." },
+            { key: '{{businessName}}', description: "The business name of the lead." },
+            { key: '{{pricingLink}}', description: "The link to the pricing page." },
+        ]
+    },
+    {
+        id: 'last_chance',
+        name: 'Last Chance Reminder',
+        description: 'A final follow-up for leads who haven\'t responded to previous outreach.',
+        subject: 'Last chance to connect about {{businessName}} advertising',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>I've reached out a couple of times about advertising opportunities for {{businessName}}, and I wanted to send one final message before I close out your inquiry.</p>
+<p>I completely understand if the timing isn't right or if you've decided to go a different direction - no worries at all!</p>
+<p>However, if you're still interested in reaching more local customers through Community-Websites.com, I'm here to help. Just reply to this email and we can pick up where we left off.</p>
+<p>Either way, I wish you and {{businessName}} all the best!</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+<p style="font-size: 12px; color: #64748b; margin-top: 20px;">P.S. If you'd like to move forward, reply with "interested" and I'll send over all the details.</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this as a final follow-up for leads who haven\'t responded to previous emails.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead." },
+            { key: '{{businessName}}', description: "The business name of the lead." },
+        ]
+    },
+    {
+        id: 'value_highlight',
+        name: 'Why Local Advertising Works',
+        description: 'An educational email highlighting the benefits of local advertising.',
+        subject: '3 ways local advertising can grow {{businessName}}',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>I wanted to share some insights on how local advertising through Community-Websites.com can help grow {{businessName}}.</p>
+<p><strong>Here's what our advertising partners typically see:</strong></p>
+<div style="margin: 20px 0;">
+    <div style="padding: 15px; background-color: #f8fafc; border-left: 4px solid #0284c7; margin-bottom: 10px;">
+        <strong>1. Increased Local Visibility</strong><br>
+        <span style="color: #64748b;">Your business appears on community websites that local residents visit regularly for news and information.</span>
+    </div>
+    <div style="padding: 15px; background-color: #f8fafc; border-left: 4px solid #0284c7; margin-bottom: 10px;">
+        <strong>2. Targeted Reach</strong><br>
+        <span style="color: #64748b;">Your ads are seen by people who actually live and shop in your area - not random clicks from across the country.</span>
+    </div>
+    <div style="padding: 15px; background-color: #f8fafc; border-left: 4px solid #0284c7; margin-bottom: 10px;">
+        <strong>3. Cost-Effective Marketing</strong><br>
+        <span style="color: #64748b;">Get your message in front of thousands of local residents for a fraction of what traditional advertising costs.</span>
+    </div>
+</div>
+<p>Would you like to learn more about how this could work for {{businessName}}? I'm happy to answer any questions.</p>
+<p><a href="{{pricingLink}}" style="display: inline-block; padding: 12px 24px; background-color: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">See Our Advertising Options</a></p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to educate leads about the benefits of local advertising.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead." },
+            { key: '{{businessName}}', description: "The business name of the lead." },
+            { key: '{{pricingLink}}', description: "The link to the pricing page." },
+        ]
+    },
+    {
+        id: 'thank_you_no_commitment',
+        name: 'Thank You (No Pressure)',
+        description: 'A warm thank you email that keeps the door open without being pushy.',
+        subject: 'Thanks for considering Community-Websites.com, {{contactName}}',
+        html: `
+<p>Hi {{contactName}},</p>
+<p>I just wanted to take a moment to thank you for considering Community-Websites.com for {{businessName}}'s advertising needs.</p>
+<p>Whether you're ready to get started now or want to keep us in mind for the future, we appreciate your interest and are here whenever the time is right.</p>
+<p>In the meantime, feel free to:</p>
+<ul style="margin: 15px 0; padding-left: 20px;">
+    <li>Save our contact info for when you're ready</li>
+    <li>Browse our <a href="{{pricingLink}}">advertising options</a> at your convenience</li>
+    <li>Reach out anytime with questions - no pressure, ever</li>
+</ul>
+<p>We're a small team that genuinely cares about helping local businesses succeed. Whenever you're ready, we'll be here.</p>
+<p>Wishing you success with {{businessName}}!</p>
+<p>Best,<br>The Community-Websites.com Team</p>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to thank leads and keep the relationship warm without pressure.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead." },
+            { key: '{{businessName}}', description: "The business name of the lead." },
+            { key: '{{pricingLink}}', description: "The link to the pricing page." },
+        ]
     }
 ];
 
