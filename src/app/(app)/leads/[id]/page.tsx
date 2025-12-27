@@ -41,6 +41,7 @@ import {
   Users,
   FileText,
   Trash2,
+  Eye,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -89,6 +90,7 @@ const activityIcons: Record<string, any> = {
   task_created: FileText,
   task_completed: CheckCircle2,
   assignment_change: User,
+  page_visit: Eye,
 };
 
 export default function LeadDetailPage() {

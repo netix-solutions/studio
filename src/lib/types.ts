@@ -185,6 +185,7 @@ export const ACTIVITY_TYPES = {
   TASK_CREATED: 'task_created',
   TASK_COMPLETED: 'task_completed',
   ASSIGNMENT_CHANGE: 'assignment_change',
+  PAGE_VISIT: 'page_visit',
 } as const;
 
 export type ActivityType = typeof ACTIVITY_TYPES[keyof typeof ACTIVITY_TYPES];
@@ -202,6 +203,7 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   task_created: 'Task Created',
   task_completed: 'Task Completed',
   assignment_change: 'Assignment Changed',
+  page_visit: 'Website Visit',
 };
 
 /**
@@ -230,6 +232,8 @@ export interface Activity {
     meetingDuration?: number;
     customerId?: string;
     taskTitle?: string;
+    pageUrl?: string; // for page_visit activity type
+    pageTitle?: string; // for page_visit activity type
   };
 
   // Who performed the action
