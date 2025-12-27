@@ -27,6 +27,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { sendEmail } from '@/lib/firebase/email';
+import { generateEmailUrls, wrapEmailContent } from '@/lib/email-utils';
 import type { Lead } from '@/lib/types';
 import type { EmailTemplate } from '@/app/(app)/automated-emails/page';
 
@@ -85,14 +86,22 @@ export function SendManualEmailDialog({ lead, isOpen, onOpenChange }: SendManual
         throw new Error("Selected template not found.");
       }
 
-      // We can add more placeholder replacements here as needed.
-      const subject = selectedTemplate.subject
-        .replace(/{{contactName}}/g, lead.contactName)
-        .replace(/{{businessName}}/g, lead.businessName);
+      // Generate URLs for placeholders
+      const urls = generateEmailUrls(lead.id);
 
-      const html = selectedTemplate.html
-        .replace(/{{contactName}}/g, lead.contactName)
-        .replace(/{{businessName}}/g, lead.businessName);
+      // Replace all placeholders in subject and body
+      const subject = selectedTemplate.subject
+        .replace(/\{\{contactName\}\}/g, lead.contactName)
+        .replace(/\{\{businessName\}\}/g, lead.businessName);
+
+      let html = selectedTemplate.html
+        .replace(/\{\{contactName\}\}/g, lead.contactName)
+        .replace(/\{\{businessName\}\}/g, lead.businessName)
+        .replace(/\{\{pricingLink\}\}/g, urls.pricingLink)
+        .replace(/\{\{accountLink\}\}/g, urls.accountLink);
+
+      // Wrap the email content in the professional email template
+      html = wrapEmailContent(html);
 
       await sendEmail(firestore, {
         to: lead.email,
