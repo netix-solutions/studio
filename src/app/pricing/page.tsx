@@ -21,7 +21,8 @@ import {
   ArrowRight,
   Sparkles,
   Users,
-  CheckCircle
+  CheckCircle,
+  User as UserIcon
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -509,28 +510,12 @@ function PricingPageContent() {
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[26px] md:h-[30px] w-auto" />
-              <span className="font-headline font-bold text-brand-primary hidden sm:inline text-lg tracking-tight">Community-Websites.com</span>
+              <span className="font-headline font-bold text-brand-primary hidden xs:inline text-lg tracking-tight">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-3 md:gap-4">
-              {/* Mobile: Icon-only phone */}
-              <a
-                href="tel:813-544-8383"
-                className="md:hidden flex items-center justify-center w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 active:bg-brand-primary/30 transition-all duration-200"
-                aria-label="Call us"
-              >
-                <Phone className="h-4 w-4" />
-              </a>
-              {/* Desktop: Full phone number */}
-              <a
-                href="tel:813-544-8383"
-                className="hidden md:flex items-center gap-1.5 text-sm text-brand-primary hover:text-brand-secondary font-medium transition-colors"
-              >
-                <Phone className="h-4 w-4" />
-                <span>813-544-8383</span>
-              </a>
-              <Button variant="ghost" size="sm" asChild className="h-10 px-4 text-brand-primary hover:bg-brand-primary/10">
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/login">
-                  <User className="h-4 w-4 md:mr-1.5" />
+                  <UserIcon className="h-4 w-4 md:mr-1.5" />
                   <span className="hidden md:inline font-medium">Login</span>
                 </Link>
               </Button>

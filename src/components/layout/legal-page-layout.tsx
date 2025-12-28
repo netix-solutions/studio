@@ -18,12 +18,12 @@ export function LegalPageLayout({ title, children }: LegalPageLayoutProps) {
         <div className="container mx-auto flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-3 font-bold text-xl">
             <Image src="/logo.png" alt="Community-Websites.com Logo" width={81} height={45} style={{height: '45px', width: 'auto'}} />
-            <span className="font-headline font-semibold text-gray-700 hidden sm:inline">Community-Websites.com</span>
+            <span className="font-headline font-semibold text-gray-700 hidden xs:inline">Community-Websites.com</span>
           </Link>
           <Button variant="outline" asChild>
             <Link href="/login">
               <User className="mr-2 h-4 w-4" />
-              Existing Customer Login
+              Login
             </Link>
           </Button>
         </div>

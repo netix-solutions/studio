@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirebase } from '@/firebase';
 import { signInWithEmail } from '@/lib/firebase/auth';
-import { Loader2, ArrowLeft, Phone, Shield, Lock } from 'lucide-react';
+import { Loader2, ArrowLeft, Phone, Shield, Lock, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -99,23 +99,15 @@ export default function LoginPage() {
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
-              <span className="font-headline font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
+              <span className="font-headline font-semibold text-gray-900 hidden xs:inline text-xl tracking-wider">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2">
-              <a
-                href="tel:813-544-8383"
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-colors md:hidden"
-                aria-label="Call us"
-              >
-                <Phone className="h-4 w-4" />
-              </a>
-              <a
-                href="tel:813-544-8383"
-                className="hidden md:flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
-              >
-                <Phone className="h-4 w-4" />
-                <span>813-544-8383</span>
-              </a>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/login">
+                  <UserIcon className="h-4 w-4 md:mr-1.5" />
+                  <span className="hidden md:inline font-medium">Login</span>
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

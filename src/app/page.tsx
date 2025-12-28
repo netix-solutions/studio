@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, DollarSign, Target, BarChart3, Clock, Award, Building2, Utensils, Briefcase, Home, Heart, Car, Scissors, ShoppingBag, Stethoscope } from 'lucide-react';
+import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, DollarSign, Target, BarChart3, Clock, Award, Building2, Utensils, Briefcase, Home, Heart, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -33,26 +33,16 @@ export default function LandingPage() {
           <div className="flex h-16 md:h-[72px] items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo.png" alt="Community-Websites.com" width={48} height={27} className="h-[30px] md:h-[36px] w-auto" />
-              <span className="font-headline font-bold text-brand-primary text-base tracking-tight hidden sm:inline">Community-Websites.com</span>
+              <span className="font-headline font-bold text-brand-primary text-base tracking-tight hidden xs:inline">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-3 md:gap-4">
-              {/* Mobile: Icon only phone button */}
-              <a
-                href="tel:813-544-8383"
-                className="md:hidden flex items-center justify-center w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 active:bg-brand-primary/30 transition-all duration-200"
-                aria-label="Call us"
-              >
-                <Phone className="h-5 w-5" />
-              </a>
-              {/* Desktop: Full phone number */}
-              <a
-                href="tel:813-544-8383"
-                className="hidden md:flex items-center gap-2 text-sm text-brand-primary hover:text-brand-secondary font-medium transition-colors"
-              >
-                <Phone className="h-4 w-4" />
-                <span>813-544-8383</span>
-              </a>
-               <Button size="sm" asChild variant="success" className="h-10 px-4 sm:px-5 md:px-6 text-sm">
+              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+                <Link href="/login">
+                  <UserIcon className="h-4 w-4 mr-1.5" />
+                  Login
+                </Link>
+              </Button>
+              <Button size="sm" asChild variant="success" className="h-10 px-4 sm:px-5 md:px-6 text-sm">
                 <Link href="#get-started">
                   <span className="hidden sm:inline">View Pricing</span>
                   <span className="sm:hidden">Pricing</span>
