@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, DollarSign, Target, BarChart3, Clock, Award, Building2, Utensils, Briefcase, Home, Heart, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon } from 'lucide-react';
+import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, Clock, Award, Building2, Utensils, Briefcase, Home, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon, Palette, Sparkles, MousePointerClick, Monitor } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -163,89 +163,7 @@ export default function LandingPage() {
       {/* Live Stats Bar */}
       <LiveStatsBar />
 
-      {/* Business Types We Serve */}
-      <section className="py-10 md:py-16 bg-white border-b border-gray-100">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-6 md:mb-10">
-            <p className="text-gray-600 text-sm md:text-base font-medium">
-              Trusted by Local Businesses Across Pasco County
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 lg:gap-12">
-            {[
-              { icon: Utensils, label: 'Restaurants' },
-              { icon: Home, label: 'Real Estate' },
-              { icon: Stethoscope, label: 'Medical' },
-              { icon: Car, label: 'Auto Services' },
-              { icon: Scissors, label: 'Salons & Spas' },
-              { icon: Briefcase, label: 'Professional Services' },
-              { icon: ShoppingBag, label: 'Retail' },
-              { icon: Building2, label: 'Home Services' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors">
-                <item.icon className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="text-xs md:text-sm font-medium">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Value Propositions */}
-      <section className="py-14 md:py-24 bg-gradient-to-b from-gray-50 to-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Why Local Businesses Choose Us
-            </h2>
-            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg">
-              Simple, affordable, and effective local advertising
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-5 md:gap-8">
-            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group">
-              <div className="w-12 h-12 md:w-14 md:h-14 bg-brand-primary/10 rounded-xl flex items-center justify-center mb-5 md:mb-6 group-hover:bg-brand-primary/15 transition-colors">
-                <Users className="h-6 w-6 md:h-7 md:w-7 text-brand-primary" />
-              </div>
-              <h3 className="text-lg md:text-xl font-bold text-brand-primary mb-2 md:mb-3 font-headline">Hyper-Local Reach</h3>
-              <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                Your ad appears on the websites Pasco County residents visit for local news, events, and community updates.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group">
-              <div className="w-12 h-12 md:w-14 md:h-14 bg-success-light rounded-xl flex items-center justify-center mb-5 md:mb-6 group-hover:bg-success/20 transition-colors">
-                <TrendingUp className="h-6 w-6 md:h-7 md:w-7 text-success-dark" />
-              </div>
-              <h3 className="text-lg md:text-xl font-bold text-brand-primary mb-2 md:mb-3 font-headline">Drive Real Traffic</h3>
-              <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                Every ad is clickable and links directly to your website, booking page, or special offer.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group">
-              <div className="w-12 h-12 md:w-14 md:h-14 bg-brand-secondary/10 rounded-xl flex items-center justify-center mb-5 md:mb-6 group-hover:bg-brand-secondary/15 transition-colors">
-                <Zap className="h-6 w-6 md:h-7 md:w-7 text-brand-secondary" />
-              </div>
-              <h3 className="text-lg md:text-xl font-bold text-brand-primary mb-2 md:mb-3 font-headline">Quick & Easy</h3>
-              <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                No design skills needed. We'll create a professional ad for you and have it live within 48 hours.
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center mt-10 md:mt-14">
-            <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/25">
-              <Link href="#get-started">
-                Get Started Today <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Where Ads Appear */}
+      {/* Where Ads Appear - Premium Placement */}
       <section className="py-14 md:py-24 overflow-hidden">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -300,172 +218,216 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Value Proposition - Why Community Websites */}
-      <section className="py-14 md:py-24 bg-gradient-to-br from-gray-50 via-white to-brand-primary/5">
+      {/* Two Ways to Get Your Ad - Design Options */}
+      <section className="py-16 md:py-24 bg-gradient-to-b from-white via-gray-50/50 to-white">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto">
-            {/* Main Value Card */}
-            <div className="relative bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 text-center">
-              <span className="inline-flex items-center gap-2 text-success-dark font-semibold text-xs md:text-sm uppercase tracking-wider mb-4">
-                <DollarSign className="h-4 w-4" />
-                Smart Investment
-              </span>
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary mb-4">
-                Get More Reach for Your Dollar
-              </h2>
-              <p className="text-gray-600 text-base md:text-lg mb-8 max-w-2xl mx-auto">
-                Reach thousands of local customers every month without breaking the bank
-              </p>
-
-              {/* Price Highlight */}
-              <div className="inline-flex items-center gap-3 bg-success-light/50 rounded-2xl px-6 py-4 md:px-8 md:py-5 mb-8">
-                <div className="text-left">
-                  <p className="text-sm text-gray-600 font-medium">Advertise for as little as</p>
-                  <p className="text-3xl md:text-4xl font-bold text-success-dark">$16<span className="text-lg md:text-xl font-semibold text-gray-500"> p/m</span></p>
-                </div>
-              </div>
-
-              {/* Benefits Grid */}
-              <div className="grid sm:grid-cols-2 gap-4 md:gap-5 max-w-xl mx-auto mb-8">
-                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm md:text-base text-gray-700">20,000+ monthly impressions</span>
-                </div>
-                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm md:text-base text-gray-700">Hyper-local targeting</span>
-                </div>
-                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm md:text-base text-gray-700">Clickable to your website</span>
-                </div>
-                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm md:text-base text-gray-700">Free ad design included</span>
-                </div>
-              </div>
-
-              <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/25">
-                <Link href="#get-started">
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works - Simplified */}
-      <section className="py-14 md:py-24 bg-brand-primary text-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline">
-              Get Started in 3 Simple Steps
+          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+            <span className="inline-flex items-center gap-2 text-brand-secondary font-semibold text-xs md:text-sm uppercase tracking-wider mb-4">
+              <Sparkles className="h-4 w-4" />
+              You Choose How
+            </span>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary mb-4">
+              Two Ways to Create Your Ad
             </h2>
-            <p className="mt-3 md:mt-4 text-white/70 text-base md:text-lg">
-              From signup to live ad in as little as 48 hours
+            <p className="text-gray-600 text-base md:text-lg">
+              Whether you want our experts to handle everything or prefer to design it yourself, we've got you covered.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 md:gap-10 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-18 md:h-18 bg-success rounded-2xl flex items-center justify-center mx-auto mb-5 md:mb-6 text-xl md:text-2xl font-bold shadow-lg shadow-success/30">
-                1
-              </div>
-              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-headline">Choose Your Plan</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                Pick a plan that fits your budget. No contracts, cancel anytime.
-              </p>
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
+            {/* Option 1: Professional Design */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
+              <Card className="relative h-full bg-white border-2 border-brand-primary/20 hover:border-brand-primary/40 transition-all duration-300 rounded-2xl overflow-hidden">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/25">
+                      <PenTool className="h-7 w-7 md:h-8 md:w-8 text-white" />
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 bg-success-light text-success-dark text-xs md:text-sm font-bold px-3 py-1.5 rounded-full">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      FREE
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl md:text-2xl font-bold text-brand-primary mb-3 font-headline">
+                    Let Our Team Design It
+                  </h3>
+                  <p className="text-gray-600 text-sm md:text-base mb-6 leading-relaxed">
+                    Sit back and relax while our professional design team creates a stunning, eye-catching ad for your business at no extra cost.
+                  </p>
+
+                  <ul className="space-y-3 mb-6">
+                    {[
+                      'Professional graphic designers',
+                      'Unlimited revisions until you\'re happy',
+                      'Ready within 48 hours',
+                      'Optimized for clicks & engagement',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm md:text-base text-gray-700">
+                        <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="pt-4 border-t border-gray-100">
+                    <p className="text-xs md:text-sm text-gray-500 flex items-center gap-2">
+                      <Award className="h-4 w-4 text-brand-secondary" />
+                      Most popular choice for busy business owners
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-18 md:h-18 bg-success rounded-2xl flex items-center justify-center mx-auto mb-5 md:mb-6 text-xl md:text-2xl font-bold shadow-lg shadow-success/30">
-                2
-              </div>
-              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-headline">We Design Your Ad</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                Upload your own or let our team create a professional ad for you.
-              </p>
-            </div>
+            {/* Option 2: DIY Design */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-success to-brand-secondary rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
+              <Card className="relative h-full bg-white border-2 border-success/20 hover:border-success/40 transition-all duration-300 rounded-2xl overflow-hidden">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-success to-success-dark rounded-2xl flex items-center justify-center shadow-lg shadow-success/25">
+                      <Palette className="h-7 w-7 md:h-8 md:w-8 text-white" />
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary text-xs md:text-sm font-bold px-3 py-1.5 rounded-full">
+                      <Monitor className="h-3.5 w-3.5" />
+                      INSTANT
+                    </span>
+                  </div>
 
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-18 md:h-18 bg-success rounded-2xl flex items-center justify-center mx-auto mb-5 md:mb-6 text-xl md:text-2xl font-bold shadow-lg shadow-success/30">
-                3
-              </div>
-              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-headline">Go Live</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">
-                Approve your ad and start reaching local customers immediately.
-              </p>
+                  <h3 className="text-xl md:text-2xl font-bold text-brand-primary mb-3 font-headline">
+                    Design Your Own Instantly
+                  </h3>
+                  <p className="text-gray-600 text-sm md:text-base mb-6 leading-relaxed">
+                    Use our easy online ad designer right from your computer. No design experience needed—create your perfect ad in minutes.
+                  </p>
+
+                  <ul className="space-y-3 mb-6">
+                    {[
+                      'Easy drag-and-drop editor',
+                      'Add your logo, photos & text',
+                      'Preview in real-time',
+                      'Make changes anytime you want',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm md:text-base text-gray-700">
+                        <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="pt-4 border-t border-gray-100">
+                    <p className="text-xs md:text-sm text-gray-500 flex items-center gap-2">
+                      <MousePointerClick className="h-4 w-4 text-success" />
+                      Perfect for hands-on business owners
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          <div className="text-center mt-10 md:mt-14">
-            <Button size="lg" asChild className="bg-white text-brand-primary hover:bg-gray-100 active:bg-gray-200 h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation font-bold shadow-lg">
+          <div className="text-center mt-10 md:mt-12">
+            <p className="text-gray-600 text-sm md:text-base mb-5">
+              Both options included with every plan—choose what works best for you!
+            </p>
+            <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/25">
               <Link href="#get-started">
-                Start Now <ArrowRight className="ml-2 h-5 w-5" />
+                Get Started <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-14 md:py-24 bg-white">
+      {/* How It Works - Compact */}
+      <section className="py-14 md:py-20 bg-brand-primary text-white">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
-            <span className="inline-flex items-center gap-2 text-brand-secondary font-semibold text-xs md:text-sm uppercase tracking-wider mb-3">
-              <Star className="h-4 w-4 fill-current" />
-              Success Stories
-            </span>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Hear From Local Business Owners
+          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-12">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline">
+              Live in 3 Easy Steps
             </h2>
-            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg">
-              Join businesses already growing with community advertising
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
+            {[
+              { step: '1', title: 'Choose Your Plan', desc: 'Pick a budget that works for you. No contracts required.' },
+              { step: '2', title: 'Create Your Ad', desc: 'Let us design it free, or use our online ad designer yourself.' },
+              { step: '3', title: 'Go Live', desc: 'Approve your ad and start reaching customers in 48 hours.' },
+            ].map((item, i) => (
+              <div key={i} className="text-center">
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-success rounded-xl flex items-center justify-center mx-auto mb-4 text-lg md:text-xl font-bold shadow-lg shadow-success/30">
+                  {item.step}
+                </div>
+                <h3 className="text-base md:text-lg font-bold mb-2 font-headline">{item.title}</h3>
+                <p className="text-white/70 text-sm md:text-base leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* What's Included - Compact Grid */}
+      <section className="py-14 md:py-20 bg-white">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-12">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
+              Everything Included
+            </h2>
+            <p className="mt-3 text-gray-600 text-base md:text-lg">
+              No hidden fees. Simple, transparent pricing.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5 md:gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5 max-w-5xl mx-auto">
             {[
-              {
-                quote: "We saw an increase in new customers within the first week. The local targeting is exactly what our restaurant needed.",
-                name: "Maria S.",
-                business: "Family Restaurant",
-                type: "Wesley Chapel",
-                icon: Utensils,
-              },
-              {
-                quote: "At $16 a month, this is the most cost-effective advertising we've found. Our phone started ringing from day one.",
-                name: "James T.",
-                business: "HVAC Services",
-                type: "Pasco County",
-                icon: Building2,
-              },
-              {
-                quote: "The team designed a beautiful ad for us and it was live in 2 days. We've already renewed for a second year!",
-                name: "Dr. Sarah K.",
-                business: "Family Dentistry",
-                type: "Wesley Chapel",
-                icon: Stethoscope,
-              },
-            ].map((testimonial, i) => (
-              <Card key={i} className="bg-gray-50 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl">
-                <CardContent className="p-6 md:p-7">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="h-4 w-4 text-amber-400 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-gray-700 text-sm md:text-base mb-5 leading-relaxed">
-                    "{testimonial.quote}"
-                  </p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-                    <div className="w-11 h-11 bg-brand-primary/10 rounded-full flex items-center justify-center">
-                      <testimonial.icon className="h-5 w-5 text-brand-primary" />
+              { icon: PenTool, label: 'Free Design' },
+              { icon: TrendingUp, label: 'Clickable Ads' },
+              { icon: Zap, label: 'Free Updates' },
+              { icon: Shield, label: 'No Contracts' },
+              { icon: Users, label: 'Local Reach' },
+              { icon: Clock, label: '48hr Launch' },
+            ].map((item, i) => (
+              <div key={i} className="text-center p-4 md:p-5 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md hover:border-brand-primary/20 transition-all duration-200">
+                <item.icon className="h-6 w-6 md:h-7 md:w-7 text-brand-primary mx-auto mb-2.5" />
+                <span className="text-xs md:text-sm font-semibold text-gray-700">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof - Compact Testimonials */}
+      <section className="py-14 md:py-20 bg-gray-50">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-10 md:mb-12">
+            <div className="flex items-center justify-center gap-1 mb-3">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-5 w-5 md:h-6 md:w-6 text-amber-400 fill-current" />
+              ))}
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold font-headline text-brand-primary">
+              Trusted by Local Businesses
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 md:gap-6 max-w-5xl mx-auto">
+            {[
+              { quote: "The local targeting is exactly what our restaurant needed. New customers every week!", name: "Maria S.", business: "Family Restaurant", icon: Utensils },
+              { quote: "At $16 a month, this is the most affordable advertising we've found.", name: "James T.", business: "HVAC Services", icon: Building2 },
+              { quote: "Beautiful ad designed for us in 2 days. Already renewed for a second year!", name: "Dr. Sarah K.", business: "Family Dentistry", icon: Stethoscope },
+            ].map((item, i) => (
+              <Card key={i} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+                <CardContent className="p-5 md:p-6">
+                  <p className="text-gray-700 text-sm md:text-base mb-4 leading-relaxed">"{item.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center">
+                      <item.icon className="h-5 w-5 text-brand-primary" />
                     </div>
                     <div>
-                      <div className="font-semibold text-brand-primary text-sm">{testimonial.name}</div>
-                      <div className="text-xs text-gray-500">{testimonial.business} • {testimonial.type}</div>
+                      <div className="font-semibold text-brand-primary text-sm">{item.name}</div>
+                      <div className="text-xs text-gray-500">{item.business}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -475,100 +437,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Why Local Advertising Works - Statistics */}
-      <section className="py-14 md:py-24 bg-gradient-to-br from-brand-secondary to-brand-primary text-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline">
-              Why Local Advertising Works
-            </h2>
-            <p className="mt-3 md:mt-4 text-white/75 text-base md:text-lg">
-              The numbers don't lie—local consumers prefer local businesses
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 md:gap-8 max-w-5xl mx-auto">
-            {[
-              { stat: "82%", label: "of consumers use search engines to find local businesses", icon: Target },
-              { stat: "72%", label: "of local searches result in a visit within 5 miles", icon: BarChart3 },
-              { stat: "88%", label: "of consumers trust online reviews as much as personal recommendations", icon: Star },
-              { stat: "46%", label: "of all Google searches are looking for local information", icon: Users },
-            ].map((item, i) => (
-              <div key={i} className="text-center p-5 md:p-6 bg-white/5 rounded-2xl backdrop-blur-sm">
-                <div className="w-14 h-14 bg-white/15 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <item.icon className="h-7 w-7 text-white" />
-                </div>
-                <div className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 text-success">{item.stat}</div>
-                <p className="text-white/75 text-xs md:text-sm leading-snug">{item.label}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12 md:mt-16">
-            <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/30">
-              <Link href="#get-started">
-                Get Found by Local Customers <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* What's Included */}
-      <section className="py-14 md:py-24 bg-gradient-to-b from-gray-50 to-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Everything You Need to Succeed
-            </h2>
-            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg">
-              No hidden fees. The price you see is the price you pay.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-            {[
-              { icon: PenTool, title: "Free Ad Design", desc: "Professional banner created for you" },
-              { icon: TrendingUp, title: "Clickable Ads", desc: "Drive traffic to your website or offer" },
-              { icon: Zap, title: "Quick Updates", desc: "Change your ad anytime, for free" },
-              { icon: Shield, title: "No Contracts", desc: "Month-to-month, cancel anytime" },
-              { icon: Users, title: "Local Targeting", desc: "Reach Pasco County residents" },
-              { icon: CheckCircle, title: "Rotating Display", desc: "Fair exposure across all pages" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-4 md:gap-5 p-5 md:p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                <div className="w-11 h-11 md:w-12 md:h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <item.icon className="h-5 w-5 md:h-6 md:w-6 text-brand-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-brand-primary text-sm md:text-base">{item.title}</h3>
-                  <p className="text-gray-600 text-xs md:text-sm mt-1">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Lead Form Section - Primary Conversion Point */}
+      {/* Lead Form Section */}
       <section id="get-started" className="py-14 md:py-24 bg-gradient-to-br from-brand-primary via-brand-secondary to-brand-primary scroll-mt-16 md:scroll-mt-[72px]">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-xl mx-auto">
-            <Card className="bg-white shadow-2xl border-0 rounded-2xl overflow-hidden ring-1 ring-white/20">
+            <Card className="bg-white shadow-2xl border-0 rounded-2xl overflow-hidden">
               <CardContent className="p-6 md:p-8 lg:p-10">
                 <div className="text-center mb-7 md:mb-8">
                   <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-brand-primary font-headline">
                     Ready to Grow Your Business?
                   </h2>
                   <p className="text-gray-600 mt-2 text-sm md:text-base">
-                    Fill out the form below to see our current pricing and plans.
+                    Fill out the form to see our pricing plans.
                   </p>
                 </div>
 
                 <GetStartedForm />
 
-                <div className="mt-6 md:mt-7 pt-6 md:pt-7 border-t border-gray-100">
+                <div className="mt-6 pt-6 border-t border-gray-100">
                   <p className="text-center text-gray-500 text-xs md:text-sm">
-                    Questions? Call or text us anytime at{' '}
+                    Questions? Call or text{' '}
                     <a href="tel:813-544-8383" className="text-brand-secondary font-semibold hover:underline">
                       813-544-8383
                     </a>
@@ -577,155 +465,65 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* Trust Indicators */}
-            <div className="flex items-center justify-center gap-6 md:gap-8 mt-7 md:mt-8 text-white/85 text-xs md:text-sm">
+            <div className="flex items-center justify-center gap-6 md:gap-8 mt-6 text-white/85 text-xs md:text-sm">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                <span className="font-medium">Secure Form</span>
+                <span className="font-medium">Secure</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 <span className="font-medium">No Spam</span>
               </div>
+              <div className="flex items-center gap-2">
+                <Award className="h-4 w-4" />
+                <span className="font-medium">30-Day Guarantee</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Guarantee Section */}
+      {/* FAQ Section - Minimal */}
       <section className="py-14 md:py-20 bg-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-success-light via-success-light/50 to-white rounded-2xl md:rounded-3xl p-7 md:p-10 border border-success/20 shadow-sm">
-              <div className="flex flex-col md:flex-row items-center gap-7 md:gap-10">
-                <div className="flex-shrink-0">
-                  <div className="w-22 h-22 md:w-28 md:h-28 bg-success/15 rounded-2xl flex items-center justify-center">
-                    <Award className="h-11 w-11 md:h-14 md:w-14 text-success-dark" />
-                  </div>
-                </div>
-                <div className="text-center md:text-left flex-grow">
-                  <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-brand-primary font-headline mb-3 md:mb-4">
-                    Our Satisfaction Promise
-                  </h3>
-                  <p className="text-gray-600 text-sm md:text-base lg:text-lg mb-5 md:mb-6 leading-relaxed">
-                    We're confident you'll love advertising with us. If you're not completely satisfied with your ad within the first 30 days, we'll work with you to make it right—no questions asked. Your success is our success.
-                  </p>
-                  <div className="flex flex-wrap justify-center md:justify-start gap-5 md:gap-6">
-                    <div className="flex items-center gap-2.5 text-gray-700">
-                      <CheckCircle className="h-5 w-5 text-success" />
-                      <span className="text-sm md:text-base font-medium">30-Day Guarantee</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-gray-700">
-                      <CheckCircle className="h-5 w-5 text-success" />
-                      <span className="text-sm md:text-base font-medium">No Lock-In Contracts</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-gray-700">
-                      <CheckCircle className="h-5 w-5 text-success" />
-                      <span className="text-sm md:text-base font-medium">Cancel Anytime</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Trust Badges */}
-            <div className="mt-10 md:mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              <div className="text-center p-5 bg-gray-50 rounded-xl border border-gray-100">
-                <Clock className="h-7 w-7 text-brand-primary mx-auto mb-3" />
-                <div className="font-semibold text-brand-primary text-sm">48-Hour Launch</div>
-                <div className="text-xs text-gray-500 mt-0.5">Go live in 2 days</div>
-              </div>
-              <div className="text-center p-5 bg-gray-50 rounded-xl border border-gray-100">
-                <Users className="h-7 w-7 text-brand-primary mx-auto mb-3" />
-                <div className="font-semibold text-brand-primary text-sm">Local Support</div>
-                <div className="text-xs text-gray-500 mt-0.5">Real people, real help</div>
-              </div>
-              <div className="text-center p-5 bg-gray-50 rounded-xl border border-gray-100">
-                <Shield className="h-7 w-7 text-brand-primary mx-auto mb-3" />
-                <div className="font-semibold text-brand-primary text-sm">Secure Payments</div>
-                <div className="text-xs text-gray-500 mt-0.5">SSL encrypted</div>
-              </div>
-              <div className="text-center p-5 bg-gray-50 rounded-xl border border-gray-100">
-                <Star className="h-7 w-7 text-brand-primary mx-auto mb-3" />
-                <div className="font-semibold text-brand-primary text-sm">5-Star Rated</div>
-                <div className="text-xs text-gray-500 mt-0.5">By local businesses</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section - Condensed */}
-      <section className="py-14 md:py-24 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl">
           <div className="text-center mb-10 md:mb-12">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
+            <h2 className="text-2xl md:text-3xl font-bold font-headline text-brand-primary">
               Common Questions
             </h2>
           </div>
 
-          <Accordion type="single" collapsible className="space-y-3 md:space-y-4">
-            <AccordionItem value="item-1" className="bg-white rounded-xl px-5 md:px-6 shadow-sm border border-gray-100">
-              <AccordionTrigger className="hover:no-underline py-4 md:py-5">
-                <span className="text-left font-semibold text-sm md:text-base pr-4 text-brand-primary">What types of businesses do you work with?</span>
-              </AccordionTrigger>
-              <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base leading-relaxed">
-                We work with all local businesses in Pasco County—restaurants, real estate agents, contractors, medical offices, retailers, and more. If you serve the local community, we can help you reach more customers.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-2" className="bg-white rounded-xl px-5 md:px-6 shadow-sm border border-gray-100">
-              <AccordionTrigger className="hover:no-underline py-4 md:py-5">
-                <span className="text-left font-semibold text-sm md:text-base pr-4 text-brand-primary">How many times will my ad be shown?</span>
-              </AccordionTrigger>
-              <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base leading-relaxed">
-                In most cases, your ad will be shown over 20,000 times per month, if not more. This provides significant exposure to a targeted local audience.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-3" className="bg-white rounded-xl px-5 md:px-6 shadow-sm border border-gray-100">
-              <AccordionTrigger className="hover:no-underline py-4 md:py-5">
-                <span className="text-left font-semibold text-sm md:text-base pr-4 text-brand-primary">How quickly will my ad go live?</span>
-              </AccordionTrigger>
-              <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base leading-relaxed">
-                Most ads go live within 48 hours of approval. We'll send you a preview to approve before your ad starts running.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-4" className="bg-white rounded-xl px-5 md:px-6 shadow-sm border border-gray-100">
-              <AccordionTrigger className="hover:no-underline py-4 md:py-5">
-                <span className="text-left font-semibold text-sm md:text-base pr-4 text-brand-primary">Can I cancel anytime?</span>
-              </AccordionTrigger>
-              <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base leading-relaxed">
-                Absolutely. There are no contracts or cancellation fees. You can cancel your subscription anytime through your customer portal.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-5" className="bg-white rounded-xl px-5 md:px-6 shadow-sm border border-gray-100">
-              <AccordionTrigger className="hover:no-underline py-4 md:py-5">
-                <span className="text-left font-semibold text-sm md:text-base pr-4 text-brand-primary">Can I update my ad later?</span>
-              </AccordionTrigger>
-              <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base leading-relaxed">
-                Yes! Just email us with your updates and we'll refresh your ad within 1-2 business days at no extra charge.
-              </AccordionContent>
-            </AccordionItem>
+          <Accordion type="single" collapsible className="space-y-3">
+            {[
+              { q: 'Do I need to design my own ad?', a: 'No! You can let our professional team design it for you at no extra cost, or use our easy online designer to create it yourself—whichever you prefer.' },
+              { q: 'How quickly will my ad go live?', a: 'Most ads go live within 48 hours of approval. We\'ll send you a preview to approve first.' },
+              { q: 'Can I update my ad later?', a: 'Yes! Update your ad anytime at no extra charge. Design it yourself using our online tool, or just email us your changes.' },
+              { q: 'Can I cancel anytime?', a: 'Absolutely. No contracts, no cancellation fees. Cancel anytime through your portal.' },
+            ].map((item, i) => (
+              <AccordionItem key={i} value={`item-${i}`} className="bg-gray-50 rounded-xl px-5 md:px-6 border border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-4 md:py-5">
+                  <span className="text-left font-semibold text-sm md:text-base pr-4 text-brand-primary">{item.q}</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-600 pb-4 md:pb-5 text-sm md:text-base leading-relaxed">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
 
-          <div className="text-center mt-10 md:mt-12">
-            <p className="text-gray-600 mb-3 md:mb-4 text-sm md:text-base">Still have questions?</p>
+          <div className="text-center mt-10">
             <a
               href="tel:813-544-8383"
-              className="inline-flex items-center gap-2 text-brand-secondary font-semibold hover:text-brand-primary hover:underline text-base md:text-lg touch-manipulation transition-colors"
+              className="inline-flex items-center gap-2 text-brand-secondary font-semibold hover:text-brand-primary text-base touch-manipulation transition-colors"
             >
               <Phone className="h-5 w-5" />
-              Call or text us: 813-544-8383
+              More questions? Call 813-544-8383
             </a>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-14 md:py-18 bg-brand-dark text-white">
+      <section className="py-12 md:py-16 bg-brand-dark text-white">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline mb-4 md:mb-5">
             Ready to Reach More Local Customers?
