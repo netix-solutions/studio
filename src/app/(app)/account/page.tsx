@@ -42,6 +42,10 @@ import { format } from 'date-fns';
 
 // Workflow Components
 import { CustomerWorkflow } from '@/components/workflow/CustomerWorkflow';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn, formatPhoneNumber, fixUrl } from '@/lib/utils';
+import Image from 'next/image';
+import Link from 'next/link';
 import {
     type Advertisement,
     type UserProfile,

@@ -18,10 +18,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowRight, Check } from 'lucide-react';
+import { formatPhoneNumber } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { sendEmail } from '@/lib/firebase/email';
 import { wrapEmailContent, replaceEmailPlaceholders, generateEmailUrls } from '@/lib/email-utils';
+import { defaultTemplates } from '@/lib/email-templates';
 import {
   LEAD_STAGES,
   LEAD_SOURCES,
@@ -170,12 +172,28 @@ export function GetStartedForm() {
 
       // Send auto-response email with pricing link
       try {
-        // Fetch the pricing_link email template
-        const templateRef = doc(firestore, 'emailTemplates', 'pricing_link');
-        const templateSnap = await getDoc(templateRef);
+        // Try to fetch the pricing_link email template from Firestore, fall back to local template
+        let template: { subject: string; html: string } | null = null;
 
-        if (templateSnap.exists()) {
-          const template = templateSnap.data();
+        try {
+          const templateRef = doc(firestore, 'emailTemplates', 'pricing_link');
+          const templateSnap = await getDoc(templateRef);
+          if (templateSnap.exists()) {
+            template = templateSnap.data() as { subject: string; html: string };
+          }
+        } catch (firestoreError) {
+          console.warn('Could not fetch template from Firestore, using local template:', firestoreError);
+        }
+
+        // Fall back to local template if Firestore template doesn't exist
+        if (!template) {
+          const localTemplate = defaultTemplates.find(t => t.id === 'pricing_link');
+          if (localTemplate) {
+            template = { subject: localTemplate.subject, html: localTemplate.html };
+          }
+        }
+
+        if (template) {
           const urls = generateEmailUrls(leadDocRef.id);
 
           // Replace placeholders in subject and body
@@ -198,6 +216,8 @@ export function GetStartedForm() {
             templateId: 'pricing_link',
             triggerType: 'interest_form_submission',
           });
+        } else {
+          console.error('No pricing_link template found in Firestore or local templates');
         }
       } catch (emailError) {
         // Log but don't fail the form submission if email fails
@@ -339,6 +359,7 @@ export function GetStartedForm() {
                   className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                   inputMode="tel"
                   {...field}
+                  onChange={(e) => field.onChange(formatPhoneNumber(e.target.value))}
                 />
               </FormControl>
               <FormMessage className="text-xs md:text-sm" />

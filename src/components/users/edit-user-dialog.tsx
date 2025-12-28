@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { formatPhoneNumber, fixUrl } from '@/lib/utils';
 import { AppUser } from '@/app/(app)/users/page';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
@@ -196,7 +197,11 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
                     <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                        <Input placeholder="(555) 123-4567" {...field} />
+                        <Input
+                            placeholder="(555) 123-4567"
+                            {...field}
+                            onChange={(e) => field.onChange(formatPhoneNumber(e.target.value))}
+                        />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -210,7 +215,16 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
                 <FormItem>
                   <FormLabel>Ad Link URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com" {...field} />
+                    <Input
+                        placeholder="https://example.com"
+                        {...field}
+                        onBlur={(e) => {
+                            field.onBlur();
+                            if (e.target.value) {
+                                field.onChange(fixUrl(e.target.value));
+                            }
+                        }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
