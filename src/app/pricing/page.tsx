@@ -504,7 +504,7 @@ function PricingPageContent() {
   return (
     <div className="min-h-[100dvh] bg-gray-50">
       {/* Mobile-First Header */}
-      <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-gray-100/80 safe-area-inset shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100/80 safe-area-inset shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">

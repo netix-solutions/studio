@@ -14,12 +14,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Mobile-First Sticky Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/98 backdrop-blur-md border-b border-gray-100/80 safe-area-inset shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100/80 safe-area-inset shadow-sm">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex h-16 md:h-[72px] items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo.png" alt="Community-Websites.com" width={48} height={27} className="h-[30px] md:h-[36px] w-auto" />
-              <span className="font-headline font-bold text-brand-primary text-[12px] sm:text-sm md:text-base tracking-tight">Community-Websites.com</span>
+              <span className="font-headline font-bold text-brand-primary text-base tracking-tight hidden sm:inline">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-3 md:gap-4">
               {/* Mobile: Icon only phone button */}

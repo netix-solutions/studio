@@ -94,7 +94,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-[100dvh] bg-gray-50 flex flex-col">
       {/* Mobile-First Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 safe-area-inset">
+      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-sm border-b border-gray-100 safe-area-inset">
         <div className="container mx-auto px-4">
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
