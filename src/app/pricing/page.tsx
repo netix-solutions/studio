@@ -218,9 +218,13 @@ function MobilePricingCard({
           </span>
           <span className="text-gray-500 text-xs md:text-sm font-medium">/month</span>
         </div>
-        {billingCycle === 'yearly' && yearlyPrice && (
+        {billingCycle === 'yearly' && yearlyPrice ? (
           <p className="text-[10px] md:text-xs text-gray-500 mt-1">
-            Billed as ${(yearlyPrice.unit_amount / 100).toFixed(0)}/year
+            <span className="font-medium text-success-dark">${(yearlyPrice.unit_amount / 100).toFixed(0)}</span> paid annually
+          </p>
+        ) : (
+          <p className="text-[10px] md:text-xs text-gray-500 mt-1">
+            Paid monthly • Switch to yearly to save
           </p>
         )}
       </div>
@@ -254,34 +258,41 @@ function BillingToggle({
   savings: number;
 }) {
   return (
-    <div className="flex items-center justify-center gap-1.5 p-1 bg-gray-100 rounded-full w-fit mx-auto">
-      <button
-        onClick={() => onChange('monthly')}
-        className={cn(
-          "px-4 md:px-5 py-2.5 md:py-2.5 rounded-full text-sm font-medium transition-all touch-manipulation active:scale-[0.98]",
-          value === 'monthly'
-            ? "bg-white shadow-sm text-gray-900"
-            : "text-gray-600 hover:text-gray-900"
-        )}
-      >
-        Monthly
-      </button>
-      <button
-        onClick={() => onChange('yearly')}
-        className={cn(
-          "px-4 md:px-5 py-2.5 md:py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 touch-manipulation active:scale-[0.98]",
-          value === 'yearly'
-            ? "bg-white shadow-sm text-gray-900"
-            : "text-gray-600 hover:text-gray-900"
-        )}
-      >
-        Yearly
-        {savings > 0 && (
-          <Badge className="bg-green-500 text-white text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
-            -{savings}%
-          </Badge>
-        )}
-      </button>
+    <div className="text-center">
+      <div className="flex items-center justify-center gap-1.5 p-1 bg-gray-100 rounded-full w-fit mx-auto">
+        <button
+          onClick={() => onChange('monthly')}
+          className={cn(
+            "px-4 md:px-5 py-2.5 md:py-2.5 rounded-full text-sm font-medium transition-all touch-manipulation active:scale-[0.98]",
+            value === 'monthly'
+              ? "bg-white shadow-sm text-gray-900"
+              : "text-gray-600 hover:text-gray-900"
+          )}
+        >
+          Monthly
+        </button>
+        <button
+          onClick={() => onChange('yearly')}
+          className={cn(
+            "px-4 md:px-5 py-2.5 md:py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 touch-manipulation active:scale-[0.98]",
+            value === 'yearly'
+              ? "bg-white shadow-sm text-gray-900"
+              : "text-gray-600 hover:text-gray-900"
+          )}
+        >
+          Yearly
+          {savings > 0 && (
+            <Badge className="bg-green-500 text-white text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
+              -{savings}%
+            </Badge>
+          )}
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mt-2">
+        {value === 'yearly'
+          ? 'Prices shown per month, billed annually. Switch to monthly anytime.'
+          : 'Pay month-to-month. Switch to yearly to save more.'}
+      </p>
     </div>
   );
 }
@@ -525,7 +536,7 @@ function PricingPageContent() {
       </header>
 
       {/* Main Content */}
-      <main className="pb-40 md:pb-16">
+      <main className="pb-40 md:pb-28">
         {/* Hero Section */}
         <section className="bg-white py-8 md:py-14 border-b border-gray-100">
           <div className="container mx-auto px-4 text-center">
@@ -659,27 +670,8 @@ function PricingPageContent() {
               </div>
             </section>
 
-            {/* Desktop CTA */}
-            <div className="hidden md:block py-8">
-              <div className="container mx-auto px-4 max-w-xl">
-                <Button
-                  size="lg"
-                  variant="success"
-                  className="w-full h-14 text-lg shadow-lg shadow-success/25"
-                  onClick={handlePurchase}
-                  disabled={!selectedPlan || !!isPurchasing}
-                >
-                  {isPurchasing ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      Continue to Checkout
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+{/* Spacer for desktop sticky footer */}
+            <div className="hidden md:block h-24"></div>
           </>
         ) : (
           <div className="container mx-auto px-4 py-16">
@@ -707,11 +699,14 @@ function PricingPageContent() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex-shrink-0 min-w-0">
               <p className="text-[11px] text-gray-500 truncate font-medium">
-                {selectedPlan?.name || 'Select a plan'}
+                {selectedPlan?.name || 'Select a plan'}{billingCycle === 'yearly' ? ' • Yearly' : ' • Monthly'}
               </p>
               <p className="font-bold text-lg text-brand-primary">
                 {getSelectedPrice() ? `$${getSelectedPrice()}/mo` : '—'}
               </p>
+              {billingCycle === 'yearly' && selectedPlan && (
+                <p className="text-[10px] text-gray-500">billed annually</p>
+              )}
             </div>
             <Button
               size="lg"
@@ -733,6 +728,60 @@ function PricingPageContent() {
           <p className="text-[10px] text-center text-gray-500 mt-2">
             Secure checkout • Cancel anytime
           </p>
+        </div>
+      )}
+
+      {/* Sticky Desktop CTA - Fixed at bottom for easy access */}
+      {!loading && plans.length > 0 && (
+        <div className="hidden md:block fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between max-w-4xl mx-auto gap-6">
+              {/* Plan Summary */}
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">
+                    {selectedPlan?.name || 'Select a plan'}
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="font-bold text-2xl text-brand-primary">
+                      {getSelectedPrice() ? `$${getSelectedPrice()}/mo` : '—'}
+                    </p>
+                    {billingCycle === 'yearly' && selectedPlan && (
+                      <span className="text-sm text-gray-500">billed annually</span>
+                    )}
+                  </div>
+                </div>
+                <div className="hidden lg:flex items-center gap-4 text-sm text-gray-500">
+                  <span className="flex items-center gap-1.5">
+                    <Shield className="h-4 w-4 text-green-500" />
+                    Secure checkout
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    Cancel anytime
+                  </span>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <Button
+                size="lg"
+                variant="success"
+                className="h-12 px-8 text-base shadow-lg shadow-success/25"
+                onClick={handlePurchase}
+                disabled={!selectedPlan || !!isPurchasing}
+              >
+                {isPurchasing ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    Continue to Checkout
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

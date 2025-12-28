@@ -52,7 +52,7 @@ export default function LandingPage() {
                 </Link>
               </Button>
               {/* View Pricing - always visible */}
-              <Button size="sm" asChild variant="success" className="h-10 px-4 sm:px-5 md:px-6 text-sm">
+              <Button size="sm" asChild variant="success" className="h-11 md:h-10 px-5 sm:px-5 md:px-6 text-sm touch-manipulation">
                 <Link href="#get-started">
                   View Pricing
                   <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -102,14 +102,14 @@ export default function LandingPage() {
 
               {/* Mobile: Single prominent CTA */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center lg:justify-start">
-                <Button size="lg" asChild variant="success" className="text-base md:text-lg h-13 md:h-14 px-7 md:px-8 w-full sm:w-auto touch-manipulation shadow-lg shadow-success/30">
+                <Button size="lg" asChild variant="success" className="text-base md:text-lg h-14 md:h-14 px-7 md:px-8 w-full sm:w-auto touch-manipulation shadow-lg shadow-success/30">
                   <Link href="#get-started">
                     View Pricing <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
                 <a
                   href="tel:813-544-8383"
-                  className="flex items-center justify-center gap-2 h-13 md:h-14 px-6 md:px-7 rounded-lg border-2 border-white/40 text-white hover:bg-white/15 active:bg-white/25 transition-all duration-200 touch-manipulation backdrop-blur-sm font-medium"
+                  className="flex items-center justify-center gap-2 h-14 md:h-14 px-6 md:px-7 rounded-xl border-2 border-white/50 text-white hover:bg-white/15 active:bg-white/25 transition-all duration-200 touch-manipulation backdrop-blur-sm font-semibold"
                 >
                   <Phone className="h-5 w-5" />
                   <span>813-544-8383</span>
@@ -300,152 +300,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ROI Comparison - Why Community Ads Beat Traditional */}
+      {/* Value Proposition - Why Community Websites */}
       <section className="py-14 md:py-24 bg-gradient-to-br from-gray-50 via-white to-brand-primary/5">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
-            <span className="inline-flex items-center gap-2 text-success-dark font-semibold text-xs md:text-sm uppercase tracking-wider mb-3">
-              <DollarSign className="h-4 w-4" />
-              Smart Investment
-            </span>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Get More Reach for Your Dollar
-            </h2>
-            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg">
-              See how community website advertising compares to traditional marketing
-            </p>
-          </div>
+          <div className="max-w-4xl mx-auto">
+            {/* Main Value Card */}
+            <div className="relative bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 text-center">
+              <span className="inline-flex items-center gap-2 text-success-dark font-semibold text-xs md:text-sm uppercase tracking-wider mb-4">
+                <DollarSign className="h-4 w-4" />
+                Smart Investment
+              </span>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary mb-4">
+                Get More Reach for Your Dollar
+              </h2>
+              <p className="text-gray-600 text-base md:text-lg mb-8 max-w-2xl mx-auto">
+                Reach thousands of local customers every month without breaking the bank
+              </p>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
-            {/* Community Websites - Highlighted */}
-            <div className="relative bg-white rounded-2xl p-5 md:p-6 shadow-lg border-2 border-green-500 lg:scale-105">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">BEST VALUE</span>
-              </div>
-              <div className="text-center pt-2">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Target className="h-6 w-6 text-green-600" />
+              {/* Price Highlight */}
+              <div className="inline-flex items-center gap-3 bg-success-light/50 rounded-2xl px-6 py-4 md:px-8 md:py-5 mb-8">
+                <div className="text-left">
+                  <p className="text-sm text-gray-600 font-medium">Advertise for as little as</p>
+                  <p className="text-3xl md:text-4xl font-bold text-success-dark">$16<span className="text-lg md:text-xl font-semibold text-gray-500"> p/m</span></p>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Community Websites</h3>
-                <div className="text-2xl md:text-3xl font-bold text-green-600 mb-2">$16<span className="text-sm font-normal text-gray-500">/mo</span></div>
-                <ul className="text-xs md:text-sm text-gray-600 space-y-1.5 text-left">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>20,000+ monthly impressions</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Hyper-local targeting</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Clickable to your website</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Update anytime free</span>
-                  </li>
-                </ul>
               </div>
-            </div>
 
-            {/* Billboard */}
-            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Building2 className="h-6 w-6 text-gray-400" />
+              {/* Benefits Grid */}
+              <div className="grid sm:grid-cols-2 gap-4 md:gap-5 max-w-xl mx-auto mb-8">
+                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
+                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm md:text-base text-gray-700">20,000+ monthly impressions</span>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Billboard</h3>
-                <div className="text-2xl md:text-3xl font-bold text-gray-400 mb-2">$1,500<span className="text-sm font-normal text-gray-400">+/mo</span></div>
-                <ul className="text-xs md:text-sm text-gray-500 space-y-1.5 text-left">
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>Expensive production costs</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>Can't target specific areas</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>No clickable links</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>Months-long contracts</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Newspaper */}
-            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Briefcase className="h-6 w-6 text-gray-400" />
+                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
+                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm md:text-base text-gray-700">Hyper-local targeting</span>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Local Newspaper</h3>
-                <div className="text-2xl md:text-3xl font-bold text-gray-400 mb-2">$300<span className="text-sm font-normal text-gray-400">+/issue</span></div>
-                <ul className="text-xs md:text-sm text-gray-500 space-y-1.5 text-left">
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>Declining readership</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>One-time exposure</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>No clickable links</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>Paper gets discarded</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Direct Mail */}
-            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <ShoppingBag className="h-6 w-6 text-gray-400" />
+                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
+                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm md:text-base text-gray-700">Clickable to your website</span>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1 text-sm md:text-base">Direct Mail</h3>
-                <div className="text-2xl md:text-3xl font-bold text-gray-400 mb-2">$500<span className="text-sm font-normal text-gray-400">+/drop</span></div>
-                <ul className="text-xs md:text-sm text-gray-500 space-y-1.5 text-left">
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>High print & postage costs</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>97% goes straight to trash</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>One-time exposure</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-300">✕</span>
-                    <span>Weeks of lead time</span>
-                  </li>
-                </ul>
+                <div className="flex items-center gap-3 text-left bg-gray-50 rounded-xl p-4">
+                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm md:text-base text-gray-700">Free ad design included</span>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="text-center mt-10 md:mt-14">
-            <p className="text-gray-600 text-sm md:text-base mb-4">
-              Why pay more for less effective advertising?
-            </p>
-            <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/25">
-              <Link href="#get-started">
-                Start Saving Today <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+              <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/25">
+                <Link href="#get-started">
+                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
