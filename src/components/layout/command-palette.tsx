@@ -18,6 +18,7 @@ import {
   User,
   ShoppingBag,
   ArrowRight,
+  Radio,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -29,12 +30,13 @@ interface CommandItem {
   group: 'main' | 'quick';
 }
 
-// Simplified admin commands - just the essentials
+// Core admin commands - essential features for managing the ad business
 const ADMIN_COMMANDS: CommandItem[] = [
   // Main pages
   { id: 'leads', label: 'Leads', icon: Handshake, href: '/leads', keywords: ['prospects', 'sales', 'pipeline'], group: 'main' },
   { id: 'customers', label: 'Customers', icon: Ticket, href: '/subscriptions', keywords: ['subscribers', 'subscriptions', 'billing'], group: 'main' },
   { id: 'advertisements', label: 'Advertisements', icon: Megaphone, href: '/advertisements', keywords: ['ads', 'list', 'all', 'approve'], group: 'main' },
+  { id: 'ad-server', label: 'Ad Server', icon: Radio, href: '/ad-server', keywords: ['live', 'serve', 'embed', 'weights', 'targeting'], group: 'main' },
 
   // Quick filters
   { id: 'action-required', label: 'Ads Needing Approval', icon: Megaphone, href: '/advertisements?status=action_required', keywords: ['action', 'pending', 'review', 'approve'], group: 'quick' },

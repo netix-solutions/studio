@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Megaphone,
   Handshake,
+  Radio,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -26,11 +27,12 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-// Simplified admin navigation - just the essentials
+// Core admin navigation - essential features for managing the ad business
 const adminMenuItems: NavItem[] = [
   { href: '/leads', label: 'Leads', icon: Handshake },
   { href: '/subscriptions', label: 'Customers', icon: Ticket },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone },
+  { href: '/ad-server', label: 'Ad Server', icon: Radio },
 ];
 
 // User navigation (non-admin)
