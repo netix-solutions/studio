@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowRight, Check } from 'lucide-react';
+import { formatPhoneNumber } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { sendEmail } from '@/lib/firebase/email';
@@ -339,6 +340,7 @@ export function GetStartedForm() {
                   className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                   inputMode="tel"
                   {...field}
+                  onChange={(e) => field.onChange(formatPhoneNumber(e.target.value))}
                 />
               </FormControl>
               <FormMessage className="text-xs md:text-sm" />

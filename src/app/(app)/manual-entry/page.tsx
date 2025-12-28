@@ -37,6 +37,7 @@ import {
   type PaymentMethod,
   type AdStatus,
 } from '@/lib/types';
+import { formatPhoneNumber, fixUrl } from '@/lib/utils';
 
 interface FormData {
   // Customer info
@@ -326,7 +327,7 @@ export default function ManualEntryPage() {
                   type="tel"
                   placeholder="(555) 123-4567"
                   value={formData.phone}
-                  onChange={(e) => updateField('phone', e.target.value)}
+                  onChange={(e) => updateField('phone', formatPhoneNumber(e.target.value))}
                 />
               </div>
             </div>
@@ -485,6 +486,11 @@ export default function ManualEntryPage() {
                       placeholder="https://example.com"
                       value={formData.adWebsiteUrl}
                       onChange={(e) => updateField('adWebsiteUrl', e.target.value)}
+                      onBlur={(e) => {
+                        if (e.target.value) {
+                          updateField('adWebsiteUrl', fixUrl(e.target.value));
+                        }
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
