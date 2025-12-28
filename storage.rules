@@ -51,13 +51,12 @@ service firebase.storage {
       allow write: if isOwner(userId) || isAdmin();
     }
 
-    // Ad proof files uploaded by an admin (4-level path: userId/advertisementId/filename)
-    // Note: This rule also matches sample-ad and uploads paths, but since the customer
-    // rules above allow owner writes, customers can still upload to those paths.
-    // Admins with the 'admin' custom claim can upload to any advertisement subfolder.
+    // Ad files in advertisement folders (4-level path: userId/advertisementId/filename)
+    // Customers can upload their own design images to their ad folders
+    // Admins can also upload proofs and other files for customers
     match /advertisements/{userId}/{advertisementId}/{fileName} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
     }
 
     // Live ad creatives - PUBLIC read access for serving ads to external websites
