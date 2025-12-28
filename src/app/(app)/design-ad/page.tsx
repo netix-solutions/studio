@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle, Send } from 'lucide-react';
+import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle, Send, Sparkles, HelpCircle, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AD_DIMENSIONS } from '@/lib/types';
@@ -65,6 +65,8 @@ export default function DesignAdPage() {
   const [currentVersion, setCurrentVersion] = useState<AdDraftVersion | null>(null);
   const [advertisementId, setAdvertisementId] = useState<string | null>(adId);
   const [hasSavedDesign, setHasSavedDesign] = useState(false);
+  const [showHelpOffer, setShowHelpOffer] = useState(true);
+  const [isRequestingDesign, setIsRequestingDesign] = useState(false);
 
   // Check for active subscription and load saved design
   useEffect(() => {
@@ -365,6 +367,77 @@ export default function DesignAdPage() {
     });
   };
 
+  // Handle request for custom design (let us design it for them)
+  const handleRequestCustomDesign = async () => {
+    if (!firestore || !effectiveUserId) {
+      toast({
+        title: 'Error',
+        description: 'Unable to process request. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsRequestingDesign(true);
+
+    try {
+      // Find or create advertisement
+      let adIdToUse = advertisementId;
+
+      if (!adIdToUse) {
+        const adsRef = collection(firestore, 'users', effectiveUserId, 'advertisements');
+        const adsQuery = query(adsRef, orderBy('createdAt', 'desc'), firestoreLimit(1));
+        const adsSnapshot = await getDocs(adsQuery);
+        if (!adsSnapshot.empty) {
+          adIdToUse = adsSnapshot.docs[0].id;
+          setAdvertisementId(adIdToUse);
+        }
+      }
+
+      if (adIdToUse) {
+        const adRef = doc(firestore, 'users', effectiveUserId, 'advertisements', adIdToUse);
+        await updateDoc(adRef, {
+          requestCustomDesign: true,
+          status: 'pending_design',
+          designRequestedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        toast({
+          title: 'Design Request Submitted!',
+          description: 'Our team will create a custom ad design for you. We\'ll notify you when it\'s ready.',
+        });
+
+        // Navigate back to account page
+        router.push('/account');
+      } else {
+        // Update user document if no ad exists yet
+        const userDocRef = doc(firestore, 'users', effectiveUserId);
+        await updateDoc(userDocRef, {
+          requestCustomDesign: true,
+          designRequestedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        toast({
+          title: 'Design Request Submitted!',
+          description: 'Our team will create a custom ad design for you. We\'ll notify you when it\'s ready.',
+        });
+
+        router.push('/account');
+      }
+    } catch (error: any) {
+      console.error('Error requesting custom design:', error);
+      toast({
+        title: 'Request Error',
+        description: error.message || 'Could not submit your request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRequestingDesign(false);
+    }
+  };
+
   // Handle submit for review
   const handleSubmitForReview = async () => {
     if (!firestore || !effectiveUserId || !advertisementId) {
@@ -514,18 +587,64 @@ export default function DesignAdPage() {
         )}
       </div>
 
+      {/* Help Offer - Design for Me */}
+      {showHelpOffer && !isAdminMode && (
+        <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 relative">
+          <button
+            onClick={() => setShowHelpOffer(false)}
+            className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground rounded-full hover:bg-white/50 transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Sparkles className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm">Need help designing your ad?</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    No worries! Our team can create a professional ad design for you at no extra cost.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRequestCustomDesign}
+                disabled={isRequestingDesign}
+                className="bg-white hover:bg-blue-50 border-blue-200 text-blue-700 whitespace-nowrap"
+              >
+                {isRequestingDesign ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Requesting...
+                  </>
+                ) : (
+                  <>
+                    <HelpCircle className="mr-2 h-3 w-3" />
+                    Let Us Design It
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Instructions */}
       <Alert>
         <Info className="h-4 w-4" />
         <AlertTitle>How to use the Ad Designer</AlertTitle>
         <AlertDescription>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Add Text:</strong> Click "Add Text" to add text elements. Double-click text to edit.</li>
-            <li><strong>Add Images:</strong> Click "Add Image" to upload your logo or images.</li>
+            <li><strong>Edit Text:</strong> Click any text on the canvas and start typing in the panel on the right.</li>
+            <li><strong>Add Elements:</strong> Use the "Text" and "Image" buttons above the canvas to add new elements.</li>
             <li><strong>Move & Resize:</strong> Drag elements to move them. Use corner handles to resize.</li>
-            <li><strong>Edit Properties:</strong> Select an element to change font, color, size, and more.</li>
-            <li><strong>Save:</strong> Click "Save" to save your design and submit it for review.</li>
-            <li><strong>Export:</strong> Download your design as a PNG file.</li>
+            <li><strong>Style Your Ad:</strong> Select an element to customize font, color, size, and alignment.</li>
+            <li><strong>Save & Submit:</strong> Click "Save" when done, then submit for review.</li>
           </ul>
         </AlertDescription>
       </Alert>
@@ -612,6 +731,34 @@ export default function DesignAdPage() {
               </p>
             </div>
           </div>
+
+          {/* Always-visible help option */}
+          {!isAdminMode && (
+            <div className="mt-6 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Finding it difficult? We're here to help!</span>
+                </div>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={handleRequestCustomDesign}
+                  disabled={isRequestingDesign}
+                  className="text-primary"
+                >
+                  {isRequestingDesign ? (
+                    <>
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      Requesting...
+                    </>
+                  ) : (
+                    'Request Free Design Help'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
