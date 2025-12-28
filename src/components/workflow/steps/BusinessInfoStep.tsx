@@ -10,6 +10,40 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Building2 } from 'lucide-react';
 
+// Format phone number to (XXX) XXX-XXXX
+function formatPhoneNumber(value: string): string {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, '');
+
+    // Only format if we have 10 digits
+    if (digits.length === 10) {
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+
+    // If 11 digits starting with 1, remove the leading 1 and format
+    if (digits.length === 11 && digits.startsWith('1')) {
+        const number = digits.slice(1);
+        return `(${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
+    }
+
+    return value;
+}
+
+// Format URL to ensure it has https://
+function formatUrl(value: string): string {
+    if (!value || value.trim() === '') return value;
+
+    const trimmed = value.trim();
+
+    // If it already has a protocol, return as-is
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Add https:// prefix
+    return `https://${trimmed}`;
+}
+
 const businessInfoSchema = z.object({
     businessName: z.string().min(2, "Company name is required."),
     contactName: z.string().min(2, "Your name is required."),
@@ -110,7 +144,18 @@ export function BusinessInfoStep({ defaultValues, onSubmit, isAdmin }: BusinessI
                             <Controller
                                 name="cellPhone"
                                 control={form.control}
-                                render={({ field }) => <Input id="cellPhone" placeholder="(555) 123-4567" {...field} />}
+                                render={({ field }) => (
+                                    <Input
+                                        id="cellPhone"
+                                        placeholder="(555) 123-4567"
+                                        {...field}
+                                        onBlur={(e) => {
+                                            const formatted = formatPhoneNumber(e.target.value);
+                                            field.onChange(formatted);
+                                            field.onBlur();
+                                        }}
+                                    />
+                                )}
                             />
                             {form.formState.errors.cellPhone && (
                                 <p className="text-sm text-destructive">{form.formState.errors.cellPhone.message}</p>
@@ -131,7 +176,20 @@ export function BusinessInfoStep({ defaultValues, onSubmit, isAdmin }: BusinessI
                             <Controller
                                 name="businessPhone"
                                 control={form.control}
-                                render={({ field }) => <Input id="businessPhone" placeholder="(555) 123-4567" {...field} />}
+                                render={({ field }) => (
+                                    <Input
+                                        id="businessPhone"
+                                        placeholder="(555) 123-4567"
+                                        {...field}
+                                        onBlur={(e) => {
+                                            if (e.target.value) {
+                                                const formatted = formatPhoneNumber(e.target.value);
+                                                field.onChange(formatted);
+                                            }
+                                            field.onBlur();
+                                        }}
+                                    />
+                                )}
                             />
                         </div>
 
@@ -140,7 +198,20 @@ export function BusinessInfoStep({ defaultValues, onSubmit, isAdmin }: BusinessI
                             <Controller
                                 name="adWebsiteUrl"
                                 control={form.control}
-                                render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://www.yourwebsite.com" {...field} />}
+                                render={({ field }) => (
+                                    <Input
+                                        id="adWebsiteUrl"
+                                        placeholder="https://www.yourwebsite.com"
+                                        {...field}
+                                        onBlur={(e) => {
+                                            if (e.target.value) {
+                                                const formatted = formatUrl(e.target.value);
+                                                field.onChange(formatted);
+                                            }
+                                            field.onBlur();
+                                        }}
+                                    />
+                                )}
                             />
                             {form.formState.errors.adWebsiteUrl && (
                                 <p className="text-sm text-destructive">{form.formState.errors.adWebsiteUrl.message}</p>
