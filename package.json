@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "setup-cors": "npx firebase-tools@latest storage cors set cors.json --project studio-4614023416-d45cd"
+    "setup-cors": "gsutil cors set cors.json gs://studio-4614023416-d45cd.firebasestorage.app"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

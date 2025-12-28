@@ -335,7 +335,7 @@ export default function AdvertisementDetailPage() {
             if (isCorsError) {
                 toast({
                     title: 'Upload Error - CORS Configuration Required',
-                    description: 'File upload failed due to CORS policy. Please run: npx firebase-tools@latest storage cors set cors.json --project studio-4614023416-d45cd',
+                    description: 'File upload failed due to CORS policy. Please run: gsutil cors set cors.json gs://studio-4614023416-d45cd.firebasestorage.app',
                     variant: 'destructive',
                 });
             } else {
