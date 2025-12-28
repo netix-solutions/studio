@@ -14,7 +14,7 @@ export interface EmailTemplate {
 }
 
 /** Current version for all default templates - increment when making updates */
-export const TEMPLATE_VERSION = 1;
+export const TEMPLATE_VERSION = 2;
 
 export const defaultTemplates: EmailTemplate[] = [
     {
@@ -146,33 +146,106 @@ export const defaultTemplates: EmailTemplate[] = [
         id: 'discount_offer',
         name: 'Exclusive Discount Offer',
         description: 'Offer a 10% discount to encourage leads to sign up.',
-        subject: 'A special offer for {{businessName}} - 10% off your first month',
+        subject: '🎉 {{businessName}} - Your Exclusive 10% Discount Inside!',
         version: TEMPLATE_VERSION,
         isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to share an exclusive offer with you. As a thank you for your interest in Community-Websites.com, we'd like to offer <strong>{{businessName}}</strong> <strong style="color: #1e3a5f;">10% off your first month</strong> of advertising.</p>
-<div style="margin: 24px 0; padding: 24px; background-color: #f0f9ff; border: 2px dashed #1e3a5f; border-radius: 8px; text-align: center;">
-    <p style="margin: 0 0 8px 0; font-size: 14px; color: #0369a1;">Your exclusive discount code:</p>
-    <p style="margin: 0; font-size: 32px; font-weight: bold; color: #1e3a5f; letter-spacing: 3px; font-family: monospace;">TAKE10OFF</p>
-    <p style="margin: 12px 0 0 0; font-size: 13px; color: #64748b;">Enter this code at checkout</p>
+<p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">We have something special for <strong>{{businessName}}</strong>...</p>
+
+<!-- Hero Banner Section -->
+<div style="margin: 0 0 32px 0; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); border-radius: 16px; overflow: hidden;">
+    <div style="padding: 40px 32px; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #93c5fd; text-transform: uppercase; letter-spacing: 2px;">Exclusive Offer</p>
+        <p style="margin: 0 0 8px 0; font-size: 64px; font-weight: 800; color: #ffffff; line-height: 1;">10% OFF</p>
+        <p style="margin: 0; font-size: 18px; color: #e0f2fe;">Your First Month of Local Advertising</p>
+    </div>
 </div>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">This is a great opportunity to get your business in front of local customers at a reduced rate. Our advertising packages help businesses like yours:</p>
-<ul style="margin: 16px 0; padding-left: 24px; color: #3f3f46;">
-    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Reach thousands of local residents</li>
-    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Build brand recognition in your community</li>
-    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Drive more foot traffic and calls</li>
-</ul>
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+
+<!-- Coupon Code Box -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px 0;">
     <tr>
-        <td style="border-radius: 6px;" bgcolor="#1e3a5f">
-            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #1e3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                View Plans &amp; Use Your Discount
+        <td align="center">
+            <div style="display: inline-block; background-color: #fef3c7; border: 3px dashed #f59e0b; border-radius: 12px; padding: 24px 48px; text-align: center;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 1px;">Your Discount Code</p>
+                <p style="margin: 0 0 8px 0; font-size: 36px; font-weight: 800; color: #1e3a5f; letter-spacing: 4px; font-family: 'Courier New', monospace;">TAKE10OFF</p>
+                <p style="margin: 0; font-size: 13px; color: #78716c;">Use at checkout to save 10%</p>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Benefits Section -->
+<p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #18181b; text-align: center;">Why Advertise With Us?</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px 0;">
+    <tr>
+        <td style="padding: 16px; background-color: #f0fdf4; border-radius: 12px; margin-bottom: 12px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background-color: #22c55e; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">👥</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #166534;">Reach Thousands</p>
+                        <p style="margin: 0; font-size: 14px; color: #15803d; line-height: 1.5;">Get your business in front of local residents who are actively looking for services like yours.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 12px;"></td></tr>
+    <tr>
+        <td style="padding: 16px; background-color: #eff6ff; border-radius: 12px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background-color: #3b82f6; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">⭐</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1e40af;">Build Your Brand</p>
+                        <p style="margin: 0; font-size: 14px; color: #1d4ed8; line-height: 1.5;">Become a recognized name in your community with consistent local visibility.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 12px;"></td></tr>
+    <tr>
+        <td style="padding: 16px; background-color: #fef3c7; border-radius: 12px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background-color: #f59e0b; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">📈</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #92400e;">Drive More Business</p>
+                        <p style="margin: 0; font-size: 14px; color: #a16207; line-height: 1.5;">More calls, more foot traffic, more customers walking through your door.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 18px 48px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 18px; box-shadow: 0 4px 14px rgba(30, 58, 95, 0.4);">
+                Claim Your 10% Discount →
             </a>
         </td>
     </tr>
 </table>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, just reply to this email or call us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+
+<!-- Footer Note -->
+<div style="margin: 0 0 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 12px; border-left: 4px solid #1e3a5f;">
+    <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.6;">
+        <strong style="color: #1e3a5f;">Questions?</strong> Just reply to this email or call us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 600;">813-544-8383</a>. We're here to help!
+    </p>
+</div>
+
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
