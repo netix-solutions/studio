@@ -10,15 +10,13 @@ import crypto from 'crypto';
 // Token expiration: 7 days (matches the typical ad approval window)
 const TOKEN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Get token secret for signing NEW tokens - requires EMAIL_ACTION_TOKEN_SECRET
+// Get the token secret - uses EMAIL_ACTION_TOKEN_SECRET exclusively
 const getTokenSecret = (): string => {
     // In development, use a default secret (not secure for production)
     if (process.env.NODE_ENV === 'development' && !process.env.EMAIL_ACTION_TOKEN_SECRET) {
         return 'dev-secret-key-not-for-production';
     }
 
-    // In production, EMAIL_ACTION_TOKEN_SECRET is REQUIRED for generating new tokens
-    // This ensures all new tokens use a consistent, dedicated secret
     if (!process.env.EMAIL_ACTION_TOKEN_SECRET) {
         throw new Error(
             'EMAIL_ACTION_TOKEN_SECRET environment variable is required. ' +
@@ -27,33 +25,6 @@ const getTokenSecret = (): string => {
     }
 
     return process.env.EMAIL_ACTION_TOKEN_SECRET;
-};
-
-// Get all secrets to try for verification (supports legacy tokens)
-const getVerificationSecrets = (): string[] => {
-    const secrets: string[] = [];
-
-    // Primary secret (EMAIL_ACTION_TOKEN_SECRET)
-    if (process.env.EMAIL_ACTION_TOKEN_SECRET) {
-        secrets.push(process.env.EMAIL_ACTION_TOKEN_SECRET);
-    }
-
-    // Legacy fallback (NEXTAUTH_SECRET) - tokens may have been signed with this before
-    // EMAIL_ACTION_TOKEN_SECRET was configured
-    if (process.env.NEXTAUTH_SECRET && process.env.NEXTAUTH_SECRET !== process.env.EMAIL_ACTION_TOKEN_SECRET) {
-        secrets.push(process.env.NEXTAUTH_SECRET);
-    }
-
-    // Development fallback
-    if (secrets.length === 0 && process.env.NODE_ENV === 'development') {
-        secrets.push('dev-secret-key-not-for-production');
-    }
-
-    if (secrets.length === 0) {
-        throw new Error('EMAIL_ACTION_TOKEN_SECRET or NEXTAUTH_SECRET environment variable is required');
-    }
-
-    return secrets;
 };
 
 export type EmailActionType = 'approve' | 'request_changes' | 'view';
@@ -103,23 +74,13 @@ export function verifyApprovalToken(token: string): TokenPayload {
 
     const [payloadBase64, signature] = parts;
 
-    // Try all secrets for verification (supports legacy tokens signed with old secret)
-    const secrets = getVerificationSecrets();
-    let signatureValid = false;
+    // Verify signature using EMAIL_ACTION_TOKEN_SECRET
+    const expectedSignature = crypto
+        .createHmac('sha256', getTokenSecret())
+        .update(payloadBase64)
+        .digest('base64url');
 
-    for (const secret of secrets) {
-        const expectedSignature = crypto
-            .createHmac('sha256', secret)
-            .update(payloadBase64)
-            .digest('base64url');
-
-        if (signature === expectedSignature) {
-            signatureValid = true;
-            break;
-        }
-    }
-
-    if (!signatureValid) {
+    if (signature !== expectedSignature) {
         throw new Error('Invalid token signature');
     }
 

@@ -11,8 +11,3 @@ env:
   # Create this secret with: firebase apphosting:secrets:set EMAIL_ACTION_TOKEN_SECRET
   - variable: EMAIL_ACTION_TOKEN_SECRET
     secret: EMAIL_ACTION_TOKEN_SECRET
-
-  # NextAuth secret - also used as fallback for legacy email tokens
-  # If you haven't created this secret yet, run: firebase apphosting:secrets:set NEXTAUTH_SECRET
-  - variable: NEXTAUTH_SECRET
-    secret: NEXTAUTH_SECRET
