@@ -19,14 +19,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirebase } from '@/firebase';
-import { signInWithEmail } from '@/lib/firebase/auth';
-import { Loader2, ArrowLeft, Phone, Shield, Lock, User as UserIcon } from 'lucide-react';
+import { signInWithEmail, sendSignInLink } from '@/lib/firebase/auth';
+import { Loader2, ArrowLeft, Phone, Shield, Lock, User as UserIcon, Mail } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const formSchema = z.object({
+const passwordFormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+});
+
+const emailLinkFormSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
 });
 
 export default function LoginPage() {
@@ -35,6 +40,8 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const { auth, firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLinkSending, setIsLinkSending] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && user && firestore) {
@@ -44,15 +51,22 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router, firestore]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
+    resolver: zodResolver(passwordFormSchema),
     defaultValues: {
       email: '',
       password: '',
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const emailLinkForm = useForm<z.infer<typeof emailLinkFormSchema>>({
+    resolver: zodResolver(emailLinkFormSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
     if (!auth) {
         toast({
             title: 'Error',
@@ -77,6 +91,34 @@ export default function LoginPage() {
         variant: 'destructive',
       });
       setIsSubmitting(false);
+    }
+  }
+
+  async function onEmailLinkSubmit(values: z.infer<typeof emailLinkFormSchema>) {
+    if (!auth) {
+        toast({ title: 'Error', description: 'Authentication service is not available.', variant: 'destructive' });
+        return;
+    }
+    setIsLinkSending(true);
+    setLinkSent(false);
+    try {
+        await sendSignInLink(auth, values.email);
+        // Save email in local storage
+        window.localStorage.setItem('emailForSignIn', values.email);
+        setLinkSent(true);
+        toast({
+            title: 'Check your email',
+            description: `A sign-in link has been sent to ${values.email}.`,
+        });
+    } catch (error: any) {
+        console.error('Email link sign in failed:', error);
+        toast({
+            title: 'Error',
+            description: error.message || 'Could not send sign-in link. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsLinkSending(false);
     }
   }
 
@@ -128,7 +170,7 @@ export default function LoginPage() {
           {/* Login Card */}
           <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
             <CardContent className="p-5 md:p-8">
-              <div className="text-center mb-6">
+              <div className="text-center mb-6 md:mb-7">
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900 font-headline">
                   Advertiser Login
                 </h1>
@@ -137,72 +179,141 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Email Address</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="you@company.com"
-                            className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
-                            inputMode="email"
-                            autoCapitalize="off"
-                            autoCorrect="off"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-xs md:text-sm" />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center justify-between">
-                          <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Password</FormLabel>
-                          <Link
-                            href="/forgot-password"
-                            className="text-sm text-blue-600 hover:underline touch-manipulation"
-                          >
-                            Forgot password?
-                          </Link>
-                        </div>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Enter your password"
-                            className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-xs md:text-sm" />
-                      </FormItem>
-                    )}
-                  />
+              <Tabs defaultValue="password">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="password">Password</TabsTrigger>
+                  <TabsTrigger value="email-link">Email Link</TabsTrigger>
+                </TabsList>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-12 md:h-14 text-base md:text-lg font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation rounded-xl mt-2"
-                    disabled={isSubmitting}
-                  >
-                     {isSubmitting ? (
-                        <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Signing In...
-                        </>
-                    ) : (
-                        'Sign In'
-                    )}
-                  </Button>
-                </form>
-              </Form>
+                {/* Password Form */}
+                <TabsContent value="password" className="pt-4">
+                  <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                      <FormField
+                        control={passwordForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Email Address</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="you@company.com"
+                                className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                                inputMode="email"
+                                autoCapitalize="off"
+                                autoCorrect="off"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs md:text-sm" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center justify-between">
+                              <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Password</FormLabel>
+                              <Link
+                                href="/forgot-password"
+                                className="text-sm text-blue-600 hover:underline touch-manipulation"
+                              >
+                                Forgot password?
+                              </Link>
+                            </div>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs md:text-sm" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 md:h-14 text-base md:text-lg font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation rounded-xl mt-2"
+                        disabled={isSubmitting}
+                      >
+                         {isSubmitting ? (
+                            <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Signing In...
+                            </>
+                        ) : (
+                            'Sign In'
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </TabsContent>
+
+                {/* Email Link Form */}
+                <TabsContent value="email-link" className="pt-4">
+                  {!linkSent ? (
+                     <Form {...emailLinkForm}>
+                        <form onSubmit={emailLinkForm.handleSubmit(onEmailLinkSubmit)} className="space-y-4">
+                            <FormField
+                                control={emailLinkForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-gray-700 font-medium text-sm md:text-base">Email Address</FormLabel>
+                                    <FormControl>
+                                    <Input
+                                        type="email"
+                                        placeholder="you@company.com"
+                                        className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                                        inputMode="email"
+                                        autoCapitalize="off"
+                                        autoCorrect="off"
+                                        {...field}
+                                    />
+                                    </FormControl>
+                                    <FormMessage className="text-xs md:text-sm" />
+                                </FormItem>
+                                )}
+                            />
+                            <Button
+                                type="submit"
+                                className="w-full h-12 md:h-14 text-base md:text-lg font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation rounded-xl mt-2"
+                                disabled={isLinkSending}
+                            >
+                                {isLinkSending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        Sending...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Mail className="mr-2 h-5 w-5" />
+                                        Send Sign-in Link
+                                    </>
+                                )}
+                            </Button>
+                        </form>
+                    </Form>
+                  ) : (
+                    <div className="text-center py-4">
+                        <Mail className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                        <h3 className="font-bold text-lg">Check Your Inbox</h3>
+                        <p className="text-muted-foreground mt-2">
+                            A sign-in link has been sent to your email address. Click the link to log in.
+                        </p>
+                        <Button variant="link" onClick={() => setLinkSent(false)} className="mt-4">
+                            Send again
+                        </Button>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
 
               <div className="mt-5 pt-5 border-t border-gray-100">
                 <p className="text-center text-sm text-gray-600">

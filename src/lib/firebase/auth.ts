@@ -5,8 +5,11 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile,
   UserCredential,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink as firebaseSignInWithEmailLink,
+  type ActionCodeSettings,
 } from 'firebase/auth';
 import { doc, setDoc, getFirestore, collection, query, where, getDocs, limit, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { firebaseApp } from '@/firebase';
@@ -85,3 +88,25 @@ export const signOutUser = (auth: Auth) => {
 export const sendPasswordReset = (auth: Auth, email: string) => {
     return sendPasswordResetEmail(auth, email);
 };
+
+// --- Email Link Authentication ---
+
+const actionCodeSettings: ActionCodeSettings = {
+    // URL you want to redirect back to. The domain (www.example.com) for this
+    // URL must be whitelisted in the Firebase Console.
+    url: typeof window !== 'undefined' ? `${window.location.origin}/account` : 'http://localhost:3000/account',
+    // This must be true.
+    handleCodeInApp: true,
+};
+
+export const sendSignInLink = (auth: Auth, email: string) => {
+    return sendSignInLinkToEmail(auth, email, actionCodeSettings);
+};
+
+export const checkIsSignInWithEmailLink = (auth: Auth, emailLink: string) => {
+    return isSignInWithEmailLink(auth, emailLink);
+};
+
+export const signInWithEmailLink = (auth: Auth, email: string, emailLink: string) => {
+    return firebaseSignInWithEmailLink(auth, email, emailLink);
+}
