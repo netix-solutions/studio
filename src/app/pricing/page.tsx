@@ -492,48 +492,6 @@ function PricingFAQ() {
   );
 }
 
-// How it works timeline
-function HowItWorks() {
-  const steps = [
-    {
-      number: '1',
-      title: 'Choose Your Plan',
-      description: 'Pick the coverage that fits your goals',
-    },
-    {
-      number: '2',
-      title: 'Create Your Ad',
-      description: 'Design it yourself or let us handle it',
-    },
-    {
-      number: '3',
-      title: 'Go Live',
-      description: 'Start reaching local customers in 48 hours',
-    },
-  ];
-
-  return (
-    <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-0">
-      {steps.map((step, idx) => (
-        <React.Fragment key={idx}>
-          <div className="flex md:flex-col items-center gap-4 md:gap-3 text-center w-full md:w-auto">
-            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-brand-primary text-white flex items-center justify-center text-xl md:text-2xl font-bold flex-shrink-0">
-              {step.number}
-            </div>
-            <div className="text-left md:text-center flex-1 md:flex-initial">
-              <h4 className="font-bold text-gray-900 text-base md:text-lg">{step.title}</h4>
-              <p className="text-sm text-gray-500 mt-0.5">{step.description}</p>
-            </div>
-          </div>
-          {idx < steps.length - 1 && (
-            <div className="hidden md:block w-20 lg:w-32 h-0.5 bg-gradient-to-r from-brand-primary/30 to-brand-primary/10 mx-4" />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-}
-
 function PricingPageContent() {
   const { firestore, user } = useFirebase();
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -681,7 +639,7 @@ function PricingPageContent() {
           </div>
 
           {/* Content */}
-          <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 lg:py-32">
+          <div className="relative z-10 container mx-auto px-4 py-10 md:py-14 lg:py-16">
             <div className="max-w-4xl mx-auto text-center">
               {businessName && (
                 <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2 text-sm font-medium mb-6 border border-white/20">
@@ -725,13 +683,6 @@ function PricingPageContent() {
                 <ChevronDown className="h-5 w-5 animate-bounce" />
               </button>
             </div>
-          </div>
-        </section>
-
-        {/* How It Works */}
-        <section className="py-12 md:py-16 bg-gray-50 border-b border-gray-100">
-          <div className="container mx-auto px-4">
-            <HowItWorks />
           </div>
         </section>
 
