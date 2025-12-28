@@ -56,3 +56,53 @@ export const removeAdminClaim = functions.firestore
       throw error;
     }
   });
+
+/**
+ * HTTP callable function to sync admin claims for all existing admins in roles_admin.
+ * Call this once after deploying to set claims for existing admins.
+ *
+ * Usage: Call from Firebase Console or via HTTP request (requires authentication)
+ */
+export const syncAllAdminClaims = functions.https.onCall(async (data, context) => {
+  // Verify the caller is an admin (check Firestore since claims might not be set yet)
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+  }
+
+  const callerUid = context.auth.uid;
+  const callerDoc = await admin.firestore().collection('roles_admin').doc(callerUid).get();
+
+  if (!callerDoc.exists) {
+    throw new functions.https.HttpsError('permission-denied', 'Must be an admin to sync claims');
+  }
+
+  try {
+    const rolesSnapshot = await admin.firestore().collection('roles_admin').get();
+    const results: { userId: string; success: boolean; error?: string }[] = [];
+
+    for (const doc of rolesSnapshot.docs) {
+      const userId = doc.id;
+      try {
+        await admin.auth().setCustomUserClaims(userId, { admin: true });
+        await doc.ref.update({
+          claimSet: true,
+          claimSetAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        results.push({ userId, success: true });
+        console.log(`Set admin claim for: ${userId}`);
+      } catch (error: any) {
+        results.push({ userId, success: false, error: error.message });
+        console.error(`Failed to set claim for ${userId}:`, error);
+      }
+    }
+
+    return {
+      success: true,
+      totalAdmins: rolesSnapshot.size,
+      results,
+    };
+  } catch (error: any) {
+    console.error('Error syncing admin claims:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
