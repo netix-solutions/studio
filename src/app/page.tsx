@@ -33,7 +33,7 @@ export default function LandingPage() {
           <div className="flex h-16 md:h-[72px] items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo.png" alt="Community-Websites.com" width={48} height={27} className="h-[30px] md:h-[36px] w-auto" />
-              <span className="font-headline font-bold text-brand-primary text-base tracking-tight hidden xs:inline">Community-Websites.com</span>
+              <span className="font-headline font-bold text-brand-primary text-base tracking-tight">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               {/* Phone - icon only on mobile, full number on larger screens */}

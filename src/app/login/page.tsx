@@ -99,7 +99,7 @@ export default function LoginPage() {
           <div className="flex h-14 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
-              <span className="font-headline font-semibold text-gray-900 hidden xs:inline text-xl tracking-wider">Community-Websites.com</span>
+              <span className="font-headline font-semibold text-gray-900 text-xl tracking-wider">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>

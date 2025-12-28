@@ -510,7 +510,7 @@ function PricingPageContent() {
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[26px] md:h-[30px] w-auto" />
-              <span className="font-headline font-bold text-brand-primary hidden xs:inline text-lg tracking-tight">Community-Websites.com</span>
+              <span className="font-headline font-bold text-brand-primary text-lg tracking-tight">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-3 md:gap-4">
               <Button variant="ghost" size="sm" asChild>
