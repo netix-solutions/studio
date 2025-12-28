@@ -369,6 +369,37 @@ export interface AdDesignPreferences {
 }
 
 /**
+ * Canvas element for the ad designer
+ */
+export interface AdDesignElement {
+  id: string;
+  type: 'text' | 'image';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  // Text properties
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fontStyle?: string;
+  fill?: string;
+  align?: 'left' | 'center' | 'right';
+  // Image properties
+  src?: string;
+}
+
+/**
+ * Saved ad design from the canvas designer
+ */
+export interface AdDesign {
+  elements: AdDesignElement[];
+  backgroundColor: string;
+  savedAt?: any;
+}
+
+/**
  * Enhanced Advertisement interface
  */
 export interface Advertisement {
