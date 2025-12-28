@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
   const placementParam = request.nextUrl.searchParams.get('placement') || 'inline';
   const themeParam = request.nextUrl.searchParams.get('theme') || 'auto'; // auto, light, dark
   const responsiveParam = request.nextUrl.searchParams.get('responsive') !== 'false';
-  const showBrandingParam = request.nextUrl.searchParams.get('branding') !== 'false';
 
   // Self-contained HTML page for Wix iframe
   const wixEmbedHtml = `
@@ -205,31 +204,6 @@ export async function GET(request: NextRequest) {
       color: #666;
     }
 
-    /* Branding */
-    .wix-ad-branding {
-      position: absolute;
-      bottom: 4px;
-      right: 6px;
-      font-size: 9px;
-      color: rgba(0, 0, 0, 0.35);
-      text-decoration: none;
-      transition: color 0.2s ease;
-      pointer-events: auto;
-      z-index: 10;
-    }
-
-    .wix-ad-branding:hover {
-      color: rgba(0, 0, 0, 0.6);
-    }
-
-    body.theme-dark .wix-ad-branding {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    body.theme-dark .wix-ad-branding:hover {
-      color: rgba(255, 255, 255, 0.5);
-    }
-
     /* Rotation indicator (subtle) */
     .wix-ad-rotation-indicator {
       position: absolute;
@@ -250,7 +224,6 @@ export async function GET(request: NextRequest) {
   <div class="wix-ad-container ${responsiveParam ? 'responsive' : ''} loading" id="ad-container">
     <!-- Ad content will be injected here -->
   </div>
-  ${showBrandingParam ? '<a href="https://community-websites.com" target="_blank" rel="noopener" class="wix-ad-branding">Community-Website.com</a>' : ''}
 
   <script>
     (function() {
