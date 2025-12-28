@@ -31,6 +31,7 @@ import {
   type Advertisement,
   type AdStatus,
 } from '@/lib/types';
+import AdNetworkStats from '@/components/dashboard/ad-network-stats';
 
 interface DashboardStats {
   totalAds: number;
@@ -440,6 +441,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ad Network Performance */}
+      <AdNetworkStats />
 
       {/* Ad Status Summary */}
       <Card>
