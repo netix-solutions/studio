@@ -78,15 +78,15 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
 
 
   return (
-    <header className="sticky top-3 z-30 w-full px-4 md:px-6">
-        <div className="flex h-[72px] items-center gap-4 rounded-2xl border border-border/30 bg-white/95 px-5 shadow-lg shadow-brand-primary/5 backdrop-blur-md md:px-6">
+    <header className="sticky top-4 z-30 w-full px-4 md:px-6">
+        <div className="flex h-16 items-center gap-4 rounded-xl border border-white/60 bg-white/80 px-5 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-blur-xl backdrop-saturate-150 md:px-6">
             <div className="md:hidden">
-                <SidebarTrigger />
+                <SidebarTrigger className="text-gray-700" />
             </div>
-            <h1 className="text-xl font-bold md:text-2xl font-headline text-brand-primary">{pageTitle}</h1>
+            <h1 className="text-lg font-semibold md:text-xl font-headline text-gray-800">{pageTitle}</h1>
 
             {isAdmin && (
-                 <Button asChild variant="outline" className="ml-4 hidden sm:flex border-brand-primary/20 text-brand-primary hover:bg-brand-primary/5 hover:text-brand-primary">
+                 <Button asChild variant="ghost" size="sm" className="ml-4 hidden sm:flex text-gray-600 hover:text-gray-900 hover:bg-gray-100/80">
                     <Link href="/dashboard">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Admin Panel
@@ -97,18 +97,18 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
             <div className="ml-auto">
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-11 w-11 rounded-full hover:bg-brand-primary/10 transition-colors">
-                    <Avatar className="h-10 w-10 ring-2 ring-brand-primary/10">
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-gray-100/80 transition-colors">
+                    <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm">
                         <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
-                        <AvatarFallback className="bg-brand-primary/10 text-brand-primary font-semibold">{getInitials(user?.displayName || user?.email)}</AvatarFallback>
+                        <AvatarFallback className="bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 font-medium text-sm">{getInitials(user?.displayName || user?.email)}</AvatarFallback>
                     </Avatar>
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuContent className="w-56 bg-white/90 backdrop-blur-xl border-white/60 shadow-lg" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-semibold leading-none text-brand-primary">{user?.displayName}</p>
-                        <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                        <p className="text-sm font-semibold leading-none text-gray-800">{user?.displayName}</p>
+                        <p className="text-xs leading-none text-gray-500">{user?.email}</p>
                     </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
