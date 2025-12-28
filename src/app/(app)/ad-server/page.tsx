@@ -1097,8 +1097,9 @@ export default function AdServerPage() {
                     </DialogHeader>
 
                     <Tabs defaultValue="websites">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-4">
                             <TabsTrigger value="websites">By Website</TabsTrigger>
+                            <TabsTrigger value="wix">Wix Sites</TabsTrigger>
                             <TabsTrigger value="simple">Generic</TabsTrigger>
                             <TabsTrigger value="advanced">Advanced</TabsTrigger>
                         </TabsList>
@@ -1174,6 +1175,199 @@ export default function AdServerPage() {
                                             <span className="text-muted-foreground">{label}</span>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="wix" className="space-y-4">
+                            <Alert className="border-blue-200 bg-blue-50">
+                                <AlertCircle className="h-4 w-4 text-blue-600" />
+                                <AlertTitle className="text-blue-800">Wix-Optimized Embed</AlertTitle>
+                                <AlertDescription className="text-blue-700">
+                                    These embed codes are specifically designed for Wix websites with maximum compatibility for Wix&apos;s sandboxed environment.
+                                </AlertDescription>
+                            </Alert>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Quick Setup (Recommended)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        For most Wix sites, use the responsive iframe embed:
+                                    </p>
+                                    <div className="space-y-3">
+                                        <div className="text-sm font-medium">Steps:</div>
+                                        <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1">
+                                            <li>In Wix Editor, click &quot;Add&quot; (+) button</li>
+                                            <li>Select &quot;Embed&quot; → &quot;Embed HTML&quot; or &quot;Custom Embeds&quot;</li>
+                                            <li>Click &quot;Enter Code&quot; and paste the code below</li>
+                                            <li>Resize the element to fit your layout</li>
+                                        </ol>
+                                    </div>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<div style="position: relative; width: 100%; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+  <iframe
+    src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+    scrolling="no"
+    frameborder="0"
+    allowtransparency="true"
+    loading="lazy"
+    title="Community Advertisement">
+  </iframe>
+</div>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<div style="position: relative; width: 100%; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+  <iframe
+    src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+    scrolling="no"
+    frameborder="0"
+    allowtransparency="true"
+    loading="lazy"
+    title="Community Advertisement">
+  </iframe>
+</div>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: 'Wix embed code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Select Target Website</Label>
+                                    <Select
+                                        value={selectedEmbedWebsite || ''}
+                                        onValueChange={(value) => setSelectedEmbedWebsite(value as CommunityWebsiteId)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a website..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                                <SelectItem key={website.id} value={website.id}>
+                                                    {website.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Theme Options</Label>
+                                    <div className="grid grid-cols-3 gap-2 text-sm">
+                                        <div className="p-2 bg-muted rounded text-center">
+                                            <code>theme=auto</code>
+                                            <p className="text-xs text-muted-foreground">Transparent</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded text-center">
+                                            <code>theme=light</code>
+                                            <p className="text-xs text-muted-foreground">White bg</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded text-center">
+                                            <code>theme=dark</code>
+                                            <p className="text-xs text-muted-foreground">Dark bg</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Fixed Size Option</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        If you need a fixed size ad (300x100px):
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<iframe
+  src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}&responsive=false"
+  style="width: 300px; height: 100px; border: none;"
+  frameborder="0"
+  loading="lazy"
+  title="Community Advertisement">
+</iframe>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}&responsive=false" style="width: 300px; height: 100px; border: none;" frameborder="0" loading="lazy" title="Community Advertisement"></iframe>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: 'Wix fixed-size embed code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Wix Velo (Advanced)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        For developers using Wix Velo (Corvid), add this to your page code:
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`// In Wix Velo page code
+import wixWindow from 'wix-window';
+
+$w.onReady(function () {
+  const adUrl = "${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}";
+  $w('#adFrame').src = adUrl;
+
+  // Sync visibility for better rotation
+  wixWindow.onVisibilityChange((isVisible) => {
+    $w('#adFrame').postMessage({
+      source: 'wix-parent',
+      type: 'visibility',
+      visible: isVisible
+    });
+  });
+});`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `import wixWindow from 'wix-window';
+
+$w.onReady(function () {
+  const adUrl = "${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}";
+  $w('#adFrame').src = adUrl;
+
+  wixWindow.onVisibilityChange((isVisible) => {
+    $w('#adFrame').postMessage({
+      source: 'wix-parent',
+      type: 'visibility',
+      visible: isVisible
+    });
+  });
+});`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: 'Wix Velo code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </TabsContent>

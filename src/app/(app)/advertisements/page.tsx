@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFirebase } from '@/firebase';
-import { collection, onSnapshot, query, collectionGroup, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, collectionGroup, doc, updateDoc, serverTimestamp, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import {
     Loader2,
     AlertCircle,
@@ -24,6 +24,7 @@ import {
     Filter,
     RefreshCw,
     Archive,
+    Trash2,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -43,6 +44,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -65,6 +76,7 @@ type AdWithMeta = Advertisement & {
     isChangeRequest?: boolean;
     changeRequestType?: 'self_design' | 'team_design';
     parentAdId?: string;
+    liveAdId?: string;
 };
 
 // Status filter options - Updated for new workflow
@@ -90,6 +102,8 @@ export default function AdvertisementsPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [deleteConfirmAd, setDeleteConfirmAd] = useState<AdWithMeta | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const { firestore } = useFirebase();
     const router = useRouter();
     const { toast } = useToast();
@@ -129,6 +143,8 @@ export default function AdvertisementsPage() {
                     isChangeRequest: data.isChangeRequest || false,
                     changeRequestType: data.changeRequestType,
                     parentAdId: data.parentAdId,
+                    // Live ad reference
+                    liveAdId: data.pushedToAdServerId || data.liveAdId,
                 };
 
                 // Check for auto-approve eligibility (customer_approval status with sent date)
@@ -217,6 +233,40 @@ export default function AdvertisementsPage() {
                 description: 'Failed to update status',
                 variant: 'destructive',
             });
+        }
+    };
+
+    const handleDeleteAd = async (ad: AdWithMeta) => {
+        if (!firestore) return;
+
+        setIsDeleting(true);
+        try {
+            // Delete the advertisement
+            await deleteDoc(doc(firestore, 'users', ad.userId, 'advertisements', ad.id));
+
+            // Also delete associated live_ad if it exists
+            if (ad.liveAdId) {
+                try {
+                    await deleteDoc(doc(firestore, 'live_ads', ad.liveAdId));
+                } catch (liveAdErr) {
+                    console.warn('Failed to delete associated live_ad:', liveAdErr);
+                }
+            }
+
+            toast({
+                title: 'Advertisement Deleted',
+                description: `The advertisement for "${ad.businessName || 'Unknown'}" has been deleted.`,
+            });
+            setDeleteConfirmAd(null);
+        } catch (err) {
+            console.error("Error deleting advertisement:", err);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete advertisement. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -598,6 +648,14 @@ export default function AdvertisementsPage() {
                                                                     Mark as Canceled
                                                                 </DropdownMenuItem>
                                                             )}
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() => setDeleteConfirmAd(ad)}
+                                                                className="text-destructive focus:text-destructive"
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete Advertisement
+                                                            </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </TableCell>
@@ -618,6 +676,35 @@ export default function AdvertisementsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteConfirmAd} onOpenChange={(open) => !open && setDeleteConfirmAd(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Advertisement</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to permanently delete the advertisement for &quot;{deleteConfirmAd?.businessName || 'Unknown'}&quot;?
+                            {deleteConfirmAd?.liveAdId && " This will also remove the associated live ad from the ad server."}
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => deleteConfirmAd && handleDeleteAd(deleteConfirmAd)}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete Advertisement
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

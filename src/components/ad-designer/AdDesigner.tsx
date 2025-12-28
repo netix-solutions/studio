@@ -122,6 +122,7 @@ export default function AdDesigner({
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   const [elements, setElements] = useState<DesignElement[]>(initialElements);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -187,6 +188,17 @@ export default function AdDesigner({
       }
     }
   }, [selectedId, elements]);
+
+  // Auto-focus text input when a text element is selected
+  useEffect(() => {
+    if (selectedElement?.type === 'text' && textInputRef.current) {
+      // Small delay to ensure the panel is rendered
+      setTimeout(() => {
+        textInputRef.current?.focus();
+        textInputRef.current?.select();
+      }, 50);
+    }
+  }, [selectedId]);
 
   // Generate unique ID
   const generateId = () => `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -686,7 +698,7 @@ export default function AdDesigner({
           </Stage>
         </div>
         <p className="text-xs text-muted-foreground text-center">
-          {width} x {height}px &middot; Double-click text to edit
+          {width} x {height}px &middot; Click text to select, then type in the panel {selectedElement?.type === 'text' ? '→' : ''}
         </p>
       </div>
 
@@ -731,11 +743,13 @@ export default function AdDesigner({
                   {selectedElement.type === 'text' && (
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <Label className="text-xs">Text</Label>
+                        <Label className="text-xs">Text <span className="text-muted-foreground font-normal">(type here to edit)</span></Label>
                         <Input
+                          ref={textInputRef}
                           value={(selectedElement as TextElement).text}
                           onChange={(e) => updateElementWithHistory(selectedElement.id, { text: e.target.value })}
                           className="h-8 text-sm"
+                          placeholder="Enter your text..."
                         />
                       </div>
 
@@ -947,7 +961,9 @@ export default function AdDesigner({
               ) : (
                 <div className="text-center py-6 text-muted-foreground">
                   <Move className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Select an element to edit</p>
+                  <p className="text-xs font-medium">Select an element to edit</p>
+                  <p className="text-xs mt-1">Click on any text or image on the canvas</p>
+                  <p className="text-xs mt-2 text-primary/70">Tip: Once selected, just start typing!</p>
                 </div>
               )}
             </CardContent>
