@@ -1,48 +1,55 @@
-import { initializeApp, getApps, applicationDefault, type App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, applicationDefault, type App, type Credential } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth, type Auth } from 'firebase-admin/auth';
-import { GoogleAuth } from 'google-auth-library';
 
 let adminApp: App;
 let adminFirestore: Firestore;
 let adminAuth: Auth;
 
 /**
- * Helper to make Identity Toolkit API calls without quota project header.
- * This avoids the "serviceusage.services.use" permission error that occurs
- * when the service account doesn't have the "Service Usage Consumer" role.
+ * Get the appropriate credential for Firebase Admin SDK initialization.
  *
- * Used as a fallback when standard Auth methods fail with USER_PROJECT_DENIED.
+ * Priority:
+ * 1. FIREBASE_SERVICE_ACCOUNT_KEY env var (JSON string) - works in all environments
+ * 2. GOOGLE_APPLICATION_CREDENTIALS env var (file path) - uses applicationDefault()
+ * 3. Google Cloud environment (automatic ADC) - uses applicationDefault()
+ *
+ * Using cert() with a service account key is preferred because:
+ * - It works correctly with Firestore's gRPC client
+ * - It doesn't have quota project issues that can affect Auth operations
+ * - It works in non-GCP environments (Vercel, local dev, etc.)
  */
-async function getAuthClientWithoutQuota(): Promise<{ accessToken: string }> {
-  const googleAuth = new GoogleAuth({
-    scopes: [
-      'https://www.googleapis.com/auth/cloud-platform',
-      'https://www.googleapis.com/auth/firebase',
-    ],
-    clientOptions: {
-      quotaProjectId: '',
-    },
-  });
-  const client = await googleAuth.getClient();
-  if ('quotaProjectId' in client) {
-    (client as { quotaProjectId?: string }).quotaProjectId = undefined;
-  }
-  const tokenResponse = await client.getAccessToken();
-  return { accessToken: tokenResponse.token || '' };
-}
+function getCredential(): Credential {
+  // Check for service account key in environment variable
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-// Export for use in Auth operations that need quota-free credentials
-export { getAuthClientWithoutQuota };
+  if (serviceAccountKey) {
+    try {
+      // Parse the JSON service account key
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      console.log('Using FIREBASE_SERVICE_ACCOUNT_KEY for Firebase Admin initialization');
+      return cert(serviceAccount);
+    } catch (error) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+      // Fall through to applicationDefault
+    }
+  }
+
+  // Fall back to Application Default Credentials
+  // This works when:
+  // - GOOGLE_APPLICATION_CREDENTIALS env var points to a service account file
+  // - Running in Google Cloud (Cloud Run, Cloud Functions, App Engine, etc.)
+  console.log('Using Application Default Credentials for Firebase Admin initialization');
+  return applicationDefault();
+}
 
 function initializeAdminApp() {
   if (getApps().length === 0) {
-    // Use standard Application Default Credentials for initialization
-    // This works correctly with Firestore's gRPC client
-    // For Auth operations that fail with quota project errors, we handle them separately
+    const projectId = process.env.FIREBASE_PROJECT_ID || 'studio-4614023416-d45cd';
+
     adminApp = initializeApp({
-      credential: applicationDefault(),
-      projectId: process.env.FIREBASE_PROJECT_ID || 'studio-4614023416-d45cd',
+      credential: getCredential(),
+      projectId,
     });
   } else {
     adminApp = getApps()[0];
