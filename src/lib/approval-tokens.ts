@@ -10,17 +10,23 @@ import crypto from 'crypto';
 // Token expiration: 7 days (matches the typical ad approval window)
 const TOKEN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Get primary token secret for signing new tokens
+// Get token secret for signing NEW tokens - requires EMAIL_ACTION_TOKEN_SECRET
 const getTokenSecret = (): string => {
-    const secret = process.env.EMAIL_ACTION_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
-    if (!secret) {
-        // In development, use a default secret (not secure for production)
-        if (process.env.NODE_ENV === 'development') {
-            return 'dev-secret-key-not-for-production';
-        }
-        throw new Error('EMAIL_ACTION_TOKEN_SECRET or NEXTAUTH_SECRET environment variable is required');
+    // In development, use a default secret (not secure for production)
+    if (process.env.NODE_ENV === 'development' && !process.env.EMAIL_ACTION_TOKEN_SECRET) {
+        return 'dev-secret-key-not-for-production';
     }
-    return secret;
+
+    // In production, EMAIL_ACTION_TOKEN_SECRET is REQUIRED for generating new tokens
+    // This ensures all new tokens use a consistent, dedicated secret
+    if (!process.env.EMAIL_ACTION_TOKEN_SECRET) {
+        throw new Error(
+            'EMAIL_ACTION_TOKEN_SECRET environment variable is required. ' +
+            'Set it with: firebase apphosting:secrets:set EMAIL_ACTION_TOKEN_SECRET'
+        );
+    }
+
+    return process.env.EMAIL_ACTION_TOKEN_SECRET;
 };
 
 // Get all secrets to try for verification (supports legacy tokens)
