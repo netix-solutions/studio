@@ -97,6 +97,7 @@ export default function DesignAdPage() {
 
         // Find the advertisement if not provided
         let adIdToUse = advertisementId;
+        let hasExistingAd = false;
         if (!adIdToUse) {
           const adsRef = collection(firestore, 'users', effectiveUserId, 'advertisements');
           const adsQuery = query(adsRef, orderBy('createdAt', 'desc'), firestoreLimit(1));
@@ -104,20 +105,29 @@ export default function DesignAdPage() {
           if (!adsSnapshot.empty) {
             adIdToUse = adsSnapshot.docs[0].id;
             setAdvertisementId(adIdToUse);
+            hasExistingAd = true;
           }
+        } else {
+          hasExistingAd = true;
         }
 
         // Try to load from versions subcollection first
         if (adIdToUse) {
-          const latestVersion = await getLatestVersion(firestore, effectiveUserId, adIdToUse);
-          if (latestVersion) {
-            setCurrentVersion(latestVersion);
-            setHasSavedDesign(true); // Existing design available
-            const elementsWithImages = await loadVersionElements(latestVersion);
-            setInitialElements(elementsWithImages as DesignElement[]);
-            setInitialBackgroundColor(latestVersion.backgroundColor || '#FFFFFF');
-            setIsLoading(false);
-            return;
+          try {
+            const latestVersion = await getLatestVersion(firestore, effectiveUserId, adIdToUse);
+            if (latestVersion) {
+              setCurrentVersion(latestVersion);
+              setHasSavedDesign(true); // Existing design available
+              const elementsWithImages = await loadVersionElements(latestVersion);
+              setInitialElements(elementsWithImages as DesignElement[]);
+              setInitialBackgroundColor(latestVersion.backgroundColor || '#FFFFFF');
+              setIsLoading(false);
+              return;
+            }
+          } catch (versionError) {
+            // If there's a permission error loading versions for an existing ad, log it
+            // but continue to try legacy design or create defaults
+            console.warn('Could not load design versions, trying legacy design:', versionError);
           }
         }
 
@@ -210,13 +220,23 @@ export default function DesignAdPage() {
             setInitialBackgroundColor(designPrefs.backgroundColor || '#FFFFFF');
           }
         }
-      } catch (error) {
-        console.error('Error loading design:', error);
-        toast({
-          title: 'Error',
-          description: 'Could not load your saved design. Starting fresh.',
-          variant: 'destructive',
-        });
+      } catch (error: any) {
+        // Only log the error; don't show a toast for new users who don't have saved designs
+        // This is expected behavior - they're starting fresh
+        console.warn('Error during design load (may be expected for new users):', error);
+
+        // Only show an error toast if this looks like an unexpected error
+        // (e.g., network issues, not permission errors for non-existent data)
+        const isPermissionError = error?.code === 'permission-denied' ||
+          error?.message?.includes('Missing or insufficient permissions');
+
+        if (!isPermissionError) {
+          toast({
+            title: 'Error',
+            description: 'Could not load your saved design. Starting fresh.',
+            variant: 'destructive',
+          });
+        }
       } finally {
         setIsLoading(false);
       }

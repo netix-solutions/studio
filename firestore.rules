@@ -62,6 +62,13 @@ service cloud.firestore {
         allow create, read, update: if isOwner(userId) || isAdmin();
         // Only admins can delete advertisements
         allow delete: if isAdmin();
+
+        // DESIGN VERSIONS
+        // Users can create/read/update their own design versions. Admins can manage all.
+        match /versions/{versionId} {
+          allow create, read, update, list: if isOwner(userId) || isAdmin();
+          allow delete: if isAdmin();
+        }
       }
     }
     
