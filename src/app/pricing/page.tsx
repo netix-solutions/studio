@@ -669,14 +669,14 @@ function PricingPageContent() {
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <Image
-              src="/pricing-hero-1.jpg"
+              src="/overhead1.jpg"
               alt="Florida Community"
               fill
               className="object-cover"
               priority
             />
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/95 via-brand-primary/90 to-brand-secondary/85" />
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/90 via-brand-primary/80 to-brand-secondary/70" />
           </div>
 
           {/* Content */}
@@ -815,12 +815,12 @@ function PricingPageContent() {
               {/* Background Image */}
               <div className="absolute inset-0 z-0">
                 <Image
-                  src="/pricing-hero-2.jpg"
+                  src="/overhead1.jpg"
                   alt="Florida Neighborhood"
                   fill
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/80" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/95 via-brand-primary/90 to-brand-primary/80" />
               </div>
 
               <div className="relative z-10 container mx-auto px-4">
