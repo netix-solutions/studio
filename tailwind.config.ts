@@ -67,6 +67,20 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        // Brand colors
+        brand: {
+          primary: '#19345f',
+          secondary: '#285295',
+          light: '#3a6bc5',
+          dark: '#0f2040',
+        },
+        // Success/CTA green
+        success: {
+          DEFAULT: '#22c55e',
+          hover: '#16a34a',
+          light: '#dcfce7',
+          dark: '#15803d',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

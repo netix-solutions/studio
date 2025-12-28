@@ -153,18 +153,18 @@ function MobilePricingCard({
     <div
       onClick={onSelect}
       className={cn(
-        "relative rounded-2xl border-2 p-4 md:p-5 transition-all duration-200 cursor-pointer touch-manipulation active:scale-[0.99]",
+        "relative rounded-2xl border-2 p-5 md:p-6 transition-all duration-200 cursor-pointer touch-manipulation active:scale-[0.99]",
         isSelected
-          ? "border-blue-600 bg-blue-50/50 shadow-lg shadow-blue-100"
+          ? "border-success bg-success-light/30 shadow-lg shadow-success/10"
           : "border-gray-200 bg-white hover:border-gray-300 active:border-gray-400",
-        isFeatured && !isSelected && "border-blue-200"
+        isFeatured && !isSelected && "border-brand-primary/30"
       )}
     >
       {/* Best Value Badge */}
       {isFeatured && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-4 py-1 text-[10px] md:text-xs font-semibold shadow-md whitespace-nowrap">
-            <Star className="h-3 w-3 mr-1 fill-current" />
+          <Badge className="bg-gradient-to-r from-brand-primary to-brand-secondary text-white px-4 md:px-5 py-1.5 text-[10px] md:text-xs font-semibold shadow-md whitespace-nowrap">
+            <Star className="h-3 w-3 mr-1.5 fill-current" />
             BEST VALUE
           </Badge>
         </div>
@@ -172,33 +172,33 @@ function MobilePricingCard({
 
       {/* Selection indicator - larger touch target */}
       <div className={cn(
-        "absolute top-3 md:top-4 right-3 md:right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+        "absolute top-4 md:top-5 right-4 md:right-5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
         isSelected
-          ? "border-blue-600 bg-blue-600"
+          ? "border-success bg-success"
           : "border-gray-300 bg-white"
       )}>
         {isSelected && <Check className="h-4 w-4 text-white" />}
       </div>
 
-      <div className="flex items-start gap-3 md:gap-4">
+      <div className="flex items-start gap-4 md:gap-5">
         {/* Plan Icon */}
         <div className={cn(
-          "w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-          isFeatured ? "bg-blue-100" : "bg-gray-100"
+          "w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center flex-shrink-0",
+          isFeatured ? "bg-brand-primary/10" : "bg-gray-100"
         )}>
           {isFeatured ? (
-            <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
+            <Sparkles className="h-6 w-6 md:h-7 md:w-7 text-brand-primary" />
           ) : (
-            <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-gray-600" />
+            <TrendingUp className="h-6 w-6 md:h-7 md:w-7 text-gray-600" />
           )}
         </div>
 
         {/* Plan Details */}
         <div className="flex-1 min-w-0 pr-6">
-          <div className="flex items-center gap-2 mb-0.5 md:mb-1 flex-wrap">
-            <h3 className="font-bold text-base md:text-lg text-gray-900 font-headline">{plan.name}</h3>
+          <div className="flex items-center gap-2.5 mb-1 md:mb-1.5 flex-wrap">
+            <h3 className="font-bold text-base md:text-lg text-brand-primary font-headline">{plan.name}</h3>
             {savings > 0 && billingCycle === 'yearly' && (
-              <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px] md:text-xs">
+              <Badge variant="secondary" className="bg-success-light text-success-dark text-[10px] md:text-xs font-semibold">
                 Save {savings}%
               </Badge>
             )}
@@ -208,32 +208,32 @@ function MobilePricingCard({
       </div>
 
       {/* Price Display */}
-      <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl md:text-3xl font-bold text-gray-900">
+      <div className="mt-4 md:mt-5 pt-4 md:pt-5 border-t border-gray-100">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-2xl md:text-3xl font-bold text-brand-primary">
             {displayPrice !== undefined
               ? `$${Math.round(displayPrice / 100)}`
               : 'N/A'}
           </span>
-          <span className="text-gray-500 text-xs md:text-sm">/month</span>
+          <span className="text-gray-500 text-xs md:text-sm font-medium">/month</span>
         </div>
         {billingCycle === 'yearly' && yearlyPrice && (
-          <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1">
+          <p className="text-[10px] md:text-xs text-gray-500 mt-1">
             Billed as ${(yearlyPrice.unit_amount / 100).toFixed(0)}/year
           </p>
         )}
       </div>
 
       {/* Features Preview */}
-      <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2">
+      <div className="mt-4 md:mt-5 space-y-2 md:space-y-2.5">
         {planDetails.features.slice(0, 3).map((feature, idx) => (
-          <div key={idx} className="flex items-center gap-2 text-xs md:text-sm text-gray-600">
-            <Check className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-500 flex-shrink-0" />
+          <div key={idx} className="flex items-center gap-2.5 text-xs md:text-sm text-gray-600">
+            <Check className="h-4 w-4 md:h-4.5 md:w-4.5 text-success flex-shrink-0" />
             <span>{feature}</span>
           </div>
         ))}
         {planDetails.features.length > 3 && (
-          <p className="text-[10px] md:text-xs text-blue-600 font-medium pl-5 md:pl-6">
+          <p className="text-[10px] md:text-xs text-brand-secondary font-semibold pl-6 md:pl-7">
             +{planDetails.features.length - 3} more benefits
           </p>
         )}
@@ -504,18 +504,18 @@ function PricingPageContent() {
   return (
     <div className="min-h-[100dvh] bg-gray-50">
       {/* Mobile-First Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 safe-area-inset">
+      <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-gray-100/80 safe-area-inset shadow-sm">
         <div className="container mx-auto px-4">
-          <div className="flex h-14 items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[24px] md:h-[28px] w-auto" />
-              <span className="font-headline font-semibold text-gray-900 hidden sm:inline text-xl tracking-wider">Community-Websites.com</span>
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              <Image src="/logo.png" alt="Community-Websites.com" width={44} height={24} className="h-[26px] md:h-[30px] w-auto" />
+              <span className="font-headline font-bold text-brand-primary hidden sm:inline text-lg tracking-tight">Community-Websites.com</span>
             </Link>
-            <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-3 md:gap-4">
               {/* Mobile: Icon-only phone */}
               <a
                 href="tel:813-544-8383"
-                className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                className="md:hidden flex items-center justify-center w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 active:bg-brand-primary/30 transition-all duration-200"
                 aria-label="Call us"
               >
                 <Phone className="h-4 w-4" />
@@ -523,15 +523,15 @@ function PricingPageContent() {
               {/* Desktop: Full phone number */}
               <a
                 href="tel:813-544-8383"
-                className="hidden md:flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+                className="hidden md:flex items-center gap-1.5 text-sm text-brand-primary hover:text-brand-secondary font-medium transition-colors"
               >
                 <Phone className="h-4 w-4" />
                 <span>813-544-8383</span>
               </a>
-              <Button variant="ghost" size="sm" asChild className="h-9 px-3">
+              <Button variant="ghost" size="sm" asChild className="h-10 px-4 text-brand-primary hover:bg-brand-primary/10">
                 <Link href="/login">
                   <User className="h-4 w-4 md:mr-1.5" />
-                  <span className="hidden md:inline">Login</span>
+                  <span className="hidden md:inline font-medium">Login</span>
                 </Link>
               </Button>
             </div>
@@ -542,25 +542,25 @@ function PricingPageContent() {
       {/* Main Content */}
       <main className="pb-40 md:pb-16">
         {/* Hero Section */}
-        <section className="bg-white py-6 md:py-12 border-b border-gray-100">
+        <section className="bg-white py-8 md:py-14 border-b border-gray-100">
           <div className="container mx-auto px-4 text-center">
             {businessName && (
-              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium mb-3 md:mb-4">
+              <div className="inline-flex items-center gap-2 bg-brand-primary/10 text-brand-primary rounded-full px-4 py-2 md:px-5 md:py-2.5 text-xs md:text-sm font-medium mb-4 md:mb-5">
                 <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 Special pricing for {businessName}
               </div>
             )}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-headline text-gray-900 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-headline text-brand-primary leading-tight">
               {businessName
                 ? `Get ${businessName} in Front of Local Customers`
                 : 'Simple, Affordable Local Advertising'}
             </h1>
-            <p className="mt-3 md:mt-4 text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
+            <p className="mt-4 md:mt-5 text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
               Choose your plan and start reaching thousands of Pasco County residents today. No contracts, cancel anytime.
             </p>
 
             {/* Trust indicators */}
-            <div className="mt-5 md:mt-6">
+            <div className="mt-6 md:mt-8">
               <TrustIndicators />
             </div>
           </div>
@@ -568,7 +568,7 @@ function PricingPageContent() {
 
         {loading ? (
           <div className="flex h-[50vh] items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <Loader2 className="h-10 w-10 animate-spin text-brand-primary" />
           </div>
         ) : plans.length > 0 ? (
           <>
@@ -586,8 +586,8 @@ function PricingPageContent() {
             {/* Plan Selection */}
             <section className="py-8">
               <div className="container mx-auto px-4 max-w-xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                <h2 className="text-lg font-semibold text-brand-primary mb-4 flex items-center gap-2.5">
+                  <span className="w-7 h-7 bg-brand-primary text-white rounded-lg flex items-center justify-center text-sm font-bold">1</span>
                   Select Your Plan
                 </h2>
 
@@ -614,39 +614,39 @@ function PricingPageContent() {
             {/* What Happens Next */}
             <section className="py-8 bg-white border-t border-b border-gray-100">
               <div className="container mx-auto px-4 max-w-xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                <h2 className="text-lg font-semibold text-brand-primary mb-5 flex items-center gap-2.5">
+                  <span className="w-7 h-7 bg-brand-primary text-white rounded-lg flex items-center justify-center text-sm font-bold">2</span>
                   What Happens Next
                 </h2>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="font-bold text-green-600">1</span>
+                    <div className="w-11 h-11 bg-success-light rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="font-bold text-success-dark">1</span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Create Your Account</h3>
-                      <p className="text-sm text-gray-600">Quick signup with your email address</p>
+                      <h3 className="font-semibold text-brand-primary">Create Your Account</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">Quick signup with your email address</p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="font-bold text-green-600">2</span>
+                    <div className="w-11 h-11 bg-success-light rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="font-bold text-success-dark">2</span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">We Design Your Ad</h3>
-                      <p className="text-sm text-gray-600">Our team creates a professional banner for you</p>
+                      <h3 className="font-semibold text-brand-primary">We Design Your Ad</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">Our team creates a professional banner for you</p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="font-bold text-green-600">3</span>
+                    <div className="w-11 h-11 bg-success-light rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="font-bold text-success-dark">3</span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Go Live in 48 Hours</h3>
-                      <p className="text-sm text-gray-600">Approve your ad and start reaching customers</p>
+                      <h3 className="font-semibold text-brand-primary">Go Live in 48 Hours</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">Approve your ad and start reaching customers</p>
                     </div>
                   </div>
                 </div>
@@ -666,7 +666,7 @@ function PricingPageContent() {
                 <p className="text-gray-600 mb-3">Questions? We're here to help.</p>
                 <a
                   href="tel:813-544-8383"
-                  className="inline-flex items-center gap-2 text-blue-600 font-semibold text-lg hover:text-blue-700"
+                  className="inline-flex items-center gap-2 text-brand-secondary font-semibold text-lg hover:text-brand-primary transition-colors"
                 >
                   <Phone className="h-5 w-5" />
                   Call or text: 813-544-8383
@@ -679,7 +679,8 @@ function PricingPageContent() {
               <div className="container mx-auto px-4 max-w-xl">
                 <Button
                   size="lg"
-                  className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 shadow-lg"
+                  variant="success"
+                  className="w-full h-14 text-lg shadow-lg shadow-success/25"
                   onClick={handlePurchase}
                   disabled={!selectedPlan || !!isPurchasing}
                 >
@@ -717,19 +718,20 @@ function PricingPageContent() {
 
       {/* Sticky Mobile CTA - Enhanced for better mobile UX */}
       {!loading && plans.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
-          <div className="flex items-center justify-between gap-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.12)] pb-safe md:hidden">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex-shrink-0 min-w-0">
-              <p className="text-[10px] text-gray-500 truncate">
+              <p className="text-[11px] text-gray-500 truncate font-medium">
                 {selectedPlan?.name || 'Select a plan'}
               </p>
-              <p className="font-bold text-base text-gray-900">
+              <p className="font-bold text-lg text-brand-primary">
                 {getSelectedPrice() ? `$${getSelectedPrice()}/mo` : '—'}
               </p>
             </div>
             <Button
               size="lg"
-              className="flex-1 h-11 font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 touch-manipulation rounded-xl max-w-[200px]"
+              variant="success"
+              className="flex-1 h-12 touch-manipulation rounded-xl max-w-[180px] shadow-lg shadow-success/25"
               onClick={handlePurchase}
               disabled={!selectedPlan || !!isPurchasing}
             >
@@ -743,23 +745,23 @@ function PricingPageContent() {
               )}
             </Button>
           </div>
-          <p className="text-[10px] text-center text-gray-500 mt-1.5">
+          <p className="text-[10px] text-center text-gray-500 mt-2">
             Secure checkout • Cancel anytime
           </p>
         </div>
       )}
 
-      {/* Dark Blue Footer */}
-      <footer className="py-8 bg-blue-900 text-blue-200">
+      {/* Modern Footer */}
+      <footer className="py-10 md:py-12 bg-brand-primary text-white/80">
         <div className="container mx-auto px-4 md:px-6">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-10">
                 {/* Branding */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={40} height={22} className="h-[22px] w-auto" />
-                         <span className="font-headline text-white text-lg tracking-wider">Community-Websites.com</span>
+                         <Image src="/logo.png" alt="Community-Websites.com Logo" width={44} height={24} className="h-[26px] w-auto" />
+                         <span className="font-headline text-white text-lg font-bold tracking-wide">Community-Websites.com</span>
                     </div>
-                    <p className="text-sm text-blue-300 max-w-xs">
+                    <p className="text-sm text-white/60 max-w-xs leading-relaxed">
                         Affordable, effective local advertising for Pasco County small businesses.
                     </p>
                 </div>
@@ -767,29 +769,29 @@ function PricingPageContent() {
                 {/* Links */}
                 <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
                     <div>
-                        <h4 className="font-semibold text-white mb-3">Legal</h4>
-                        <ul className="space-y-2 text-sm">
+                        <h4 className="font-semibold text-white mb-4">Legal</h4>
+                        <ul className="space-y-2.5 text-sm">
                             <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                             <li><Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
                         </ul>
                     </div>
                     <div>
-                        <h4 className="font-semibold text-white mb-3">Account</h4>
-                        <ul className="space-y-2 text-sm">
+                        <h4 className="font-semibold text-white mb-4">Account</h4>
+                        <ul className="space-y-2.5 text-sm">
                             <li><Link href="/login" className="hover:text-white transition-colors">Customer Login</Link></li>
                             <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                         </ul>
                     </div>
                      <div>
-                        <h4 className="font-semibold text-white mb-3">Contact</h4>
-                        <ul className="space-y-2 text-sm">
+                        <h4 className="font-semibold text-white mb-4">Contact</h4>
+                        <ul className="space-y-2.5 text-sm">
                             <li><a href="tel:813-544-8383" className="hover:text-white transition-colors">813-544-8383</a></li>
                             <li><a href="mailto:support@community-websites.com" className="hover:text-white transition-colors">support@community-websites.com</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
-            <div className="mt-8 pt-6 border-t border-blue-800 text-center text-xs text-blue-400">
+            <div className="mt-10 pt-6 border-t border-white/10 text-center text-xs text-white/50">
                 &copy; {new Date().getFullYear()} Community-Websites.com. All Rights Reserved.
             </div>
         </div>
