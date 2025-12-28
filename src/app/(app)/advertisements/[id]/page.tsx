@@ -7,7 +7,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimest
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink, Radio } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink, Radio, ChevronDown, Edit as EditIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,20 @@ import { sendEmail } from '@/lib/firebase/email';
 import { wrapEmailContent } from '@/lib/email-utils';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
     AD_STATUSES,
     AD_STATUS_LABELS,
@@ -70,7 +84,7 @@ const adminWorkflowSteps = [
     { id: 'live', title: 'Live', description: 'Ad is active on websites' },
 ];
 
-function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdStatus, onStatusChange?: (status: AdStatus) => void }) {
+function WorkflowStepper({ currentStatus, onStatusChange, isUpdating }: { currentStatus: AdStatus, onStatusChange?: (status: AdStatus) => void, isUpdating?: boolean }) {
     const getCurrentIndex = () => {
         const index = adminWorkflowSteps.findIndex(s => s.id === currentStatus);
         if (currentStatus === 'live') return adminWorkflowSteps.length - 1;
@@ -81,88 +95,133 @@ function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdS
     };
 
     const currentIndex = getCurrentIndex();
+    const isClickable = !!onStatusChange && !isUpdating;
+
+    const handleStepClick = (stepId: string) => {
+        if (onStatusChange && stepId !== currentStatus) {
+            onStatusChange(stepId as AdStatus);
+        }
+    };
 
     return (
-        <div className="space-y-4">
-            {/* Mobile view - vertical stepper */}
-            <div className="md:hidden space-y-3">
-                {adminWorkflowSteps.map((step, index) => {
-                    const isCompleted = currentIndex > index;
-                    const isActive = currentIndex === index;
-                    const isPending = currentIndex < index;
+        <TooltipProvider>
+            <div className="space-y-4">
+                {/* Mobile view - vertical stepper */}
+                <div className="md:hidden space-y-3">
+                    {adminWorkflowSteps.map((step, index) => {
+                        const isCompleted = currentIndex > index;
+                        const isActive = currentIndex === index;
+                        const isPending = currentIndex < index;
 
-                    return (
-                        <div key={step.id} className="flex items-center gap-3">
-                            <div className={cn(
-                                "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
-                                isCompleted && "bg-green-500 border-green-500 text-white",
-                                isActive && "bg-primary border-primary text-primary-foreground",
-                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
-                            )}>
-                                {isCompleted ? (
-                                    <CheckCircle className="h-4 w-4" />
-                                ) : (
-                                    <span className="font-bold text-sm">{index + 1}</span>
+                        return (
+                            <Tooltip key={step.id}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => handleStepClick(step.id)}
+                                        disabled={!isClickable || step.id === currentStatus}
+                                        className={cn(
+                                            "flex items-center gap-3 w-full text-left",
+                                            isClickable && step.id !== currentStatus && "cursor-pointer hover:opacity-80",
+                                            (!isClickable || step.id === currentStatus) && "cursor-default"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
+                                            isCompleted && "bg-green-500 border-green-500 text-white",
+                                            isActive && "bg-primary border-primary text-primary-foreground",
+                                            isPending && "bg-muted border-muted-foreground/30 text-muted-foreground",
+                                            isClickable && step.id !== currentStatus && "hover:ring-2 hover:ring-offset-2 hover:ring-primary/50"
+                                        )}>
+                                            {isCompleted ? (
+                                                <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                                <span className="font-bold text-sm">{index + 1}</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className={cn(
+                                                "text-sm font-medium",
+                                                isActive && "text-primary",
+                                                isCompleted && "text-green-600",
+                                                isPending && "text-muted-foreground"
+                                            )}>
+                                                {step.title}
+                                            </p>
+                                        </div>
+                                    </button>
+                                </TooltipTrigger>
+                                {isClickable && step.id !== currentStatus && (
+                                    <TooltipContent>
+                                        <p>Click to change status to &quot;{step.title}&quot;</p>
+                                    </TooltipContent>
                                 )}
-                            </div>
-                            <div className="flex-1">
-                                <p className={cn(
-                                    "text-sm font-medium",
-                                    isActive && "text-primary",
-                                    isCompleted && "text-green-600",
-                                    isPending && "text-muted-foreground"
-                                )}>
-                                    {step.title}
-                                </p>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                            </Tooltip>
+                        );
+                    })}
+                </div>
 
-            {/* Desktop view - horizontal stepper */}
-            <div className="hidden md:flex items-center justify-between">
-                {adminWorkflowSteps.map((step, index) => {
-                    const isCompleted = currentIndex > index;
-                    const isActive = currentIndex === index;
-                    const isPending = currentIndex < index;
+                {/* Desktop view - horizontal stepper */}
+                <div className="hidden md:flex items-center justify-between">
+                    {adminWorkflowSteps.map((step, index) => {
+                        const isCompleted = currentIndex > index;
+                        const isActive = currentIndex === index;
+                        const isPending = currentIndex < index;
 
-                    return (
-                        <React.Fragment key={step.id}>
-                            <div className="flex flex-col items-center text-center flex-1">
-                                <div className={cn(
-                                    "h-12 w-12 rounded-full flex items-center justify-center border-2 transition-all",
-                                    isCompleted && "bg-green-500 border-green-500 text-white",
-                                    isActive && "bg-primary border-primary text-primary-foreground",
-                                    isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
-                                )}>
-                                    {isCompleted ? (
-                                        <CheckCircle className="h-6 w-6" />
-                                    ) : (
-                                        <span className="font-bold">{index + 1}</span>
+                        return (
+                            <React.Fragment key={step.id}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => handleStepClick(step.id)}
+                                            disabled={!isClickable || step.id === currentStatus}
+                                            className={cn(
+                                                "flex flex-col items-center text-center flex-1",
+                                                isClickable && step.id !== currentStatus && "cursor-pointer group",
+                                                (!isClickable || step.id === currentStatus) && "cursor-default"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "h-12 w-12 rounded-full flex items-center justify-center border-2 transition-all",
+                                                isCompleted && "bg-green-500 border-green-500 text-white",
+                                                isActive && "bg-primary border-primary text-primary-foreground",
+                                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground",
+                                                isClickable && step.id !== currentStatus && "group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-primary/50"
+                                            )}>
+                                                {isCompleted ? (
+                                                    <CheckCircle className="h-6 w-6" />
+                                                ) : (
+                                                    <span className="font-bold">{index + 1}</span>
+                                                )}
+                                            </div>
+                                            <p className={cn(
+                                                "mt-2 text-sm font-medium",
+                                                isActive && "text-primary",
+                                                isCompleted && "text-green-600",
+                                                isPending && "text-muted-foreground"
+                                            )}>
+                                                {step.title}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">{step.description}</p>
+                                        </button>
+                                    </TooltipTrigger>
+                                    {isClickable && step.id !== currentStatus && (
+                                        <TooltipContent>
+                                            <p>Click to change status to &quot;{step.title}&quot;</p>
+                                        </TooltipContent>
                                     )}
-                                </div>
-                                <p className={cn(
-                                    "mt-2 text-sm font-medium",
-                                    isActive && "text-primary",
-                                    isCompleted && "text-green-600",
-                                    isPending && "text-muted-foreground"
-                                )}>
-                                    {step.title}
-                                </p>
-                                <p className="text-xs text-muted-foreground">{step.description}</p>
-                            </div>
-                            {index < adminWorkflowSteps.length - 1 && (
-                                <div className={cn(
-                                    "flex-1 h-1 mx-2 max-w-[80px]",
-                                    isCompleted ? "bg-green-500" : "bg-border"
-                                )} />
-                            )}
-                        </React.Fragment>
-                    );
-                })}
+                                </Tooltip>
+                                {index < adminWorkflowSteps.length - 1 && (
+                                    <div className={cn(
+                                        "flex-1 h-1 mx-2 max-w-[80px]",
+                                        isCompleted ? "bg-green-500" : "bg-border"
+                                    )} />
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
             </div>
-        </div>
+        </TooltipProvider>
     );
 }
 
@@ -818,11 +877,71 @@ export default function AdvertisementDetailPage() {
 
             {/* Workflow Progress */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Workflow Progress</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div>
+                        <CardTitle>Workflow Progress</CardTitle>
+                        <CardDescription className="mt-1">Click any step to change status</CardDescription>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isUpdatingStatus}>
+                                {isUpdatingStatus ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <EditIcon className="mr-2 h-4 w-4" />
+                                )}
+                                Change Status
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>Workflow Steps</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {adminWorkflowSteps.map((step) => (
+                                <DropdownMenuItem
+                                    key={step.id}
+                                    onClick={() => handleUpdateStatus(step.id as AdStatus)}
+                                    disabled={advertisement.status === step.id}
+                                    className={cn(
+                                        advertisement.status === step.id && "bg-muted font-medium"
+                                    )}
+                                >
+                                    <span className="flex-1">{step.title}</span>
+                                    {advertisement.status === step.id && (
+                                        <Badge variant="secondary" className="ml-2 text-xs">Current</Badge>
+                                    )}
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Other Statuses</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                onClick={() => handleUpdateStatus('paused')}
+                                disabled={advertisement.status === 'paused'}
+                                className={cn(
+                                    advertisement.status === 'paused' && "bg-muted font-medium"
+                                )}
+                            >
+                                <span className="flex-1">Paused</span>
+                                {advertisement.status === 'paused' && (
+                                    <Badge variant="secondary" className="ml-2 text-xs">Current</Badge>
+                                )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => handleUpdateStatus('canceled')}
+                                disabled={advertisement.status === 'canceled'}
+                                className="text-red-600 focus:text-red-600"
+                            >
+                                Canceled
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </CardHeader>
                 <CardContent>
-                    <WorkflowStepper currentStatus={advertisement.status} />
+                    <WorkflowStepper
+                        currentStatus={advertisement.status}
+                        onStatusChange={handleUpdateStatus}
+                        isUpdating={isUpdatingStatus}
+                    />
                 </CardContent>
             </Card>
 
