@@ -108,7 +108,7 @@ const initialFormData: FormData = {
 };
 
 export default function ManualEntryPage() {
-  const { auth } = useFirebase();
+  const { auth, user } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -140,8 +140,8 @@ export default function ManualEntryPage() {
     setIsSubmitting(true);
 
     try {
-      // Get the current user's ID token
-      const currentUser = auth?.currentUser;
+      // Use the user from context (more reliable) or fall back to auth.currentUser
+      const currentUser = user || auth?.currentUser;
       if (!currentUser) {
         throw new Error('You must be logged in to perform this action');
       }
@@ -668,7 +668,10 @@ export default function ManualEntryPage() {
             >
               Reset Form
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
