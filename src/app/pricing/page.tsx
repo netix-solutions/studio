@@ -560,8 +560,9 @@ function PricingPageContent() {
       fetchPlansAndPrices(firestore)
         .then(fetchedPlans => {
           setPlans(fetchedPlans);
-          const featured = fetchedPlans.find(p => p.metadata?.isFeatured === 'true');
-          setSelectedPlanId(featured?.id || fetchedPlans[0]?.id || null);
+          // Select the most expensive plan by default (last in sorted array)
+          const mostExpensivePlan = fetchedPlans[fetchedPlans.length - 1];
+          setSelectedPlanId(mostExpensivePlan?.id || null);
         })
         .catch(error => {
           console.error("Error fetching plans and prices:", error);
