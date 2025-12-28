@@ -18,6 +18,13 @@ import {
   Handshake,
   Radio,
   UserPlus,
+  Home,
+  Mail,
+  Upload,
+  FileText,
+  Bell,
+  Settings,
+  Calculator,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -30,11 +37,21 @@ interface NavItem {
 
 // Core admin navigation - essential features for managing the ad business
 const adminMenuItems: NavItem[] = [
+  { href: '/dashboard', label: 'Home', icon: Home },
   { href: '/leads', label: 'Leads', icon: Handshake },
   { href: '/subscriptions', label: 'Customers', icon: Ticket },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone },
   { href: '/manual-entry', label: 'Manual Entry', icon: UserPlus },
   { href: '/ad-server', label: 'Ad Server', icon: Radio },
+];
+
+// Settings section items
+const adminSettingsItems: NavItem[] = [
+  { href: '/automated-emails', label: 'Email Templates', icon: Mail },
+  { href: '/import', label: 'Import', icon: Upload },
+  { href: '/reconciliation', label: 'Reconciliation', icon: Calculator },
+  { href: '/legal', label: 'Legal', icon: FileText },
+  { href: '/admin-notifications', label: 'Notifications', icon: Bell },
 ];
 
 // User navigation (non-admin)
@@ -93,6 +110,32 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
               </SidebarMenuItem>
             ))}
           </div>
+
+          {isAdmin && (
+            <div className="mt-6">
+              <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Settings className="h-4 w-4" />
+                Settings
+              </div>
+              <div className="space-y-1">
+                {adminSettingsItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <Button
+                      asChild
+                      variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
+                      className="w-full justify-start"
+                      size="lg"
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="mr-3 h-5 w-5" />
+                        {item.label}
+                      </Link>
+                    </Button>
+                  </SidebarMenuItem>
+                ))}
+              </div>
+            </div>
+          )}
         </SidebarMenu>
       </SidebarContent>
     </Sidebar>
