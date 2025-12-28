@@ -5,15 +5,25 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useFirebase } from '@/firebase';
-import { collection, onSnapshot, query, Unsubscribe, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, Unsubscribe, doc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Loader2, Shield } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, MoreHorizontal, History } from 'lucide-react';
+import { AlertCircle, MoreHorizontal, History, Trash2 } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { EditUserDialog } from '@/components/users/edit-user-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -38,6 +48,8 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
     const [adminRoles, setAdminRoles] = useState<{[key: string]: boolean}>({});
     const [isSyncingClaims, setIsSyncingClaims] = useState(false);
+    const [deleteConfirmUser, setDeleteConfirmUser] = useState<AppUser | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Sync admin claims for all existing admins
     const handleSyncAdminClaims = async () => {
@@ -135,6 +147,64 @@ export default function UsersPage() {
         setIsHistoryDialogOpen(true);
     };
 
+    const handleDeleteUser = async (user: AppUser) => {
+        if (!firestore) return;
+
+        setIsDeleting(true);
+        try {
+            const batch = writeBatch(firestore);
+
+            // Delete all advertisements for this user
+            const adsSnapshot = await getDocs(collection(firestore, 'users', user.id, 'advertisements'));
+            for (const adDoc of adsSnapshot.docs) {
+                batch.delete(adDoc.ref);
+                // Also check for associated live_ads
+                const adData = adDoc.data();
+                if (adData.pushedToAdServerId) {
+                    try {
+                        await deleteDoc(doc(firestore, 'live_ads', adData.pushedToAdServerId));
+                    } catch (e) {
+                        console.warn('Failed to delete live_ad:', e);
+                    }
+                }
+            }
+
+            // Delete all subscriptions for this customer
+            const subsSnapshot = await getDocs(collection(firestore, 'customers', user.id, 'subscriptions'));
+            for (const subDoc of subsSnapshot.docs) {
+                batch.delete(subDoc.ref);
+            }
+
+            // Delete the customer document
+            batch.delete(doc(firestore, 'customers', user.id));
+
+            // Delete the user document
+            batch.delete(doc(firestore, 'users', user.id));
+
+            // Delete admin role if exists
+            if (adminRoles[user.id]) {
+                batch.delete(doc(firestore, 'roles_admin', user.id));
+            }
+
+            await batch.commit();
+
+            toast({
+                title: 'Customer Deleted',
+                description: `${user.email || 'Customer'} and all related data has been permanently deleted.`,
+            });
+            setDeleteConfirmUser(null);
+        } catch (err: any) {
+            console.error("Error deleting user:", err);
+            toast({
+                title: 'Error',
+                description: err.message || 'Failed to delete customer. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <>
             <Card>
@@ -209,6 +279,14 @@ export default function UsersPage() {
                                                             <History className="mr-2 h-4 w-4" />
                                                             View Email History
                                                         </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => setDeleteConfirmUser(user)}
+                                                            className="text-red-600 focus:text-red-600"
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete Customer
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -238,6 +316,35 @@ export default function UsersPage() {
                     onOpenChange={setIsHistoryDialogOpen}
                 />
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteConfirmUser} onOpenChange={(open) => !open && setDeleteConfirmUser(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to permanently delete {deleteConfirmUser?.email || 'this customer'}?
+                            This will also delete all their advertisements, subscriptions, and related data.
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => deleteConfirmUser && handleDeleteUser(deleteConfirmUser)}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete Customer
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

@@ -52,7 +52,7 @@ service cloud.firestore {
       allow read, update: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow delete: if false; // Users should not be deletable from the client
+      allow delete: if isAdmin(); // Only admins can delete users
 
       // ADVERTISEMENT TICKETS
       // Users can create/read/update their own tickets. Admins can manage all tickets.

@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useFirebase, useUser as useAuthUser } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc, deleteDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink, Radio, ChevronDown, Edit as EditIcon } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, FileText, Calendar, Save, Upload, Send, ArrowLeft, CheckCircle, Clock, Palette, Image as ImageIcon, Eye, RefreshCw, X, ExternalLink, Radio, ChevronDown, Edit as EditIcon, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +34,16 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     AD_STATUSES,
     AD_STATUS_LABELS,
@@ -251,6 +261,8 @@ export default function AdvertisementDetailPage() {
     const [pushedToAdServer, setPushedToAdServer] = useState(false);
     const [isUsingCustomerSample, setIsUsingCustomerSample] = useState(false);
     const [isMovingToHolding, setIsMovingToHolding] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
@@ -739,6 +751,46 @@ export default function AdvertisementDetailPage() {
         }
     };
 
+    const handleDeleteAdvertisement = async () => {
+        if (!firestore || !advertisement) return;
+
+        setIsDeleting(true);
+        try {
+            // Delete the advertisement
+            await deleteDoc(doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id));
+
+            // Also delete associated live_ad if it exists
+            if (pushedToAdServer || (advertisement as any).pushedToAdServerId) {
+                const liveAdId = (advertisement as any).pushedToAdServerId;
+                if (liveAdId) {
+                    try {
+                        await deleteDoc(doc(firestore, 'live_ads', liveAdId));
+                    } catch (liveAdErr) {
+                        console.warn('Failed to delete associated live_ad:', liveAdErr);
+                    }
+                }
+            }
+
+            toast({
+                title: 'Advertisement Deleted',
+                description: `The advertisement for "${user?.businessName || 'Unknown'}" has been permanently deleted.`,
+            });
+
+            // Navigate back to advertisements list
+            router.push('/advertisements');
+        } catch (error: any) {
+            console.error("Error deleting advertisement:", error);
+            toast({
+                title: 'Error',
+                description: error.message || 'Could not delete advertisement.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     if (loading) {
         return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
     }
@@ -763,10 +815,19 @@ export default function AdvertisementDetailPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Advertisements
                 </Button>
-                <Button variant="outline" onClick={() => window.location.href = `mailto:${user.email}`} className="w-full sm:w-auto">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email Customer
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="outline" onClick={() => window.location.href = `mailto:${user.email}`} className="flex-1 sm:flex-none">
+                        <Mail className="mr-2 h-4 w-4" />
+                        Email Customer
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
 
             {/* Header Card */}
@@ -1483,6 +1544,35 @@ export default function AdvertisementDetailPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Advertisement</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to permanently delete the advertisement for &quot;{user?.businessName || 'Unknown'}&quot;?
+                            {pushedToAdServer && " This will also remove the associated live ad from the ad server."}
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={handleDeleteAdvertisement}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete Advertisement
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
