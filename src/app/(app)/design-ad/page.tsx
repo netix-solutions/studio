@@ -385,7 +385,8 @@ export default function DesignAdPage() {
         );
 
         // Update the advertisement with the latest version
-        await updateAdWithVersion(firestore, effectiveUserId, adIdToUse, newVersion, isAdminMode);
+        // In admin mode, also set the destination URL from user's profile for the approval workflow
+        await updateAdWithVersion(firestore, effectiveUserId, adIdToUse, newVersion, isAdminMode, userData?.adWebsiteUrl);
 
         setCurrentVersion(newVersion);
         setHasSavedDesign(true);

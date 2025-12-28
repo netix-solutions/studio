@@ -302,7 +302,8 @@ export async function updateAdWithVersion(
   userId: string,
   adId: string,
   version: AdDraftVersion,
-  asProof: boolean = false
+  asProof: boolean = false,
+  destinationUrl?: string
 ): Promise<void> {
   const adRef = doc(firestore, 'users', userId, 'advertisements', adId);
 
@@ -320,6 +321,10 @@ export async function updateAdWithVersion(
   // If setting as the official proof (admin action)
   if (asProof) {
     updateData.adProofUrl = version.previewImageUrl;
+    // Also set the destination URL if provided (needed for approval workflow)
+    if (destinationUrl) {
+      updateData.adProofDestinationUrl = destinationUrl;
+    }
   }
 
   await updateDoc(adRef, updateData);
