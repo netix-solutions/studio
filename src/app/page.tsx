@@ -35,18 +35,27 @@ export default function LandingPage() {
               <Image src="/logo.png" alt="Community-Websites.com" width={48} height={27} className="h-[30px] md:h-[36px] w-auto" />
               <span className="font-headline font-bold text-brand-primary text-base tracking-tight hidden xs:inline">Community-Websites.com</span>
             </Link>
-            <div className="flex items-center gap-3 md:gap-4">
-              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+              {/* Phone - icon only on mobile, full number on larger screens */}
+              <a
+                href="tel:813-544-8383"
+                className="flex items-center gap-1.5 text-brand-primary hover:text-brand-secondary transition-colors"
+              >
+                <Phone className="h-4 w-4" />
+                <span className="hidden md:inline text-sm font-medium">813-544-8383</span>
+              </a>
+              {/* Login - icon only on mobile, with text on larger screens */}
+              <Button variant="ghost" size="sm" asChild className="h-9 w-9 sm:w-auto sm:px-3">
                 <Link href="/login">
-                  <UserIcon className="h-4 w-4 mr-1.5" />
-                  Login
+                  <UserIcon className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Login</span>
                 </Link>
               </Button>
+              {/* View Pricing - always visible */}
               <Button size="sm" asChild variant="success" className="h-10 px-4 sm:px-5 md:px-6 text-sm">
                 <Link href="#get-started">
-                  <span className="hidden sm:inline">View Pricing</span>
-                  <span className="sm:hidden">Pricing</span>
-                  <ArrowRight className="ml-1 sm:ml-1.5 h-4 w-4" />
+                  View Pricing
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Link>
               </Button>
             </div>
