@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    /* Font families - loaded via Google Fonts link in layout.tsx */
+    --font-manrope: 'Manrope', sans-serif;
+    --font-inter: 'Inter', sans-serif;
+    --font-bebas-neue: 'Bebas Neue', sans-serif;
+
     --background: 0 0% 100%;
     --foreground: 216 58% 15%;
     --card: 0 0% 100%;
