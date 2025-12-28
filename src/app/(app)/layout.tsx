@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { usePageVisitTracking } from '@/hooks/use-page-visit-tracking';
 
-const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal', '/pipeline', '/ad-server'];
+const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal', '/pipeline', '/ad-server', '/customer-workflow'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/dashboard';
 
