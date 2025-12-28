@@ -48,11 +48,13 @@ export default function AdActionPage() {
         const fetchAdInfo = async () => {
             try {
                 const response = await fetch(`/api/ad-action?token=${encodeURIComponent(token)}`);
-                const data = await response.json();
 
                 if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
                     throw new Error(data.error || 'Failed to load advertisement');
                 }
+
+                const data = await response.json();
 
                 setAction(data.action);
                 setAd(data.ad);
@@ -85,11 +87,12 @@ export default function AdActionPage() {
                 body: JSON.stringify({ token, action: 'approve' }),
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
                 throw new Error(data.error || 'Failed to approve advertisement');
             }
+
+            const data = await response.json();
 
             if (data.alreadyProcessed) {
                 setPageState('already_processed');
@@ -121,11 +124,12 @@ export default function AdActionPage() {
                 }),
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
                 throw new Error(data.error || 'Failed to submit revision request');
             }
+
+            const data = await response.json();
 
             setSuccessMessage(data.message);
             setPageState('success');
