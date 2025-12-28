@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   UserPlus,
@@ -105,18 +105,48 @@ const initialFormData: FormData = {
 
   createAdvertisement: true,
   sendWelcomeEmail: false,
-  initialAdStatus: 'pending_info',
+  initialAdStatus: 'info_needed',
 };
 
 export default function ManualEntryPage() {
   const { auth } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ userId: string; subscriptionId: string; advertisementId?: string } | null>(null);
+  const [fromLeadId, setFromLeadId] = useState<string | null>(null);
+
+  // Pre-populate form from URL params (e.g., from lead conversion)
+  useEffect(() => {
+    const email = searchParams.get('email');
+    const name = searchParams.get('name');
+    const businessName = searchParams.get('businessName');
+    const phone = searchParams.get('phone');
+    const leadId = searchParams.get('leadId');
+
+    if (email || name || businessName || phone) {
+      setFormData(prev => ({
+        ...prev,
+        email: email || prev.email,
+        contactName: name || prev.contactName,
+        businessName: businessName || prev.businessName,
+        phone: phone || prev.phone,
+        // Auto-populate first/last name from contact name
+        ...(name ? {
+          firstName: name.split(' ')[0] || '',
+          lastName: name.split(' ').slice(1).join(' ') || '',
+        } : {}),
+      }));
+    }
+
+    if (leadId) {
+      setFromLeadId(leadId);
+    }
+  }, [searchParams]);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -232,11 +262,25 @@ export default function ManualEntryPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Manual Customer Entry</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {fromLeadId ? 'Convert Lead to Customer' : 'Manual Customer Entry'}
+        </h1>
         <p className="text-muted-foreground">
-          Add customers who purchased advertisements through other channels (cash, check, invoice, etc.)
+          {fromLeadId
+            ? 'Create a subscription for this lead to start the ad workflow.'
+            : 'Add customers who purchased advertisements through other channels (cash, check, invoice, etc.)'}
         </p>
       </div>
+
+      {fromLeadId && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertTitle className="text-green-800">Lead Conversion</AlertTitle>
+          <AlertDescription className="text-green-700">
+            Customer details have been pre-populated from the won lead. Complete the subscription details below.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="destructive">
