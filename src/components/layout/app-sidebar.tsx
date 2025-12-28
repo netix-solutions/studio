@@ -202,24 +202,24 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-border pb-4">
+      <SidebarHeader className="border-b border-border/50 pb-5 pt-1">
         <Link
           href={isAdmin ? '/dashboard' : '/account'}
-          className="flex items-center gap-3 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors px-2"
+          className="flex items-center gap-3.5 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors px-2"
         >
           <Image
             src="/logo.png"
             alt="Community-Websites.com Logo"
-            width={40}
-            height={40}
-            className="rounded-lg"
-            style={{ height: '40px', width: 'auto' }}
+            width={44}
+            height={44}
+            className="rounded-xl"
+            style={{ height: '44px', width: 'auto' }}
           />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-headline text-base tracking-wider text-foreground leading-tight">
+            <span className="font-headline text-base font-bold tracking-tight text-brand-primary leading-tight">
               Community-Websites
             </span>
-            <span className="text-xs text-muted-foreground font-normal">
+            <span className="text-xs text-muted-foreground font-medium mt-0.5">
               {isAdmin ? 'Admin Panel' : 'Customer Portal'}
             </span>
           </div>

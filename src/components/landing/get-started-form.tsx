@@ -247,7 +247,7 @@ export function GetStartedForm() {
               <FormControl>
                 <Input
                   placeholder="Your business name"
-                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                   {...field}
                 />
               </FormControl>
@@ -269,7 +269,7 @@ export function GetStartedForm() {
                 <FormControl>
                   <Input
                     placeholder="First"
-                    className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                    className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                     {...field}
                   />
                 </FormControl>
@@ -288,7 +288,7 @@ export function GetStartedForm() {
                 <FormControl>
                   <Input
                     placeholder="Last"
-                    className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                    className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                     {...field}
                   />
                 </FormControl>
@@ -311,7 +311,7 @@ export function GetStartedForm() {
                 <Input
                   type="email"
                   placeholder="you@company.com"
-                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                   inputMode="email"
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -336,7 +336,7 @@ export function GetStartedForm() {
                 <Input
                   type="tel"
                   placeholder="(555) 123-4567"
-                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-colors text-base rounded-lg"
+                  className="h-11 md:h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-secondary focus:ring-brand-secondary/20 transition-colors text-base rounded-xl"
                   inputMode="tel"
                   {...field}
                 />
@@ -369,7 +369,7 @@ export function GetStartedForm() {
                             <label
                               className={`flex items-center gap-3 p-3.5 md:p-4 rounded-xl border-2 cursor-pointer transition-all touch-manipulation active:scale-[0.98] ${
                                 isChecked
-                                  ? 'border-blue-500 bg-blue-50'
+                                  ? 'border-success bg-success-light/40'
                                   : 'border-gray-200 bg-gray-50 hover:border-gray-300 active:border-gray-400'
                               }`}
                             >
@@ -384,17 +384,17 @@ export function GetStartedForm() {
                                         )
                                       );
                                 }}
-                                className="h-5 w-5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                className="h-5 w-5 data-[state=checked]:bg-success data-[state=checked]:border-success"
                               />
                               <span
                                 className={`font-medium text-sm md:text-base ${
-                                  isChecked ? 'text-blue-900' : 'text-gray-700'
+                                  isChecked ? 'text-brand-primary' : 'text-gray-700'
                                 }`}
                               >
                                 {item.label}
                               </span>
                               {isChecked && (
-                                <Check className="h-4 w-4 text-blue-600 ml-auto flex-shrink-0" />
+                                <Check className="h-4 w-4 text-success ml-auto flex-shrink-0" />
                               )}
                             </label>
                           </FormControl>
@@ -413,7 +413,8 @@ export function GetStartedForm() {
         <Button
           type="submit"
           size="lg"
-          className="w-full h-12 md:h-14 text-base md:text-lg font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation rounded-xl"
+          variant="success"
+          className="w-full h-12 md:h-14 text-base md:text-lg touch-manipulation rounded-xl shadow-lg shadow-success/25"
           disabled={isSubmitting}
         >
           {isSubmitting ? (
