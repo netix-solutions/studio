@@ -1,63 +1,47 @@
-import { initializeApp, getApps, type App, type Credential } from 'firebase-admin/app';
+import { initializeApp, getApps, applicationDefault, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth, type Auth } from 'firebase-admin/auth';
-import { GoogleAuth, type AuthClient } from 'google-auth-library';
+import { GoogleAuth } from 'google-auth-library';
 
 let adminApp: App;
 let adminFirestore: Firestore;
 let adminAuth: Auth;
 
 /**
- * Custom credential that uses Application Default Credentials (ADC) without
- * specifying a quota project. This avoids the "serviceusage.services.use"
- * permission error that occurs when the service account doesn't have the
- * "Service Usage Consumer" role on the quota project.
+ * Helper to make Identity Toolkit API calls without quota project header.
+ * This avoids the "serviceusage.services.use" permission error that occurs
+ * when the service account doesn't have the "Service Usage Consumer" role.
  *
- * Firebase App Hosting's default service account may not have this role,
- * causing Identity Toolkit API calls (createUser, generatePasswordResetLink, etc.)
- * to fail with USER_PROJECT_DENIED errors.
+ * Used as a fallback when standard Auth methods fail with USER_PROJECT_DENIED.
  */
-class ApplicationDefaultCredentialWithoutQuota implements Credential {
-  private authClient: AuthClient | null = null;
-  private googleAuth: GoogleAuth;
-
-  constructor() {
-    this.googleAuth = new GoogleAuth({
-      scopes: [
-        'https://www.googleapis.com/auth/cloud-platform',
-        'https://www.googleapis.com/auth/firebase',
-      ],
-      // Explicitly set quotaProjectId to empty string to disable quota project header
-      // This prevents the "x-goog-user-project" header from being sent
-      clientOptions: {
-        quotaProjectId: '',
-      },
-    });
+async function getAuthClientWithoutQuota(): Promise<{ accessToken: string }> {
+  const googleAuth = new GoogleAuth({
+    scopes: [
+      'https://www.googleapis.com/auth/cloud-platform',
+      'https://www.googleapis.com/auth/firebase',
+    ],
+    clientOptions: {
+      quotaProjectId: '',
+    },
+  });
+  const client = await googleAuth.getClient();
+  if ('quotaProjectId' in client) {
+    (client as { quotaProjectId?: string }).quotaProjectId = undefined;
   }
-
-  async getAccessToken(): Promise<{ access_token: string; expires_in: number }> {
-    if (!this.authClient) {
-      this.authClient = await this.googleAuth.getClient();
-      // Clear quota project on the client as well
-      if ('quotaProjectId' in this.authClient) {
-        (this.authClient as { quotaProjectId?: string }).quotaProjectId = undefined;
-      }
-    }
-    const tokenResponse = await this.authClient.getAccessToken();
-    return {
-      access_token: tokenResponse.token || '',
-      expires_in: 3600, // Default to 1 hour, actual expiry is managed by the auth library
-    };
-  }
+  const tokenResponse = await client.getAccessToken();
+  return { accessToken: tokenResponse.token || '' };
 }
+
+// Export for use in Auth operations that need quota-free credentials
+export { getAuthClientWithoutQuota };
 
 function initializeAdminApp() {
   if (getApps().length === 0) {
-    // Use custom credential that doesn't include quota project
-    // This avoids USER_PROJECT_DENIED errors on Firebase App Hosting
-    // where the service account may not have serviceUsageConsumer role
+    // Use standard Application Default Credentials for initialization
+    // This works correctly with Firestore's gRPC client
+    // For Auth operations that fail with quota project errors, we handle them separately
     adminApp = initializeApp({
-      credential: new ApplicationDefaultCredentialWithoutQuota(),
+      credential: applicationDefault(),
       projectId: process.env.FIREBASE_PROJECT_ID || 'studio-4614023416-d45cd',
     });
   } else {
