@@ -142,7 +142,7 @@ export async function sendApprovalEmailWithIdempotency(
     sentBy: 'admin',
     sentByUserId,
     idempotencyKey,
-    mailDocId: mailDocId || undefined,
+    ...(mailDocId && { mailDocId }),
     metadata: {
       adId,
     },
@@ -193,7 +193,7 @@ export async function sendAdLiveEmailWithIdempotency(
     sentBy: 'admin',
     sentByUserId,
     idempotencyKey,
-    mailDocId: mailDocId || undefined,
+    ...(mailDocId && { mailDocId }),
     metadata: {
       adId,
     },

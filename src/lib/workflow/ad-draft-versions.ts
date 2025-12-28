@@ -135,7 +135,7 @@ export async function saveDesignVersion(
     createdAt: serverTimestamp(),
     createdBy: input.createdBy,
     createdByUserId: input.createdByUserId,
-    notes: input.notes || undefined,
+    ...(input.notes && { notes: input.notes }),
     isApproved: false,
     isFinal: false,
   };
