@@ -34,6 +34,7 @@ import {
   Bell,
   Upload,
   Tag,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -81,6 +82,7 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/leads', label: 'Leads', icon: Handshake },
       { href: '/subscriptions', label: 'Customers', icon: Ticket },
+      { href: '/manual-entry', label: 'Manual Entry', icon: UserPlus },
       { href: '/discounts', label: 'Discounts', icon: Tag },
     ],
   },

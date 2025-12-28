@@ -460,7 +460,92 @@ export interface UserDetails {
   adNotes?: string;
   createdAt?: any;
   updatedAt?: any;
+  // Manual entry tracking
+  isManualEntry?: boolean;
+  manualEntryBy?: string;
+  manualEntryAt?: any;
 }
+
+// ============================================================================
+// MANUAL SUBSCRIPTION TYPES
+// ============================================================================
+
+/**
+ * Manual subscription for customers who purchased outside of Stripe
+ */
+export interface ManualSubscription {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+
+  // Subscription details
+  planName: string;
+  amount: number; // in dollars
+  billingPeriod: 'monthly' | 'quarterly' | 'yearly' | 'one_time' | 'custom';
+
+  // Status
+  status: 'active' | 'paused' | 'canceled' | 'expired';
+
+  // Dates
+  startDate: any;
+  endDate?: any;
+
+  // Manual entry tracking
+  isManualEntry: true;
+  paymentMethod?: string; // e.g., 'cash', 'check', 'invoice', 'other'
+  paymentNotes?: string;
+
+  // Admin tracking
+  createdBy: string;
+  createdByName?: string;
+  createdAt: any;
+  updatedAt?: any;
+}
+
+/**
+ * Billing period options for manual subscriptions
+ */
+export const BILLING_PERIODS = {
+  MONTHLY: 'monthly',
+  QUARTERLY: 'quarterly',
+  YEARLY: 'yearly',
+  ONE_TIME: 'one_time',
+  CUSTOM: 'custom',
+} as const;
+
+export type BillingPeriod = typeof BILLING_PERIODS[keyof typeof BILLING_PERIODS];
+
+export const BILLING_PERIOD_LABELS: Record<BillingPeriod, string> = {
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+  one_time: 'One-Time',
+  custom: 'Custom',
+};
+
+/**
+ * Payment method options for manual entries
+ */
+export const PAYMENT_METHODS = {
+  CASH: 'cash',
+  CHECK: 'check',
+  INVOICE: 'invoice',
+  BANK_TRANSFER: 'bank_transfer',
+  CREDIT_CARD_OFFLINE: 'credit_card_offline',
+  OTHER: 'other',
+} as const;
+
+export type PaymentMethod = typeof PAYMENT_METHODS[keyof typeof PAYMENT_METHODS];
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: 'Cash',
+  check: 'Check',
+  invoice: 'Invoice',
+  bank_transfer: 'Bank Transfer',
+  credit_card_offline: 'Credit Card (Offline)',
+  other: 'Other',
+};
 
 // ============================================================================
 // TASK TYPES (for follow-up reminders)
