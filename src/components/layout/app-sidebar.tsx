@@ -17,6 +17,7 @@ import {
   Megaphone,
   Handshake,
   Radio,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -32,6 +33,7 @@ const adminMenuItems: NavItem[] = [
   { href: '/leads', label: 'Leads', icon: Handshake },
   { href: '/subscriptions', label: 'Customers', icon: Ticket },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone },
+  { href: '/manual-entry', label: 'Manual Entry', icon: UserPlus },
   { href: '/ad-server', label: 'Ad Server', icon: Radio },
 ];
 

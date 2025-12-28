@@ -19,6 +19,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Radio,
+  UserPlus,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -36,6 +37,7 @@ const ADMIN_COMMANDS: CommandItem[] = [
   { id: 'leads', label: 'Leads', icon: Handshake, href: '/leads', keywords: ['prospects', 'sales', 'pipeline'], group: 'main' },
   { id: 'customers', label: 'Customers', icon: Ticket, href: '/subscriptions', keywords: ['subscribers', 'subscriptions', 'billing'], group: 'main' },
   { id: 'advertisements', label: 'Advertisements', icon: Megaphone, href: '/advertisements', keywords: ['ads', 'list', 'all', 'approve'], group: 'main' },
+  { id: 'manual-entry', label: 'Manual Entry', icon: UserPlus, href: '/manual-entry', keywords: ['new', 'customer', 'add', 'create', 'cash', 'check'], group: 'main' },
   { id: 'ad-server', label: 'Ad Server', icon: Radio, href: '/ad-server', keywords: ['live', 'serve', 'embed', 'weights', 'targeting'], group: 'main' },
 
   // Quick filters
