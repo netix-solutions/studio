@@ -24,8 +24,9 @@ import {
   sendSignInLink,
   setupRecaptcha,
   sendPhoneVerificationCode,
-  signInWithCode,
+  completePhoneSignIn,
 } from '@/lib/firebase/auth';
+import { normalizePhoneNumber } from '@/lib/utils';
 import { Loader2, ArrowLeft, Phone, Shield, Lock, User as UserIcon, Mail } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -150,7 +151,19 @@ export default function LoginPage() {
     setIsCodeSending(true);
     setCodeSent(false);
     try {
-      const result = await sendPhoneVerificationCode(auth, values.phone, recaptchaVerifier);
+      // Normalize phone number to E.164 format for Firebase
+      const normalizedPhone = normalizePhoneNumber(values.phone);
+      if (!normalizedPhone) {
+        toast({
+          title: 'Invalid Phone Number',
+          description: 'Please enter a valid 10-digit phone number.',
+          variant: 'destructive',
+        });
+        setIsCodeSending(false);
+        return;
+      }
+
+      const result = await sendPhoneVerificationCode(auth, normalizedPhone, recaptchaVerifier);
       setConfirmationResult(result);
       setCodeSent(true);
       toast({
@@ -173,7 +186,41 @@ export default function LoginPage() {
     if (!confirmationResult) return;
     setIsSubmitting(true);
     try {
-      await signInWithCode(confirmationResult, values.code);
+      // Get the phone number from the form to use for account merging
+      const phoneNumber = phoneForm.getValues('phone');
+      const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+      if (!normalizedPhone) {
+        toast({
+          title: 'Error',
+          description: 'Invalid phone number. Please try again.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Complete phone sign-in with account merging
+      const { credential, mergeResult } = await completePhoneSignIn(
+        confirmationResult,
+        values.code,
+        normalizedPhone
+      );
+
+      // Show appropriate message based on merge result
+      if (mergeResult.merged) {
+        toast({
+          title: 'Welcome Back!',
+          description: 'Your account has been linked with your phone number.',
+        });
+      } else if (mergeResult.success) {
+        toast({
+          title: 'Signed In',
+          description: 'You have successfully signed in.',
+        });
+      }
+
+      // Navigation will happen automatically via the auth state listener
     } catch (error: any) {
       console.error('Code verification failed:', error);
       toast({
