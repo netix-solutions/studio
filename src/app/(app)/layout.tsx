@@ -42,19 +42,27 @@ export default function ProtectedLayout({
 
   useEffect(() => {
     if (user && firestore) {
-      // Create user profile doc if it doesn't exist
+      // Create user profile doc if it doesn't exist (with proper error handling)
       const userDocRef = doc(firestore, 'users', user.uid);
-      getDoc(userDocRef).then(userDocSnap => {
-        if (!userDocSnap.exists()) {
-           setDoc(userDocRef, {
-              id: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-            }, { merge: true });
-        }
-      });
-      
+      getDoc(userDocRef)
+        .then(async (userDocSnap) => {
+          if (!userDocSnap.exists()) {
+            try {
+              await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+              }, { merge: true });
+            } catch (error) {
+              console.error('Error creating user profile document:', error);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('Error checking user profile document:', error);
+        });
+
       // Check for admin role
       const adminDocRef = doc(firestore, 'roles_admin', user.uid);
       const unsubscribe = onSnapshot(adminDocRef, (docSnap) => {
@@ -64,7 +72,7 @@ export default function ProtectedLayout({
 
         // --- Role-based routing ---
         const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route) && route !== '/subscriptions'); // allow non-admins to see their own subs
-        
+
         if (!userIsAdmin && isAccessingAdminRoute) {
           // If a non-admin tries to access an admin page, redirect them.
           router.replace(USER_DEFAULT_ROUTE);

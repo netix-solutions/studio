@@ -236,7 +236,9 @@ export async function GET(request: NextRequest) {
     wrapper.className = 'community-ad-wrapper';
     wrapper.setAttribute('data-instance-id', instance.id);
 
-    container.innerHTML = '';
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
     container.appendChild(wrapper);
 
     // Fetch ads and start rotation
@@ -299,7 +301,9 @@ export async function GET(request: NextRequest) {
 
     // Handle transition
     if (isInitial) {
-      wrapper.innerHTML = '';
+      while (wrapper.firstChild) {
+        wrapper.removeChild(wrapper.firstChild);
+      }
       wrapper.appendChild(link);
       trackImpression(ad.impressionUrl);
     } else {
@@ -312,7 +316,9 @@ export async function GET(request: NextRequest) {
 
       // After fade out, swap content
       setTimeout(function() {
-        wrapper.innerHTML = '';
+        while (wrapper.firstChild) {
+          wrapper.removeChild(wrapper.firstChild);
+        }
         wrapper.appendChild(link);
 
         // Force reflow for transition
