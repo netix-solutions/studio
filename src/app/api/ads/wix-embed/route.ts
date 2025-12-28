@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
   <div class="wix-ad-container ${responsiveParam ? 'responsive' : ''} loading" id="ad-container">
     <!-- Ad content will be injected here -->
   </div>
-  ${showBrandingParam ? '<a href="' + baseUrl + '" target="_blank" rel="noopener" class="wix-ad-branding">Community Ads</a>' : ''}
+  ${showBrandingParam ? '<a href="https://community-websites.com" target="_blank" rel="noopener" class="wix-ad-branding">Community-Website.com</a>' : ''}
 
   <script>
     (function() {

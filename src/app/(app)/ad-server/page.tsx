@@ -1316,6 +1316,209 @@ export default function AdServerPage() {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label>1x2 Row Layout (2 Ads Side by Side)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Display 2 ads in a horizontal row:
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 280px; position: relative; padding-bottom: 16.67%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 1">
+    </iframe>
+  </div>
+  <div style="flex: 1; min-width: 280px; position: relative; padding-bottom: 16.67%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 2">
+    </iframe>
+  </div>
+</div>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 280px; position: relative; padding-bottom: 16.67%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 1">
+    </iframe>
+  </div>
+  <div style="flex: 1; min-width: 280px; position: relative; padding-bottom: 16.67%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 2">
+    </iframe>
+  </div>
+</div>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: '1x2 row Wix embed code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>1x3 Row Layout (3 Ads Side by Side)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Display 3 ads in a horizontal row:
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 200px; position: relative; padding-bottom: 11.11%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 1">
+    </iframe>
+  </div>
+  <div style="flex: 1; min-width: 200px; position: relative; padding-bottom: 11.11%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 2">
+    </iframe>
+  </div>
+  <div style="flex: 1; min-width: 200px; position: relative; padding-bottom: 11.11%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 3">
+    </iframe>
+  </div>
+</div>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 200px; position: relative; padding-bottom: 11.11%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 1">
+    </iframe>
+  </div>
+  <div style="flex: 1; min-width: 200px; position: relative; padding-bottom: 11.11%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 2">
+    </iframe>
+  </div>
+  <div style="flex: 1; min-width: 200px; position: relative; padding-bottom: 11.11%; overflow: hidden; border-radius: 8px;">
+    <iframe
+      src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+      scrolling="no" frameborder="0" allowtransparency="true" loading="lazy"
+      title="Community Advertisement 3">
+    </iframe>
+  </div>
+</div>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: '1x3 row Wix embed code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>2x3 Grid Layout (6 Ads in 2 Rows)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Display 6 ads in a 2-row, 3-column grid:
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%;">
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 1"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 2"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 3"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 4"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 5"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 6"></iframe>
+  </div>
+</div>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%;">
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 1"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 2"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 3"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 4"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 5"></iframe>
+  </div>
+  <div style="position: relative; padding-bottom: 33.33%; overflow: hidden; border-radius: 8px;">
+    <iframe src="${window.location.origin}/api/ads/wix-embed?website=${selectedEmbedWebsite || 'wesley-chapel'}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" scrolling="no" frameborder="0" allowtransparency="true" loading="lazy" title="Ad 6"></iframe>
+  </div>
+</div>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: '2x3 grid Wix embed code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label>Wix Velo (Advanced)</Label>
                                     <p className="text-sm text-muted-foreground">
                                         For developers using Wix Velo (Corvid), add this to your page code:
