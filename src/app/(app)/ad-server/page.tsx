@@ -351,7 +351,7 @@ export default function AdServerPage() {
             if (isCorsError) {
                 toast({
                     title: 'Upload Error - CORS Configuration Required',
-                    description: 'The file upload failed due to CORS policy. Please run: gsutil cors set cors.json gs://studio-4614023416-d45cd.appspot.com',
+                    description: 'The file upload failed due to CORS policy. Please run: gsutil cors set cors.json gs://studio-4614023416-d45cd.firebasestorage.app',
                     variant: 'destructive',
                 });
             } else {
