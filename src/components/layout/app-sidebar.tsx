@@ -25,6 +25,7 @@ import {
   Bell,
   Settings,
   Calculator,
+  Code,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -43,6 +44,7 @@ const adminMenuItems: NavItem[] = [
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone },
   { href: '/manual-entry', label: 'Manual Entry', icon: UserPlus },
   { href: '/ad-server', label: 'Ad Server', icon: Radio },
+  { href: '/embed-codes', label: 'Embed Codes', icon: Code },
 ];
 
 // Settings section items
