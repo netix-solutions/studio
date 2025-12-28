@@ -574,7 +574,7 @@ export default function AdvertisementDetailPage() {
 </div>
             `;
 
-            html = wrapEmailContent(html);
+            html = wrapEmailContent(html, { headerButton: 'my-account' });
 
             await sendEmail(firestore, { to: user.email, subject, html }, {
                 recipientId: user.id,
@@ -637,8 +637,8 @@ export default function AdvertisementDetailPage() {
 </div>
             `;
 
-            // Wrap email in professional template
-            html = wrapEmailContent(html);
+            // Wrap email in professional template (customer email - show My Account button)
+            html = wrapEmailContent(html, { headerButton: 'my-account' });
 
             await sendEmail(firestore, { to: user.email, subject, html }, {
                 recipientId: user.id,
