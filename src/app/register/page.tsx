@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirebase } from '@/firebase';
 import { registerWithEmail } from '@/lib/firebase/auth';
@@ -38,6 +39,9 @@ import {
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: 'You must agree to the Terms of Service and Privacy Policy.',
+  }),
 });
 
 function RegisterPageContent() {
@@ -56,12 +60,13 @@ function RegisterPageContent() {
     defaultValues: {
       email: emailFromQuery || '',
       password: '',
+      acceptTerms: false,
     },
   });
 
   useEffect(() => {
     if(emailFromQuery) {
-        form.reset({ email: emailFromQuery, password: '' });
+        form.reset({ email: emailFromQuery, password: '', acceptTerms: false });
     }
   }, [emailFromQuery, form]);
 
@@ -218,6 +223,35 @@ function RegisterPageContent() {
                             />
                           </FormControl>
                           <FormMessage className="text-xs md:text-sm" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="acceptTerms"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-sm text-gray-600 font-normal cursor-pointer">
+                              I have read and agree to the{' '}
+                              <Link href="/terms-of-service" target="_blank" className="text-blue-600 hover:underline">
+                                Terms of Service
+                              </Link>{' '}
+                              and{' '}
+                              <Link href="/privacy-policy" target="_blank" className="text-blue-600 hover:underline">
+                                Privacy Policy
+                              </Link>
+                            </FormLabel>
+                            <FormMessage className="text-xs" />
+                          </div>
                         </FormItem>
                       )}
                     />
