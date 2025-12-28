@@ -14,7 +14,7 @@ export interface EmailTemplate {
 }
 
 /** Current version for all default templates - increment when making updates */
-export const TEMPLATE_VERSION = 2;
+export const TEMPLATE_VERSION = 3;
 
 export const defaultTemplates: EmailTemplate[] = [
     {
@@ -37,7 +37,7 @@ export const defaultTemplates: EmailTemplate[] = [
         </td>
     </tr>
 </table>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, feel free to reply to this email or call/text us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Have questions? We're here for you <strong>24/7</strong>! Call or text us anytime at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -75,7 +75,7 @@ export const defaultTemplates: EmailTemplate[] = [
     </tr>
 </table>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Once we receive your details, our design team will get to work on creating your ad. We'll send you a proof for approval before it goes live.</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">If you have any questions, please don't hesitate to reach out!</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Have questions? Our team is available <strong>24/7</strong> to help! Call or text us anytime at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -99,7 +99,7 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just wanted to follow up on your interest in advertising with us at Community-Websites.com. We help local businesses like <strong>{{businessName}}</strong> connect with thousands of potential customers in the area.</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Is there any information I can provide to help you decide if our service is a good fit for your business?</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Feel free to reply to this email with any questions, or give us a call at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Feel free to reply to this email, or reach out to us <strong>24/7</strong> by calling or texting <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -129,7 +129,7 @@ export const defaultTemplates: EmailTemplate[] = [
     <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">You'd like me to walk you through the process</li>
 </ul>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Our local advertising platform reaches thousands of residents in your community, and we'd love to help {{businessName}} connect with more customers.</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just reply to this email or give me a call at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a> - I'm happy to help!</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just reply to this email, or call/text us <strong>24/7</strong> at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a> - we're always here to help!</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
     <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
@@ -242,7 +242,7 @@ export const defaultTemplates: EmailTemplate[] = [
 <!-- Footer Note -->
 <div style="margin: 0 0 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 12px; border-left: 4px solid #1e3a5f;">
     <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.6;">
-        <strong style="color: #1e3a5f;">Questions?</strong> Just reply to this email or call us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 600;">813-544-8383</a>. We're here to help!
+        <strong style="color: #1e3a5f;">Questions?</strong> We're available <strong>24/7</strong>! Call or text us anytime at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 600;">813-544-8383</a>.
     </p>
 </div>
 
@@ -270,7 +270,7 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I've reached out a couple of times about advertising opportunities for <strong>{{businessName}}</strong>, and I wanted to send one final message before I close out your inquiry.</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I completely understand if the timing isn't right or if you've decided to go a different direction - no worries at all!</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">However, if you're still interested in reaching more local customers through Community-Websites.com, I'm here to help. Just reply to this email and we can pick up where we left off.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">However, if you're still interested in reaching more local customers through Community-Websites.com, I'm here to help. Just reply to this email or call/text us <strong>24/7</strong> at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>, and we can pick up where we left off.</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Either way, I wish you and {{businessName}} all the best!</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
@@ -310,7 +310,7 @@ export const defaultTemplates: EmailTemplate[] = [
     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">3. Cost-Effective Marketing</p>
     <p style="margin: 0; font-size: 15px; color: #64748b;">Get your message in front of thousands of local residents for a fraction of what traditional advertising costs.</p>
 </div>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Would you like to learn more about how this could work for {{businessName}}? I'm happy to answer any questions.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Would you like to learn more about how this could work for {{businessName}}? I'm happy to answer any questions - call or text us <strong>24/7</strong> at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
     <tr>
         <td style="border-radius: 6px;" bgcolor="#1e3a5f">
@@ -346,7 +346,7 @@ export const defaultTemplates: EmailTemplate[] = [
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Whether you're ready to get started now or want to keep us in mind for the future, we appreciate your interest and are here whenever the time is right.</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">In the meantime, feel free to:</p>
 <ul style="margin: 16px 0; padding-left: 24px; color: #3f3f46;">
-    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Save our contact info for when you're ready</li>
+    <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Save our contact info: <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a> (call or text <strong>24/7</strong>)</li>
     <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Browse our <a href="{{pricingLink}}" style="color: #1e3a5f; text-decoration: underline;">advertising options</a> at your convenience</li>
     <li style="margin: 8px 0; font-size: 16px; line-height: 1.6;">Reach out anytime with questions - no pressure, ever</li>
 </ul>

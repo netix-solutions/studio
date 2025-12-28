@@ -27,7 +27,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2, Send } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/firebase/email';
-import { generateEmailUrls, wrapEmailContent, replaceEmailPlaceholders } from '@/lib/email-utils';
+import { generateEmailUrls, wrapEmailContent, replaceEmailPlaceholders, type EmailWrapperOptions } from '@/lib/email-utils';
 import type { EmailTemplate } from '@/lib/email-templates';
 
 /** Special template ID for ad proof approval - handled via API */
@@ -179,7 +179,11 @@ export function SendEmailDialog({
       });
 
       // Wrap the email content in the professional email template
-      html = wrapEmailContent(html);
+      // Use appropriate header button based on recipient type
+      html = wrapEmailContent(html, {
+        headerButton: recipientType === 'lead' ? 'get-started' : 'my-account',
+        pricingLink: urls.pricingLink,
+      });
 
       await sendEmail(firestore, {
         to: recipient.email,

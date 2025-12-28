@@ -204,7 +204,10 @@ export function GetStartedForm() {
           };
 
           const processedSubject = replaceEmailPlaceholders(template.subject, emailData);
-          const processedHtml = wrapEmailContent(replaceEmailPlaceholders(template.html, emailData));
+          const processedHtml = wrapEmailContent(
+            replaceEmailPlaceholders(template.html, emailData),
+            { headerButton: 'get-started', pricingLink: urls.pricingLink }
+          );
 
           // Send the email
           await sendEmail(firestore, {
