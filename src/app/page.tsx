@@ -36,13 +36,13 @@ export default function LandingPage() {
               <span className="font-headline font-bold text-brand-primary text-base tracking-tight">Community-Websites.com</span>
             </Link>
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-              {/* Phone - icon only on mobile, full number on larger screens */}
+              {/* Phone - hidden on mobile, visible with number on larger screens */}
               <a
                 href="tel:813-544-8383"
-                className="flex items-center gap-1.5 text-brand-primary hover:text-brand-secondary transition-colors"
+                className="hidden md:flex items-center gap-1.5 text-brand-primary hover:text-brand-secondary transition-colors"
               >
                 <Phone className="h-4 w-4" />
-                <span className="hidden md:inline text-sm font-medium">813-544-8383</span>
+                <span className="text-sm font-medium">813-544-8383</span>
               </a>
               {/* Login - icon only on mobile, with text on larger screens */}
               <Button variant="ghost" size="sm" asChild className="h-9 w-9 sm:w-auto sm:px-3">
