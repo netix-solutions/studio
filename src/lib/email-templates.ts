@@ -260,6 +260,123 @@ export const defaultTemplates: EmailTemplate[] = [
         ]
     },
     {
+        id: 'advertise_discount',
+        name: 'ADVERTISE 25% Discount Offer',
+        description: 'Offer a 25% discount using the ADVERTISE code to encourage leads to sign up for an ad plan.',
+        subject: '🎁 {{businessName}} - Save 25% on Your Ad Plan!',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
+        html: `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
+<p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news for <strong>{{businessName}}</strong>! We're offering you an exclusive discount on our advertising plans...</p>
+
+<!-- Hero Banner Section -->
+<div style="margin: 0 0 32px 0; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; overflow: hidden;">
+    <div style="padding: 40px 32px; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #a7f3d0; text-transform: uppercase; letter-spacing: 2px;">Special Offer</p>
+        <p style="margin: 0 0 8px 0; font-size: 64px; font-weight: 800; color: #ffffff; line-height: 1;">25% OFF</p>
+        <p style="margin: 0; font-size: 18px; color: #d1fae5;">Your Ad Plan on Community-Websites.com</p>
+    </div>
+</div>
+
+<!-- Coupon Code Box -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px 0;">
+    <tr>
+        <td align="center">
+            <div style="display: inline-block; background-color: #d1fae5; border: 3px dashed #059669; border-radius: 12px; padding: 24px 48px; text-align: center;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #065f46; text-transform: uppercase; letter-spacing: 1px;">Your Discount Code</p>
+                <p style="margin: 0 0 8px 0; font-size: 36px; font-weight: 800; color: #059669; letter-spacing: 4px; font-family: 'Courier New', monospace;">ADVERTISE</p>
+                <p style="margin: 0; font-size: 13px; color: #047857;">Use at checkout to save 25%</p>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Benefits Section -->
+<p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #18181b; text-align: center;">Why Advertise With Us?</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px 0;">
+    <tr>
+        <td style="padding: 16px; background-color: #f0fdf4; border-radius: 12px; margin-bottom: 12px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background-color: #22c55e; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">👥</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #166534;">Reach Thousands</p>
+                        <p style="margin: 0; font-size: 14px; color: #15803d; line-height: 1.5;">Get your business in front of local residents who are actively looking for services like yours.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 12px;"></td></tr>
+    <tr>
+        <td style="padding: 16px; background-color: #eff6ff; border-radius: 12px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background-color: #3b82f6; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">⭐</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1e40af;">Build Your Brand</p>
+                        <p style="margin: 0; font-size: 14px; color: #1d4ed8; line-height: 1.5;">Become a recognized name in your community with consistent local visibility.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 12px;"></td></tr>
+    <tr>
+        <td style="padding: 16px; background-color: #fef3c7; border-radius: 12px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="48" valign="top">
+                        <div style="width: 40px; height: 40px; background-color: #f59e0b; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">📈</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #92400e;">Drive More Business</p>
+                        <p style="margin: 0; font-size: 14px; color: #a16207; line-height: 1.5;">More calls, more foot traffic, more customers walking through your door.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{pricingLink}}" target="_blank" style="display: inline-block; padding: 18px 48px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 18px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);">
+                Claim Your 25% Discount →
+            </a>
+        </td>
+    </tr>
+</table>
+
+<!-- Footer Note -->
+<div style="margin: 0 0 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 12px; border-left: 4px solid #059669;">
+    <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.6;">
+        <strong style="color: #059669;">Questions?</strong> We're available <strong>24/7</strong>! Call or text us anytime at <a href="tel:813-544-8383" style="color: #059669; text-decoration: none; font-weight: 600;">813-544-8383</a>.
+    </p>
+</div>
+
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to offer the ADVERTISE discount code (25% off ad plans) to leads who need an extra incentive.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The full name of the lead." },
+            { key: '{{businessName}}', description: "The business name of the lead." },
+            { key: '{{pricingLink}}', description: "The link to the pricing page." },
+        ]
+    },
+    {
         id: 'last_chance',
         name: 'Last Chance Reminder',
         description: 'A final follow-up for leads who haven\'t responded to previous outreach.',
