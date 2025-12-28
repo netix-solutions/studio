@@ -265,7 +265,8 @@ export async function GET(request: NextRequest) {
         rotationInterval: 7500,
         transitionDuration: 500,
         cacheDuration: 60000,
-        responsive: ${responsiveParam}
+        responsive: ${responsiveParam},
+        maxRotationDuration: 300000 // 5 minutes - stop rotation after this to save resources
       };
 
       // State
@@ -274,12 +275,14 @@ export async function GET(request: NextRequest) {
         currentAdId: null,
         currentAdIndex: -1,
         rotationTimer: null,
+        rotationStopTimer: null,
         progressTimer: null,
         cache: null,
         cacheTimestamp: 0,
         isVisible: true,
         retryCount: 0,
-        maxRetries: 3
+        maxRetries: 3,
+        rotationStopped: false
       };
 
       // DOM Elements
@@ -552,10 +555,20 @@ export async function GET(request: NextRequest) {
         if (state.rotationTimer) return;
         if (state.ads.length <= 1) return;
         if (!state.isVisible) return;
+        if (state.rotationStopped) return; // Don't restart if permanently stopped
 
         state.rotationTimer = setInterval(function() {
           displayAd(false);
         }, CONFIG.rotationInterval);
+
+        // Schedule permanent stop after 5 minutes to save resources
+        if (!state.rotationStopTimer) {
+          state.rotationStopTimer = setTimeout(function() {
+            state.rotationStopped = true;
+            stopRotation();
+            postToParent('rotationStopped', { reason: 'timeout', duration: CONFIG.maxRotationDuration });
+          }, CONFIG.maxRotationDuration);
+        }
       }
 
       /**
