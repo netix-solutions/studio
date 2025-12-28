@@ -38,15 +38,21 @@ import {
 interface UserDetails {
     id: string;
     contactName: string;
+    contactTitle?: string;
     email: string;
     businessName?: string;
     phone?: string;
+    cellPhone?: string;
+    businessPhone?: string;
     adWebsiteUrl?: string;
     adText?: string;
+    adTitle?: string;
     adNotes?: string;
     designPreferences?: AdDesignPreferences;
     customerSampleAdUrl?: string;
     fileUploads?: string[];
+    logoUrl?: string;
+    requestCustomDesign?: boolean;
 }
 
 interface AdDetails extends Advertisement {
@@ -59,13 +65,15 @@ const adminWorkflowSteps = [
     { id: 'pending_internal_review', title: 'Internal Review', description: 'Review customer submission' },
     { id: 'pending_ad_creation', title: 'Ad Creation', description: 'Creating ad with external application' },
     { id: 'pending_customer_approval', title: 'Customer Approval', description: 'Waiting for customer to approve' },
+    { id: 'holding', title: 'Holding', description: 'Set final settings before going live' },
     { id: 'live', title: 'Live', description: 'Ad is active on websites' },
 ];
 
 function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdStatus, onStatusChange?: (status: AdStatus) => void }) {
     const getCurrentIndex = () => {
         const index = adminWorkflowSteps.findIndex(s => s.id === currentStatus);
-        if (currentStatus === 'approved') return adminWorkflowSteps.length - 1;
+        if (currentStatus === 'approved') return adminWorkflowSteps.findIndex(s => s.id === 'holding');
+        if (currentStatus === 'holding') return adminWorkflowSteps.findIndex(s => s.id === 'holding');
         if (currentStatus === 'live') return adminWorkflowSteps.length - 1;
         return index;
     };
@@ -180,6 +188,8 @@ export default function AdvertisementDetailPage() {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [isPushingToAdServer, setIsPushingToAdServer] = useState(false);
     const [pushedToAdServer, setPushedToAdServer] = useState(false);
+    const [isUsingCustomerSample, setIsUsingCustomerSample] = useState(false);
+    const [isMovingToHolding, setIsMovingToHolding] = useState(false);
 
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
@@ -242,15 +252,21 @@ export default function AdvertisementDetailPage() {
                 const fullUser: UserDetails = {
                     id: userDocSnap.id,
                     contactName: userData.contactName || '',
+                    contactTitle: userData.contactTitle,
                     email: userData.email || '',
                     businessName: userData.businessName,
                     phone: userData.phone,
+                    cellPhone: userData.cellPhone,
+                    businessPhone: userData.businessPhone,
                     adWebsiteUrl: userData.adWebsiteUrl,
                     adText: userData.adText,
+                    adTitle: userData.adTitle,
                     adNotes: userData.adNotes,
                     designPreferences: userData.designPreferences,
                     customerSampleAdUrl: userData.customerSampleAdUrl,
                     fileUploads: userData.fileUploads,
+                    logoUrl: userData.logoUrl,
+                    requestCustomDesign: userData.requestCustomDesign,
                 };
 
                 setAdvertisement(fullAd);
@@ -467,6 +483,88 @@ export default function AdvertisementDetailPage() {
         }
     };
 
+    // Use customer's sample ad as the ad proof
+    const handleUseCustomerSampleAd = async () => {
+        if (!firestore || !user || !advertisement || !user.customerSampleAdUrl) {
+            toast({ title: 'Error', description: 'Customer sample ad not found.', variant: 'destructive' });
+            return;
+        }
+
+        setIsUsingCustomerSample(true);
+        try {
+            const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
+            await updateDoc(adDocRef, {
+                adProofUrl: user.customerSampleAdUrl,
+                adProofDestinationUrl: user.adWebsiteUrl || adProofUrlInput,
+                updatedAt: serverTimestamp(),
+            });
+
+            setAdvertisement(prev => prev ? {
+                ...prev,
+                adProofUrl: user.customerSampleAdUrl,
+                adProofDestinationUrl: user.adWebsiteUrl || adProofUrlInput,
+            } : null);
+
+            toast({ title: 'Success!', description: 'Customer sample ad has been set as the ad proof.' });
+        } catch (error: any) {
+            console.error("Error using customer sample:", error);
+            toast({ title: 'Error', description: error.message || 'Could not use customer sample ad.', variant: 'destructive' });
+        } finally {
+            setIsUsingCustomerSample(false);
+        }
+    };
+
+    // Move to holding status after approval
+    const handleMoveToHolding = async () => {
+        if (!firestore || !user || !advertisement) {
+            toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
+            return;
+        }
+
+        setIsMovingToHolding(true);
+        try {
+            const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
+            await updateDoc(adDocRef, {
+                status: 'holding',
+                approvedAt: serverTimestamp(),
+                holdingAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            // Send confirmation email
+            const subject = `Your Ad Has Been Approved! - ${user.businessName || 'Community-Websites.com'}`;
+            let html = `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi ${user.contactName},</p>
+<div style="margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #86efac; text-align: center;">
+    <p style="margin: 0; font-size: 20px; font-weight: 600; color: #166534;">Your Ad Has Been Approved!</p>
+</div>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your advertisement for <strong>${user.businessName}</strong> has been approved and is now being prepared for launch.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">We're finalizing the display settings and your ad will be live soon!</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thank you for advertising with us!</p>
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
+            `;
+
+            html = wrapEmailContent(html);
+
+            await sendEmail(firestore, { to: user.email, subject, html }, {
+                recipientId: user.id,
+                templateId: 'ad_approved_notification',
+                triggerType: 'manual_send',
+            });
+
+            setAdvertisement(prev => prev ? { ...prev, status: 'holding' } : null);
+            toast({ title: 'Moved to Holding!', description: `The ad has been approved and moved to holding status.` });
+        } catch (error: any) {
+            console.error("Error moving to holding:", error);
+            toast({ title: 'Error', description: error.message || 'Could not move to holding.', variant: 'destructive' });
+        } finally {
+            setIsMovingToHolding(false);
+        }
+    };
+
     const handleGoLive = async () => {
         if (!firestore || !user || !advertisement) {
             toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
@@ -478,7 +576,6 @@ export default function AdvertisementDetailPage() {
             const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
             await updateDoc(adDocRef, {
                 status: 'live',
-                approvedAt: serverTimestamp(),
                 liveAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -702,14 +799,14 @@ export default function AdvertisementDetailPage() {
                     <Clock className="h-4 w-4 text-amber-600" />
                     <AlertTitle className="text-amber-800">Auto-Approval Deadline Passed</AlertTitle>
                     <AlertDescription className="text-amber-700">
-                        48 hours have passed since the approval request was sent. You can now mark this ad as approved and go live.
+                        48 hours have passed since the approval request was sent. You can now mark this ad as approved.
                         <Button
                             size="sm"
                             className="ml-4 bg-amber-600 hover:bg-amber-700"
-                            onClick={handleGoLive}
-                            disabled={isGoingLive}
+                            onClick={handleMoveToHolding}
+                            disabled={isMovingToHolding}
                         >
-                            {isGoingLive ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Auto-Approve & Go Live'}
+                            {isMovingToHolding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Auto-Approve & Move to Holding'}
                         </Button>
                     </AlertDescription>
                 </Alert>
@@ -866,14 +963,62 @@ export default function AdvertisementDetailPage() {
                                     />
                                 </div>
 
-                                <div className="flex gap-3">
-                                    <Button onClick={handleGoLive} disabled={isGoingLive} className="bg-green-600 hover:bg-green-700">
-                                        {isGoingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                        Mark Approved & Go Live
+                                <div className="flex gap-3 flex-wrap">
+                                    <Button onClick={handleMoveToHolding} disabled={isMovingToHolding} className="bg-green-600 hover:bg-green-700">
+                                        {isMovingToHolding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                        Approve & Move to Holding
                                     </Button>
                                     <Button variant="secondary" onClick={handleResendApproval} disabled={isResendingApproval}>
                                         {isResendingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                                         Resend Approval Email
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleUpdateStatus('pending_ad_creation')}
+                                        disabled={isUpdatingStatus}
+                                    >
+                                        Back to Ad Creation
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Holding - Awaiting Final Settings */}
+                    {(advertisement.status === 'holding' || advertisement.status === 'approved') && (
+                        <Card className="border-cyan-200 bg-cyan-50">
+                            <CardHeader>
+                                <CardTitle className="text-cyan-700 flex items-center gap-2">
+                                    <Clock className="h-5 w-5" />
+                                    Holding - Set Final Settings
+                                </CardTitle>
+                                <CardDescription>The ad has been approved. Configure display settings before going live.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {advertisement.adProofUrl && (
+                                    <div className="border rounded-lg p-4 bg-white">
+                                        <Image
+                                            src={advertisement.adProofUrl}
+                                            alt="Advertisement"
+                                            width={AD_DIMENSIONS.WIDTH}
+                                            height={AD_DIMENSIONS.HEIGHT}
+                                            className="border mx-auto"
+                                        />
+                                        <p className="text-sm text-center mt-2">
+                                            Links to: <a href={advertisement.adProofDestinationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{advertisement.adProofDestinationUrl}</a>
+                                        </p>
+                                    </div>
+                                )}
+                                <Alert className="bg-cyan-100 border-cyan-300">
+                                    <Clock className="h-4 w-4 text-cyan-700" />
+                                    <AlertDescription className="text-cyan-800">
+                                        Set display location, weight, and other settings in the Ad Server after pushing this ad live.
+                                    </AlertDescription>
+                                </Alert>
+                                <div className="flex gap-3 flex-wrap">
+                                    <Button onClick={handleGoLive} disabled={isGoingLive} className="bg-green-600 hover:bg-green-700">
+                                        {isGoingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                        Go Live
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -952,19 +1097,60 @@ export default function AdvertisementDetailPage() {
                         </Card>
                     )}
 
-                    {/* Customer Sample Ad & Uploads */}
-                    {(user.customerSampleAdUrl || (user.fileUploads && user.fileUploads.length > 0)) && (
+                    {/* Customer-Provided Assets */}
+                    {(user.customerSampleAdUrl || user.logoUrl || (user.fileUploads && user.fileUploads.length > 0) || user.requestCustomDesign) && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <ImageIcon className="h-5 w-5" />
                                     Customer-Provided Assets
                                 </CardTitle>
+                                {user.requestCustomDesign && (
+                                    <Badge variant="secondary">Custom Design Requested</Badge>
+                                )}
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                {user.customerSampleAdUrl && (
+                                {/* Customer's Logo */}
+                                {user.logoUrl && (
                                     <div className="space-y-2">
-                                        <h4 className="font-medium">Sample Ad ({AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT})</h4>
+                                        <h4 className="font-medium">Logo</h4>
+                                        <div className="flex items-start gap-4">
+                                            <Image
+                                                src={user.logoUrl}
+                                                alt="Customer logo"
+                                                width={120}
+                                                height={120}
+                                                className="border rounded object-contain"
+                                            />
+                                            <a href={user.logoUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+                                                <ExternalLink className="h-3 w-3" /> View Full Size
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Ad Title & Text for custom design requests */}
+                                {user.requestCustomDesign && (user.adTitle || user.adText) && (
+                                    <div className="space-y-4 p-4 bg-muted rounded-lg">
+                                        {user.adTitle && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-muted-foreground">Title Text</p>
+                                                <p className="text-lg font-semibold">{user.adTitle}</p>
+                                            </div>
+                                        )}
+                                        {user.adText && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-muted-foreground">Ad Text</p>
+                                                <p className="whitespace-pre-wrap">{user.adText}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Customer's designed ad */}
+                                {user.customerSampleAdUrl && (
+                                    <div className="space-y-3">
+                                        <h4 className="font-medium">Customer-Designed Ad ({AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT})</h4>
                                         <Image
                                             src={user.customerSampleAdUrl}
                                             alt="Customer sample ad"
@@ -972,11 +1158,27 @@ export default function AdvertisementDetailPage() {
                                             height={AD_DIMENSIONS.HEIGHT}
                                             className="border rounded"
                                         />
+                                        {(advertisement.status === 'pending_ad_creation' || advertisement.status === 'pending_internal_review') && (
+                                            <Button
+                                                onClick={handleUseCustomerSampleAd}
+                                                disabled={isUsingCustomerSample}
+                                                variant="secondary"
+                                            >
+                                                {isUsingCustomerSample ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <ImageIcon className="mr-2 h-4 w-4" />
+                                                )}
+                                                Use This as Ad Proof
+                                            </Button>
+                                        )}
                                     </div>
                                 )}
+
+                                {/* Additional uploaded images */}
                                 {user.fileUploads && user.fileUploads.length > 0 && (
                                     <div className="space-y-2">
-                                        <h4 className="font-medium">Uploaded Files ({user.fileUploads.length})</h4>
+                                        <h4 className="font-medium">Additional Images ({user.fileUploads.length})</h4>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                             {user.fileUploads.map((url, index) => (
                                                 <a key={index} href={url} target="_blank" rel="noopener noreferrer" className="block">
@@ -1008,16 +1210,41 @@ export default function AdvertisementDetailPage() {
                         <CardContent className="space-y-4 text-sm">
                             <div className="flex items-center gap-3">
                                 <User className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{user.contactName}</span>
+                                <div>
+                                    <span className="font-medium">{user.contactName}</span>
+                                    {user.contactTitle && (
+                                        <span className="text-muted-foreground ml-1">({user.contactTitle})</span>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-3">
                                 <Mail className="h-4 w-4 text-muted-foreground" />
                                 <a href={`mailto:${user.email}`} className="text-primary hover:underline">{user.email}</a>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Phone className="h-4 w-4 text-muted-foreground" />
-                                <span>{user.phone || 'Not Provided'}</span>
-                            </div>
+                            {user.cellPhone && (
+                                <div className="flex items-center gap-3">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <span className="text-muted-foreground text-xs">Cell: </span>
+                                        <a href={`tel:${user.cellPhone}`} className="hover:underline">{user.cellPhone}</a>
+                                    </div>
+                                </div>
+                            )}
+                            {user.businessPhone && (
+                                <div className="flex items-center gap-3">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <span className="text-muted-foreground text-xs">Business: </span>
+                                        <a href={`tel:${user.businessPhone}`} className="hover:underline">{user.businessPhone}</a>
+                                    </div>
+                                </div>
+                            )}
+                            {!user.cellPhone && !user.businessPhone && user.phone && (
+                                <div className="flex items-center gap-3">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <span>{user.phone}</span>
+                                </div>
+                            )}
                             <Separator />
                             <div className="space-y-1">
                                 <p className="text-muted-foreground font-medium">Business Name</p>

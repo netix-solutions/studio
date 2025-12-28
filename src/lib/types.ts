@@ -291,6 +291,8 @@ export const AD_STATUSES = {
   REVISION_REQUESTED: 'revision_requested',
   // Customer approved the ad
   APPROVED: 'approved',
+  // Ad approved and in holding status for admin to set final settings (display location, etc.)
+  HOLDING: 'holding',
   // Ad is live on the websites
   LIVE: 'live',
   // Ad temporarily paused
@@ -310,6 +312,7 @@ export const AD_STATUS_LABELS: Record<AdStatus, string> = {
   pending_customer_approval: 'Awaiting Customer Approval',
   revision_requested: 'Revision Requested',
   approved: 'Approved',
+  holding: 'Holding - Awaiting Final Settings',
   live: 'Live',
   paused: 'Paused',
   completed: 'Completed',
@@ -323,6 +326,7 @@ export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondar
   pending_customer_approval: { variant: 'default' },
   revision_requested: { variant: 'destructive' },
   approved: { variant: 'secondary' },
+  holding: { variant: 'default' },
   live: { variant: 'secondary' },
   paused: { variant: 'outline' },
   completed: { variant: 'outline' },
@@ -339,6 +343,7 @@ export const AD_PIPELINE_STAGE_COLORS: Record<AdStatus, { bg: string; text: stri
   pending_customer_approval: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
   revision_requested: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
   approved: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
+  holding: { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-300' },
   live: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
   paused: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
   completed: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-300' },
@@ -353,6 +358,7 @@ export const AD_WORKFLOW_STEPS = [
   { id: 'pending_internal_review', title: 'Under Review', description: 'Team reviews submission' },
   { id: 'pending_ad_creation', title: 'Ad Creation', description: 'Design team creates ad' },
   { id: 'pending_customer_approval', title: 'Approval', description: 'Customer reviews proof' },
+  { id: 'holding', title: 'Holding', description: 'Awaiting final settings' },
   { id: 'live', title: 'Live', description: 'Ad is active' },
 ] as const;
 
@@ -414,7 +420,7 @@ export interface Advertisement {
   adProofUrl?: string;
   adProofDestinationUrl?: string;
 
-  // Customer-provided sample ad (600x200)
+  // Customer-provided sample ad (600x200) - designed by customer
   customerSampleAdUrl?: string;
 
   // Design preferences from Ad Designer
@@ -423,14 +429,22 @@ export interface Advertisement {
   // Customer info (denormalized)
   businessName?: string;
   contactName?: string;
+  contactTitle?: string;
   email?: string;
   phone?: string;
+  cellPhone?: string;
+  businessPhone?: string;
   adWebsiteUrl?: string;
   adText?: string;
   adNotes?: string;
+  adTitle?: string;
 
-  // Customer uploads (logos, images)
+  // Customer uploads (logos, images - up to 3)
   customerUploads?: string[];
+  logoUrl?: string;
+
+  // Whether customer requested custom design instead of designing themselves
+  requestCustomDesign?: boolean;
 
   // Tracking timestamps
   infoSubmittedAt?: any;
@@ -438,6 +452,7 @@ export interface Advertisement {
   sentForApprovalAt?: any;
   approvedAt?: any;
   autoApprovalAt?: any; // 48 hours from sentForApprovalAt
+  holdingAt?: any; // When moved to holding status
   liveAt?: any;
   completedAt?: any;
 

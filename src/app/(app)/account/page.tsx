@@ -1,16 +1,14 @@
-
 'use client';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
-import { doc, onSnapshot, collection, getDocs, getDoc, setDoc, query, where, addDoc, serverTimestamp, getDocsFromServer, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, getDocs, getDoc, setDoc, query, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Loader2, AlertCircle, Save, FileText, Upload, CheckCircle, Clock, Palette, Image as ImageIcon, ArrowRight, ExternalLink, Info } from 'lucide-react';
+import { Loader2, AlertCircle, Save, FileText, Upload, CheckCircle, Clock, Palette, Image as ImageIcon, ArrowRight, ArrowLeft, ExternalLink, Info, X, Pencil } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -21,8 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -49,40 +46,39 @@ interface AdWithSubscription extends Advertisement {
     subscription?: Subscription;
 }
 
-// Business info schema
-const businessInfoSchema = z.object({
-    businessName: z.string().min(2, "Business name is required."),
-    contactName: z.string().min(2, "Contact name is required."),
-    phone: z.string().min(10, "A valid phone number is required."),
+// Step 1: Ad Details schema
+const adDetailsSchema = z.object({
+    businessName: z.string().min(2, "Company name is required."),
+    contactName: z.string().min(2, "Your name is required."),
+    contactTitle: z.string().optional(),
+    email: z.string().email("A valid email is required."),
+    cellPhone: z.string().min(10, "A valid cell phone number is required."),
+    businessPhone: z.string().optional(),
     adWebsiteUrl: z.string().url("Please enter a valid URL (e.g., https://example.com).").optional().or(z.literal('')),
-    adText: z.string().optional(),
-    adNotes: z.string().optional(),
 });
 
-// Ad designer schema
-const adDesignerSchema = z.object({
-    primaryColor: z.string().optional(),
-    secondaryColor: z.string().optional(),
-    backgroundColor: z.string().optional(),
-    textColor: z.string().optional(),
-    fontStyle: z.enum(['modern', 'classic', 'bold', 'elegant']).optional(),
-    additionalNotes: z.string().optional(),
+// Step 3: Custom design request schema
+const customDesignSchema = z.object({
+    adTitle: z.string().min(1, "Title text is required."),
+    adText: z.string().min(1, "Ad text is required."),
 });
 
-type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
-type AdDesignerFormData = z.infer<typeof adDesignerSchema>;
+type AdDetailsFormData = z.infer<typeof adDetailsSchema>;
+type CustomDesignFormData = z.infer<typeof customDesignSchema>;
 
-// Workflow step component
+// Wizard step type
+type WizardStep = 'details' | 'designer' | 'custom-assets' | 'review' | 'submitted';
+
+// Workflow progress component for existing ads
 function WorkflowProgress({ currentStatus }: { currentStatus: AdStatus }) {
     const steps = AD_WORKFLOW_STEPS;
     const currentIndex = steps.findIndex(step => step.id === currentStatus);
 
-    // Handle non-standard statuses
     const getStepIndex = () => {
-        if (currentStatus === 'approved') return steps.length - 1;
+        if (currentStatus === 'approved') return steps.findIndex(s => s.id === 'holding');
         if (currentStatus === 'live') return steps.length - 1;
         if (['paused', 'completed', 'canceled_inactive', 'revision_requested'].includes(currentStatus)) {
-            return -1; // Show as special state
+            return -1;
         }
         return currentIndex;
     };
@@ -119,19 +115,79 @@ function WorkflowProgress({ currentStatus }: { currentStatus: AdStatus }) {
                             )}>
                                 {step.title}
                             </p>
-                            {index < steps.length - 1 && (
-                                <div className="absolute" style={{ left: `calc(${(index + 0.5) / steps.length * 100}% + 24px)`, width: `calc(${100 / steps.length}% - 48px)` }}>
-                                </div>
-                            )}
                         </div>
                     );
                 })}
             </div>
-            {/* Progress line */}
             <div className="mt-3 relative h-1 bg-muted rounded-full overflow-hidden hidden sm:block">
                 <div
                     className="absolute h-full bg-green-500 transition-all duration-500"
                     style={{ width: `${Math.max(0, (stepIndex / (steps.length - 1)) * 100)}%` }}
+                />
+            </div>
+        </div>
+    );
+}
+
+// Wizard step indicator
+function WizardStepIndicator({ currentStep, requestCustomDesign }: { currentStep: WizardStep; requestCustomDesign: boolean }) {
+    const getSteps = () => {
+        if (requestCustomDesign) {
+            return [
+                { id: 'details', title: 'Ad Details', number: 1 },
+                { id: 'designer', title: 'Design Choice', number: 2 },
+                { id: 'custom-assets', title: 'Upload Assets', number: 3 },
+                { id: 'review', title: 'Review', number: 4 },
+            ];
+        }
+        return [
+            { id: 'details', title: 'Ad Details', number: 1 },
+            { id: 'designer', title: 'Design Your Ad', number: 2 },
+            { id: 'review', title: 'Review', number: 3 },
+        ];
+    };
+
+    const steps = getSteps();
+    const currentIndex = steps.findIndex(s => s.id === currentStep);
+
+    return (
+        <div className="w-full mb-8">
+            <div className="flex items-center justify-between">
+                {steps.map((step, index) => {
+                    const isCompleted = currentIndex > index;
+                    const isActive = currentIndex === index;
+                    const isPending = currentIndex < index;
+
+                    return (
+                        <div key={step.id} className="flex flex-col items-center text-center flex-1">
+                            <div className={cn(
+                                "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all",
+                                isCompleted && "bg-green-500 border-green-500 text-white",
+                                isActive && "bg-primary border-primary text-primary-foreground",
+                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
+                            )}>
+                                {isCompleted ? (
+                                    <CheckCircle className="h-5 w-5" />
+                                ) : (
+                                    <span className="font-semibold text-sm">{step.number}</span>
+                                )}
+                            </div>
+                            <p className={cn(
+                                "mt-2 text-xs font-medium",
+                                isActive && "text-primary",
+                                isCompleted && "text-green-600",
+                                isPending && "text-muted-foreground"
+                            )}>
+                                {step.title}
+                            </p>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="mt-3 relative h-1 bg-muted rounded-full overflow-hidden">
+                <div
+                    className="absolute h-full bg-green-500 transition-all duration-500"
+                    style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
                 />
             </div>
         </div>
@@ -150,69 +206,70 @@ export default function AccountPage() {
     const [subsLoading, setSubsLoading] = useState(true);
     const [subsError, setSubsError] = useState<string | null>(null);
     const { toast } = useToast();
-    const [isSavingBusinessInfo, setIsSavingBusinessInfo] = useState(false);
-    const [isSavingDesign, setIsSavingDesign] = useState(false);
-    const [isUploadingSampleAd, setIsUploadingSampleAd] = useState(false);
-    const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(false);
-    const [activeTab, setActiveTab] = useState('business-info');
-    const [sampleAdPreview, setSampleAdPreview] = useState<string | null>(null);
-    const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
-    const [isSubmittingForReview, setIsSubmittingForReview] = useState(false);
 
-    const businessInfoForm = useForm<BusinessInfoFormData>({
-        resolver: zodResolver(businessInfoSchema),
+    // Wizard state
+    const [wizardStep, setWizardStep] = useState<WizardStep>('details');
+    const [requestCustomDesign, setRequestCustomDesign] = useState(false);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+    const [designedAdUrl, setDesignedAdUrl] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showWizard, setShowWizard] = useState(false);
+    const [isSavingDetails, setIsSavingDetails] = useState(false);
+
+    // Forms
+    const adDetailsForm = useForm<AdDetailsFormData>({
+        resolver: zodResolver(adDetailsSchema),
         defaultValues: {
             businessName: '',
             contactName: '',
-            phone: '',
+            contactTitle: '',
+            email: '',
+            cellPhone: '',
+            businessPhone: '',
             adWebsiteUrl: '',
-            adText: '',
-            adNotes: '',
         }
     });
 
-    const adDesignerForm = useForm<AdDesignerFormData>({
-        resolver: zodResolver(adDesignerSchema),
+    const customDesignForm = useForm<CustomDesignFormData>({
+        resolver: zodResolver(customDesignSchema),
         defaultValues: {
-            primaryColor: '#3B82F6',
-            secondaryColor: '#10B981',
-            backgroundColor: '#FFFFFF',
-            textColor: '#1F2937',
-            fontStyle: 'modern',
-            additionalNotes: '',
+            adTitle: '',
+            adText: '',
         }
     });
 
-    // Reset forms when user data is loaded
-    const resetForms = useCallback((userData: any) => {
-        businessInfoForm.reset({
+    // Load user data
+    const loadUserData = useCallback((userData: any) => {
+        adDetailsForm.reset({
             businessName: userData.businessName || '',
             contactName: userData.contactName || '',
-            phone: userData.phone || '',
+            contactTitle: userData.contactTitle || '',
+            email: userData.email || user?.email || '',
+            cellPhone: userData.cellPhone || userData.phone || '',
+            businessPhone: userData.businessPhone || '',
             adWebsiteUrl: userData.adWebsiteUrl || '',
-            adText: userData.adText || '',
-            adNotes: userData.adNotes || '',
         });
 
-        if (userData.designPreferences) {
-            adDesignerForm.reset({
-                primaryColor: userData.designPreferences.primaryColor || '#3B82F6',
-                secondaryColor: userData.designPreferences.secondaryColor || '#10B981',
-                backgroundColor: userData.designPreferences.backgroundColor || '#FFFFFF',
-                textColor: userData.designPreferences.textColor || '#1F2937',
-                fontStyle: userData.designPreferences.fontStyle || 'modern',
-                additionalNotes: userData.designPreferences.additionalNotes || '',
-            });
-        }
+        customDesignForm.reset({
+            adTitle: userData.adTitle || '',
+            adText: userData.adText || '',
+        });
 
+        if (userData.logoUrl) {
+            setLogoUrl(userData.logoUrl);
+        }
+        if (userData.fileUploads || userData.customerUploads) {
+            setUploadedImages(userData.fileUploads || userData.customerUploads || []);
+        }
         if (userData.customerSampleAdUrl) {
-            setSampleAdPreview(userData.customerSampleAdUrl);
+            setDesignedAdUrl(userData.customerSampleAdUrl);
         }
-        if (userData.fileUploads) {
-            setUploadedFiles(userData.fileUploads);
+        if (userData.requestCustomDesign !== undefined) {
+            setRequestCustomDesign(userData.requestCustomDesign);
         }
-    }, [businessInfoForm, adDesignerForm]);
+    }, [adDetailsForm, customDesignForm, user?.email]);
 
     useEffect(() => {
         if (!user || !firestore) return;
@@ -220,7 +277,10 @@ export default function AccountPage() {
         const userDocRef = doc(firestore, 'users', user.uid);
         const unsubUser = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                resetForms(docSnap.data());
+                loadUserData(docSnap.data());
+            } else {
+                // Set email from auth
+                adDetailsForm.setValue('email', user.email || '');
             }
         });
 
@@ -244,15 +304,15 @@ export default function AccountPage() {
                 doc.data().status === 'active' || doc.data().status === 'trialing'
             );
 
-            // Check if onboarding should be shown
+            // Show wizard for users with active subscriptions who haven't submitted yet
             if (activeSubs.length > 0) {
                 if (userDoc.exists() && !userDoc.data().businessName) {
-                    setShowOnboarding(true);
+                    setShowWizard(true);
                 } else {
-                    setShowOnboarding(false);
+                    setShowWizard(false);
                 }
             } else {
-                setShowOnboarding(false);
+                setShowWizard(false);
             }
 
             const subsData: Subscription[] = snapshot.docs.map(doc => {
@@ -286,12 +346,44 @@ export default function AccountPage() {
 
         // Load advertisements
         const adsCollectionRef = collection(firestore, 'users', user.uid, 'advertisements');
-        const unsubAds = onSnapshot(adsCollectionRef, (snapshot) => {
+        const unsubAds = onSnapshot(adsCollectionRef, async (snapshot) => {
             const adsData: AdWithSubscription[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             } as AdWithSubscription));
             setAdvertisements(adsData);
+
+            // Auto-disable ads for cancelled subscriptions
+            // Get cancelled/unpaid subscriptions
+            const cancelledSubs = subscriptions.filter(s =>
+                s.status === 'canceled' || s.status === 'unpaid' || s.status === 'past_due'
+            );
+
+            if (cancelledSubs.length > 0) {
+                const cancelledSubIds = new Set(cancelledSubs.map(s => s.id));
+
+                // Find ads that should be disabled
+                for (const ad of adsData) {
+                    const shouldDisable =
+                        cancelledSubIds.has(ad.subscriptionId) &&
+                        ad.status !== 'canceled_inactive' &&
+                        ad.status !== 'completed';
+
+                    if (shouldDisable) {
+                        try {
+                            const adDocRef = doc(firestore, 'users', user.uid, 'advertisements', ad.id);
+                            await updateDoc(adDocRef, {
+                                status: 'canceled_inactive',
+                                canceledAt: serverTimestamp(),
+                                updatedAt: serverTimestamp(),
+                            });
+                            console.log(`Auto-disabled ad ${ad.id} due to cancelled subscription`);
+                        } catch (err) {
+                            console.error(`Failed to auto-disable ad ${ad.id}:`, err);
+                        }
+                    }
+                }
+            }
         });
 
         return () => {
@@ -300,140 +392,101 @@ export default function AccountPage() {
             unsubSubs();
             unsubAds();
         };
-    }, [user, firestore, resetForms]);
+    }, [user, firestore, loadUserData, adDetailsForm, subscriptions]);
 
-    // Handle business info submission
-    const onBusinessInfoSubmit = async (data: BusinessInfoFormData) => {
+    // Handle Step 1: Save ad details
+    const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
         if (!user || !firestore) return;
-        setIsSavingBusinessInfo(true);
-
-        const userDocRef = doc(firestore, 'users', user.uid);
+        setIsSavingDetails(true);
 
         try {
+            const userDocRef = doc(firestore, 'users', user.uid);
             await setDoc(userDocRef, {
                 ...data,
                 updatedAt: serverTimestamp(),
             }, { merge: true });
 
-            // Update any existing advertisements with this info
-            const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
-            const adsSnapshot = await getDocs(adsRef);
-
-            for (const adDoc of adsSnapshot.docs) {
-                await updateDoc(doc(adsRef, adDoc.id), {
-                    businessName: data.businessName,
-                    contactName: data.contactName,
-                    phone: data.phone,
-                    email: user.email,
-                    adWebsiteUrl: data.adWebsiteUrl,
-                    adText: data.adText,
-                    adNotes: data.adNotes,
-                    updatedAt: serverTimestamp(),
-                });
-            }
-
             toast({
-                title: "Business Info Saved",
-                description: "Your business information has been updated successfully.",
+                title: "Details Saved",
+                description: "Your ad details have been saved.",
             });
 
-            // Move to next tab
-            setActiveTab('ad-designer');
+            setWizardStep('designer');
         } catch (error: any) {
-            console.error("Error saving business info:", error);
+            console.error("Error saving details:", error);
             toast({
                 title: "Save Error",
                 description: "Could not save your details. Please try again.",
                 variant: "destructive",
             });
         } finally {
-            setIsSavingBusinessInfo(false);
+            setIsSavingDetails(false);
         }
     };
 
-    // Handle sample ad upload
-    const handleSampleAdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle logo upload
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!user || !firestore || !storage || !e.target.files?.[0]) return;
 
         const file = e.target.files[0];
-
-        // Validate image dimensions
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-
-        await new Promise((resolve) => {
-            img.onload = resolve;
-        });
-
-        if (img.width !== AD_DIMENSIONS.WIDTH || img.height !== AD_DIMENSIONS.HEIGHT) {
-            toast({
-                title: "Invalid Dimensions",
-                description: `Sample ad must be exactly ${AD_DIMENSIONS.WIDTH}x${AD_DIMENSIONS.HEIGHT} pixels. Your image is ${img.width}x${img.height} pixels.`,
-                variant: "destructive",
-            });
-            return;
-        }
-
-        setIsUploadingSampleAd(true);
+        setIsUploading(true);
 
         try {
-            const filePath = `advertisements/${user.uid}/sample-ad/${file.name}`;
+            const filePath = `advertisements/${user.uid}/logo/${Date.now()}-${file.name}`;
             const fileRef = storageRef(storage, filePath);
-
             await uploadBytes(fileRef, file);
             const downloadUrl = await getDownloadURL(fileRef);
 
             // Save to user document
             const userDocRef = doc(firestore, 'users', user.uid);
             await setDoc(userDocRef, {
-                customerSampleAdUrl: downloadUrl,
+                logoUrl: downloadUrl,
                 updatedAt: serverTimestamp(),
             }, { merge: true });
 
-            // Update all advertisements
-            const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
-            const adsSnapshot = await getDocs(adsRef);
-            for (const adDoc of adsSnapshot.docs) {
-                await updateDoc(doc(adsRef, adDoc.id), {
-                    customerSampleAdUrl: downloadUrl,
-                    updatedAt: serverTimestamp(),
-                });
-            }
-
-            setSampleAdPreview(downloadUrl);
+            setLogoUrl(downloadUrl);
             toast({
-                title: "Sample Ad Uploaded",
-                description: "Your sample advertisement has been uploaded successfully.",
+                title: "Logo Uploaded",
+                description: "Your logo has been uploaded successfully.",
             });
         } catch (error: any) {
-            console.error("Error uploading sample ad:", error);
+            console.error("Error uploading logo:", error);
             toast({
                 title: "Upload Error",
-                description: "Could not upload your sample ad. Please try again.",
+                description: "Could not upload your logo. Please try again.",
                 variant: "destructive",
             });
         } finally {
-            setIsUploadingSampleAd(false);
+            setIsUploading(false);
         }
     };
 
-    // Handle additional file uploads (logos, images)
-    const handleFilesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle image uploads (up to 3)
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!user || !firestore || !storage || !e.target.files?.length) return;
 
-        setIsUploadingFiles(true);
-        const files = Array.from(e.target.files);
+        if (uploadedImages.length >= 3) {
+            toast({
+                title: "Maximum Images Reached",
+                description: "You can upload up to 3 images.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsUploading(true);
+        const files = Array.from(e.target.files).slice(0, 3 - uploadedImages.length);
 
         try {
             const uploadPromises = files.map(async (file) => {
-                const filePath = `advertisements/${user.uid}/uploads/${Date.now()}-${file.name}`;
+                const filePath = `advertisements/${user.uid}/images/${Date.now()}-${file.name}`;
                 const fileRef = storageRef(storage, filePath);
                 await uploadBytes(fileRef, file);
                 return getDownloadURL(fileRef);
             });
 
             const newUrls = await Promise.all(uploadPromises);
-            const allUrls = [...uploadedFiles, ...newUrls];
+            const allUrls = [...uploadedImages, ...newUrls].slice(0, 3);
 
             // Save to user document
             const userDocRef = doc(firestore, 'users', user.uid);
@@ -442,73 +495,63 @@ export default function AccountPage() {
                 updatedAt: serverTimestamp(),
             }, { merge: true });
 
-            // Update advertisements
-            const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
-            const adsSnapshot = await getDocs(adsRef);
-            for (const adDoc of adsSnapshot.docs) {
-                await updateDoc(doc(adsRef, adDoc.id), {
-                    customerUploads: allUrls,
-                    updatedAt: serverTimestamp(),
-                });
-            }
-
-            setUploadedFiles(allUrls);
+            setUploadedImages(allUrls);
             toast({
-                title: "Files Uploaded",
-                description: `${files.length} file(s) uploaded successfully.`,
+                title: "Images Uploaded",
+                description: `${files.length} image(s) uploaded successfully.`,
             });
         } catch (error: any) {
-            console.error("Error uploading files:", error);
+            console.error("Error uploading images:", error);
             toast({
                 title: "Upload Error",
-                description: "Could not upload files. Please try again.",
+                description: "Could not upload images. Please try again.",
                 variant: "destructive",
             });
         } finally {
-            setIsUploadingFiles(false);
+            setIsUploading(false);
         }
     };
 
-    // Handle ad designer submission
-    const onAdDesignerSubmit = async (data: AdDesignerFormData) => {
+    // Remove an uploaded image
+    const handleRemoveImage = async (indexToRemove: number) => {
         if (!user || !firestore) return;
-        setIsSavingDesign(true);
+
+        const newImages = uploadedImages.filter((_, index) => index !== indexToRemove);
+        setUploadedImages(newImages);
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+            fileUploads: newImages,
+            updatedAt: serverTimestamp(),
+        }, { merge: true });
+    };
+
+    // Save custom design form data
+    const onCustomDesignSubmit = async (data: CustomDesignFormData) => {
+        if (!user || !firestore) return;
 
         try {
             const userDocRef = doc(firestore, 'users', user.uid);
             await setDoc(userDocRef, {
-                designPreferences: data,
+                adTitle: data.adTitle,
+                adText: data.adText,
+                requestCustomDesign: true,
                 updatedAt: serverTimestamp(),
             }, { merge: true });
 
-            // Update all advertisements with design preferences
-            const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
-            const adsSnapshot = await getDocs(adsRef);
-            for (const adDoc of adsSnapshot.docs) {
-                await updateDoc(doc(adsRef, adDoc.id), {
-                    designPreferences: data,
-                    updatedAt: serverTimestamp(),
-                });
-            }
-
-            toast({
-                title: "Design Preferences Saved",
-                description: "Your ad design preferences have been saved.",
-            });
+            setWizardStep('review');
         } catch (error: any) {
-            console.error("Error saving design preferences:", error);
+            console.error("Error saving custom design info:", error);
             toast({
                 title: "Save Error",
-                description: "Could not save your design preferences. Please try again.",
+                description: "Could not save your information. Please try again.",
                 variant: "destructive",
             });
-        } finally {
-            setIsSavingDesign(false);
         }
     };
 
-    // Submit all info for review
-    const handleSubmitForReview = async () => {
+    // Final submission
+    const handleFinalSubmit = async () => {
         if (!user || !firestore) {
             toast({
                 title: "Error",
@@ -518,14 +561,14 @@ export default function AccountPage() {
             return;
         }
 
-        const businessData = businessInfoForm.getValues();
-        if (!businessData.businessName || !businessData.contactName || !businessData.phone) {
+        const detailsData = adDetailsForm.getValues();
+        if (!detailsData.businessName || !detailsData.contactName || !detailsData.cellPhone) {
             toast({
                 title: "Missing Information",
-                description: "Please fill out all required business information before submitting.",
+                description: "Please fill out all required details before submitting.",
                 variant: "destructive",
             });
-            setActiveTab('business-info');
+            setWizardStep('details');
             return;
         }
 
@@ -537,38 +580,58 @@ export default function AccountPage() {
         if (activeSubs.length === 0) {
             toast({
                 title: "No Active Subscription",
-                description: "You need an active subscription to create an advertisement. Please subscribe first.",
+                description: "You need an active subscription to create an advertisement.",
                 variant: "destructive",
             });
             return;
         }
 
-        setIsSubmittingForReview(true);
+        setIsSubmitting(true);
 
         try {
-            // Update all pending advertisements to pending_internal_review
+            const customDesignData = customDesignForm.getValues();
+
+            // Update user document
+            const userDocRef = doc(firestore, 'users', user.uid);
+            await setDoc(userDocRef, {
+                ...detailsData,
+                adTitle: customDesignData.adTitle,
+                adText: customDesignData.adText,
+                requestCustomDesign,
+                logoUrl,
+                fileUploads: uploadedImages,
+                customerSampleAdUrl: designedAdUrl,
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+
+            // Create or update advertisements
             const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
             const adsSnapshot = await getDocs(adsRef);
 
+            const adData = {
+                businessName: detailsData.businessName,
+                contactName: detailsData.contactName,
+                contactTitle: detailsData.contactTitle,
+                email: detailsData.email,
+                cellPhone: detailsData.cellPhone,
+                businessPhone: detailsData.businessPhone,
+                adWebsiteUrl: detailsData.adWebsiteUrl,
+                adTitle: customDesignData.adTitle,
+                adText: customDesignData.adText,
+                requestCustomDesign,
+                logoUrl,
+                customerUploads: uploadedImages,
+                customerSampleAdUrl: designedAdUrl,
+                status: 'pending_internal_review' as AdStatus,
+                infoSubmittedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
             let adsUpdated = 0;
             for (const adDoc of adsSnapshot.docs) {
-                const adData = adDoc.data();
-                if (adData.status === 'pending_info' || adData.status === 'pending_ad_creation') {
-                    await updateDoc(doc(adsRef, adDoc.id), {
-                        status: 'pending_internal_review',
-                        businessName: businessData.businessName,
-                        contactName: businessData.contactName,
-                        phone: businessData.phone,
-                        email: user.email,
-                        adWebsiteUrl: businessData.adWebsiteUrl,
-                        adText: businessData.adText,
-                        adNotes: businessData.adNotes,
-                        designPreferences: adDesignerForm.getValues(),
-                        customerSampleAdUrl: sampleAdPreview,
-                        customerUploads: uploadedFiles,
-                        infoSubmittedAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
-                    });
+                const existingData = adDoc.data();
+                if (existingData.status === 'pending_info' || existingData.status === 'pending_ad_creation') {
+                    await updateDoc(doc(adsRef, adDoc.id), adData);
                     adsUpdated++;
                 }
             }
@@ -577,48 +640,31 @@ export default function AccountPage() {
             if (adsSnapshot.empty) {
                 for (const sub of activeSubs) {
                     await addDoc(adsRef, {
+                        ...adData,
                         userId: user.uid,
-                        email: user.email,
                         subscriptionId: sub.id,
-                        status: 'pending_internal_review',
-                        businessName: businessData.businessName,
-                        contactName: businessData.contactName,
-                        phone: businessData.phone,
-                        adWebsiteUrl: businessData.adWebsiteUrl,
-                        adText: businessData.adText,
-                        adNotes: businessData.adNotes,
-                        designPreferences: adDesignerForm.getValues(),
-                        customerSampleAdUrl: sampleAdPreview,
-                        customerUploads: uploadedFiles,
-                        infoSubmittedAt: serverTimestamp(),
                         createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
                     });
                     adsUpdated++;
                 }
             }
 
-            if (adsUpdated > 0) {
-                toast({
-                    title: "Submitted for Review",
-                    description: "Your information has been submitted. Our team will begin working on your advertisement.",
-                });
-                setShowOnboarding(false);
-            } else {
-                toast({
-                    title: "Already Submitted",
-                    description: "Your advertisement is already in our review queue. We'll be in touch soon!",
-                });
-            }
+            toast({
+                title: "Submitted Successfully!",
+                description: "Your ad information has been submitted. Our team will begin working on your advertisement.",
+            });
+
+            setWizardStep('submitted');
+            setShowWizard(false);
         } catch (error: any) {
-            console.error("Error submitting for review:", error);
+            console.error("Error submitting:", error);
             toast({
                 title: "Submission Error",
                 description: error.message || "Could not submit your information. Please try again.",
                 variant: "destructive",
             });
         } finally {
-            setIsSubmittingForReview(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -676,16 +722,10 @@ export default function AccountPage() {
 
             toast({
                 title: "Sync Complete",
-                description: `${syncedCount} new customer record(s) created. The Stripe extension will now process them.`
+                description: `${syncedCount} new customer record(s) created.`
             });
 
         } catch (error: any) {
-            const permissionError = new FirestorePermissionError({
-                path: '/users',
-                operation: 'list',
-            } satisfies SecurityRuleContext);
-            errorEmitter.emit('permission-error', permissionError);
-
             toast({
                 title: "Sync Error",
                 description: "Could not sync customers. You may not have permission to read all user data.",
@@ -715,6 +755,628 @@ export default function AccountPage() {
         ad.status === 'pending_customer_approval'
     );
 
+    const hasActiveSubscription = subscriptions.some(s => s.status === 'active' || s.status === 'trialing');
+
+    // Render wizard step content
+    const renderWizardStep = () => {
+        switch (wizardStep) {
+            case 'details':
+                return (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                Step 1: Ad Details
+                            </CardTitle>
+                            <CardDescription>
+                                Tell us about your business so we can create the perfect ad for you.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={adDetailsForm.handleSubmit(onAdDetailsSubmit)} className="space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="businessName">Company Name *</Label>
+                                        <Controller
+                                            name="businessName"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="businessName" {...field} />}
+                                        />
+                                        {adDetailsForm.formState.errors.businessName && (
+                                            <p className="text-sm text-destructive">{adDetailsForm.formState.errors.businessName.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email *</Label>
+                                        <Controller
+                                            name="email"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="email" type="email" {...field} />}
+                                        />
+                                        {adDetailsForm.formState.errors.email && (
+                                            <p className="text-sm text-destructive">{adDetailsForm.formState.errors.email.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="cellPhone">Cell Phone *</Label>
+                                        <Controller
+                                            name="cellPhone"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="cellPhone" placeholder="(555) 123-4567" {...field} />}
+                                        />
+                                        {adDetailsForm.formState.errors.cellPhone && (
+                                            <p className="text-sm text-destructive">{adDetailsForm.formState.errors.cellPhone.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="contactName">Your Name *</Label>
+                                        <Controller
+                                            name="contactName"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="contactName" {...field} />}
+                                        />
+                                        {adDetailsForm.formState.errors.contactName && (
+                                            <p className="text-sm text-destructive">{adDetailsForm.formState.errors.contactName.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="contactTitle">Title</Label>
+                                        <Controller
+                                            name="contactTitle"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="contactTitle" placeholder="e.g., Owner, Manager" {...field} />}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="businessPhone">Business Phone</Label>
+                                        <Controller
+                                            name="businessPhone"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="businessPhone" placeholder="(555) 123-4567" {...field} />}
+                                        />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor="adWebsiteUrl">Website URL (where your ad should link to)</Label>
+                                        <Controller
+                                            name="adWebsiteUrl"
+                                            control={adDetailsForm.control}
+                                            render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://example.com" {...field} />}
+                                        />
+                                        {adDetailsForm.formState.errors.adWebsiteUrl && (
+                                            <p className="text-sm text-destructive">{adDetailsForm.formState.errors.adWebsiteUrl.message}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end">
+                                    <Button type="submit" disabled={isSavingDetails}>
+                                        {isSavingDetails ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Continue <ArrowRight className="ml-2 h-4 w-4" />
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'designer':
+                return (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Palette className="h-5 w-5" />
+                                Step 2: Create Your Ad
+                            </CardTitle>
+                            <CardDescription>
+                                Design your own ad or let us create one for you.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Option 1: Design your own */}
+                            <div className={cn(
+                                "p-6 border-2 rounded-lg transition-all cursor-pointer",
+                                !requestCustomDesign ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
+                            )}
+                                onClick={() => setRequestCustomDesign(false)}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className={cn(
+                                        "h-6 w-6 rounded-full border-2 flex items-center justify-center",
+                                        !requestCustomDesign ? "border-primary bg-primary" : "border-muted-foreground"
+                                    )}>
+                                        {!requestCustomDesign && <CheckCircle className="h-4 w-4 text-white" />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-lg">Design Your Own Ad</h4>
+                                        <p className="text-muted-foreground mt-1">
+                                            Use our visual ad designer to create a custom {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} ad. Add your logo, images, and text.
+                                        </p>
+                                        <ul className="text-sm text-muted-foreground mt-3 space-y-1">
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Drag and drop interface
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Multiple fonts and colors
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Preview and export
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Option 2: Request custom design */}
+                            <div className={cn(
+                                "p-6 border-2 rounded-lg transition-all cursor-pointer",
+                                requestCustomDesign ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
+                            )}
+                                onClick={() => setRequestCustomDesign(true)}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className={cn(
+                                        "h-6 w-6 rounded-full border-2 flex items-center justify-center",
+                                        requestCustomDesign ? "border-primary bg-primary" : "border-muted-foreground"
+                                    )}>
+                                        {requestCustomDesign && <CheckCircle className="h-4 w-4 text-white" />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-semibold text-lg">Request Custom Ad Design</h4>
+                                            <Badge variant="secondary">Free</Badge>
+                                        </div>
+                                        <p className="text-muted-foreground mt-1">
+                                            Let our professional design team create your ad. Just provide your logo, images, and text.
+                                        </p>
+                                        <ul className="text-sm text-muted-foreground mt-3 space-y-1">
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Professional design team
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Quick turnaround
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Unlimited revisions
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between pt-4">
+                                <Button variant="outline" onClick={() => setWizardStep('details')}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                                </Button>
+                                {!requestCustomDesign ? (
+                                    <Link href="/design-ad">
+                                        <Button>
+                                            <Palette className="mr-2 h-4 w-4" />
+                                            Open Ad Designer
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                ) : (
+                                    <Button onClick={() => setWizardStep('custom-assets')}>
+                                        Continue <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+
+                            {!requestCustomDesign && designedAdUrl && (
+                                <div className="pt-4 border-t">
+                                    <Alert>
+                                        <CheckCircle className="h-4 w-4" />
+                                        <AlertTitle>You've already designed an ad!</AlertTitle>
+                                        <AlertDescription className="flex flex-col gap-4">
+                                            <p>Your designed ad is ready for review.</p>
+                                            <Image
+                                                src={designedAdUrl}
+                                                alt="Your designed ad"
+                                                width={AD_DIMENSIONS.WIDTH / 2}
+                                                height={AD_DIMENSIONS.HEIGHT / 2}
+                                                className="border rounded"
+                                            />
+                                            <Button onClick={() => setWizardStep('review')} className="w-fit">
+                                                Continue to Review <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </AlertDescription>
+                                    </Alert>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'custom-assets':
+                return (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Upload className="h-5 w-5" />
+                                Step 3: Upload Your Assets
+                            </CardTitle>
+                            <CardDescription>
+                                Provide your logo, images, and ad text for our design team.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={customDesignForm.handleSubmit(onCustomDesignSubmit)} className="space-y-6">
+                                {/* Logo Upload */}
+                                <div className="space-y-4">
+                                    <Label>Your Logo</Label>
+                                    <div className="flex items-center gap-4">
+                                        {logoUrl ? (
+                                            <div className="relative">
+                                                <Image
+                                                    src={logoUrl}
+                                                    alt="Logo"
+                                                    width={120}
+                                                    height={120}
+                                                    className="border rounded object-contain"
+                                                />
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="absolute -top-2 -right-2 h-6 w-6"
+                                                    onClick={() => setLogoUrl(null)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="border-2 border-dashed rounded-lg p-8 text-center flex-1">
+                                                <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                                                <p className="text-sm text-muted-foreground mb-2">Upload your logo</p>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => document.getElementById('logo-input')?.click()}
+                                                    disabled={isUploading}
+                                                >
+                                                    {isUploading ? (
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Upload className="mr-2 h-4 w-4" />
+                                                    )}
+                                                    Choose File
+                                                </Button>
+                                            </div>
+                                        )}
+                                        <input
+                                            id="logo-input"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleLogoUpload}
+                                        />
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Image Uploads */}
+                                <div className="space-y-4">
+                                    <Label>Additional Images (up to 3)</Label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {uploadedImages.map((url, index) => (
+                                            <div key={index} className="relative aspect-square border rounded-lg overflow-hidden">
+                                                <Image
+                                                    src={url}
+                                                    alt={`Image ${index + 1}`}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="absolute top-1 right-1 h-6 w-6"
+                                                    onClick={() => handleRemoveImage(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        {uploadedImages.length < 3 && (
+                                            <div
+                                                className="border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                                                onClick={() => document.getElementById('images-input')?.click()}
+                                            >
+                                                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                                                <span className="text-sm text-muted-foreground">Add Image</span>
+                                            </div>
+                                        )}
+                                        <input
+                                            id="images-input"
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            className="hidden"
+                                            onChange={handleImageUpload}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Upload product photos, team photos, or any other images you'd like in your ad.
+                                    </p>
+                                </div>
+
+                                <Separator />
+
+                                {/* Ad Text */}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="adTitle">Title Text *</Label>
+                                        <Controller
+                                            name="adTitle"
+                                            control={customDesignForm.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    id="adTitle"
+                                                    placeholder="e.g., Best Pizza in Town!"
+                                                    {...field}
+                                                />
+                                            )}
+                                        />
+                                        {customDesignForm.formState.errors.adTitle && (
+                                            <p className="text-sm text-destructive">{customDesignForm.formState.errors.adTitle.message}</p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">The main headline for your ad</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="adText">Ad Text *</Label>
+                                        <Controller
+                                            name="adText"
+                                            control={customDesignForm.control}
+                                            render={({ field }) => (
+                                                <Textarea
+                                                    id="adText"
+                                                    placeholder="e.g., Serving the community for 20 years! Call now for a free quote."
+                                                    rows={3}
+                                                    {...field}
+                                                />
+                                            )}
+                                        />
+                                        {customDesignForm.formState.errors.adText && (
+                                            <p className="text-sm text-destructive">{customDesignForm.formState.errors.adText.message}</p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">Supporting text, taglines, or call to action</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between pt-4">
+                                    <Button variant="outline" onClick={() => setWizardStep('designer')}>
+                                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                                    </Button>
+                                    <Button type="submit">
+                                        Continue to Review <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'review':
+                const detailsData = adDetailsForm.getValues();
+                const customData = customDesignForm.getValues();
+
+                return (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5" />
+                                Review Your Submission
+                            </CardTitle>
+                            <CardDescription>
+                                Please review your information before submitting.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Business Details */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold">Business Details</h4>
+                                    <Button variant="ghost" size="sm" onClick={() => setWizardStep('details')}>
+                                        <Pencil className="h-4 w-4 mr-1" /> Edit
+                                    </Button>
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Company</p>
+                                        <p className="font-medium">{detailsData.businessName}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Email</p>
+                                        <p className="font-medium">{detailsData.email}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Contact</p>
+                                        <p className="font-medium">{detailsData.contactName} {detailsData.contactTitle && `(${detailsData.contactTitle})`}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Cell Phone</p>
+                                        <p className="font-medium">{detailsData.cellPhone}</p>
+                                    </div>
+                                    {detailsData.businessPhone && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Business Phone</p>
+                                            <p className="font-medium">{detailsData.businessPhone}</p>
+                                        </div>
+                                    )}
+                                    {detailsData.adWebsiteUrl && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Website</p>
+                                            <p className="font-medium truncate">{detailsData.adWebsiteUrl}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Ad Design */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold">Ad Design</h4>
+                                    <Button variant="ghost" size="sm" onClick={() => setWizardStep('designer')}>
+                                        <Pencil className="h-4 w-4 mr-1" /> Edit
+                                    </Button>
+                                </div>
+
+                                {requestCustomDesign ? (
+                                    <div className="p-4 bg-muted rounded-lg space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="secondary">Custom Design Requested</Badge>
+                                            <span className="text-sm text-muted-foreground">Our team will design your ad</span>
+                                        </div>
+
+                                        {logoUrl && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground mb-2">Logo</p>
+                                                <Image
+                                                    src={logoUrl}
+                                                    alt="Logo"
+                                                    width={100}
+                                                    height={100}
+                                                    className="border rounded object-contain"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {uploadedImages.length > 0 && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground mb-2">Images</p>
+                                                <div className="flex gap-2">
+                                                    {uploadedImages.map((url, index) => (
+                                                        <Image
+                                                            key={index}
+                                                            src={url}
+                                                            alt={`Image ${index + 1}`}
+                                                            width={80}
+                                                            height={80}
+                                                            className="border rounded object-cover"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {customData.adTitle && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Title Text</p>
+                                                <p className="font-medium">{customData.adTitle}</p>
+                                            </div>
+                                        )}
+
+                                        {customData.adText && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Ad Text</p>
+                                                <p className="font-medium">{customData.adText}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-muted rounded-lg">
+                                        {designedAdUrl ? (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="secondary">Self-Designed Ad</Badge>
+                                                </div>
+                                                <Image
+                                                    src={designedAdUrl}
+                                                    alt="Your designed ad"
+                                                    width={AD_DIMENSIONS.WIDTH}
+                                                    height={AD_DIMENSIONS.HEIGHT}
+                                                    className="border rounded"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Alert variant="destructive">
+                                                <AlertCircle className="h-4 w-4" />
+                                                <AlertTitle>No Ad Designed</AlertTitle>
+                                                <AlertDescription>
+                                                    You haven't designed an ad yet. Please go back and design your ad or request a custom design.
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex justify-between pt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setWizardStep(requestCustomDesign ? 'custom-assets' : 'designer')}
+                                >
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                                </Button>
+                                <Button
+                                    onClick={handleFinalSubmit}
+                                    disabled={isSubmitting || (!requestCustomDesign && !designedAdUrl)}
+                                    size="lg"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="mr-2 h-4 w-4" /> Submit for Review
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'submitted':
+                return (
+                    <Card className="text-center">
+                        <CardHeader>
+                            <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
+                            </div>
+                            <CardTitle className="text-2xl">Successfully Submitted!</CardTitle>
+                            <CardDescription>
+                                Your ad information has been submitted to our team.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-muted-foreground">
+                                We'll review your submission and get started on your advertisement.
+                                You'll receive an email when your ad proof is ready for approval.
+                            </p>
+                            <Alert>
+                                <Clock className="h-4 w-4" />
+                                <AlertTitle>What's Next?</AlertTitle>
+                                <AlertDescription>
+                                    <ul className="list-disc list-inside mt-2 space-y-1 text-left">
+                                        <li>Our team will review your submission</li>
+                                        <li>We'll create or finalize your ad design</li>
+                                        <li>You'll receive an email to approve the final ad</li>
+                                        <li>Once approved, your ad goes live!</li>
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+                );
+        }
+    };
+
     return (
         <div className="flex-1 space-y-6">
             {/* Pending Approval Alert */}
@@ -733,17 +1395,6 @@ export default function AccountPage() {
                 </Alert>
             )}
 
-            {/* Onboarding prompt */}
-            {showOnboarding && (
-                <Alert className="border-primary border-2">
-                    <FileText className="h-4 w-4" />
-                    <AlertTitle className="font-bold text-lg">Welcome! Let's Get Your Ad Started</AlertTitle>
-                    <AlertDescription>
-                        Complete the steps below to provide us with the information we need to create your advertisement.
-                    </AlertDescription>
-                </Alert>
-            )}
-
             {/* Header Card */}
             <Card>
                 <CardHeader>
@@ -752,15 +1403,32 @@ export default function AccountPage() {
                 </CardHeader>
             </Card>
 
-            {/* Advertisement Workflow Section */}
-            {advertisements.length > 0 && (
+            {/* Wizard for new users with active subscription */}
+            {hasActiveSubscription && (showWizard || wizardStep !== 'details') && advertisements.filter(a => a.status !== 'pending_info').length === 0 && (
+                <>
+                    <Alert className="border-primary border-2">
+                        <FileText className="h-4 w-4" />
+                        <AlertTitle className="font-bold text-lg">Welcome! Let's Get Your Ad Started</AlertTitle>
+                        <AlertDescription>
+                            Complete the steps below to create your advertisement.
+                        </AlertDescription>
+                    </Alert>
+
+                    <WizardStepIndicator currentStep={wizardStep} requestCustomDesign={requestCustomDesign} />
+
+                    {renderWizardStep()}
+                </>
+            )}
+
+            {/* Advertisement Workflow Section - for existing ads */}
+            {advertisements.length > 0 && advertisements.some(a => a.status !== 'pending_info') && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Advertisement Status</CardTitle>
                         <CardDescription>Track the progress of your advertisement</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {advertisements.map((ad) => (
+                        {advertisements.filter(a => a.status !== 'pending_info').map((ad) => (
                             <div key={ad.id} className="space-y-4 p-4 border rounded-lg">
                                 <div className="flex justify-between items-start">
                                     <div>
@@ -788,12 +1456,20 @@ export default function AccountPage() {
                                 )}
 
                                 {/* Show live ad preview */}
-                                {ad.status === 'live' && ad.adProofUrl && (
-                                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <p className="text-sm text-green-700 font-medium mb-2">Your ad is live!</p>
+                                {(ad.status === 'live' || ad.status === 'holding') && ad.adProofUrl && (
+                                    <div className={cn(
+                                        "mt-4 p-4 border rounded-lg",
+                                        ad.status === 'live' ? "bg-green-50 border-green-200" : "bg-cyan-50 border-cyan-200"
+                                    )}>
+                                        <p className={cn(
+                                            "text-sm font-medium mb-2",
+                                            ad.status === 'live' ? "text-green-700" : "text-cyan-700"
+                                        )}>
+                                            {ad.status === 'live' ? 'Your ad is live!' : 'Your ad is approved and awaiting final settings.'}
+                                        </p>
                                         <Image
                                             src={ad.adProofUrl}
-                                            alt="Your live advertisement"
+                                            alt="Your advertisement"
                                             width={AD_DIMENSIONS.WIDTH}
                                             height={AD_DIMENSIONS.HEIGHT}
                                             className="border rounded"
@@ -803,7 +1479,10 @@ export default function AccountPage() {
                                                 href={ad.adProofDestinationUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-sm text-green-600 hover:underline mt-2 flex items-center gap-1"
+                                                className={cn(
+                                                    "text-sm hover:underline mt-2 flex items-center gap-1",
+                                                    ad.status === 'live' ? "text-green-600" : "text-cyan-600"
+                                                )}
                                             >
                                                 Links to: {ad.adProofDestinationUrl} <ExternalLink className="h-3 w-3" />
                                             </a>
@@ -812,511 +1491,6 @@ export default function AccountPage() {
                                 )}
                             </div>
                         ))}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Visual Ad Designer CTA - Show for active subscriptions */}
-            {subscriptions.some(s => s.status === 'active' || s.status === 'trialing') && (
-                <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Palette className="h-5 w-5 text-primary" />
-                            Create Your Own Ad
-                        </CardTitle>
-                        <CardDescription>
-                            Use our visual ad designer to create a custom {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} ad yourself!
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                            <li className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                Drag and drop your logo and images
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                Add and customize text with different fonts
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                Resize and position elements freely
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                Export as PNG or submit for review
-                            </li>
-                        </ul>
-                        <Link href="/design-ad">
-                            <Button className="w-full md:w-auto">
-                                <Palette className="h-4 w-4 mr-2" />
-                                Open Ad Designer
-                                <ArrowRight className="h-4 w-4 ml-2" />
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Ad Designer Section - Show for active subscriptions */}
-            {subscriptions.some(s => s.status === 'active' || s.status === 'trialing') && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Advertisement Details</CardTitle>
-                        <CardDescription>
-                            Provide your business information and design preferences to help us create your perfect ad.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList className="grid w-full grid-cols-3">
-                                <TabsTrigger value="business-info">
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    Business Info
-                                </TabsTrigger>
-                                <TabsTrigger value="ad-designer">
-                                    <Palette className="h-4 w-4 mr-2" />
-                                    Design Preferences
-                                </TabsTrigger>
-                                <TabsTrigger value="uploads">
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Uploads
-                                </TabsTrigger>
-                            </TabsList>
-
-                            {/* Business Info Tab */}
-                            <TabsContent value="business-info" className="mt-6">
-                                <form onSubmit={businessInfoForm.handleSubmit(onBusinessInfoSubmit)} className="space-y-6">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="businessName">Business Name *</Label>
-                                            <Controller
-                                                name="businessName"
-                                                control={businessInfoForm.control}
-                                                render={({ field }) => <Input id="businessName" {...field} />}
-                                            />
-                                            {businessInfoForm.formState.errors.businessName && (
-                                                <p className="text-sm text-destructive">{businessInfoForm.formState.errors.businessName.message}</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="contactName">Contact Name *</Label>
-                                            <Controller
-                                                name="contactName"
-                                                control={businessInfoForm.control}
-                                                render={({ field }) => <Input id="contactName" {...field} />}
-                                            />
-                                            {businessInfoForm.formState.errors.contactName && (
-                                                <p className="text-sm text-destructive">{businessInfoForm.formState.errors.contactName.message}</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="phone">Phone Number *</Label>
-                                            <Controller
-                                                name="phone"
-                                                control={businessInfoForm.control}
-                                                render={({ field }) => <Input id="phone" {...field} />}
-                                            />
-                                            {businessInfoForm.formState.errors.phone && (
-                                                <p className="text-sm text-destructive">{businessInfoForm.formState.errors.phone.message}</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="adWebsiteUrl">Ad Link URL</Label>
-                                            <Controller
-                                                name="adWebsiteUrl"
-                                                control={businessInfoForm.control}
-                                                render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://example.com" {...field} />}
-                                            />
-                                            {businessInfoForm.formState.errors.adWebsiteUrl && (
-                                                <p className="text-sm text-destructive">{businessInfoForm.formState.errors.adWebsiteUrl.message}</p>
-                                            )}
-                                            <p className="text-xs text-muted-foreground">Where should your ad link to when clicked?</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="adText">Ad Text / Slogan</Label>
-                                        <Controller
-                                            name="adText"
-                                            control={businessInfoForm.control}
-                                            render={({ field }) => (
-                                                <Textarea
-                                                    id="adText"
-                                                    placeholder="e.g., 'Serving Pasco County for 20 years!'"
-                                                    {...field}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="adNotes">Additional Notes or Special Offers</Label>
-                                        <Controller
-                                            name="adNotes"
-                                            control={businessInfoForm.control}
-                                            render={({ field }) => (
-                                                <Textarea
-                                                    id="adNotes"
-                                                    placeholder="e.g., 'Mention this ad for 10% off your first visit.'"
-                                                    {...field}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="flex gap-4">
-                                        <Button type="submit" disabled={isSavingBusinessInfo}>
-                                            {isSavingBusinessInfo ? (
-                                                <>
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="mr-2 h-4 w-4" /> Save & Continue
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                </form>
-                            </TabsContent>
-
-                            {/* Ad Designer Tab */}
-                            <TabsContent value="ad-designer" className="mt-6">
-                                <form onSubmit={adDesignerForm.handleSubmit(onAdDesignerSubmit)} className="space-y-6">
-                                    <Alert>
-                                        <Info className="h-4 w-4" />
-                                        <AlertDescription>
-                                            Choose colors and styles that match your brand. Our design team will use these preferences when creating your ad.
-                                        </AlertDescription>
-                                    </Alert>
-
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="primaryColor">Primary Color</Label>
-                                            <div className="flex gap-2">
-                                                <Controller
-                                                    name="primaryColor"
-                                                    control={adDesignerForm.control}
-                                                    render={({ field }) => (
-                                                        <>
-                                                            <Input
-                                                                type="color"
-                                                                className="w-12 h-10 p-1 cursor-pointer"
-                                                                {...field}
-                                                            />
-                                                            <Input
-                                                                type="text"
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                className="flex-1"
-                                                            />
-                                                        </>
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="secondaryColor">Secondary Color</Label>
-                                            <div className="flex gap-2">
-                                                <Controller
-                                                    name="secondaryColor"
-                                                    control={adDesignerForm.control}
-                                                    render={({ field }) => (
-                                                        <>
-                                                            <Input
-                                                                type="color"
-                                                                className="w-12 h-10 p-1 cursor-pointer"
-                                                                {...field}
-                                                            />
-                                                            <Input
-                                                                type="text"
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                className="flex-1"
-                                                            />
-                                                        </>
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="backgroundColor">Background Color</Label>
-                                            <div className="flex gap-2">
-                                                <Controller
-                                                    name="backgroundColor"
-                                                    control={adDesignerForm.control}
-                                                    render={({ field }) => (
-                                                        <>
-                                                            <Input
-                                                                type="color"
-                                                                className="w-12 h-10 p-1 cursor-pointer"
-                                                                {...field}
-                                                            />
-                                                            <Input
-                                                                type="text"
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                className="flex-1"
-                                                            />
-                                                        </>
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="textColor">Text Color</Label>
-                                            <div className="flex gap-2">
-                                                <Controller
-                                                    name="textColor"
-                                                    control={adDesignerForm.control}
-                                                    render={({ field }) => (
-                                                        <>
-                                                            <Input
-                                                                type="color"
-                                                                className="w-12 h-10 p-1 cursor-pointer"
-                                                                {...field}
-                                                            />
-                                                            <Input
-                                                                type="text"
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                className="flex-1"
-                                                            />
-                                                        </>
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="fontStyle">Font Style</Label>
-                                        <Controller
-                                            name="fontStyle"
-                                            control={adDesignerForm.control}
-                                            render={({ field }) => (
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select a font style" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="modern">Modern - Clean and contemporary</SelectItem>
-                                                        <SelectItem value="classic">Classic - Traditional and timeless</SelectItem>
-                                                        <SelectItem value="bold">Bold - Strong and impactful</SelectItem>
-                                                        <SelectItem value="elegant">Elegant - Sophisticated and refined</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                    </div>
-
-                                    {/* Color Preview */}
-                                    <div className="space-y-2">
-                                        <Label>Preview</Label>
-                                        <div
-                                            className="p-6 rounded-lg border"
-                                            style={{
-                                                backgroundColor: adDesignerForm.watch('backgroundColor'),
-                                            }}
-                                        >
-                                            <div
-                                                className="text-lg font-bold mb-2"
-                                                style={{ color: adDesignerForm.watch('primaryColor') }}
-                                            >
-                                                Your Business Name
-                                            </div>
-                                            <div
-                                                className="text-sm"
-                                                style={{ color: adDesignerForm.watch('textColor') }}
-                                            >
-                                                Your tagline or message will appear here
-                                            </div>
-                                            <div
-                                                className="mt-2 text-xs"
-                                                style={{ color: adDesignerForm.watch('secondaryColor') }}
-                                            >
-                                                Call to action
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="additionalNotes">Additional Design Notes</Label>
-                                        <Controller
-                                            name="additionalNotes"
-                                            control={adDesignerForm.control}
-                                            render={({ field }) => (
-                                                <Textarea
-                                                    id="additionalNotes"
-                                                    placeholder="Any other design preferences or notes for our team..."
-                                                    {...field}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-
-                                    <Button type="submit" disabled={isSavingDesign}>
-                                        {isSavingDesign ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="mr-2 h-4 w-4" /> Save Design Preferences
-                                            </>
-                                        )}
-                                    </Button>
-                                </form>
-                            </TabsContent>
-
-                            {/* Uploads Tab */}
-                            <TabsContent value="uploads" className="mt-6 space-y-6">
-                                {/* Sample Ad Upload */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="font-medium text-lg">Sample Advertisement (Optional)</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            If you have your own ad banner ready, upload it here. Must be exactly {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} pixels.
-                                        </p>
-                                    </div>
-
-                                    <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                                        {sampleAdPreview ? (
-                                            <div className="space-y-4">
-                                                <Image
-                                                    src={sampleAdPreview}
-                                                    alt="Sample ad preview"
-                                                    width={AD_DIMENSIONS.WIDTH}
-                                                    height={AD_DIMENSIONS.HEIGHT}
-                                                    className="mx-auto border rounded"
-                                                />
-                                                <p className="text-sm text-green-600">Sample ad uploaded successfully!</p>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => document.getElementById('sample-ad-input')?.click()}
-                                                    disabled={isUploadingSampleAd}
-                                                >
-                                                    Replace Sample Ad
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Upload your sample ad</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        Dimensions: {AD_DIMENSIONS.WIDTH} x {AD_DIMENSIONS.HEIGHT} pixels (PNG, JPG, GIF)
-                                                    </p>
-                                                </div>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => document.getElementById('sample-ad-input')?.click()}
-                                                    disabled={isUploadingSampleAd}
-                                                >
-                                                    {isUploadingSampleAd ? (
-                                                        <>
-                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Upload className="mr-2 h-4 w-4" /> Choose File
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        )}
-                                        <input
-                                            id="sample-ad-input"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleSampleAdUpload}
-                                        />
-                                    </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* Additional Files Upload */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="font-medium text-lg">Logos & Additional Images</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            Upload your logo, product images, or any other assets you'd like us to use in your ad.
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => document.getElementById('files-input')?.click()}
-                                            disabled={isUploadingFiles}
-                                        >
-                                            {isUploadingFiles ? (
-                                                <>
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Upload className="mr-2 h-4 w-4" /> Upload Files
-                                                </>
-                                            )}
-                                        </Button>
-                                        <input
-                                            id="files-input"
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            className="hidden"
-                                            onChange={handleFilesUpload}
-                                        />
-
-                                        {uploadedFiles.length > 0 && (
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                {uploadedFiles.map((url, index) => (
-                                                    <div key={index} className="relative aspect-square border rounded-lg overflow-hidden">
-                                                        <Image
-                                                            src={url}
-                                                            alt={`Upload ${index + 1}`}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* Submit for Review Button */}
-                                <div className="pt-4">
-                                    <Button
-                                        size="lg"
-                                        className="w-full md:w-auto"
-                                        onClick={handleSubmitForReview}
-                                        disabled={isSubmittingForReview}
-                                    >
-                                        {isSubmittingForReview ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Submitting...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                Submit All Information for Review
-                                            </>
-                                        )}
-                                    </Button>
-                                    <p className="text-sm text-muted-foreground mt-2">
-                                        Once submitted, our team will review your information and begin creating your advertisement.
-                                    </p>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
                     </CardContent>
                 </Card>
             )}

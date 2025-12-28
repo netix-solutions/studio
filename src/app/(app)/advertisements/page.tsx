@@ -70,9 +70,11 @@ const STATUS_FILTERS = [
     { value: 'pending_ad_creation', label: 'Creating Ad', count: 0 },
     { value: 'pending_customer_approval', label: 'Awaiting Approval', count: 0 },
     { value: 'revision_requested', label: 'Revision Needed', count: 0 },
+    { value: 'holding', label: 'Holding', count: 0 },
     { value: 'live', label: 'Live', count: 0 },
     { value: 'paused', label: 'Paused', count: 0 },
     { value: 'completed', label: 'Completed', count: 0 },
+    { value: 'canceled_inactive', label: 'Canceled', count: 0 },
 ];
 
 export default function AdvertisementsPage() {
@@ -128,8 +130,11 @@ export default function AdvertisementsPage() {
                     if (ad.status === 'pending_ad_creation') return 2;
                     if (ad.status === 'revision_requested') return 3;
                     if (ad.status === 'pending_customer_approval') return 4;
-                    if (ad.status === 'pending_info') return 5;
-                    if (ad.status === 'live') return 6;
+                    if (ad.status === 'holding') return 5;
+                    if (ad.status === 'pending_info') return 6;
+                    if (ad.status === 'live') return 7;
+                    if (ad.status === 'paused') return 8;
+                    if (ad.status === 'canceled_inactive') return 11;
                     return 10;
                 };
 
@@ -172,8 +177,11 @@ export default function AdvertisementsPage() {
                 updatedAt: serverTimestamp(),
             };
 
-            if (newStatus === 'live') {
+            if (newStatus === 'holding') {
                 updateData.approvedAt = serverTimestamp();
+                updateData.holdingAt = serverTimestamp();
+            }
+            if (newStatus === 'live') {
                 updateData.liveAt = serverTimestamp();
             }
 
@@ -518,6 +526,12 @@ export default function AdvertisementsPage() {
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {(ad.status === 'pending_customer_approval' || ad.status === 'approved') && (
+                                                                <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'holding')}>
+                                                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                                                    Approve & Move to Holding
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {ad.status === 'holding' && (
                                                                 <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'live')}>
                                                                     <Play className="mr-2 h-4 w-4" />
                                                                     Go Live
@@ -533,6 +547,15 @@ export default function AdvertisementsPage() {
                                                                 <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'live')}>
                                                                     <Play className="mr-2 h-4 w-4" />
                                                                     Resume Ad
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {ad.status !== 'canceled_inactive' && ad.status !== 'completed' && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleQuickStatusUpdate(ad, 'canceled_inactive')}
+                                                                    className="text-destructive"
+                                                                >
+                                                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                                                    Mark as Canceled
                                                                 </DropdownMenuItem>
                                                             )}
                                                         </DropdownMenuContent>
