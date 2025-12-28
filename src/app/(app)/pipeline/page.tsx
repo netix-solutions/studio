@@ -37,35 +37,34 @@ import {
   AD_PIPELINE_STAGE_COLORS,
   calculateAutoApprovalDeadline,
   shouldAutoApprove,
+  normalizeAdStatus,
 } from '@/lib/types';
 
-// Pipeline stages for the main workflow (in order of progression)
+// Pipeline stages for the main workflow (in order of progression) - Updated for new workflow
 const PIPELINE_STAGES: AdStatus[] = [
-  'pending_info',
-  'pending_internal_review',
-  'pending_ad_creation',
-  'pending_customer_approval',
-  'holding',
+  'info_needed',
+  'design_pending',
+  'in_review',
+  'customer_approval',
+  'approved',
   'live',
 ];
 
-// Labels for each stage in the pipeline
+// Labels for each stage in the pipeline - Updated for new workflow
 const STAGE_LABELS: Record<AdStatus, string> = {
-  pending_info: 'Awaiting Info',
-  pending_internal_review: 'Under Review',
-  pending_ad_creation: 'Creating Ad',
-  pending_customer_approval: 'Customer Approval',
-  holding: 'Holding',
+  info_needed: 'Info Needed',
+  design_pending: 'Design Pending',
+  in_review: 'In Review',
+  customer_approval: 'Customer Approval',
+  approved: 'Ready to Publish',
   live: 'Live',
-  revision_requested: 'Revision Needed',
-  approved: 'Approved',
   paused: 'Paused',
   completed: 'Completed',
-  canceled_inactive: 'Canceled',
+  canceled: 'Canceled',
 };
 
-// Special stages section
-const SPECIAL_STAGES: AdStatus[] = ['revision_requested', 'approved', 'paused', 'completed', 'canceled_inactive'];
+// Special stages section - Updated for new workflow
+const SPECIAL_STAGES: AdStatus[] = ['paused', 'completed', 'canceled'];
 
 type AdWithMeta = Advertisement & {
   shouldAutoApprove?: boolean;
@@ -87,16 +86,16 @@ function StageColumn({ stage, ads, onMoveToStage, onAdClick, isFirst, isLast }: 
 
   const getStageIcon = () => {
     switch (stage) {
-      case 'pending_info':
+      case 'info_needed':
         return <Clock className="h-4 w-4" />;
-      case 'pending_internal_review':
-        return <Eye className="h-4 w-4" />;
-      case 'pending_ad_creation':
+      case 'design_pending':
         return <FileEdit className="h-4 w-4" />;
-      case 'pending_customer_approval':
+      case 'in_review':
+        return <Eye className="h-4 w-4" />;
+      case 'customer_approval':
         return <CheckCircle2 className="h-4 w-4" />;
-      case 'holding':
-        return <Pause className="h-4 w-4" />;
+      case 'approved':
+        return <CheckCircle2 className="h-4 w-4" />;
       case 'live':
         return <Play className="h-4 w-4" />;
       default:

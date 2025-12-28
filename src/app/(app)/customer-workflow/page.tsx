@@ -1,59 +1,32 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirebase } from '@/firebase';
-import { doc, onSnapshot, collection, getDocs, getDoc, setDoc, query, updateDoc, serverTimestamp, orderBy, where } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import {
-    Loader2, AlertCircle, Save, FileText, Upload, CheckCircle, Clock,
-    Palette, Image as ImageIcon, ArrowRight, ArrowLeft, ExternalLink,
-    Info, X, Pencil, Search, Users, ChevronRight, RotateCcw, Play,
-    UserCircle, Mail, Phone, Building, Link as LinkIcon, MessageSquare
-} from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
+import {
+    collection,
+    getDocs,
+    doc,
+    onSnapshot,
+    updateDoc,
+    setDoc,
+    addDoc,
+    serverTimestamp,
+    query,
+    orderBy,
+    where,
+} from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { format, formatDistanceToNow } from 'date-fns';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import {
-    AD_STATUSES,
-    AD_STATUS_LABELS,
-    AD_STATUS_COLORS,
-    AD_WORKFLOW_STEPS,
-    AD_DIMENSIONS,
-    type AdStatus,
-    type Advertisement
-} from '@/lib/types';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
     Dialog,
     DialogContent,
@@ -68,22 +41,67 @@ import {
     TabsList,
     TabsTrigger,
 } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Loader2,
+    AlertCircle,
+    Search,
+    Users,
+    ChevronRight,
+    UserCircle,
+    ArrowRight,
+    ArrowLeft,
+    Upload,
+    X,
+    CheckCircle,
+    Play,
+    Megaphone,
+    ExternalLink,
+    Eye,
+    Building2,
+    Mail,
+    Phone,
+    Globe,
+    Image as ImageIcon,
+    FileText,
+    Send,
+} from 'lucide-react';
+import Image from 'next/image';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+// Workflow Components
+import { WorkflowProgress, WorkflowStatusBanner } from '@/components/workflow/WorkflowProgress';
+import { CustomerWorkflow } from '@/components/workflow/CustomerWorkflow';
+import {
+    type Advertisement,
+    type AdStatus,
+    type UserProfile,
+    normalizeAdStatus,
+    AD_STATUS_LABELS,
+    AD_STATUS_ADMIN_ACTIONS,
+    AD_STATUS_COLORS,
+    AD_PIPELINE_STAGE_COLORS,
+    AD_DIMENSIONS,
+    getNextWorkflowStatus,
+    isAdActive,
+} from '@/lib/types';
 
 interface CustomerData {
     id: string;
     email: string;
     businessName?: string;
     contactName?: string;
-    contactTitle?: string;
     cellPhone?: string;
-    businessPhone?: string;
+    phone?: string;
     adWebsiteUrl?: string;
-    adTitle?: string;
-    adText?: string;
     logoUrl?: string;
-    fileUploads?: string[];
-    customerSampleAdUrl?: string;
-    requestCustomDesign?: boolean;
     createdAt?: any;
     updatedAt?: any;
 }
@@ -96,1379 +114,898 @@ interface CustomerSubscription {
     periodEnd: string;
 }
 
-interface CustomerAd extends Advertisement {
-    subscription?: CustomerSubscription;
-}
-
-// Form schemas
-const customerDetailsSchema = z.object({
-    businessName: z.string().min(2, "Company name is required."),
-    contactName: z.string().min(2, "Contact name is required."),
-    contactTitle: z.string().optional(),
-    email: z.string().email("A valid email is required."),
-    cellPhone: z.string().min(10, "A valid cell phone number is required."),
-    businessPhone: z.string().optional(),
-    adWebsiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-});
-
-const adContentSchema = z.object({
-    adTitle: z.string().optional(),
-    adText: z.string().optional(),
-});
-
-type CustomerDetailsFormData = z.infer<typeof customerDetailsSchema>;
-type AdContentFormData = z.infer<typeof adContentSchema>;
-
-// Wizard step type for admin
-type AdminWizardStep = 'select-customer' | 'details' | 'assets' | 'ad-status' | 'summary';
-
-// Workflow progress component
-function WorkflowProgress({ currentStatus, onStatusChange }: { currentStatus: AdStatus; onStatusChange?: (status: AdStatus) => void }) {
-    const steps = AD_WORKFLOW_STEPS;
-    const currentIndex = steps.findIndex(step => step.id === currentStatus);
-
-    const getStepIndex = () => {
-        if (currentStatus === 'approved') return steps.findIndex(s => s.id === 'holding');
-        if (currentStatus === 'live') return steps.length - 1;
-        if (['paused', 'completed', 'canceled_inactive', 'revision_requested'].includes(currentStatus)) {
-            return -1;
-        }
-        return currentIndex;
-    };
-
-    const stepIndex = getStepIndex();
-
-    return (
-        <div className="w-full">
-            <div className="flex items-center justify-between">
-                {steps.map((step, index) => {
-                    const isCompleted = stepIndex > index;
-                    const isActive = stepIndex === index;
-                    const isPending = stepIndex < index;
-
-                    return (
-                        <div
-                            key={step.id}
-                            className={cn(
-                                "flex flex-col items-center text-center flex-1",
-                                onStatusChange && "cursor-pointer hover:opacity-80 transition-opacity"
-                            )}
-                            onClick={() => onStatusChange?.(step.id as AdStatus)}
-                        >
-                            <div className={cn(
-                                "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all",
-                                isCompleted && "bg-green-500 border-green-500 text-white",
-                                isActive && "bg-primary border-primary text-primary-foreground",
-                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
-                            )}>
-                                {isCompleted ? (
-                                    <CheckCircle className="h-5 w-5" />
-                                ) : (
-                                    <span className="font-semibold text-sm">{index + 1}</span>
-                                )}
-                            </div>
-                            <p className={cn(
-                                "mt-2 text-xs font-medium hidden sm:block",
-                                isActive && "text-primary",
-                                isCompleted && "text-green-600",
-                                isPending && "text-muted-foreground"
-                            )}>
-                                {step.title}
-                            </p>
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="mt-3 relative h-1 bg-muted rounded-full overflow-hidden hidden sm:block">
-                <div
-                    className="absolute h-full bg-green-500 transition-all duration-500"
-                    style={{ width: `${Math.max(0, (stepIndex / (steps.length - 1)) * 100)}%` }}
-                />
-            </div>
-        </div>
-    );
-}
-
-// Admin wizard step indicator
-function AdminWizardStepIndicator({ currentStep }: { currentStep: AdminWizardStep }) {
-    const steps = [
-        { id: 'select-customer', title: 'Select Customer', number: 1 },
-        { id: 'details', title: 'Business Details', number: 2 },
-        { id: 'assets', title: 'Assets', number: 3 },
-        { id: 'ad-status', title: 'Ad Status', number: 4 },
-        { id: 'summary', title: 'Summary', number: 5 },
-    ];
-
-    const currentIndex = steps.findIndex(s => s.id === currentStep);
-
-    return (
-        <div className="w-full mb-8">
-            <div className="flex items-center justify-between">
-                {steps.map((step, index) => {
-                    const isCompleted = currentIndex > index;
-                    const isActive = currentIndex === index;
-                    const isPending = currentIndex < index;
-
-                    return (
-                        <div key={step.id} className="flex flex-col items-center text-center flex-1">
-                            <div className={cn(
-                                "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all",
-                                isCompleted && "bg-green-500 border-green-500 text-white",
-                                isActive && "bg-primary border-primary text-primary-foreground",
-                                isPending && "bg-muted border-muted-foreground/30 text-muted-foreground"
-                            )}>
-                                {isCompleted ? (
-                                    <CheckCircle className="h-5 w-5" />
-                                ) : (
-                                    <span className="font-semibold text-sm">{step.number}</span>
-                                )}
-                            </div>
-                            <p className={cn(
-                                "mt-2 text-xs font-medium",
-                                isActive && "text-primary",
-                                isCompleted && "text-green-600",
-                                isPending && "text-muted-foreground"
-                            )}>
-                                {step.title}
-                            </p>
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="mt-3 relative h-1 bg-muted rounded-full overflow-hidden">
-                <div
-                    className="absolute h-full bg-green-500 transition-all duration-500"
-                    style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
-                />
-            </div>
-        </div>
-    );
-}
+type ViewMode = 'list' | 'manage';
 
 export default function CustomerWorkflowPage() {
-    const { user } = useUser();
     const { firestore, storage } = useFirebase();
     const { toast } = useToast();
 
-    // Admin wizard state
-    const [wizardStep, setWizardStep] = useState<AdminWizardStep>('select-customer');
-
-    // Customer selection
-    const [customers, setCustomers] = useState<CustomerData[]>([]);
-    const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
-    const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+    // State
+    const [viewMode, setViewMode] = useState<ViewMode>('list');
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
     // Customer data
-    const [customerSubscriptions, setCustomerSubscriptions] = useState<CustomerSubscription[]>([]);
-    const [customerAds, setCustomerAds] = useState<CustomerAd[]>([]);
-    const [selectedAd, setSelectedAd] = useState<CustomerAd | null>(null);
+    const [customersWithAds, setCustomersWithAds] = useState<Array<{
+        customer: CustomerData;
+        advertisement: Advertisement | null;
+        subscription: CustomerSubscription | null;
+    }>>([]);
 
-    // Assets state
-    const [logoUrl, setLogoUrl] = useState<string | null>(null);
-    const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-    const [designedAdUrl, setDesignedAdUrl] = useState<string | null>(null);
-    const [requestCustomDesign, setRequestCustomDesign] = useState(false);
+    // Selected customer for management
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
+    const [selectedAd, setSelectedAd] = useState<Advertisement | null>(null);
+    const [selectedSubscription, setSelectedSubscription] = useState<CustomerSubscription | null>(null);
 
-    // Loading states
-    const [isUploading, setIsUploading] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    // Admin actions
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [showPublishDialog, setShowPublishDialog] = useState(false);
+    const [showProofUploadDialog, setShowProofUploadDialog] = useState(false);
+    const [proofFile, setProofFile] = useState<File | null>(null);
+    const [proofDestinationUrl, setProofDestinationUrl] = useState('');
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    // Dialogs
-    const [statusChangeDialog, setStatusChangeDialog] = useState<{ open: boolean; targetStatus: AdStatus | null }>({
-        open: false,
-        targetStatus: null,
-    });
-
-    // Forms
-    const customerDetailsForm = useForm<CustomerDetailsFormData>({
-        resolver: zodResolver(customerDetailsSchema),
-        defaultValues: {
-            businessName: '',
-            contactName: '',
-            contactTitle: '',
-            email: '',
-            cellPhone: '',
-            businessPhone: '',
-            adWebsiteUrl: '',
-        }
-    });
-
-    const adContentForm = useForm<AdContentFormData>({
-        resolver: zodResolver(adContentSchema),
-        defaultValues: {
-            adTitle: '',
-            adText: '',
-        }
-    });
-
-    // Load all customers
+    // Load all customers with their ads
     useEffect(() => {
         if (!firestore) return;
 
-        const loadCustomers = async () => {
-            setIsLoadingCustomers(true);
+        const loadData = async () => {
+            setIsLoading(true);
             try {
-                const usersRef = collection(firestore, 'users');
-                const usersSnapshot = await getDocs(usersRef);
+                // Get all users
+                const usersSnapshot = await getDocs(collection(firestore, 'users'));
+                const results: Array<{
+                    customer: CustomerData;
+                    advertisement: Advertisement | null;
+                    subscription: CustomerSubscription | null;
+                }> = [];
 
-                const customerList: CustomerData[] = usersSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    email: doc.data().email || '',
-                    ...doc.data(),
-                }));
+                for (const userDoc of usersSnapshot.docs) {
+                    const customer: CustomerData = {
+                        id: userDoc.id,
+                        email: userDoc.data().email || '',
+                        ...userDoc.data(),
+                    };
 
-                // Sort by most recent first
-                customerList.sort((a, b) => {
-                    const aTime = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
-                    const bTime = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
+                    // Get customer's most recent advertisement
+                    const adsQuery = query(
+                        collection(firestore, 'users', customer.id, 'advertisements'),
+                        orderBy('createdAt', 'desc')
+                    );
+                    const adsSnapshot = await getDocs(adsQuery);
+                    const advertisement = adsSnapshot.docs.length > 0
+                        ? { id: adsSnapshot.docs[0].id, ...adsSnapshot.docs[0].data() } as Advertisement
+                        : null;
+
+                    // Get customer's active subscription
+                    const subsSnapshot = await getDocs(
+                        collection(firestore, 'customers', customer.id, 'subscriptions')
+                    );
+                    let subscription: CustomerSubscription | null = null;
+                    for (const subDoc of subsSnapshot.docs) {
+                        const subData = subDoc.data();
+                        if (subData.status === 'active' || subData.status === 'trialing') {
+                            const priceData = subData.items?.[0]?.price;
+                            subscription = {
+                                id: subDoc.id,
+                                status: subData.status,
+                                planName: priceData?.product?.name || 'Subscription',
+                                price: priceData?.unit_amount
+                                    ? `$${(priceData.unit_amount / 100).toFixed(0)}/mo`
+                                    : '-',
+                                periodEnd: subData.current_period_end?.seconds
+                                    ? format(new Date(subData.current_period_end.seconds * 1000), 'MMM d, yyyy')
+                                    : '-',
+                            };
+                            break;
+                        }
+                    }
+
+                    // Only include customers with ads or active subscriptions
+                    if (advertisement || subscription) {
+                        results.push({ customer, advertisement, subscription });
+                    }
+                }
+
+                // Sort by most recent activity
+                results.sort((a, b) => {
+                    const aTime = a.advertisement?.updatedAt?.seconds || a.customer.updatedAt?.seconds || 0;
+                    const bTime = b.advertisement?.updatedAt?.seconds || b.customer.updatedAt?.seconds || 0;
                     return bTime - aTime;
                 });
 
-                setCustomers(customerList);
+                setCustomersWithAds(results);
             } catch (error) {
-                console.error('Error loading customers:', error);
+                console.error('Error loading data:', error);
                 toast({
-                    title: "Error",
-                    description: "Could not load customers. Please try again.",
-                    variant: "destructive",
+                    title: 'Error',
+                    description: 'Failed to load customer data.',
+                    variant: 'destructive',
                 });
             } finally {
-                setIsLoadingCustomers(false);
+                setIsLoading(false);
             }
         };
 
-        loadCustomers();
-    }, [firestore, toast]);
+        loadData();
+    }, [firestore, toast, refreshKey]);
 
-    // Load selected customer's data
-    const loadCustomerData = useCallback(async (customer: CustomerData) => {
-        if (!firestore) return;
-
-        try {
-            // Load subscriptions
-            const subsRef = collection(firestore, 'customers', customer.id, 'subscriptions');
-            const subsSnapshot = await getDocs(subsRef);
-
-            const subs: CustomerSubscription[] = subsSnapshot.docs.map(doc => {
-                const data = doc.data();
-                const priceData = data.items?.[0]?.price;
-                const periodEndDate = data.current_period_end?.seconds
-                    ? new Date(data.current_period_end.seconds * 1000)
-                    : new Date();
-                const unitAmount = priceData?.unit_amount ?? 0;
-                const currency = priceData?.currency || 'USD';
-                const interval = priceData?.recurring?.interval || 'month';
-
-                return {
-                    id: doc.id,
-                    status: data.status || 'unknown',
-                    planName: data.items?.[0]?.price?.product?.name || (data.isManualEntry ? 'Manual Entry' : 'N/A'),
-                    price: priceData
-                        ? `${(unitAmount / 100).toLocaleString('en-US', { style: 'currency', currency })}/${interval}`
-                        : (data.isManualEntry ? 'Manual' : 'N/A'),
-                    periodEnd: format(periodEndDate, 'MMM d, yyyy'),
-                };
-            });
-
-            setCustomerSubscriptions(subs);
-
-            // Load advertisements
-            const adsRef = collection(firestore, 'users', customer.id, 'advertisements');
-            const adsSnapshot = await getDocs(adsRef);
-
-            const ads: CustomerAd[] = adsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            } as CustomerAd));
-
-            setCustomerAds(ads);
-
-            // Select first ad if available
-            if (ads.length > 0) {
-                setSelectedAd(ads[0]);
-            }
-
-            // Populate forms with customer data
-            customerDetailsForm.reset({
-                businessName: customer.businessName || '',
-                contactName: customer.contactName || '',
-                contactTitle: customer.contactTitle || '',
-                email: customer.email || '',
-                cellPhone: customer.cellPhone || '',
-                businessPhone: customer.businessPhone || '',
-                adWebsiteUrl: customer.adWebsiteUrl || '',
-            });
-
-            adContentForm.reset({
-                adTitle: customer.adTitle || '',
-                adText: customer.adText || '',
-            });
-
-            // Set assets
-            setLogoUrl(customer.logoUrl || null);
-            setUploadedImages(customer.fileUploads || []);
-            setDesignedAdUrl(customer.customerSampleAdUrl || null);
-            setRequestCustomDesign(customer.requestCustomDesign || false);
-
-        } catch (error) {
-            console.error('Error loading customer data:', error);
-            toast({
-                title: "Error",
-                description: "Could not load customer data. Please try again.",
-                variant: "destructive",
-            });
+    // Filter customers
+    const filteredCustomers = customersWithAds.filter(({ customer, advertisement }) => {
+        // Search filter
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const matchesSearch =
+                customer.email?.toLowerCase().includes(q) ||
+                customer.businessName?.toLowerCase().includes(q) ||
+                customer.contactName?.toLowerCase().includes(q);
+            if (!matchesSearch) return false;
         }
-    }, [firestore, customerDetailsForm, adContentForm, toast]);
 
-    // Handle customer selection
-    const handleSelectCustomer = (customer: CustomerData) => {
-        setSelectedCustomer(customer);
-        setCustomerSearchOpen(false);
-        loadCustomerData(customer);
-        setWizardStep('details');
-    };
+        // Status filter
+        if (statusFilter !== 'all') {
+            const adStatus = advertisement ? normalizeAdStatus(advertisement.status) : null;
+            if (adStatus !== statusFilter) return false;
+        }
 
-    // Filter customers based on search
-    const filteredCustomers = customers.filter(customer => {
-        const query = searchQuery.toLowerCase();
-        return (
-            (customer.email?.toLowerCase() || '').includes(query) ||
-            (customer.businessName?.toLowerCase() || '').includes(query) ||
-            (customer.contactName?.toLowerCase() || '').includes(query)
-        );
+        return true;
     });
 
-    // Save customer details
-    const handleSaveDetails = async (data: CustomerDetailsFormData) => {
-        if (!selectedCustomer || !firestore) return;
-        setIsSaving(true);
+    // Status counts for quick filters
+    const statusCounts = customersWithAds.reduce((acc, { advertisement }) => {
+        const status = advertisement ? normalizeAdStatus(advertisement.status) : 'no_ad';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
 
-        try {
-            const userDocRef = doc(firestore, 'users', selectedCustomer.id);
-            await setDoc(userDocRef, {
-                ...data,
-                updatedAt: serverTimestamp(),
-            }, { merge: true });
-
-            // Also update any pending ads
-            if (customerAds.length > 0) {
-                for (const ad of customerAds) {
-                    const adRef = doc(firestore, 'users', selectedCustomer.id, 'advertisements', ad.id);
-                    await updateDoc(adRef, {
-                        businessName: data.businessName,
-                        contactName: data.contactName,
-                        contactTitle: data.contactTitle,
-                        email: data.email,
-                        cellPhone: data.cellPhone,
-                        businessPhone: data.businessPhone,
-                        adWebsiteUrl: data.adWebsiteUrl,
-                        updatedAt: serverTimestamp(),
-                    });
-                }
-            }
-
-            toast({
-                title: "Details Saved",
-                description: "Customer details have been updated.",
-            });
-
-            setWizardStep('assets');
-        } catch (error: any) {
-            console.error("Error saving details:", error);
-            toast({
-                title: "Save Error",
-                description: "Could not save customer details. Please try again.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSaving(false);
-        }
+    // Handle customer selection
+    const handleSelectCustomer = (
+        customer: CustomerData,
+        advertisement: Advertisement | null,
+        subscription: CustomerSubscription | null
+    ) => {
+        setSelectedCustomer(customer);
+        setSelectedAd(advertisement);
+        setSelectedSubscription(subscription);
+        setProofDestinationUrl(advertisement?.adProofDestinationUrl || customer.adWebsiteUrl || '');
+        setViewMode('manage');
     };
 
-    // Handle logo upload
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!selectedCustomer || !firestore || !storage || !e.target.files?.[0]) return;
+    // Handle status update
+    const handleStatusUpdate = async (newStatus: AdStatus) => {
+        if (!firestore || !selectedCustomer || !selectedAd) return;
 
-        const file = e.target.files[0];
-        setIsUploading(true);
-
-        try {
-            const filePath = `advertisements/${selectedCustomer.id}/logo/${Date.now()}-${file.name}`;
-            const fileRef = storageRef(storage, filePath);
-            await uploadBytes(fileRef, file);
-            const downloadUrl = await getDownloadURL(fileRef);
-
-            // Save to user document
-            const userDocRef = doc(firestore, 'users', selectedCustomer.id);
-            await setDoc(userDocRef, {
-                logoUrl: downloadUrl,
-                updatedAt: serverTimestamp(),
-            }, { merge: true });
-
-            setLogoUrl(downloadUrl);
-            toast({
-                title: "Logo Uploaded",
-                description: "Logo has been uploaded successfully.",
-            });
-        } catch (error: any) {
-            console.error("Error uploading logo:", error);
-            toast({
-                title: "Upload Error",
-                description: "Could not upload logo. Please try again.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    // Handle image uploads
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!selectedCustomer || !firestore || !storage || !e.target.files?.length) return;
-
-        if (uploadedImages.length >= 3) {
-            toast({
-                title: "Maximum Images Reached",
-                description: "You can upload up to 3 images.",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        setIsUploading(true);
-        const files = Array.from(e.target.files).slice(0, 3 - uploadedImages.length);
-
-        try {
-            const uploadPromises = files.map(async (file) => {
-                const filePath = `advertisements/${selectedCustomer.id}/images/${Date.now()}-${file.name}`;
-                const fileRef = storageRef(storage, filePath);
-                await uploadBytes(fileRef, file);
-                return getDownloadURL(fileRef);
-            });
-
-            const newUrls = await Promise.all(uploadPromises);
-            const allUrls = [...uploadedImages, ...newUrls].slice(0, 3);
-
-            // Save to user document
-            const userDocRef = doc(firestore, 'users', selectedCustomer.id);
-            await setDoc(userDocRef, {
-                fileUploads: allUrls,
-                updatedAt: serverTimestamp(),
-            }, { merge: true });
-
-            setUploadedImages(allUrls);
-            toast({
-                title: "Images Uploaded",
-                description: `${files.length} image(s) uploaded successfully.`,
-            });
-        } catch (error: any) {
-            console.error("Error uploading images:", error);
-            toast({
-                title: "Upload Error",
-                description: "Could not upload images. Please try again.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    // Remove an uploaded image
-    const handleRemoveImage = async (indexToRemove: number) => {
-        if (!selectedCustomer || !firestore) return;
-
-        const newImages = uploadedImages.filter((_, index) => index !== indexToRemove);
-        setUploadedImages(newImages);
-
-        const userDocRef = doc(firestore, 'users', selectedCustomer.id);
-        await setDoc(userDocRef, {
-            fileUploads: newImages,
-            updatedAt: serverTimestamp(),
-        }, { merge: true });
-    };
-
-    // Save ad content
-    const handleSaveAdContent = async () => {
-        if (!selectedCustomer || !firestore) return;
-        setIsSaving(true);
-
-        try {
-            const data = adContentForm.getValues();
-            const userDocRef = doc(firestore, 'users', selectedCustomer.id);
-            await setDoc(userDocRef, {
-                adTitle: data.adTitle,
-                adText: data.adText,
-                requestCustomDesign,
-                logoUrl,
-                fileUploads: uploadedImages,
-                updatedAt: serverTimestamp(),
-            }, { merge: true });
-
-            // Update ads
-            for (const ad of customerAds) {
-                const adRef = doc(firestore, 'users', selectedCustomer.id, 'advertisements', ad.id);
-                await updateDoc(adRef, {
-                    adTitle: data.adTitle,
-                    adText: data.adText,
-                    requestCustomDesign,
-                    logoUrl,
-                    customerUploads: uploadedImages,
-                    updatedAt: serverTimestamp(),
-                });
-            }
-
-            toast({
-                title: "Assets Saved",
-                description: "Ad content and assets have been saved.",
-            });
-
-            setWizardStep('ad-status');
-        } catch (error: any) {
-            console.error("Error saving ad content:", error);
-            toast({
-                title: "Save Error",
-                description: "Could not save ad content. Please try again.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    // Handle status change
-    const handleStatusChange = async (newStatus: AdStatus) => {
-        if (!selectedAd || !selectedCustomer || !firestore) return;
-        setIsUpdatingStatus(true);
-
+        setIsUpdating(true);
         try {
             const adRef = doc(firestore, 'users', selectedCustomer.id, 'advertisements', selectedAd.id);
 
-            const updateData: any = {
+            const updateData: Record<string, any> = {
                 status: newStatus,
                 updatedAt: serverTimestamp(),
+                lastActionBy: 'admin',
+                lastActionAt: serverTimestamp(),
             };
 
-            // Add timestamps for specific status changes
-            switch (newStatus) {
-                case 'pending_internal_review':
-                    updateData.infoSubmittedAt = serverTimestamp();
-                    break;
-                case 'pending_ad_creation':
-                    updateData.sentForReviewAt = serverTimestamp();
-                    break;
-                case 'pending_customer_approval':
-                    updateData.sentForApprovalAt = serverTimestamp();
-                    break;
-                case 'approved':
-                case 'holding':
-                    updateData.approvedAt = serverTimestamp();
-                    updateData.holdingAt = serverTimestamp();
-                    break;
-                case 'live':
-                    updateData.liveAt = serverTimestamp();
-                    break;
+            // Add appropriate timestamps
+            if (newStatus === 'in_review') {
+                updateData.sentForReviewAt = serverTimestamp();
+            } else if (newStatus === 'customer_approval') {
+                updateData.sentForApprovalAt = serverTimestamp();
+                // Set auto-approval deadline (48 hours)
+                const autoApprovalDate = new Date();
+                autoApprovalDate.setHours(autoApprovalDate.getHours() + 48);
+                updateData.autoApprovalAt = autoApprovalDate;
+            } else if (newStatus === 'approved') {
+                updateData.approvedAt = serverTimestamp();
+            } else if (newStatus === 'live') {
+                updateData.liveAt = serverTimestamp();
             }
 
             await updateDoc(adRef, updateData);
 
-            // Update local state
             setSelectedAd({ ...selectedAd, status: newStatus });
-            setCustomerAds(ads => ads.map(ad =>
-                ad.id === selectedAd.id ? { ...ad, status: newStatus } : ad
-            ));
+            setRefreshKey(k => k + 1);
 
             toast({
-                title: "Status Updated",
+                title: 'Status updated',
                 description: `Ad status changed to ${AD_STATUS_LABELS[newStatus]}.`,
             });
-
-            setStatusChangeDialog({ open: false, targetStatus: null });
-        } catch (error: any) {
-            console.error("Error updating status:", error);
+        } catch (error) {
+            console.error('Error updating status:', error);
             toast({
-                title: "Update Error",
-                description: "Could not update ad status. Please try again.",
-                variant: "destructive",
+                title: 'Error',
+                description: 'Failed to update status.',
+                variant: 'destructive',
             });
         } finally {
-            setIsUpdatingStatus(false);
+            setIsUpdating(false);
         }
     };
 
-    // Reset wizard
-    const handleReset = () => {
-        setSelectedCustomer(null);
-        setSelectedAd(null);
-        setCustomerSubscriptions([]);
-        setCustomerAds([]);
-        setLogoUrl(null);
-        setUploadedImages([]);
-        setDesignedAdUrl(null);
-        setRequestCustomDesign(false);
-        customerDetailsForm.reset();
-        adContentForm.reset();
-        setWizardStep('select-customer');
+    // Handle proof upload
+    const handleProofUpload = async () => {
+        if (!firestore || !storage || !selectedCustomer || !selectedAd || !proofFile) return;
+
+        setIsUpdating(true);
+        try {
+            // Upload the proof image
+            const filePath = `users/${selectedCustomer.id}/ad-proofs/${Date.now()}-${proofFile.name}`;
+            const fileRef = storageRef(storage, filePath);
+            await uploadBytes(fileRef, proofFile);
+            const proofUrl = await getDownloadURL(fileRef);
+
+            // Update the ad with proof and move to customer_approval
+            const adRef = doc(firestore, 'users', selectedCustomer.id, 'advertisements', selectedAd.id);
+
+            const autoApprovalDate = new Date();
+            autoApprovalDate.setHours(autoApprovalDate.getHours() + 48);
+
+            await updateDoc(adRef, {
+                adProofUrl: proofUrl,
+                adProofDestinationUrl: proofDestinationUrl,
+                status: 'customer_approval',
+                sentForApprovalAt: serverTimestamp(),
+                autoApprovalAt: autoApprovalDate,
+                updatedAt: serverTimestamp(),
+                lastActionBy: 'admin',
+                lastActionAt: serverTimestamp(),
+            });
+
+            setSelectedAd({
+                ...selectedAd,
+                adProofUrl: proofUrl,
+                adProofDestinationUrl: proofDestinationUrl,
+                status: 'customer_approval',
+            });
+
+            setShowProofUploadDialog(false);
+            setProofFile(null);
+            setRefreshKey(k => k + 1);
+
+            toast({
+                title: 'Proof uploaded',
+                description: 'The ad proof has been uploaded and sent to the customer for approval.',
+            });
+        } catch (error) {
+            console.error('Error uploading proof:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to upload proof.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
-    // Render wizard steps
-    const renderWizardStep = () => {
-        switch (wizardStep) {
-            case 'select-customer':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5" />
-                                Step 1: Select Customer
-                            </CardTitle>
-                            <CardDescription>
-                                Search for and select a customer to manage their ad workflow.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <Input
-                                            placeholder="Search by email, business name, or contact name..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full"
-                                        />
-                                    </div>
-                                </div>
+    // Handle publish to ad manager
+    const handlePublishToAdManager = async () => {
+        if (!firestore || !selectedCustomer || !selectedAd) return;
 
-                                {isLoadingCustomers ? (
-                                    <div className="flex items-center justify-center py-8">
-                                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                                        <span>Loading customers...</span>
-                                    </div>
-                                ) : (
-                                    <div className="border rounded-lg max-h-96 overflow-y-auto">
-                                        {filteredCustomers.length === 0 ? (
-                                            <div className="p-8 text-center text-muted-foreground">
-                                                No customers found matching your search.
-                                            </div>
-                                        ) : (
-                                            <div className="divide-y">
-                                                {filteredCustomers.slice(0, 50).map((customer) => (
-                                                    <div
-                                                        key={customer.id}
-                                                        className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                                                        onClick={() => handleSelectCustomer(customer)}
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                                    <UserCircle className="h-6 w-6 text-primary" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-medium">
-                                                                        {customer.businessName || customer.contactName || 'Unnamed Customer'}
-                                                                    </p>
-                                                                    <p className="text-sm text-muted-foreground">{customer.email}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                {customer.businessName && (
-                                                                    <Badge variant="secondary">Has Business Info</Badge>
-                                                                )}
-                                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
+        setIsUpdating(true);
+        try {
+            // Create live_ad document
+            const liveAdData = {
+                name: `${selectedAd.businessName || selectedCustomer.businessName} - ${selectedAd.id.slice(0, 6)}`,
+                description: `Advertisement for ${selectedAd.businessName || selectedCustomer.businessName}`,
+                imageUrl: selectedAd.adProofUrl,
+                targetUrl: selectedAd.adProofDestinationUrl || selectedAd.adWebsiteUrl || selectedCustomer.adWebsiteUrl || '',
+                altText: `Advertisement for ${selectedAd.businessName || selectedCustomer.businessName}`,
+                placement: 'inline',
+                width: AD_DIMENSIONS.WIDTH,
+                height: AD_DIMENSIONS.HEIGHT,
+                weight: 50,
+                status: 'active',
+                targetWebsites: [],
+                startDate: null,
+                endDate: null,
+                sourceAdvertisementId: selectedAd.id,
+                customerId: selectedCustomer.id,
+                customerName: selectedAd.businessName || selectedCustomer.businessName,
+                impressions: 0,
+                clicks: 0,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
 
-            case 'details':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" />
-                                Step 2: Business Details
-                            </CardTitle>
-                            <CardDescription>
-                                Review and edit customer's business information.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={customerDetailsForm.handleSubmit(handleSaveDetails)} className="space-y-6">
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="businessName">Company Name *</Label>
-                                        <Controller
-                                            name="businessName"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="businessName" {...field} />}
-                                        />
-                                        {customerDetailsForm.formState.errors.businessName && (
-                                            <p className="text-sm text-destructive">{customerDetailsForm.formState.errors.businessName.message}</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email *</Label>
-                                        <Controller
-                                            name="email"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="email" type="email" {...field} />}
-                                        />
-                                        {customerDetailsForm.formState.errors.email && (
-                                            <p className="text-sm text-destructive">{customerDetailsForm.formState.errors.email.message}</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contactName">Contact Name *</Label>
-                                        <Controller
-                                            name="contactName"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="contactName" {...field} />}
-                                        />
-                                        {customerDetailsForm.formState.errors.contactName && (
-                                            <p className="text-sm text-destructive">{customerDetailsForm.formState.errors.contactName.message}</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contactTitle">Title</Label>
-                                        <Controller
-                                            name="contactTitle"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="contactTitle" placeholder="e.g., Owner, Manager" {...field} />}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="cellPhone">Cell Phone *</Label>
-                                        <Controller
-                                            name="cellPhone"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="cellPhone" placeholder="(555) 123-4567" {...field} />}
-                                        />
-                                        {customerDetailsForm.formState.errors.cellPhone && (
-                                            <p className="text-sm text-destructive">{customerDetailsForm.formState.errors.cellPhone.message}</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="businessPhone">Business Phone</Label>
-                                        <Controller
-                                            name="businessPhone"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="businessPhone" placeholder="(555) 123-4567" {...field} />}
-                                        />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor="adWebsiteUrl">Website URL (ad destination)</Label>
-                                        <Controller
-                                            name="adWebsiteUrl"
-                                            control={customerDetailsForm.control}
-                                            render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://example.com" {...field} />}
-                                        />
-                                        {customerDetailsForm.formState.errors.adWebsiteUrl && (
-                                            <p className="text-sm text-destructive">{customerDetailsForm.formState.errors.adWebsiteUrl.message}</p>
-                                        )}
-                                    </div>
-                                </div>
+            const liveAdRef = await addDoc(collection(firestore, 'live_ads'), liveAdData);
 
-                                <div className="flex justify-between pt-4">
-                                    <Button variant="outline" onClick={() => setWizardStep('select-customer')} type="button">
-                                        <ArrowLeft className="mr-2 h-4 w-4" /> Change Customer
-                                    </Button>
-                                    <Button type="submit" disabled={isSaving}>
-                                        {isSaving ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </Card>
-                );
+            // Update the advertisement
+            const adRef = doc(firestore, 'users', selectedCustomer.id, 'advertisements', selectedAd.id);
+            await updateDoc(adRef, {
+                status: 'live',
+                liveAdId: liveAdRef.id,
+                publishedAt: serverTimestamp(),
+                liveAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastActionBy: 'admin',
+                lastActionAt: serverTimestamp(),
+            });
 
-            case 'assets':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Upload className="h-5 w-5" />
-                                Step 3: Assets & Content
-                            </CardTitle>
-                            <CardDescription>
-                                Upload logo, images, and set ad text for the customer.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Logo Upload */}
-                            <div className="space-y-4">
-                                <Label>Customer Logo</Label>
-                                <div className="flex items-center gap-4">
-                                    {logoUrl ? (
-                                        <div className="relative">
-                                            <Image
-                                                src={logoUrl}
-                                                alt="Logo"
-                                                width={120}
-                                                height={120}
-                                                className="border rounded object-contain"
-                                            />
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute -top-2 -right-2 h-6 w-6"
-                                                onClick={() => setLogoUrl(null)}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="border-2 border-dashed rounded-lg p-8 text-center flex-1">
-                                            <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                                            <p className="text-sm text-muted-foreground mb-2">Upload customer logo</p>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => document.getElementById('logo-input')?.click()}
-                                                disabled={isUploading}
-                                            >
-                                                {isUploading ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Upload className="mr-2 h-4 w-4" />
-                                                )}
-                                                Choose File
-                                            </Button>
-                                        </div>
-                                    )}
-                                    <input
-                                        id="logo-input"
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleLogoUpload}
-                                    />
-                                </div>
-                            </div>
+            setSelectedAd({ ...selectedAd, status: 'live', liveAdId: liveAdRef.id });
+            setShowPublishDialog(false);
+            setRefreshKey(k => k + 1);
 
-                            <Separator />
+            toast({
+                title: 'Published!',
+                description: 'The ad is now live on community websites.',
+            });
+        } catch (error) {
+            console.error('Error publishing:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to publish to ad manager.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
-                            {/* Image Uploads */}
-                            <div className="space-y-4">
-                                <Label>Additional Images (up to 3)</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {uploadedImages.map((url, index) => (
-                                        <div key={index} className="relative aspect-square border rounded-lg overflow-hidden">
-                                            <Image
-                                                src={url}
-                                                alt={`Image ${index + 1}`}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute top-1 right-1 h-6 w-6"
-                                                onClick={() => handleRemoveImage(index)}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    {uploadedImages.length < 3 && (
-                                        <div
-                                            className="border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-                                            onClick={() => document.getElementById('images-input')?.click()}
-                                        >
-                                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                                            <span className="text-sm text-muted-foreground">Add Image</span>
-                                        </div>
-                                    )}
-                                    <input
-                                        id="images-input"
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        className="hidden"
-                                        onChange={handleImageUpload}
-                                    />
-                                </div>
-                            </div>
+    const handleRefresh = useCallback(() => {
+        setRefreshKey(k => k + 1);
+    }, []);
 
-                            <Separator />
+    // Render list view
+    const renderListView = () => (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Customer Workflow</h1>
+                    <p className="text-muted-foreground">
+                        Manage customer ad workflows and complete steps on their behalf.
+                    </p>
+                </div>
+            </div>
 
-                            {/* Ad Content */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        id="requestCustomDesign"
-                                        checked={requestCustomDesign}
-                                        onChange={(e) => setRequestCustomDesign(e.target.checked)}
-                                        className="rounded"
-                                    />
-                                    <Label htmlFor="requestCustomDesign">Customer requested custom design</Label>
-                                </div>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {[
+                    { status: 'info_needed', label: 'Info Needed' },
+                    { status: 'design_pending', label: 'Design Pending' },
+                    { status: 'in_review', label: 'In Review' },
+                    { status: 'customer_approval', label: 'Awaiting Approval' },
+                    { status: 'approved', label: 'Ready to Publish' },
+                ].map(({ status, label }) => {
+                    const colors = AD_PIPELINE_STAGE_COLORS[status as AdStatus];
+                    const count = statusCounts[status] || 0;
+                    const isActive = statusFilter === status;
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="adTitle">Ad Title</Label>
-                                    <Controller
-                                        name="adTitle"
-                                        control={adContentForm.control}
-                                        render={({ field }) => (
-                                            <Input
-                                                id="adTitle"
-                                                placeholder="e.g., Best Pizza in Town!"
-                                                {...field}
-                                            />
-                                        )}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="adText">Ad Text / Notes</Label>
-                                    <Controller
-                                        name="adText"
-                                        control={adContentForm.control}
-                                        render={({ field }) => (
-                                            <Textarea
-                                                id="adText"
-                                                placeholder="Supporting text, taglines, or notes for the design team..."
-                                                rows={3}
-                                                {...field}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Customer Sample Ad Preview */}
-                            {designedAdUrl && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-2">
-                                        <Label>Customer-Designed Ad</Label>
-                                        <Image
-                                            src={designedAdUrl}
-                                            alt="Customer designed ad"
-                                            width={AD_DIMENSIONS.WIDTH}
-                                            height={AD_DIMENSIONS.HEIGHT}
-                                            className="border rounded"
-                                        />
-                                    </div>
-                                </>
+                    return (
+                        <Card
+                            key={status}
+                            className={cn(
+                                "cursor-pointer transition-all hover:shadow-md",
+                                isActive && "ring-2 ring-primary",
+                                colors?.bg
                             )}
+                            onClick={() => setStatusFilter(isActive ? 'all' : status)}
+                        >
+                            <CardContent className="pt-4 pb-4">
+                                <p className={cn("text-2xl font-bold", colors?.text)}>{count}</p>
+                                <p className="text-xs text-muted-foreground">{label}</p>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </div>
 
-                            <div className="flex justify-between pt-4">
-                                <Button variant="outline" onClick={() => setWizardStep('details')}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                                </Button>
-                                <Button onClick={handleSaveAdContent} disabled={isSaving}>
-                                    {isSaving ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
+            {/* Search and Filters */}
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex flex-col gap-4 md:flex-row">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search by email, business name, or contact..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectValue placeholder="Filter by status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                {Object.entries(AD_STATUS_LABELS).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {(searchQuery || statusFilter !== 'all') && (
+                            <Button
+                                variant="ghost"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setStatusFilter('all');
+                                }}
+                            >
+                                Clear
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
 
-            case 'ad-status':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Play className="h-5 w-5" />
-                                Step 4: Ad Workflow Status
-                            </CardTitle>
-                            <CardDescription>
-                                View and manage the customer's ad workflow status. Click on a step to advance the ad.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {customerAds.length === 0 ? (
-                                <Alert>
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>No Advertisements</AlertTitle>
-                                    <AlertDescription>
-                                        This customer doesn't have any advertisements yet. They need an active subscription first.
-                                    </AlertDescription>
-                                </Alert>
-                            ) : (
-                                <>
-                                    {/* Ad Selector if multiple ads */}
-                                    {customerAds.length > 1 && (
-                                        <div className="space-y-2">
-                                            <Label>Select Advertisement</Label>
-                                            <Select
-                                                value={selectedAd?.id}
-                                                onValueChange={(id) => setSelectedAd(customerAds.find(a => a.id === id) || null)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select an ad" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {customerAds.map((ad) => (
-                                                        <SelectItem key={ad.id} value={ad.id}>
-                                                            {ad.businessName || 'Unnamed Ad'} - {AD_STATUS_LABELS[ad.status]}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
+            {/* Customer List */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Customers ({filteredCustomers.length})</CardTitle>
+                    <CardDescription>Click on a customer to manage their workflow.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : filteredCustomers.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No customers match your filters.</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y">
+                            {filteredCustomers.map(({ customer, advertisement, subscription }) => {
+                                const status = advertisement ? normalizeAdStatus(advertisement.status) : null;
+                                const colors = status ? AD_PIPELINE_STAGE_COLORS[status] : null;
 
-                                    {selectedAd && (
-                                        <div className="space-y-6">
-                                            {/* Current Status */}
-                                            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Current Status</p>
-                                                    <p className="text-lg font-semibold">{AD_STATUS_LABELS[selectedAd.status]}</p>
-                                                </div>
-                                                <Badge variant={AD_STATUS_COLORS[selectedAd.status]?.variant || 'outline'}>
-                                                    {AD_STATUS_LABELS[selectedAd.status]}
-                                                </Badge>
-                                            </div>
-
-                                            {/* Workflow Progress - clickable */}
-                                            <div className="p-4 border rounded-lg">
-                                                <p className="text-sm text-muted-foreground mb-4">Click on a step to change status:</p>
-                                                <WorkflowProgress
-                                                    currentStatus={selectedAd.status}
-                                                    onStatusChange={(status) => setStatusChangeDialog({ open: true, targetStatus: status })}
-                                                />
-                                            </div>
-
-                                            {/* Quick Actions */}
-                                            <div className="space-y-2">
-                                                <Label>Quick Actions</Label>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                                    {Object.entries(AD_STATUSES).map(([key, status]) => (
-                                                        <Button
-                                                            key={status}
-                                                            variant={selectedAd.status === status ? 'secondary' : 'outline'}
-                                                            size="sm"
-                                                            className="justify-start"
-                                                            onClick={() => setStatusChangeDialog({ open: true, targetStatus: status })}
-                                                            disabled={selectedAd.status === status}
-                                                        >
-                                                            {AD_STATUS_LABELS[status]}
-                                                        </Button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Ad Proof Preview */}
-                                            {selectedAd.adProofUrl && (
-                                                <div className="space-y-2">
-                                                    <Label>Current Ad Proof</Label>
-                                                    <Image
-                                                        src={selectedAd.adProofUrl}
-                                                        alt="Ad proof"
-                                                        width={AD_DIMENSIONS.WIDTH}
-                                                        height={AD_DIMENSIONS.HEIGHT}
-                                                        className="border rounded"
-                                                    />
-                                                    {selectedAd.adProofDestinationUrl && (
-                                                        <a
-                                                            href={selectedAd.adProofDestinationUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-sm text-primary hover:underline flex items-center gap-1"
-                                                        >
-                                                            Links to: {selectedAd.adProofDestinationUrl} <ExternalLink className="h-3 w-3" />
-                                                        </a>
+                                return (
+                                    <div
+                                        key={customer.id}
+                                        className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                                        onClick={() => handleSelectCustomer(customer, advertisement, subscription)}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                                    {customer.logoUrl ? (
+                                                        <Image
+                                                            src={customer.logoUrl}
+                                                            alt=""
+                                                            width={48}
+                                                            height={48}
+                                                            className="rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <UserCircle className="h-7 w-7 text-primary" />
                                                     )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            <div className="flex justify-between pt-4">
-                                <Button variant="outline" onClick={() => setWizardStep('assets')}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                                </Button>
-                                <Button onClick={() => setWizardStep('summary')}>
-                                    View Summary <ArrowRight className="ml-2 h-4 w-4" />
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
-
-            case 'summary':
-                const detailsData = customerDetailsForm.getValues();
-                const adData = adContentForm.getValues();
-
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5" />
-                                Summary
-                            </CardTitle>
-                            <CardDescription>
-                                Review all customer information and ad status.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Business Details */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-semibold">Business Details</h4>
-                                    <Button variant="ghost" size="sm" onClick={() => setWizardStep('details')}>
-                                        <Pencil className="h-4 w-4 mr-1" /> Edit
-                                    </Button>
-                                </div>
-                                <div className="grid md:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-                                    <div className="flex items-center gap-2">
-                                        <Building className="h-4 w-4 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Company</p>
-                                            <p className="font-medium">{detailsData.businessName || '-'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Mail className="h-4 w-4 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Email</p>
-                                            <p className="font-medium">{detailsData.email || '-'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <UserCircle className="h-4 w-4 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Contact</p>
-                                            <p className="font-medium">{detailsData.contactName || '-'} {detailsData.contactTitle && `(${detailsData.contactTitle})`}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Phone</p>
-                                            <p className="font-medium">{detailsData.cellPhone || '-'}</p>
-                                        </div>
-                                    </div>
-                                    {detailsData.adWebsiteUrl && (
-                                        <div className="flex items-center gap-2 md:col-span-2">
-                                            <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Website</p>
-                                                <p className="font-medium truncate">{detailsData.adWebsiteUrl}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <Separator />
-
-                            {/* Assets */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-semibold">Assets & Content</h4>
-                                    <Button variant="ghost" size="sm" onClick={() => setWizardStep('assets')}>
-                                        <Pencil className="h-4 w-4 mr-1" /> Edit
-                                    </Button>
-                                </div>
-                                <div className="p-4 bg-muted rounded-lg space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant={requestCustomDesign ? "secondary" : "outline"}>
-                                            {requestCustomDesign ? 'Custom Design Requested' : 'Self-Designed'}
-                                        </Badge>
-                                    </div>
-
-                                    {logoUrl && (
-                                        <div>
-                                            <p className="text-sm text-muted-foreground mb-2">Logo</p>
-                                            <Image
-                                                src={logoUrl}
-                                                alt="Logo"
-                                                width={80}
-                                                height={80}
-                                                className="border rounded object-contain"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {uploadedImages.length > 0 && (
-                                        <div>
-                                            <p className="text-sm text-muted-foreground mb-2">Images</p>
-                                            <div className="flex gap-2">
-                                                {uploadedImages.map((url, index) => (
-                                                    <Image
-                                                        key={index}
-                                                        src={url}
-                                                        alt={`Image ${index + 1}`}
-                                                        width={60}
-                                                        height={60}
-                                                        className="border rounded object-cover"
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {adData.adTitle && (
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Title</p>
-                                            <p className="font-medium">{adData.adTitle}</p>
-                                        </div>
-                                    )}
-
-                                    {adData.adText && (
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Ad Text</p>
-                                            <p className="font-medium">{adData.adText}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <Separator />
-
-                            {/* Ad Status */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-semibold">Advertisement Status</h4>
-                                    <Button variant="ghost" size="sm" onClick={() => setWizardStep('ad-status')}>
-                                        <Pencil className="h-4 w-4 mr-1" /> Manage
-                                    </Button>
-                                </div>
-                                {selectedAd ? (
-                                    <div className="p-4 bg-muted rounded-lg">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <p className="font-medium">{selectedAd.businessName || 'Advertisement'}</p>
-                                            <Badge variant={AD_STATUS_COLORS[selectedAd.status]?.variant || 'outline'}>
-                                                {AD_STATUS_LABELS[selectedAd.status]}
-                                            </Badge>
-                                        </div>
-                                        <WorkflowProgress currentStatus={selectedAd.status} />
-                                    </div>
-                                ) : (
-                                    <Alert>
-                                        <AlertCircle className="h-4 w-4" />
-                                        <AlertDescription>No advertisements found for this customer.</AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-
-                            {/* Subscriptions */}
-                            {customerSubscriptions.length > 0 && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-4">
-                                        <h4 className="font-semibold">Subscriptions</h4>
-                                        <div className="space-y-2">
-                                            {customerSubscriptions.map((sub) => (
-                                                <div key={sub.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                                    <div>
-                                                        <p className="font-medium">{sub.planName}</p>
-                                                        <p className="text-sm text-muted-foreground">{sub.price}</p>
-                                                    </div>
-                                                    <Badge variant={sub.status === 'active' ? 'secondary' : 'outline'}>
-                                                        {sub.status}
-                                                    </Badge>
+                                                <div>
+                                                    <p className="font-semibold">
+                                                        {customer.businessName || customer.contactName || 'Unnamed'}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">{customer.email}</p>
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {subscription && (
+                                                    <Badge variant="secondary" className="hidden md:inline-flex">
+                                                        {subscription.planName}
+                                                    </Badge>
+                                                )}
+                                                {status && (
+                                                    <Badge className={cn(colors?.bg, colors?.text)}>
+                                                        {AD_STATUS_LABELS[status]}
+                                                    </Badge>
+                                                )}
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                            </div>
                                         </div>
+                                        {status && (
+                                            <p className="text-xs text-muted-foreground mt-2 ml-16">
+                                                Next: {AD_STATUS_ADMIN_ACTIONS[status]}
+                                            </p>
+                                        )}
                                     </div>
-                                </>
-                            )}
+                                );
+                            })}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
 
-                            <div className="flex justify-between pt-4">
-                                <Button variant="outline" onClick={() => setWizardStep('ad-status')}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+    // Render manage view
+    const renderManageView = () => {
+        if (!selectedCustomer) return null;
+
+        const status = selectedAd ? normalizeAdStatus(selectedAd.status) : 'info_needed';
+        const nextStatus = getNextWorkflowStatus(status);
+
+        return (
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-4">
+                        <Button variant="outline" onClick={() => setViewMode('list')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to List
+                        </Button>
+                        <div>
+                            <h1 className="text-xl font-bold">
+                                {selectedCustomer.businessName || selectedCustomer.contactName || 'Customer'}
+                            </h1>
+                            <p className="text-sm text-muted-foreground">{selectedCustomer.email}</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        {status === 'approved' && selectedAd?.adProofUrl && (
+                            <Button
+                                onClick={() => setShowPublishDialog(true)}
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                <Megaphone className="mr-2 h-4 w-4" />
+                                Publish to Ad Manager
+                            </Button>
+                        )}
+                        {status === 'in_review' && (
+                            <Button onClick={() => setShowProofUploadDialog(true)}>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Ad Proof
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Status Overview */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">Workflow Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <WorkflowProgress currentStatus={status} className="mb-4" />
+                        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg mt-4">
+                            <div>
+                                <p className="font-medium">{AD_STATUS_LABELS[status]}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {AD_STATUS_ADMIN_ACTIONS[status]}
+                                </p>
+                            </div>
+                            {nextStatus && status !== 'live' && (
+                                <Button
+                                    onClick={() => handleStatusUpdate(nextStatus)}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <ArrowRight className="mr-2 h-4 w-4" />
+                                    )}
+                                    Move to {AD_STATUS_LABELS[nextStatus]}
                                 </Button>
-                                <Button variant="outline" onClick={handleReset}>
-                                    <RotateCcw className="mr-2 h-4 w-4" /> Start Over
-                                </Button>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Ad Proof */}
+                {selectedAd?.adProofUrl && (
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg">Ad Proof</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <div className="border rounded-lg p-2 bg-muted/30">
+                                    <Image
+                                        src={selectedAd.adProofUrl}
+                                        alt="Ad Proof"
+                                        width={AD_DIMENSIONS.WIDTH}
+                                        height={AD_DIMENSIONS.HEIGHT}
+                                        className="rounded"
+                                    />
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <div>
+                                        <Label className="text-muted-foreground">Destination URL</Label>
+                                        <p className="font-medium">
+                                            {selectedAd.adProofDestinationUrl || selectedAd.adWebsiteUrl || '-'}
+                                        </p>
+                                    </div>
+                                    {selectedAd.liveAdId && (
+                                        <div>
+                                            <Label className="text-muted-foreground">Live Ad ID</Label>
+                                            <p className="font-medium text-green-600">{selectedAd.liveAdId}</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
-                );
-        }
+                )}
+
+                {/* Customer Info */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">Customer Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {selectedCustomer.businessName && (
+                                <div className="flex items-center gap-2">
+                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                    <span>{selectedCustomer.businessName}</span>
+                                </div>
+                            )}
+                            {selectedCustomer.contactName && (
+                                <div className="flex items-center gap-2">
+                                    <UserCircle className="h-4 w-4 text-muted-foreground" />
+                                    <span>{selectedCustomer.contactName}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span>{selectedCustomer.email}</span>
+                            </div>
+                            {(selectedCustomer.cellPhone || selectedCustomer.phone) && (
+                                <div className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <span>{selectedCustomer.cellPhone || selectedCustomer.phone}</span>
+                                </div>
+                            )}
+                            {selectedCustomer.adWebsiteUrl && (
+                                <div className="flex items-center gap-2 md:col-span-2">
+                                    <Globe className="h-4 w-4 text-muted-foreground" />
+                                    <a
+                                        href={selectedCustomer.adWebsiteUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline"
+                                    >
+                                        {selectedCustomer.adWebsiteUrl}
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Subscription Info */}
+                {selectedSubscription && (
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg">Subscription</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium">{selectedSubscription.planName}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {selectedSubscription.price} • Renews {selectedSubscription.periodEnd}
+                                    </p>
+                                </div>
+                                <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                    {selectedSubscription.status}
+                                </Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Customer Assets */}
+                {selectedAd && (selectedAd.customerSampleAdUrl || selectedAd.logoUrl || selectedAd.customerUploads?.length) && (
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg">Customer-Provided Assets</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {selectedAd.customerSampleAdUrl && (
+                                <div>
+                                    <Label className="text-muted-foreground">Customer-Designed Ad</Label>
+                                    <Image
+                                        src={selectedAd.customerSampleAdUrl}
+                                        alt="Customer ad"
+                                        width={AD_DIMENSIONS.WIDTH}
+                                        height={AD_DIMENSIONS.HEIGHT}
+                                        className="border rounded mt-2"
+                                    />
+                                </div>
+                            )}
+                            <div className="flex gap-4 flex-wrap">
+                                {selectedAd.logoUrl && (
+                                    <div>
+                                        <Label className="text-muted-foreground">Logo</Label>
+                                        <Image
+                                            src={selectedAd.logoUrl}
+                                            alt="Logo"
+                                            width={80}
+                                            height={80}
+                                            className="border rounded mt-2 object-contain"
+                                        />
+                                    </div>
+                                )}
+                                {selectedAd.customerUploads?.map((url, i) => (
+                                    <div key={i}>
+                                        <Label className="text-muted-foreground">Image {i + 1}</Label>
+                                        <Image
+                                            src={url}
+                                            alt={`Upload ${i + 1}`}
+                                            width={80}
+                                            height={80}
+                                            className="border rounded mt-2 object-cover"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            {selectedAd.adTitle && (
+                                <div>
+                                    <Label className="text-muted-foreground">Title</Label>
+                                    <p className="font-medium">{selectedAd.adTitle}</p>
+                                </div>
+                            )}
+                            {selectedAd.adText && (
+                                <div>
+                                    <Label className="text-muted-foreground">Ad Text</Label>
+                                    <p>{selectedAd.adText}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Quick Status Change */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">Quick Status Change</CardTitle>
+                        <CardDescription>Manually change the ad status.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                            {Object.entries(AD_STATUS_LABELS).map(([statusValue, label]) => {
+                                const isCurrentStatus = status === statusValue;
+                                const colors = AD_PIPELINE_STAGE_COLORS[statusValue as AdStatus];
+
+                                return (
+                                    <Button
+                                        key={statusValue}
+                                        variant={isCurrentStatus ? 'default' : 'outline'}
+                                        size="sm"
+                                        disabled={isCurrentStatus || isUpdating}
+                                        onClick={() => handleStatusUpdate(statusValue as AdStatus)}
+                                        className={cn(
+                                            !isCurrentStatus && colors?.bg,
+                                            !isCurrentStatus && colors?.text
+                                        )}
+                                    >
+                                        {label}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     };
 
     return (
-        <div className="flex-1 space-y-6">
-            {/* Header */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Customer Workflow Manager</CardTitle>
-                            <CardDescription>
-                                Manage customer ad workflow on their behalf. Edit details, upload assets, and advance through workflow steps.
-                            </CardDescription>
-                        </div>
-                        {selectedCustomer && (
-                            <div className="flex items-center gap-2">
-                                <div className="text-right">
-                                    <p className="font-medium">{selectedCustomer.businessName || selectedCustomer.contactName}</p>
-                                    <p className="text-sm text-muted-foreground">{selectedCustomer.email}</p>
-                                </div>
-                                <Button variant="outline" size="sm" onClick={handleReset}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </CardHeader>
-            </Card>
+        <div className="flex-1">
+            {viewMode === 'list' ? renderListView() : renderManageView()}
 
-            {/* Admin Wizard Step Indicator */}
-            {selectedCustomer && (
-                <AdminWizardStepIndicator currentStep={wizardStep} />
-            )}
-
-            {/* Wizard Content */}
-            {renderWizardStep()}
-
-            {/* Status Change Confirmation Dialog */}
-            <Dialog open={statusChangeDialog.open} onOpenChange={(open) => setStatusChangeDialog({ ...statusChangeDialog, open })}>
+            {/* Publish Dialog */}
+            <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Change Ad Status</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Megaphone className="h-5 w-5" />
+                            Publish to Ad Manager
+                        </DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to change the ad status to "{statusChangeDialog.targetStatus ? AD_STATUS_LABELS[statusChangeDialog.targetStatus] : ''}"?
+                            This will create a live ad and make it active on community websites.
                         </DialogDescription>
                     </DialogHeader>
+                    {selectedAd?.adProofUrl && (
+                        <div className="py-4">
+                            <Image
+                                src={selectedAd.adProofUrl}
+                                alt="Ad to publish"
+                                width={AD_DIMENSIONS.WIDTH}
+                                height={AD_DIMENSIONS.HEIGHT}
+                                className="border rounded mx-auto"
+                            />
+                            <p className="text-sm text-center text-muted-foreground mt-2">
+                                Links to: {selectedAd.adProofDestinationUrl || selectedAd.adWebsiteUrl || '-'}
+                            </p>
+                        </div>
+                    )}
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setStatusChangeDialog({ open: false, targetStatus: null })}>
+                        <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
                             Cancel
                         </Button>
                         <Button
-                            onClick={() => statusChangeDialog.targetStatus && handleStatusChange(statusChangeDialog.targetStatus)}
-                            disabled={isUpdatingStatus}
+                            onClick={handlePublishToAdManager}
+                            disabled={isUpdating}
+                            className="bg-green-600 hover:bg-green-700"
                         >
-                            {isUpdatingStatus ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
-                                </>
+                            {isUpdating ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
-                                'Confirm'
+                                <CheckCircle className="mr-2 h-4 w-4" />
                             )}
+                            Publish Now
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Proof Upload Dialog */}
+            <Dialog open={showProofUploadDialog} onOpenChange={setShowProofUploadDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Upload className="h-5 w-5" />
+                            Upload Ad Proof
+                        </DialogTitle>
+                        <DialogDescription>
+                            Upload the final ad image to send to the customer for approval.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Ad Image ({AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT})</Label>
+                            {proofFile ? (
+                                <div className="relative border rounded-lg p-2">
+                                    <Image
+                                        src={URL.createObjectURL(proofFile)}
+                                        alt="Preview"
+                                        width={AD_DIMENSIONS.WIDTH}
+                                        height={AD_DIMENSIONS.HEIGHT}
+                                        className="mx-auto"
+                                    />
+                                    <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-2 right-2 h-6 w-6"
+                                        onClick={() => setProofFile(null)}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div
+                                    className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50"
+                                    onClick={() => document.getElementById('proof-upload')?.click()}
+                                >
+                                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                                    <p className="text-sm text-muted-foreground">Click to select image</p>
+                                </div>
+                            )}
+                            <input
+                                id="proof-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Destination URL</Label>
+                            <Input
+                                value={proofDestinationUrl}
+                                onChange={(e) => setProofDestinationUrl(e.target.value)}
+                                placeholder="https://example.com"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowProofUploadDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleProofUpload}
+                            disabled={!proofFile || isUpdating}
+                        >
+                            {isUpdating ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Send className="mr-2 h-4 w-4" />
+                            )}
+                            Upload & Send for Approval
                         </Button>
                     </DialogFooter>
                 </DialogContent>
