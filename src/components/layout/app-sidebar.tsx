@@ -35,6 +35,7 @@ import {
   Upload,
   Tag,
   UserPlus,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -73,6 +74,7 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/pipeline', label: 'Pipeline', icon: Kanban },
       { href: '/advertisements', label: 'All Ads', icon: Megaphone },
+      { href: '/customer-workflow', label: 'Customer Workflow', icon: UserCog },
     ],
   },
   {

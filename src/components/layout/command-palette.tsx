@@ -24,6 +24,7 @@ import {
   ShoppingBag,
   Search,
   ArrowRight,
+  UserCog,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -42,6 +43,7 @@ const ADMIN_COMMANDS: CommandItem[] = [
   // Workflow
   { id: 'pipeline', label: 'Ad Pipeline', icon: Kanban, href: '/pipeline', keywords: ['kanban', 'workflow', 'stages', 'board'], group: 'workflow' },
   { id: 'advertisements', label: 'All Advertisements', icon: Megaphone, href: '/advertisements', keywords: ['ads', 'list', 'all'], group: 'workflow' },
+  { id: 'customer-workflow', label: 'Customer Workflow', icon: UserCog, href: '/customer-workflow', keywords: ['manage', 'customer', 'override', 'manual', 'onboarding'], group: 'workflow' },
   { id: 'action-required', label: 'Ads Requiring Action', icon: Megaphone, href: '/advertisements?status=action_required', keywords: ['action', 'pending', 'review'], group: 'workflow' },
   { id: 'live-ads', label: 'Live Ads', icon: Megaphone, href: '/advertisements?status=live', keywords: ['active', 'running'], group: 'workflow' },
 
