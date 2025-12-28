@@ -351,6 +351,36 @@ export default function LeadDetailPage() {
                 </Button>
               </div>
             )}
+
+            {/* Show Create Customer button for Won leads */}
+            {lead.stage === 'won' && !lead.convertedToCustomerId && (
+              <div className="flex flex-col gap-2">
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800">Lead Won!</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    Create a customer subscription to start the ad workflow.
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  variant="default"
+                  className="bg-primary hover:bg-primary/90"
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      email: lead.email || '',
+                      name: lead.contactName || '',
+                      businessName: lead.businessName || '',
+                      phone: lead.phone || '',
+                      leadId: lead.id,
+                    });
+                    router.push(`/manual-entry?${params.toString()}`);
+                  }}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Create Customer Subscription
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
