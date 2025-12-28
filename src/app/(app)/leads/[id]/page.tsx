@@ -10,9 +10,6 @@ import {
   deleteDoc,
   serverTimestamp,
   collection,
-  query,
-  orderBy,
-  onSnapshot,
   addDoc,
 } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +17,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Loader2,
   AlertCircle,
@@ -36,12 +32,7 @@ import {
   User,
   CheckCircle2,
   XCircle,
-  Send,
-  PhoneCall,
-  Users,
-  FileText,
   Trash2,
-  Eye,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -55,12 +46,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
-import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
+import { CustomerActivity } from '@/components/customers/customer-activity';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Lead,
-  Activity,
   LeadStage,
   LeadPriority,
   LeadSource,
@@ -76,22 +66,6 @@ import {
   getTimeSinceLastContact,
 } from '@/lib/types';
 
-// Activity type icon mapping
-const activityIcons: Record<string, any> = {
-  note: MessageSquare,
-  email_sent: Send,
-  email_received: Mail,
-  call: PhoneCall,
-  meeting: Users,
-  stage_change: TrendingUp,
-  priority_change: Target,
-  score_change: TrendingUp,
-  conversion: CheckCircle2,
-  task_created: FileText,
-  task_completed: CheckCircle2,
-  assignment_change: User,
-  page_visit: Eye,
-};
 
 export default function LeadDetailPage() {
   const params = useParams();
@@ -102,7 +76,6 @@ export default function LeadDetailPage() {
   const { toast } = useToast();
 
   const [lead, setLead] = useState<Lead | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
@@ -160,26 +133,6 @@ export default function LeadDetailPage() {
     };
 
     fetchLead();
-  }, [firestore, leadId]);
-
-  // Subscribe to activities
-  useEffect(() => {
-    if (!firestore || !leadId || typeof leadId !== 'string') return;
-
-    const activitiesQuery = query(
-      collection(firestore, 'leads', leadId, 'activities'),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(activitiesQuery, (snapshot) => {
-      const activitiesData: Activity[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Activity));
-      setActivities(activitiesData);
-    });
-
-    return () => unsubscribe();
   }, [firestore, leadId]);
 
   // Handle adding a note
@@ -505,69 +458,8 @@ export default function LeadDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Activity Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Timeline</CardTitle>
-              <CardDescription>History of all interactions and changes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px] pr-4">
-                {activities.length > 0 ? (
-                  <div className="space-y-4">
-                    {activities.map((activity, index) => {
-                      const IconComponent = activityIcons[activity.type] || MessageSquare;
-                      return (
-                        <div key={activity.id} className="flex gap-4">
-                          <div className="relative">
-                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                              <IconComponent className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            {index < activities.length - 1 && (
-                              <div className="absolute top-8 left-1/2 -translate-x-1/2 w-px h-full bg-border" />
-                            )}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium">{activity.title}</p>
-                              <span className="text-xs text-muted-foreground">
-                                {activity.createdAt && format(
-                                  activity.createdAt.toDate ? activity.createdAt.toDate() : new Date(activity.createdAt),
-                                  'MMM d, yyyy h:mm a'
-                                )}
-                              </span>
-                            </div>
-                            {activity.description && (
-                              <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                                {activity.description}
-                              </p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              by {activity.createdByName}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No activity recorded yet</p>
-                    <p className="text-sm">Add a note or send an email to get started</p>
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          {/* Email History */}
-          <EmailHistoryDialog
-            recipient={{ id: lead.id, email: lead.email }}
-            isOpen={true}
-            onOpenChange={() => {}}
-            renderAsCard={true}
-          />
+          {/* Unified Activity - combines activity timeline with emails */}
+          <CustomerActivity leadId={lead.id} />
         </div>
 
         {/* Sidebar - Right Side */}
