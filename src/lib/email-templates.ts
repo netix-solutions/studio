@@ -106,23 +106,52 @@ export const defaultTemplates: EmailTemplate[] = [
         subject: 'Your Ad Proof for {{businessName}} is Ready for Review!',
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your ad creative for <strong>{{businessName}}</strong> is ready for your review. Please take a look at the proof below and let us know if you approve it or if you'd like any changes.</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your ad creative for <strong>{{businessName}}</strong> is ready for your review.</p>
 <div style="margin: 24px 0; padding: 24px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
     <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Your Ad Creative</p>
-    <a href="{{adProofDestinationUrl}}" target="_blank" style="display: inline-block;">
+    <a href="{{viewUrl}}" target="_blank" style="display: inline-block;">
         <img src="{{adProofUrl}}" alt="Ad Proof for {{businessName}}" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
     </a>
     <p style="margin: 16px 0 0 0; font-size: 14px; color: #64748b;">
         <strong>Click destination:</strong> <a href="{{adProofDestinationUrl}}" target="_blank" style="color: #1e3a5f; text-decoration: underline;">{{adProofDestinationUrl}}</a>
     </p>
 </div>
-<div style="margin: 24px 0; padding: 20px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
-    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #0369a1;">How to Respond:</p>
-    <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #0369a1;">
-        <li style="margin: 4px 0; font-size: 15px;">If everything looks correct, reply with <strong>"Approved"</strong></li>
-        <li style="margin: 4px 0; font-size: 15px;">If you need changes, just let us know what you'd like adjusted</li>
-    </ul>
+
+<!-- Action Buttons -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 32px 0;">
+    <tr>
+        <td align="center">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <!-- Approve Button -->
+                    <td style="padding: 0 8px;">
+                        <a href="{{approveUrl}}" target="_blank" style="display: inline-block; padding: 14px 24px; background-color: #16a34a; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
+                            &#10003; Approve Ad
+                        </a>
+                    </td>
+                    <!-- Request Changes Button -->
+                    <td style="padding: 0 8px;">
+                        <a href="{{requestChangesUrl}}" target="_blank" style="display: inline-block; padding: 14px 24px; background-color: #f4f4f5; color: #3f3f46; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; border: 1px solid #e4e4e7;">
+                            Request Changes
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="padding-top: 16px;">
+            <a href="{{viewUrl}}" target="_blank" style="font-size: 14px; color: #1e3a5f; text-decoration: underline;">
+                View Online
+            </a>
+        </td>
+    </tr>
+</table>
+
+<div style="margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
+    <p style="margin: 0; font-size: 15px; color: #854d0e;"><strong>Important:</strong> If you don't respond within 48 hours, your ad will be automatically approved and go live.</p>
 </div>
+
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">We're excited to get your ad live!</p>
 <div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
     <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
@@ -136,6 +165,9 @@ export const defaultTemplates: EmailTemplate[] = [
             { key: '{{businessName}}', description: "The customer's business name." },
             { key: '{{adProofUrl}}', description: "The URL of the ad image creative." },
             { key: '{{adProofDestinationUrl}}', description: "The URL the ad will link to." },
+            { key: '{{approveUrl}}', description: "The URL to approve the ad (auto-generated with token)." },
+            { key: '{{requestChangesUrl}}', description: "The URL to request changes (auto-generated with token)." },
+            { key: '{{viewUrl}}', description: "The URL to view ad details online (auto-generated with token)." },
         ]
     },
     {

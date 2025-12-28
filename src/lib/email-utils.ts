@@ -168,6 +168,9 @@ export function replaceEmailPlaceholders(
         accountLink?: string;
         adProofUrl?: string;
         adProofDestinationUrl?: string;
+        approveUrl?: string;
+        requestChangesUrl?: string;
+        viewUrl?: string;
     }
 ): string {
     let result = content;
@@ -189,6 +192,15 @@ export function replaceEmailPlaceholders(
     }
     if (data.adProofDestinationUrl) {
         result = result.replace(/\{\{adProofDestinationUrl\}\}/g, data.adProofDestinationUrl);
+    }
+    if (data.approveUrl) {
+        result = result.replace(/\{\{approveUrl\}\}/g, data.approveUrl);
+    }
+    if (data.requestChangesUrl) {
+        result = result.replace(/\{\{requestChangesUrl\}\}/g, data.requestChangesUrl);
+    }
+    if (data.viewUrl) {
+        result = result.replace(/\{\{viewUrl\}\}/g, data.viewUrl);
     }
 
     return result;

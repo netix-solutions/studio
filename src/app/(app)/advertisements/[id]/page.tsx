@@ -465,71 +465,23 @@ export default function AdvertisementDetailPage() {
 
         setIsRequestingApproval(true);
         try {
-            const templateQuery = query(collection(firestore, 'emailTemplates'), where('id', '==', 'ad_proof_approval'));
-            const templateSnapshot = await getDocs(templateQuery);
+            // Call the API endpoint to send the approval email with action tokens
+            const response = await fetch('/api/send-approval-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    adId: advertisement.id,
+                    userId: advertisement.userId,
+                }),
+            });
 
-            let subject = `Your Ad Proof is Ready - ${user.businessName || 'Community-Websites.com'}`;
-            let html = `
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi ${user.contactName},</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your advertisement proof for <strong>${user.businessName}</strong> is ready for your review.</p>
-<div style="margin: 24px 0; padding: 24px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-    <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Your Ad Creative</p>
-    <a href="${advertisement.adProofDestinationUrl}" target="_blank" style="display: inline-block;">
-        <img src="${advertisement.adProofUrl}" alt="Ad Proof for ${user.businessName}" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
-    </a>
-    <p style="margin: 16px 0 0 0; font-size: 14px; color: #64748b;">
-        <strong>Click destination:</strong> <a href="${advertisement.adProofDestinationUrl}" target="_blank" style="color: #0284c7; text-decoration: underline;">${advertisement.adProofDestinationUrl}</a>
-    </p>
-</div>
-<div style="margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
-    <p style="margin: 0; font-size: 16px; color: #854d0e;"><strong>Important:</strong> Please click the button below to approve or request changes to your ad. If you don't respond within 48 hours, your ad will be automatically approved and go live.</p>
-</div>
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
-    <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/approve-ad/${advertisement.id}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                Review & Approve Your Ad
-            </a>
-        </td>
-    </tr>
-</table>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thank you for advertising with us!</p>
-<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
-    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
-    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
-</div>
-            `;
+            const data = await response.json();
 
-            if (!templateSnapshot.empty) {
-                const template = templateSnapshot.docs[0].data();
-                subject = template.subject
-                    .replace(/\{\{businessName\}\}/g, user.businessName || '')
-                    .replace(/\{\{contactName\}\}/g, user.contactName);
-                html = template.html
-                    .replace(/\{\{contactName\}\}/g, user.contactName)
-                    .replace(/\{\{adProofUrl\}\}/g, advertisement.adProofUrl)
-                    .replace(/\{\{adProofDestinationUrl\}\}/g, advertisement.adProofDestinationUrl)
-                    .replace(/\{\{businessName\}\}/g, user.businessName || '');
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send approval email');
             }
 
-            // Wrap email in professional template
-            html = wrapEmailContent(html);
-
-            await sendEmail(firestore, { to: user.email, subject, html }, {
-                recipientId: user.id,
-                templateId: 'ad_proof_approval',
-                triggerType: 'manual_send',
-            });
-
-            const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
-            const autoApprovalDeadline = new Date(Date.now() + 48 * 60 * 60 * 1000);
-
-            await updateDoc(adDocRef, {
-                status: 'customer_approval',
-                sentForApprovalAt: serverTimestamp(),
-                autoApprovalAt: autoApprovalDeadline,
-                updatedAt: serverTimestamp(),
-            });
+            const autoApprovalDeadline = new Date(data.autoApprovalAt);
 
             setAdvertisement(prev => prev ? {
                 ...prev,
@@ -700,42 +652,21 @@ export default function AdvertisementDetailPage() {
 
         setIsResendingApproval(true);
         try {
-            const subject = `Reminder: Your Ad Proof is Ready - ${user.businessName || 'Community-Websites.com'}`;
-            let html = `
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi ${user.contactName},</p>
-<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">This is a friendly reminder that your advertisement proof for <strong>${user.businessName}</strong> is still awaiting your approval.</p>
-<div style="margin: 24px 0; padding: 24px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-    <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Your Ad Proof</p>
-    <a href="${advertisement.adProofUrl}" target="_blank" style="display: inline-block;">
-        <img src="${advertisement.adProofUrl}" alt="Ad Proof for ${user.businessName}" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
-    </a>
-</div>
-<div style="margin: 24px 0; padding: 20px; background-color: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
-    <p style="margin: 0; font-size: 16px; color: #854d0e;"><strong>Note:</strong> If you don't respond within 48 hours from the original request, your ad will be automatically approved and go live.</p>
-</div>
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
-    <tr>
-        <td style="border-radius: 6px;" bgcolor="#0284c7">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com'}/approve-ad/${advertisement.id}" target="_blank" style="display: inline-block; padding: 14px 28px; background-color: #0284c7; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-                Review & Approve Your Ad
-            </a>
-        </td>
-    </tr>
-</table>
-<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
-    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
-    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
-</div>
-            `;
-
-            // Wrap email in professional template
-            html = wrapEmailContent(html);
-
-            await sendEmail(firestore, { to: user.email, subject, html }, {
-                recipientId: user.id,
-                templateId: 'ad_proof_approval_reminder',
-                triggerType: 'manual_send',
+            // Resend using the same API (it will generate fresh tokens)
+            const response = await fetch('/api/send-approval-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    adId: advertisement.id,
+                    userId: advertisement.userId,
+                }),
             });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to resend approval email');
+            }
 
             toast({ title: 'Email Resent', description: `Approval reminder sent to ${user.email}.` });
         } catch (error: any) {
