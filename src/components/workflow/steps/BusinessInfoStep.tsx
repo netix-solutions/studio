@@ -194,14 +194,14 @@ export function BusinessInfoStep({ defaultValues, onSubmit, isAdmin }: BusinessI
                         </div>
 
                         <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="adWebsiteUrl">Website URL (where your ad will link to)</Label>
+                            <Label htmlFor="adWebsiteUrl">Website or Social Media URL (optional)</Label>
                             <Controller
                                 name="adWebsiteUrl"
                                 control={form.control}
                                 render={({ field }) => (
                                     <Input
                                         id="adWebsiteUrl"
-                                        placeholder="https://www.yourwebsite.com"
+                                        placeholder="https://www.yourwebsite.com or social media link"
                                         {...field}
                                         onBlur={(e) => {
                                             if (e.target.value) {
@@ -213,6 +213,9 @@ export function BusinessInfoStep({ defaultValues, onSubmit, isAdmin }: BusinessI
                                     />
                                 )}
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Leave blank if you don&apos;t have a website. You can use a Facebook page, Instagram profile, or any other link.
+                            </p>
                             {form.formState.errors.adWebsiteUrl && (
                                 <p className="text-sm text-destructive">{form.formState.errors.adWebsiteUrl.message}</p>
                             )}
