@@ -23,6 +23,7 @@ import {
     AD_STATUS_LABELS,
     AD_DIMENSIONS,
     calculateAutoApprovalDeadline,
+    normalizeAdStatus,
     type AdStatus,
     type Advertisement
 } from '@/lib/types';
@@ -151,10 +152,12 @@ export default function ApproveAdPage() {
         try {
             const adDocRef = doc(firestore, 'users', user.uid, 'advertisements', advertisement.id);
             await updateDoc(adDocRef, {
-                status: 'revision_requested',
+                status: 'in_review', // Changed from 'revision_requested' to new workflow
                 revisionNotes: revisionNotes,
                 revisionCount: (advertisement.revisionCount || 0) + 1,
                 updatedAt: serverTimestamp(),
+                lastActionBy: 'customer',
+                lastActionAt: serverTimestamp(),
             });
 
             // Send notification email to admin
@@ -188,7 +191,7 @@ export default function ApproveAdPage() {
                 triggerType: 'customer_action',
             });
 
-            setAdvertisement(prev => prev ? { ...prev, status: 'revision_requested' } : null);
+            setAdvertisement(prev => prev ? { ...prev, status: 'in_review' } : null);
             setShowRevisionDialog(false);
 
             toast({
@@ -250,8 +253,11 @@ export default function ApproveAdPage() {
         );
     }
 
+    // Normalize the status for comparison with new workflow
+    const normalizedStatus = normalizeAdStatus(advertisement.status);
+
     // Already approved
-    if (advertisement.status === 'approved' || advertisement.status === 'live' || approvalComplete) {
+    if (normalizedStatus === 'approved' || normalizedStatus === 'live' || approvalComplete) {
         return (
             <div className="max-w-2xl mx-auto py-12">
                 <Card className="border-green-200 bg-green-50">
@@ -297,8 +303,8 @@ export default function ApproveAdPage() {
         );
     }
 
-    // Revision requested
-    if (advertisement.status === 'revision_requested') {
+    // Revision requested (in_review with revision notes means customer requested revisions)
+    if (normalizedStatus === 'in_review' && advertisement.revisionNotes) {
         return (
             <div className="max-w-2xl mx-auto py-12">
                 <Card className="border-amber-200 bg-amber-50">

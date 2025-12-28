@@ -257,110 +257,177 @@ export const AD_DIMENSIONS = {
 } as const;
 
 /**
- * Customer onboarding status - tracks where customer is in the onboarding workflow
- */
-export const CUSTOMER_ONBOARDING_STATUSES = {
-  PENDING_BUSINESS_INFO: 'pending_business_info',
-  PENDING_AD_DESIGN: 'pending_ad_design',
-  INFO_SUBMITTED: 'info_submitted',
-  COMPLETE: 'complete',
-} as const;
-
-export type CustomerOnboardingStatus = typeof CUSTOMER_ONBOARDING_STATUSES[keyof typeof CUSTOMER_ONBOARDING_STATUSES];
-
-export const CUSTOMER_ONBOARDING_LABELS: Record<CustomerOnboardingStatus, string> = {
-  pending_business_info: 'Waiting for Business Info',
-  pending_ad_design: 'Waiting for Ad Design Preferences',
-  info_submitted: 'Info Submitted - Under Review',
-  complete: 'Onboarding Complete',
-};
-
-/**
- * Advertisement status options - full workflow
+ * Advertisement status options - Simplified workflow
+ *
+ * The workflow is designed to be clear for both customers and admins:
+ *
+ * CUSTOMER JOURNEY:
+ * 1. info_needed → Customer fills out business details
+ * 2. design_pending → Customer designs ad OR requests custom design
+ * 3. in_review → Admin reviews submission and creates/finalizes ad
+ * 4. customer_approval → Customer approves the ad proof
+ * 5. approved → Ready for admin to publish to ad manager
+ * 6. live → Ad is active on websites
+ *
+ * ADMIN CAN JUMP IN AT ANY STEP to complete on behalf of customer
  */
 export const AD_STATUSES = {
-  // Customer needs to submit business info
-  PENDING_INFO: 'pending_info',
-  // Customer has submitted info, waiting for internal review
-  PENDING_INTERNAL_REVIEW: 'pending_internal_review',
-  // Ad is being created by external application
-  PENDING_AD_CREATION: 'pending_ad_creation',
-  // Ad proof ready, sent to customer for approval
-  PENDING_CUSTOMER_APPROVAL: 'pending_customer_approval',
-  // Customer requested changes
-  REVISION_REQUESTED: 'revision_requested',
-  // Customer approved the ad
+  // Step 1: Customer needs to submit business info
+  INFO_NEEDED: 'info_needed',
+  // Step 2: Customer needs to design ad or upload assets for custom design
+  DESIGN_PENDING: 'design_pending',
+  // Step 3: Admin is reviewing and creating/finalizing the ad
+  IN_REVIEW: 'in_review',
+  // Step 4: Ad proof ready, customer needs to approve
+  CUSTOMER_APPROVAL: 'customer_approval',
+  // Step 5: Customer approved - ready for admin to publish to ad manager
   APPROVED: 'approved',
-  // Ad approved and in holding status for admin to set final settings (display location, etc.)
-  HOLDING: 'holding',
-  // Ad is live on the websites
+  // Step 6: Ad is live on the websites
   LIVE: 'live',
   // Ad temporarily paused
   PAUSED: 'paused',
   // Subscription ended, ad completed
   COMPLETED: 'completed',
   // Subscription canceled
-  CANCELED_INACTIVE: 'canceled_inactive',
+  CANCELED: 'canceled',
 } as const;
 
 export type AdStatus = typeof AD_STATUSES[keyof typeof AD_STATUSES];
 
+// Legacy status mapping for backwards compatibility
+export const LEGACY_STATUS_MAP: Record<string, AdStatus> = {
+  'pending_info': 'info_needed',
+  'pending_internal_review': 'in_review',
+  'pending_ad_creation': 'in_review',
+  'pending_customer_approval': 'customer_approval',
+  'revision_requested': 'in_review',
+  'holding': 'approved',
+  'canceled_inactive': 'canceled',
+};
+
+/**
+ * Normalize legacy statuses to new workflow
+ */
+export function normalizeAdStatus(status: string): AdStatus {
+  if (Object.values(AD_STATUSES).includes(status as AdStatus)) {
+    return status as AdStatus;
+  }
+  return LEGACY_STATUS_MAP[status] || 'info_needed';
+}
+
 export const AD_STATUS_LABELS: Record<AdStatus, string> = {
-  pending_info: 'Awaiting Customer Info',
-  pending_internal_review: 'Under Internal Review',
-  pending_ad_creation: 'Ad Being Created',
-  pending_customer_approval: 'Awaiting Customer Approval',
-  revision_requested: 'Revision Requested',
-  approved: 'Approved',
-  holding: 'Holding - Awaiting Final Settings',
+  info_needed: 'Info Needed',
+  design_pending: 'Design Pending',
+  in_review: 'In Review',
+  customer_approval: 'Awaiting Approval',
+  approved: 'Approved - Ready to Publish',
   live: 'Live',
   paused: 'Paused',
   completed: 'Completed',
-  canceled_inactive: 'Canceled',
+  canceled: 'Canceled',
+};
+
+// Customer-facing labels (more friendly)
+export const AD_STATUS_CUSTOMER_LABELS: Record<AdStatus, string> = {
+  info_needed: 'Tell Us About Your Business',
+  design_pending: 'Design Your Advertisement',
+  in_review: 'Our Team is Working on Your Ad',
+  customer_approval: 'Review & Approve Your Ad',
+  approved: 'Your Ad is Approved!',
+  live: 'Your Ad is Live!',
+  paused: 'Your Ad is Paused',
+  completed: 'Advertising Complete',
+  canceled: 'Canceled',
+};
+
+// Admin action labels - what needs to be done
+export const AD_STATUS_ADMIN_ACTIONS: Record<AdStatus, string> = {
+  info_needed: 'Waiting for customer info (or complete on their behalf)',
+  design_pending: 'Waiting for customer design (or create for them)',
+  in_review: 'Review submission and create ad proof',
+  customer_approval: 'Waiting for customer approval (or auto-approve)',
+  approved: 'Publish to Ad Manager',
+  live: 'Monitor performance',
+  paused: 'Resume when ready',
+  completed: 'No action needed',
+  canceled: 'No action needed',
 };
 
 export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending_info: { variant: 'outline' },
-  pending_internal_review: { variant: 'default' },
-  pending_ad_creation: { variant: 'default' },
-  pending_customer_approval: { variant: 'default' },
-  revision_requested: { variant: 'destructive' },
+  info_needed: { variant: 'outline' },
+  design_pending: { variant: 'outline' },
+  in_review: { variant: 'default' },
+  customer_approval: { variant: 'default' },
   approved: { variant: 'secondary' },
-  holding: { variant: 'default' },
   live: { variant: 'secondary' },
   paused: { variant: 'outline' },
   completed: { variant: 'outline' },
-  canceled_inactive: { variant: 'destructive' },
+  canceled: { variant: 'destructive' },
 };
 
 /**
- * Pipeline stage colors for the Kanban board visualization
+ * Pipeline stage colors for visualization
  */
 export const AD_PIPELINE_STAGE_COLORS: Record<AdStatus, { bg: string; text: string; border: string }> = {
-  pending_info: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
-  pending_internal_review: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
-  pending_ad_creation: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
-  pending_customer_approval: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
-  revision_requested: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  info_needed: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
+  design_pending: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+  in_review: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  customer_approval: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
   approved: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
-  holding: { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-300' },
   live: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
   paused: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
   completed: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-300' },
-  canceled_inactive: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+  canceled: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
 };
 
 /**
- * Workflow steps for the advertisement lifecycle
+ * Workflow steps for the advertisement lifecycle - used for progress visualization
  */
 export const AD_WORKFLOW_STEPS = [
-  { id: 'pending_info', title: 'Submit Info', description: 'Customer provides business details' },
-  { id: 'pending_internal_review', title: 'Under Review', description: 'Team reviews submission' },
-  { id: 'pending_ad_creation', title: 'Ad Creation', description: 'Design team creates ad' },
-  { id: 'pending_customer_approval', title: 'Approval', description: 'Customer reviews proof' },
-  { id: 'holding', title: 'Holding', description: 'Awaiting final settings' },
-  { id: 'live', title: 'Live', description: 'Ad is active' },
+  { id: 'info_needed', title: 'Business Info', description: 'Provide business details', step: 1 },
+  { id: 'design_pending', title: 'Design Ad', description: 'Create or request ad design', step: 2 },
+  { id: 'in_review', title: 'In Review', description: 'Team finalizing your ad', step: 3 },
+  { id: 'customer_approval', title: 'Approve', description: 'Review and approve proof', step: 4 },
+  { id: 'approved', title: 'Ready', description: 'Ready to go live', step: 5 },
+  { id: 'live', title: 'Live', description: 'Ad is active', step: 6 },
 ] as const;
+
+/**
+ * Get the step number for a given status (1-6)
+ */
+export function getWorkflowStepNumber(status: AdStatus): number {
+  const step = AD_WORKFLOW_STEPS.find(s => s.id === status);
+  if (step) return step.step;
+  // Handle end states
+  if (status === 'paused') return 6;
+  if (status === 'completed') return 6;
+  if (status === 'canceled') return 0;
+  return 1;
+}
+
+/**
+ * Check if workflow is complete (live or end state)
+ */
+export function isWorkflowComplete(status: AdStatus): boolean {
+  return ['live', 'paused', 'completed', 'canceled'].includes(status);
+}
+
+/**
+ * Check if ad is in an active/actionable state
+ */
+export function isAdActive(status: AdStatus): boolean {
+  return !['completed', 'canceled'].includes(status);
+}
+
+/**
+ * Get the next logical status in the workflow
+ */
+export function getNextWorkflowStatus(currentStatus: AdStatus): AdStatus | null {
+  const statusOrder: AdStatus[] = ['info_needed', 'design_pending', 'in_review', 'customer_approval', 'approved', 'live'];
+  const currentIndex = statusOrder.indexOf(currentStatus);
+  if (currentIndex === -1 || currentIndex >= statusOrder.length - 1) return null;
+  return statusOrder[currentIndex + 1];
+}
 
 /**
  * Ad design preferences for color scheme
@@ -413,20 +480,20 @@ export interface Advertisement {
   userId: string;
   subscriptionId: string;
 
-  // Status
+  // Status - uses simplified workflow
   status: AdStatus;
 
-  // Ad creative
+  // Ad creative - the final ad image and destination
   adProofUrl?: string;
   adProofDestinationUrl?: string;
 
-  // Customer-provided sample ad (600x200) - designed by customer
+  // Customer-provided sample ad (600x200) - designed by customer using ad designer
   customerSampleAdUrl?: string;
 
   // Design preferences from Ad Designer
   designPreferences?: AdDesignPreferences;
 
-  // Customer info (denormalized)
+  // Customer info (denormalized for display without additional lookups)
   businessName?: string;
   contactName?: string;
   contactTitle?: string;
@@ -446,23 +513,33 @@ export interface Advertisement {
   // Whether customer requested custom design instead of designing themselves
   requestCustomDesign?: boolean;
 
-  // Tracking timestamps
-  infoSubmittedAt?: any;
-  sentForReviewAt?: any;
-  sentForApprovalAt?: any;
-  approvedAt?: any;
-  autoApprovalAt?: any; // 48 hours from sentForApprovalAt
-  holdingAt?: any; // When moved to holding status
-  liveAt?: any;
-  completedAt?: any;
+  // Tracking timestamps - aligned with new workflow
+  infoSubmittedAt?: any;       // When customer submitted business info (Step 1 complete)
+  designSubmittedAt?: any;     // When customer submitted design/assets (Step 2 complete)
+  sentForReviewAt?: any;       // When moved to in_review status
+  sentForApprovalAt?: any;     // When proof sent to customer
+  approvedAt?: any;            // When customer approved
+  autoApprovalAt?: any;        // 48 hours from sentForApprovalAt for auto-approval
+  publishedAt?: any;           // When published to ad manager
+  liveAt?: any;                // When ad went live
+  pausedAt?: any;              // When ad was paused
+  completedAt?: any;           // When subscription ended
 
   // Revision tracking
   revisionCount?: number;
   revisionNotes?: string;
 
-  // Performance (for future ad tracking)
+  // Ad Manager link - references live_ads collection
+  liveAdId?: string;           // ID of the live_ad document when published
+
+  // Performance tracking
   impressions?: number;
   clicks?: number;
+
+  // Admin action tracking
+  lastActionBy?: string;       // Admin who last took action
+  lastActionAt?: any;          // When last admin action was taken
+  notes?: string;              // Internal admin notes
 
   // Timestamps
   createdAt: any;
@@ -510,6 +587,20 @@ export interface UserDetails {
   isManualEntry?: boolean;
   manualEntryBy?: string;
   manualEntryAt?: any;
+}
+
+/**
+ * User profile - extends UserDetails with additional customer fields
+ */
+export interface UserProfile extends UserDetails {
+  contactTitle?: string;
+  cellPhone?: string;
+  businessPhone?: string;
+  adTitle?: string;
+  logoUrl?: string;
+  fileUploads?: string[];
+  customerSampleAdUrl?: string;
+  requestCustomDesign?: boolean;
 }
 
 // ============================================================================

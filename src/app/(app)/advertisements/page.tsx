@@ -51,30 +51,32 @@ import {
     AD_STATUS_LABELS,
     AD_STATUS_COLORS,
     AD_PIPELINE_STAGE_COLORS,
+    AD_STATUS_ADMIN_ACTIONS,
     shouldAutoApprove,
     calculateAutoApprovalDeadline,
+    normalizeAdStatus,
     type AdStatus,
     type Advertisement
 } from '@/lib/types';
 
 type AdWithMeta = Advertisement & {
     shouldAutoApprove?: boolean;
+    normalizedStatus?: AdStatus;
 };
 
-// Status filter options
+// Status filter options - Updated for new workflow
 const STATUS_FILTERS = [
     { value: 'all', label: 'All Ads', count: 0 },
     { value: 'action_required', label: 'Action Required', count: 0 },
-    { value: 'pending_info', label: 'Pending Info', count: 0 },
-    { value: 'pending_internal_review', label: 'Under Review', count: 0 },
-    { value: 'pending_ad_creation', label: 'Creating Ad', count: 0 },
-    { value: 'pending_customer_approval', label: 'Awaiting Approval', count: 0 },
-    { value: 'revision_requested', label: 'Revision Needed', count: 0 },
-    { value: 'holding', label: 'Holding', count: 0 },
+    { value: 'info_needed', label: 'Info Needed', count: 0 },
+    { value: 'design_pending', label: 'Design Pending', count: 0 },
+    { value: 'in_review', label: 'In Review', count: 0 },
+    { value: 'customer_approval', label: 'Awaiting Approval', count: 0 },
+    { value: 'approved', label: 'Approved', count: 0 },
     { value: 'live', label: 'Live', count: 0 },
     { value: 'paused', label: 'Paused', count: 0 },
     { value: 'completed', label: 'Completed', count: 0 },
-    { value: 'canceled_inactive', label: 'Canceled', count: 0 },
+    { value: 'canceled', label: 'Canceled', count: 0 },
 ];
 
 export default function AdvertisementsPage() {
