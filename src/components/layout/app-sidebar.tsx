@@ -18,6 +18,16 @@ import {
   Handshake,
   Radio,
   UserPlus,
+  LayoutDashboard,
+  Workflow,
+  Users,
+  Mail,
+  Upload,
+  FileText,
+  Bell,
+  Settings,
+  Percent,
+  Calculator,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -30,11 +40,26 @@ interface NavItem {
 
 // Core admin navigation - essential features for managing the ad business
 const adminMenuItems: NavItem[] = [
+  // Overview
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  // Core Operations
   { href: '/leads', label: 'Leads', icon: Handshake },
   { href: '/subscriptions', label: 'Customers', icon: Ticket },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone },
+  // Workflow & Processing
+  { href: '/pipeline', label: 'Pipeline', icon: Workflow },
   { href: '/manual-entry', label: 'Manual Entry', icon: UserPlus },
+  { href: '/customer-workflow', label: 'Customer Workflow', icon: Settings },
+  // Content & Communications
+  { href: '/automated-emails', label: 'Email Templates', icon: Mail },
   { href: '/ad-server', label: 'Ad Server', icon: Radio },
+  // Admin Settings
+  { href: '/users', label: 'Users', icon: Users },
+  { href: '/import', label: 'Import', icon: Upload },
+  { href: '/discounts', label: 'Discounts', icon: Percent },
+  { href: '/reconciliation', label: 'Reconciliation', icon: Calculator },
+  { href: '/legal', label: 'Legal', icon: FileText },
+  { href: '/admin-notifications', label: 'Notifications', icon: Bell },
 ];
 
 // User navigation (non-admin)
