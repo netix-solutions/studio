@@ -330,7 +330,7 @@ export async function GET(request: NextRequest) {
    * Load and display an ad in the specified container
    * @param {Object} options - Configuration options
    * @param {string} options.container - CSS selector for the container element
-   * @param {string} options.placement - Ad placement type (banner, sidebar, inline, popup, footer)
+   * @param {string} options.placement - Ad placement type (inline)
    * @param {string} [options.site] - Optional website ID for targeting
    * @param {Object} [options.style] - Optional custom styles for the ad container
    * @param {Function} [options.onLoad] - Callback when first ad loads

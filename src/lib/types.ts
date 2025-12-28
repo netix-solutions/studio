@@ -634,31 +634,20 @@ export const COMMUNITY_WEBSITE_LIST: CommunityWebsite[] = Object.values(COMMUNIT
 
 /**
  * Ad placement types - where ads can be displayed
+ * Currently only inline ads are supported (displayed at 300x100 pixels)
  */
 export const AD_PLACEMENTS = {
-  BANNER: 'banner',
-  SIDEBAR: 'sidebar',
   INLINE: 'inline',
-  POPUP: 'popup',
-  FOOTER: 'footer',
 } as const;
 
 export type AdPlacement = typeof AD_PLACEMENTS[keyof typeof AD_PLACEMENTS];
 
 export const AD_PLACEMENT_LABELS: Record<AdPlacement, string> = {
-  banner: 'Banner (Header)',
-  sidebar: 'Sidebar',
   inline: 'Inline (Content)',
-  popup: 'Popup',
-  footer: 'Footer',
 };
 
 export const AD_PLACEMENT_DIMENSIONS: Record<AdPlacement, { width: number; height: number }> = {
-  banner: { width: 728, height: 90 },
-  sidebar: { width: 300, height: 250 },
   inline: { width: 600, height: 200 },
-  popup: { width: 400, height: 300 },
-  footer: { width: 728, height: 90 },
 };
 
 /**
