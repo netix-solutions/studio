@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useUser, useFirebase } from '@/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit as firestoreLimit, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit as firestoreLimit, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AD_DIMENSIONS } from '@/lib/types';
@@ -57,12 +57,14 @@ export default function DesignAdPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [initialElements, setInitialElements] = useState<DesignElement[]>([]);
   const [initialBackgroundColor, setInitialBackgroundColor] = useState('#FFFFFF');
   const [userData, setUserData] = useState<any>(null);
   const [currentVersion, setCurrentVersion] = useState<AdDraftVersion | null>(null);
   const [advertisementId, setAdvertisementId] = useState<string | null>(adId);
+  const [hasSavedDesign, setHasSavedDesign] = useState(false);
 
   // Check for active subscription and load saved design
   useEffect(() => {
@@ -110,6 +112,7 @@ export default function DesignAdPage() {
           const latestVersion = await getLatestVersion(firestore, effectiveUserId, adIdToUse);
           if (latestVersion) {
             setCurrentVersion(latestVersion);
+            setHasSavedDesign(true); // Existing design available
             const elementsWithImages = await loadVersionElements(latestVersion);
             setInitialElements(elementsWithImages as DesignElement[]);
             setInitialBackgroundColor(latestVersion.backgroundColor || '#FFFFFF');
@@ -274,10 +277,11 @@ export default function DesignAdPage() {
         await updateAdWithVersion(firestore, effectiveUserId, adIdToUse, newVersion, isAdminMode);
 
         setCurrentVersion(newVersion);
+        setHasSavedDesign(true);
 
         toast({
           title: 'Design Saved!',
-          description: `Version ${newVersion.versionNumber} saved successfully.`,
+          description: `Version ${newVersion.versionNumber} saved successfully. You can now submit for review.`,
         });
       } else {
         // Fallback: Save to user document (legacy behavior for users without ads yet)
@@ -308,9 +312,11 @@ export default function DesignAdPage() {
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
+        setHasSavedDesign(true);
+
         toast({
           title: 'Design Saved!',
-          description: 'Your ad design has been saved successfully.',
+          description: 'Your ad design has been saved. You can now submit for review.',
         });
       }
     } catch (error: any) {
@@ -337,6 +343,50 @@ export default function DesignAdPage() {
       title: 'Ad Exported!',
       description: 'Your ad design has been downloaded as a PNG file.',
     });
+  };
+
+  // Handle submit for review
+  const handleSubmitForReview = async () => {
+    if (!firestore || !effectiveUserId || !advertisementId) {
+      toast({
+        title: 'Error',
+        description: 'Unable to submit. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const adRef = doc(firestore, 'users', effectiveUserId, 'advertisements', advertisementId);
+      await updateDoc(adRef, {
+        requestCustomDesign: false,
+        status: 'in_review',
+        designSubmittedAt: serverTimestamp(),
+        sentForReviewAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastActionBy: isAdminMode ? 'admin' : 'customer',
+        lastActionAt: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Submitted for Review!',
+        description: 'Your ad has been submitted for review. We\'ll review it shortly.',
+      });
+
+      // Navigate back to account page
+      router.push('/account');
+    } catch (error: any) {
+      console.error('Error submitting for review:', error);
+      toast({
+        title: 'Submission Error',
+        description: error.message || 'Could not submit for review. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (userLoading || isLoading) {
@@ -480,6 +530,41 @@ export default function DesignAdPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Submit for Review section */}
+      {hasSavedDesign && !isAdminMode && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Ready to Submit?
+            </CardTitle>
+            <CardDescription>
+              Your design has been saved. Submit it for review to proceed with your advertisement.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleSubmitForReview}
+              disabled={isSubmitting}
+              size="lg"
+              className="w-full sm:w-auto"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit for Review
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tips */}
       <Card>
