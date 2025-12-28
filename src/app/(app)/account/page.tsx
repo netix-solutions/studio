@@ -346,44 +346,12 @@ export default function AccountPage() {
 
         // Load advertisements
         const adsCollectionRef = collection(firestore, 'users', user.uid, 'advertisements');
-        const unsubAds = onSnapshot(adsCollectionRef, async (snapshot) => {
-            const adsData: AdWithSubscription[] = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
+        const unsubAds = onSnapshot(adsCollectionRef, (snapshot) => {
+            const adsData: AdWithSubscription[] = snapshot.docs.map(adDoc => ({
+                id: adDoc.id,
+                ...adDoc.data(),
             } as AdWithSubscription));
             setAdvertisements(adsData);
-
-            // Auto-disable ads for cancelled subscriptions
-            // Get cancelled/unpaid subscriptions
-            const cancelledSubs = subscriptions.filter(s =>
-                s.status === 'canceled' || s.status === 'unpaid' || s.status === 'past_due'
-            );
-
-            if (cancelledSubs.length > 0) {
-                const cancelledSubIds = new Set(cancelledSubs.map(s => s.id));
-
-                // Find ads that should be disabled
-                for (const ad of adsData) {
-                    const shouldDisable =
-                        cancelledSubIds.has(ad.subscriptionId) &&
-                        ad.status !== 'canceled_inactive' &&
-                        ad.status !== 'completed';
-
-                    if (shouldDisable) {
-                        try {
-                            const adDocRef = doc(firestore, 'users', user.uid, 'advertisements', ad.id);
-                            await updateDoc(adDocRef, {
-                                status: 'canceled_inactive',
-                                canceledAt: serverTimestamp(),
-                                updatedAt: serverTimestamp(),
-                            });
-                            console.log(`Auto-disabled ad ${ad.id} due to cancelled subscription`);
-                        } catch (err) {
-                            console.error(`Failed to auto-disable ad ${ad.id}:`, err);
-                        }
-                    }
-                }
-            }
         });
 
         return () => {
@@ -392,7 +360,46 @@ export default function AccountPage() {
             unsubSubs();
             unsubAds();
         };
-    }, [user, firestore, loadUserData, adDetailsForm, subscriptions]);
+    }, [user, firestore, loadUserData, adDetailsForm]);
+
+    // Auto-disable ads for cancelled subscriptions (separate effect to avoid infinite loop)
+    useEffect(() => {
+        if (!user || !firestore || subscriptions.length === 0 || advertisements.length === 0) return;
+
+        const cancelledSubs = subscriptions.filter(s =>
+            s.status === 'canceled' || s.status === 'unpaid' || s.status === 'past_due'
+        );
+
+        if (cancelledSubs.length === 0) return;
+
+        const cancelledSubIds = new Set(cancelledSubs.map(s => s.id));
+
+        // Find ads that should be disabled
+        const disableAds = async () => {
+            for (const ad of advertisements) {
+                const shouldDisable =
+                    cancelledSubIds.has(ad.subscriptionId) &&
+                    ad.status !== 'canceled_inactive' &&
+                    ad.status !== 'completed';
+
+                if (shouldDisable) {
+                    try {
+                        const adDocRef = doc(firestore, 'users', user.uid, 'advertisements', ad.id);
+                        await updateDoc(adDocRef, {
+                            status: 'canceled_inactive',
+                            canceledAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                        });
+                        console.log(`Auto-disabled ad ${ad.id} due to cancelled subscription`);
+                    } catch (err) {
+                        console.error(`Failed to auto-disable ad ${ad.id}:`, err);
+                    }
+                }
+            }
+        };
+
+        disableAds();
+    }, [user, firestore, subscriptions, advertisements]);
 
     // Handle Step 1: Save ad details
     const onAdDetailsSubmit = async (data: AdDetailsFormData) => {
