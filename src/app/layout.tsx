@@ -3,27 +3,7 @@ import type { Metadata } from 'next';
 import { FirebaseClientProvider } from '@/firebase';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
-import { Manrope, Inter, Bebas_Neue } from 'next/font/google';
 import Script from 'next/script';
-
-const manrope = Manrope({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-manrope',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
-
-const bebas_neue = Bebas_Neue({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-bebas-neue',
-  weight: '400',
-});
 
 const siteUrl = "https://community-websites.com";
 
@@ -71,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${manrope.variable} ${inter.variable} ${bebas_neue.variable}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
