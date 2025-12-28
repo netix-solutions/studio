@@ -7,7 +7,14 @@ export interface EmailTemplate {
     triggerName?: string;
     triggerDescription?: string;
     placeholders?: { key: string; description: string }[];
+    /** Version number for tracking updates to system templates */
+    version?: number;
+    /** True if this is a system-provided default template */
+    isSystemTemplate?: boolean;
 }
+
+/** Current version for all default templates - increment when making updates */
+export const TEMPLATE_VERSION = 1;
 
 export const defaultTemplates: EmailTemplate[] = [
     {
@@ -15,6 +22,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Pricing Link (Auto-response)',
         description: 'Sent to users after they fill out the "Get Started" interest form.',
         subject: 'Here is your link to our pricing, {{contactName}}!',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thanks for your interest in advertising with Community-Websites.com! We're excited to help <strong>{{businessName}}</strong> reach more local customers.</p>
@@ -47,6 +56,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'New Customer Welcome',
         description: 'Sent to a new customer immediately after they complete their first subscription purchase.',
         subject: 'Welcome to Community-Websites.com, {{contactName}}!',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Thank you for your purchase and welcome aboard! We're thrilled to have you as an advertising partner.</p>
@@ -82,6 +93,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Manual Follow-Up',
         description: 'A general-purpose follow-up email to send to leads.',
         subject: 'Following up from Community-Websites.com',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Just wanted to follow up on your interest in advertising with us at Community-Websites.com. We help local businesses like <strong>{{businessName}}</strong> connect with thousands of potential customers in the area.</p>
@@ -104,6 +117,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Ad Proof for Your Approval',
         description: 'Sent to a customer with their ad proof for them to approve.',
         subject: 'Your Ad Proof for {{businessName}} is Ready for Review!',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Great news! Your ad creative for <strong>{{businessName}}</strong> is ready for your review.</p>
@@ -175,6 +190,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Still Interested Check-In',
         description: 'A friendly check-in email to see if a lead is still interested in advertising.',
         subject: 'Quick question about advertising for {{businessName}}',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to reach out and see if you're still considering advertising with Community-Websites.com for <strong>{{businessName}}</strong>.</p>
@@ -203,6 +220,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Exclusive Discount Offer',
         description: 'Offer a 10% discount to encourage leads to sign up.',
         subject: 'A special offer for {{businessName}} - 10% off your first month',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to share an exclusive offer with you. As a thank you for your interest in Community-Websites.com, we'd like to offer <strong>{{businessName}}</strong> <strong style="color: #1e3a5f;">10% off your first month</strong> of advertising.</p>
@@ -245,6 +264,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Last Chance Reminder',
         description: 'A final follow-up for leads who haven\'t responded to previous outreach.',
         subject: 'Last chance to connect about {{businessName}} advertising',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I've reached out a couple of times about advertising opportunities for <strong>{{businessName}}</strong>, and I wanted to send one final message before I close out your inquiry.</p>
@@ -271,6 +292,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Why Local Advertising Works',
         description: 'An educational email highlighting the benefits of local advertising.',
         subject: '3 ways local advertising can grow {{businessName}}',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I wanted to share some insights on how local advertising through Community-Websites.com can help grow <strong>{{businessName}}</strong>.</p>
@@ -315,6 +338,8 @@ export const defaultTemplates: EmailTemplate[] = [
         name: 'Thank You (No Pressure)',
         description: 'A warm thank you email that keeps the door open without being pushy.',
         subject: 'Thanks for considering Community-Websites.com, {{contactName}}',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
         html: `
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">I just wanted to take a moment to thank you for considering Community-Websites.com for <strong>{{businessName}}</strong>'s advertising needs.</p>

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { useFirebase, useUser } from '@/firebase';
 import { collection, onSnapshot, query, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { Loader2, AlertCircle, MoreHorizontal, Mail, PlusCircle, Pencil, Trash2, Copy, Eye, Zap, Send, ChevronDown, Grid3X3, List, Search } from 'lucide-react';
+import { Loader2, AlertCircle, MoreHorizontal, Mail, PlusCircle, Pencil, Trash2, Copy, Eye, Zap, Send, ChevronDown, Grid3X3, List, Search, RefreshCw, RotateCcw, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { type EmailTemplate, defaultTemplates } from '@/lib/email-templates';
+import { type EmailTemplate, defaultTemplates, TEMPLATE_VERSION } from '@/lib/email-templates';
 
 const testEmailSchema = z.object({
     recipientEmail: z.string().email("Please enter a valid email address."),
@@ -56,6 +56,24 @@ function getTriggerBadge(triggerName?: string) {
     }
 }
 
+function getTemplateBadges(template: EmailTemplate, isOutdated: boolean) {
+    return (
+        <div className="flex flex-wrap gap-1">
+            {getTriggerBadge(template.triggerName)}
+            {template.isSystemTemplate && (
+                <Badge variant="outline" className="text-xs">
+                    System
+                </Badge>
+            )}
+            {isOutdated && (
+                <Badge variant="destructive" className="text-xs">
+                    Update Available
+                </Badge>
+            )}
+        </div>
+    );
+}
+
 export default function AutomatedEmailsPage() {
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,6 +86,9 @@ export default function AutomatedEmailsPage() {
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
     const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [hasSeeded, setHasSeeded] = useState(false);
+    const [outdatedTemplates, setOutdatedTemplates] = useState<string[]>([]);
     const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
@@ -87,35 +108,145 @@ export default function AutomatedEmailsPage() {
         }
     }, [user, testEmailForm]);
 
-    const seedDefaultTemplates = async () => {
-        if (!firestore) return;
+    // Check which system templates are outdated (lower version than current)
+    const checkOutdatedTemplates = (currentTemplates: EmailTemplate[]) => {
+        const outdated: string[] = [];
+        for (const defaultTemplate of defaultTemplates) {
+            const existing = currentTemplates.find(t => t.id === defaultTemplate.id);
+            if (existing && existing.isSystemTemplate) {
+                // Only check version for system templates
+                const existingVersion = existing.version || 0;
+                if (existingVersion < TEMPLATE_VERSION) {
+                    outdated.push(defaultTemplate.id);
+                }
+            }
+        }
+        setOutdatedTemplates(outdated);
+    };
+
+    // Seed any missing default templates (runs automatically on page load)
+    const seedMissingTemplates = async (showToast = true) => {
+        if (!firestore || hasSeeded) return;
+
         setIsSeeding(true);
         let createdCount = 0;
+
         try {
             for (const template of defaultTemplates) {
                 const templateRef = doc(firestore, 'emailTemplates', template.id);
                 const templateSnap = await getDoc(templateRef);
+
                 if (!templateSnap.exists()) {
-                    await setDoc(templateRef, template);
+                    // Create new template with version and system flag
+                    await setDoc(templateRef, {
+                        ...template,
+                        version: TEMPLATE_VERSION,
+                        isSystemTemplate: true,
+                    });
                     createdCount++;
                 }
             }
-            if (createdCount > 0) {
-                 toast({
-                    title: "Templates Added",
+
+            setHasSeeded(true);
+
+            if (showToast && createdCount > 0) {
+                toast({
+                    title: "Templates Initialized",
                     description: `${createdCount} default email template(s) have been added.`,
-                });
-            } else {
-                 toast({
-                    title: "Templates Verified",
-                    description: "All default templates already exist.",
                 });
             }
         } catch (error) {
             console.error("Error seeding templates:", error);
-            toast({ title: "Error", description: "Could not add default templates.", variant: "destructive" });
+            if (showToast) {
+                toast({ title: "Error", description: "Could not add default templates.", variant: "destructive" });
+            }
         } finally {
             setIsSeeding(false);
+        }
+    };
+
+    // Sync outdated system templates to the latest version
+    const syncSystemTemplates = async () => {
+        if (!firestore) return;
+
+        setIsSyncing(true);
+        let updatedCount = 0;
+
+        try {
+            for (const defaultTemplate of defaultTemplates) {
+                const templateRef = doc(firestore, 'emailTemplates', defaultTemplate.id);
+                const templateSnap = await getDoc(templateRef);
+
+                if (templateSnap.exists()) {
+                    const existingData = templateSnap.data();
+                    const existingVersion = existingData.version || 0;
+
+                    // Only update system templates that are outdated
+                    if (existingData.isSystemTemplate && existingVersion < TEMPLATE_VERSION) {
+                        await setDoc(templateRef, {
+                            ...defaultTemplate,
+                            version: TEMPLATE_VERSION,
+                            isSystemTemplate: true,
+                        });
+                        updatedCount++;
+                    }
+                } else {
+                    // Template doesn't exist, create it
+                    await setDoc(templateRef, {
+                        ...defaultTemplate,
+                        version: TEMPLATE_VERSION,
+                        isSystemTemplate: true,
+                    });
+                    updatedCount++;
+                }
+            }
+
+            setOutdatedTemplates([]);
+
+            if (updatedCount > 0) {
+                toast({
+                    title: "Templates Synced",
+                    description: `${updatedCount} template(s) have been updated to the latest version.`,
+                });
+            } else {
+                toast({
+                    title: "Already Up to Date",
+                    description: "All system templates are at the latest version.",
+                });
+            }
+        } catch (error) {
+            console.error("Error syncing templates:", error);
+            toast({ title: "Error", description: "Could not sync templates.", variant: "destructive" });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    // Reset a single template to its default state
+    const resetTemplateToDefault = async (templateId: string) => {
+        if (!firestore) return;
+
+        const defaultTemplate = defaultTemplates.find(t => t.id === templateId);
+        if (!defaultTemplate) {
+            toast({ title: "Error", description: "Default template not found.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            const templateRef = doc(firestore, 'emailTemplates', templateId);
+            await setDoc(templateRef, {
+                ...defaultTemplate,
+                version: TEMPLATE_VERSION,
+                isSystemTemplate: true,
+            });
+
+            toast({
+                title: "Template Reset",
+                description: `"${defaultTemplate.name}" has been reset to its default state.`,
+            });
+        } catch (error) {
+            console.error("Error resetting template:", error);
+            toast({ title: "Error", description: "Could not reset template.", variant: "destructive" });
         }
     };
 
@@ -137,6 +268,17 @@ export default function AutomatedEmailsPage() {
             setTemplates(templatesData);
             setLoading(false);
             setError(null);
+
+            // Check for outdated templates after loading
+            checkOutdatedTemplates(templatesData);
+
+            // Check if any default templates are missing and need to be seeded
+            const existingIds = new Set(templatesData.map(t => t.id));
+            const missingTemplates = defaultTemplates.filter(t => !existingIds.has(t.id));
+            if (missingTemplates.length > 0 && !hasSeeded) {
+                // Auto-seed missing templates silently on first load
+                seedMissingTemplates(true);
+            }
         }, (err) => {
             const permissionError = new FirestorePermissionError({
                 path: '/emailTemplates',
@@ -150,7 +292,7 @@ export default function AutomatedEmailsPage() {
         });
 
         return () => unsubscribe();
-    }, [firestore]);
+    }, [firestore, hasSeeded]);
 
     const handleEditTemplate = (template: EmailTemplate) => {
         setSelectedTemplate(template);
@@ -321,18 +463,22 @@ export default function AutomatedEmailsPage() {
                         {viewMode === 'grid' ? (
                             <TemplateGrid
                                 templates={filteredTemplates}
+                                outdatedTemplates={outdatedTemplates}
                                 onEdit={handleEditTemplate}
                                 onPreview={setPreviewTemplate}
                                 onDelete={setDeleteTemplate}
                                 onDuplicate={handleDuplicateTemplate}
+                                onReset={resetTemplateToDefault}
                             />
                         ) : (
                             <TemplateList
                                 templates={filteredTemplates}
+                                outdatedTemplates={outdatedTemplates}
                                 onEdit={handleEditTemplate}
                                 onPreview={setPreviewTemplate}
                                 onDelete={setDeleteTemplate}
                                 onDuplicate={handleDuplicateTemplate}
+                                onReset={resetTemplateToDefault}
                             />
                         )}
                     </TabsContent>
@@ -341,18 +487,22 @@ export default function AutomatedEmailsPage() {
                         {viewMode === 'grid' ? (
                             <TemplateGrid
                                 templates={automatedTemplates}
+                                outdatedTemplates={outdatedTemplates}
                                 onEdit={handleEditTemplate}
                                 onPreview={setPreviewTemplate}
                                 onDelete={setDeleteTemplate}
                                 onDuplicate={handleDuplicateTemplate}
+                                onReset={resetTemplateToDefault}
                             />
                         ) : (
                             <TemplateList
                                 templates={automatedTemplates}
+                                outdatedTemplates={outdatedTemplates}
                                 onEdit={handleEditTemplate}
                                 onPreview={setPreviewTemplate}
                                 onDelete={setDeleteTemplate}
                                 onDuplicate={handleDuplicateTemplate}
+                                onReset={resetTemplateToDefault}
                             />
                         )}
                     </TabsContent>
@@ -361,22 +511,50 @@ export default function AutomatedEmailsPage() {
                         {viewMode === 'grid' ? (
                             <TemplateGrid
                                 templates={manualTemplates}
+                                outdatedTemplates={outdatedTemplates}
                                 onEdit={handleEditTemplate}
                                 onPreview={setPreviewTemplate}
                                 onDelete={setDeleteTemplate}
                                 onDuplicate={handleDuplicateTemplate}
+                                onReset={resetTemplateToDefault}
                             />
                         ) : (
                             <TemplateList
                                 templates={manualTemplates}
+                                outdatedTemplates={outdatedTemplates}
                                 onEdit={handleEditTemplate}
                                 onPreview={setPreviewTemplate}
                                 onDelete={setDeleteTemplate}
                                 onDuplicate={handleDuplicateTemplate}
+                                onReset={resetTemplateToDefault}
                             />
                         )}
                     </TabsContent>
                 </Tabs>
+            )}
+
+            {/* Outdated Templates Alert */}
+            {outdatedTemplates.length > 0 && (
+                <Alert>
+                    <RefreshCw className="h-4 w-4" />
+                    <AlertTitle>Template Updates Available</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>{outdatedTemplates.length} system template(s) have updates available.</span>
+                        <Button size="sm" onClick={syncSystemTemplates} disabled={isSyncing} className="ml-4">
+                            {isSyncing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Syncing...
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Sync Now
+                                </>
+                            )}
+                        </Button>
+                    </AlertDescription>
+                </Alert>
             )}
 
             {/* Tools Section */}
@@ -385,23 +563,42 @@ export default function AutomatedEmailsPage() {
                     <CardHeader>
                         <CardTitle className="text-lg">Template Management</CardTitle>
                         <CardDescription>
-                            Add missing default templates to your database.
+                            Sync system templates to get the latest updates, or add any missing defaults.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <Button onClick={seedDefaultTemplates} disabled={isSeeding} variant="outline">
-                            {isSeeding ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Please wait...
-                                </>
-                            ) : (
-                                <>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Add Missing Default Templates
-                                </>
-                            )}
-                        </Button>
+                    <CardContent className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                            <Button onClick={syncSystemTemplates} disabled={isSyncing || isSeeding} variant="outline">
+                                {isSyncing ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Syncing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        Sync All System Templates
+                                    </>
+                                )}
+                            </Button>
+                            <Button onClick={() => seedMissingTemplates(true)} disabled={isSeeding || isSyncing} variant="outline">
+                                {isSeeding ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Adding...
+                                    </>
+                                ) : (
+                                    <>
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Add Missing Templates
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            <Info className="inline h-3 w-3 mr-1" />
+                            System templates are automatically added when missing. Use "Sync All" to update templates to the latest version.
+                        </p>
                     </CardContent>
                 </Card>
 
@@ -497,16 +694,20 @@ export default function AutomatedEmailsPage() {
 // Template Grid Component
 function TemplateGrid({
     templates,
+    outdatedTemplates,
     onEdit,
     onPreview,
     onDelete,
-    onDuplicate
+    onDuplicate,
+    onReset
 }: {
     templates: EmailTemplate[];
+    outdatedTemplates: string[];
     onEdit: (template: EmailTemplate) => void;
     onPreview: (template: EmailTemplate) => void;
     onDelete: (template: EmailTemplate) => void;
     onDuplicate: (template: EmailTemplate) => void;
+    onReset: (templateId: string) => void;
 }) {
     if (templates.length === 0) {
         return (
@@ -518,112 +719,30 @@ function TemplateGrid({
 
     return (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => (
-                <Card key={template.id} className="overflow-hidden group hover:shadow-md transition-shadow">
-                    <div
-                        className="cursor-pointer"
-                        onClick={() => onPreview(template)}
-                    >
-                        <EmailPreviewThumbnail
-                            content={template.html}
-                            height={180}
-                        />
-                    </div>
-                    <CardHeader className="p-4 pb-2">
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                                <CardTitle className="text-base truncate">{template.name}</CardTitle>
-                                <p className="text-xs text-muted-foreground truncate mt-1">{template.subject}</p>
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => onPreview(template)}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Preview
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onEdit(template)}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onDuplicate(template)}>
-                                        <Copy className="mr-2 h-4 w-4" />
-                                        Duplicate
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                        onClick={() => onDelete(template)}
-                                        className="text-destructive"
-                                    >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+            {templates.map((template) => {
+                const isOutdated = outdatedTemplates.includes(template.id);
+                const isSystemTemplate = template.isSystemTemplate && defaultTemplates.some(t => t.id === template.id);
+
+                return (
+                    <Card key={template.id} className={`overflow-hidden group hover:shadow-md transition-shadow ${isOutdated ? 'ring-2 ring-orange-400' : ''}`}>
+                        <div
+                            className="cursor-pointer"
+                            onClick={() => onPreview(template)}
+                        >
+                            <EmailPreviewThumbnail
+                                content={template.html}
+                                height={180}
+                            />
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{template.description}</p>
-                        {getTriggerBadge(template.triggerName)}
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-}
-
-// Template List Component
-function TemplateList({
-    templates,
-    onEdit,
-    onPreview,
-    onDelete,
-    onDuplicate
-}: {
-    templates: EmailTemplate[];
-    onEdit: (template: EmailTemplate) => void;
-    onPreview: (template: EmailTemplate) => void;
-    onDelete: (template: EmailTemplate) => void;
-    onDuplicate: (template: EmailTemplate) => void;
-}) {
-    if (templates.length === 0) {
-        return (
-            <div className="text-center py-12 text-muted-foreground">
-                No templates found.
-            </div>
-        );
-    }
-
-    return (
-        <Card>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[250px]">Template</TableHead>
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Trigger</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {templates.map((template) => (
-                        <TableRow key={template.id}>
-                            <TableCell>
-                                <div>
-                                    <div className="font-medium">{template.name}</div>
-                                    <div className="text-sm text-muted-foreground line-clamp-1">{template.description}</div>
+                        <CardHeader className="p-4 pb-2">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                    <CardTitle className="text-base truncate">{template.name}</CardTitle>
+                                    <p className="text-xs text-muted-foreground truncate mt-1">{template.subject}</p>
                                 </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{template.subject}</TableCell>
-                            <TableCell>{getTriggerBadge(template.triggerName)}</TableCell>
-                            <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -640,6 +759,15 @@ function TemplateList({
                                             <Copy className="mr-2 h-4 w-4" />
                                             Duplicate
                                         </DropdownMenuItem>
+                                        {isSystemTemplate && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onReset(template.id)}>
+                                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                                    Reset to Default
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                             onClick={() => onDelete(template)}
@@ -650,9 +778,114 @@ function TemplateList({
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{template.description}</p>
+                            {getTemplateBadges(template, isOutdated)}
+                        </CardContent>
+                    </Card>
+                );
+            })}
+        </div>
+    );
+}
+
+// Template List Component
+function TemplateList({
+    templates,
+    outdatedTemplates,
+    onEdit,
+    onPreview,
+    onDelete,
+    onDuplicate,
+    onReset
+}: {
+    templates: EmailTemplate[];
+    outdatedTemplates: string[];
+    onEdit: (template: EmailTemplate) => void;
+    onPreview: (template: EmailTemplate) => void;
+    onDelete: (template: EmailTemplate) => void;
+    onDuplicate: (template: EmailTemplate) => void;
+    onReset: (templateId: string) => void;
+}) {
+    if (templates.length === 0) {
+        return (
+            <div className="text-center py-12 text-muted-foreground">
+                No templates found.
+            </div>
+        );
+    }
+
+    return (
+        <Card>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[250px]">Template</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {templates.map((template) => {
+                        const isOutdated = outdatedTemplates.includes(template.id);
+                        const isSystemTemplate = template.isSystemTemplate && defaultTemplates.some(t => t.id === template.id);
+
+                        return (
+                            <TableRow key={template.id} className={isOutdated ? 'bg-orange-50' : ''}>
+                                <TableCell>
+                                    <div>
+                                        <div className="font-medium">{template.name}</div>
+                                        <div className="text-sm text-muted-foreground line-clamp-1">{template.description}</div>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">{template.subject}</TableCell>
+                                <TableCell>{getTemplateBadges(template, isOutdated)}</TableCell>
+                                <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => onPreview(template)}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                Preview
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onEdit(template)}>
+                                                <Pencil className="mr-2 h-4 w-4" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onDuplicate(template)}>
+                                                <Copy className="mr-2 h-4 w-4" />
+                                                Duplicate
+                                            </DropdownMenuItem>
+                                            {isSystemTemplate && (
+                                                <>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => onReset(template.id)}>
+                                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                                        Reset to Default
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                onClick={() => onDelete(template)}
+                                                className="text-destructive"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
                 </TableBody>
             </Table>
         </Card>
