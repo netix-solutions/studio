@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
 </div>
         `;
 
-        // Wrap in professional email template
-        const wrappedHtml = wrapEmailContent(htmlContent);
+        // Wrap in professional email template (customer email - show My Account button)
+        const wrappedHtml = wrapEmailContent(htmlContent, { headerButton: 'my-account' });
 
         // Calculate auto-approval deadline (48 hours from now)
         const autoApprovalDeadline = new Date(Date.now() + 48 * 60 * 60 * 1000);

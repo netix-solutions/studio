@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { wrapEmailContent } from '@/lib/email-utils';
+import { wrapEmailContent, type EmailWrapperOptions } from '@/lib/email-utils';
 import { cn } from '@/lib/utils';
 import { Maximize2, Minimize2, Monitor, Smartphone, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ interface EmailPreviewProps {
   showSubject?: boolean;
   scale?: number;
   maxHeight?: string;
+  /** Options for email wrapper (header button, pricing link, etc.) */
+  wrapperOptions?: EmailWrapperOptions;
 }
 
 export function EmailPreview({
@@ -25,6 +27,7 @@ export function EmailPreview({
   showSubject = true,
   scale = 1,
   maxHeight = '600px',
+  wrapperOptions,
 }: EmailPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -33,7 +36,7 @@ export function EmailPreview({
   const [key, setKey] = useState(0); // Force re-render key
 
   // Generate the full email HTML
-  const fullEmailHtml = wrapEmailContent(content);
+  const fullEmailHtml = wrapEmailContent(content, wrapperOptions);
 
   // Update iframe content
   useEffect(() => {
@@ -157,16 +160,19 @@ interface EmailPreviewThumbnailProps {
   content: string;
   className?: string;
   height?: number;
+  /** Options for email wrapper (header button, pricing link, etc.) */
+  wrapperOptions?: EmailWrapperOptions;
 }
 
 export function EmailPreviewThumbnail({
   content,
   className,
   height = 200,
+  wrapperOptions,
 }: EmailPreviewThumbnailProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const fullEmailHtml = wrapEmailContent(content);
+  const fullEmailHtml = wrapEmailContent(content, wrapperOptions);
 
   useEffect(() => {
     const iframe = iframeRef.current;

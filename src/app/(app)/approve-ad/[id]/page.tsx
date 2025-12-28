@@ -177,8 +177,8 @@ export default function ApproveAdPage() {
 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Please review and make the necessary changes.</p>
             `;
 
-            // Wrap email in professional template
-            html = wrapEmailContent(html);
+            // Wrap email in professional template (admin notification - no header button)
+            html = wrapEmailContent(html, { headerButton: 'none' });
 
             // Note: In production, this would go to an admin email
             await sendEmail(firestore, {
