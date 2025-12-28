@@ -165,6 +165,8 @@ export async function POST(request: NextRequest) {
             sentForApprovalAt: FieldValue.serverTimestamp(),
             autoApprovalAt: autoApprovalDeadline,
             updatedAt: FieldValue.serverTimestamp(),
+            // Clear revision notes when sending new proof - prevents stale revision state
+            revisionNotes: FieldValue.delete(),
         });
 
         return NextResponse.json({

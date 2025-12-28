@@ -12,7 +12,6 @@ import {
     updateDoc,
     serverTimestamp,
     orderBy,
-    limit as firestoreLimit,
 } from 'firebase/firestore';
 import { useUser, useFirebase } from '@/firebase';
 import { goToBillingPortal } from '@/lib/stripe';
@@ -73,6 +72,7 @@ export default function AccountPage() {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [advertisement, setAdvertisement] = useState<Advertisement | null>(null);
+    const [allAdvertisements, setAllAdvertisements] = useState<Advertisement[]>([]);
     const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null);
     const [billingLoading, setBillingLoading] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -130,21 +130,25 @@ export default function AccountPage() {
             }
         );
 
-        // Subscribe to advertisements
+        // Subscribe to advertisements - get all for history and pending change request detection
         const adsUnsubscribe = onSnapshot(
             query(
                 collection(firestore, 'users', user.uid, 'advertisements'),
-                orderBy('createdAt', 'desc'),
-                firestoreLimit(1)
+                orderBy('createdAt', 'desc')
             ),
             async (snapshot) => {
                 if (!snapshot.empty) {
-                    const adDoc = snapshot.docs[0];
-                    setAdvertisement({
-                        id: adDoc.id,
-                        ...adDoc.data()
-                    } as Advertisement);
+                    // Store all advertisements for history
+                    const allAds = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    } as Advertisement));
+                    setAllAdvertisements(allAds);
+
+                    // Set the most recent advertisement as the current one
+                    setAdvertisement(allAds[0]);
                 } else {
+                    setAllAdvertisements([]);
                     // Create a new advertisement if user has active subscription but no ad
                     const active = subscriptions.find(s =>
                         s.status === 'active' || s.status === 'trialing'
@@ -401,6 +405,7 @@ export default function AccountPage() {
                         userId={user.uid}
                         userProfile={userProfile}
                         advertisement={advertisement}
+                        allAdvertisements={allAdvertisements}
                         subscriptionId={activeSubscription.id}
                         isAdmin={false}
                         onRefresh={handleRefresh}

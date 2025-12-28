@@ -101,11 +101,11 @@ export function ApprovalStep({
                 {revisionCount > 0 && (
                     <Alert>
                         <MessageSquare className="h-4 w-4" />
-                        <AlertTitle>Revision #{revisionCount + 1}</AlertTitle>
+                        <AlertTitle>Updated Proof</AlertTitle>
                         <AlertDescription>
                             {isAdmin
-                                ? `The customer has requested ${revisionCount} revision(s).`
-                                : `You've requested ${revisionCount} revision(s). Here's the updated proof.`}
+                                ? `This proof includes changes from ${revisionCount} revision request${revisionCount > 1 ? 's' : ''}.`
+                                : `This proof has been updated based on your feedback. (${revisionCount} revision${revisionCount > 1 ? 's' : ''} made)`}
                         </AlertDescription>
                     </Alert>
                 )}

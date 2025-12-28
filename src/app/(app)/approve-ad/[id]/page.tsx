@@ -193,6 +193,7 @@ export default function ApproveAdPage() {
 
             setAdvertisement(prev => prev ? { ...prev, status: 'in_review' } : null);
             setShowRevisionDialog(false);
+            setRevisionNotes(''); // Reset form for potential future use
 
             toast({
                 title: "Revision Requested",

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -55,6 +56,7 @@ export function DesignStep({
     onImageUpload,
     isAdmin
 }: DesignStepProps) {
+    const router = useRouter();
     const [requestCustomDesign, setRequestCustomDesign] = useState(defaultValues?.requestCustomDesign ?? false);
     const [logoUrl, setLogoUrl] = useState<string | null>(defaultValues?.logoUrl || null);
     const [uploadedImages, setUploadedImages] = useState<string[]>(defaultValues?.uploadedImages || []);
@@ -127,7 +129,9 @@ export function DesignStep({
             } else {
                 // Self-designed ad
                 if (!customerSampleAdUrl) {
-                    // Redirect to ad designer
+                    // No design created yet - redirect to ad designer
+                    setIsSubmitting(false);
+                    router.push('/design-ad');
                     return;
                 }
                 await onSubmit({
