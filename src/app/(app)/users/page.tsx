@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, doc } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { Loader2, Shield } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, MoreHorizontal, History } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditUserDialog } from '@/components/users/edit-user-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export interface AppUser {
     id: string;
@@ -29,11 +31,40 @@ export default function UsersPage() {
     const [rawUsers, setRawUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { firestore } = useFirebase();
+    const { firestore, firebaseApp } = useFirebase();
+    const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
     const [adminRoles, setAdminRoles] = useState<{[key: string]: boolean}>({});
+    const [isSyncingClaims, setIsSyncingClaims] = useState(false);
+
+    // Sync admin claims for all existing admins
+    const handleSyncAdminClaims = async () => {
+        if (!firebaseApp) return;
+
+        setIsSyncingClaims(true);
+        try {
+            const functions = getFunctions(firebaseApp);
+            const syncClaims = httpsCallable(functions, 'syncAllAdminClaims');
+            const result = await syncClaims();
+            const data = result.data as { success: boolean; totalAdmins: number; results: any[] };
+
+            toast({
+                title: 'Admin Claims Synced',
+                description: `Successfully synced claims for ${data.totalAdmins} admin(s). Please sign out and back in for changes to take effect.`,
+            });
+        } catch (err: any) {
+            console.error('Error syncing admin claims:', err);
+            toast({
+                title: 'Sync Failed',
+                description: err.message || 'Failed to sync admin claims.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSyncingClaims(false);
+        }
+    };
 
     // Subscribe to admin roles separately
     useEffect(() => {
@@ -108,8 +139,25 @@ export default function UsersPage() {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-xl md:text-2xl">User Management</CardTitle>
-                    <CardDescription className="text-sm">View and manage all registered users.</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-xl md:text-2xl">User Management</CardTitle>
+                            <CardDescription className="text-sm">View and manage all registered users.</CardDescription>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSyncAdminClaims}
+                            disabled={isSyncingClaims}
+                        >
+                            {isSyncingClaims ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Shield className="mr-2 h-4 w-4" />
+                            )}
+                            Sync Admin Claims
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {loading && (
