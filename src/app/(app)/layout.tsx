@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser, useFirebase } from '@/firebase';
-import { Loader2, LayoutDashboard, User } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
@@ -14,9 +14,10 @@ import { Button } from '@/components/ui/button';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { usePageVisitTracking } from '@/hooks/use-page-visit-tracking';
 
-const ADMIN_ROUTES = ['/dashboard', '/users', '/subscriptions', '/advertisements', '/automated-emails', '/leads', '/import', '/legal', '/pipeline', '/ad-server', '/customer-workflow'];
+// Admin routes - includes main pages and legacy routes for backwards compatibility
+const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard', '/users', '/automated-emails', '/import', '/legal', '/pipeline', '/ad-server', '/customer-workflow', '/manual-entry', '/discounts', '/reconciliation', '/admin-notifications'];
 const USER_DEFAULT_ROUTE = '/account';
-const ADMIN_DEFAULT_ROUTE = '/dashboard';
+const ADMIN_DEFAULT_ROUTE = '/leads';
 
 export default function ProtectedLayout({
   children,
