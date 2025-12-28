@@ -548,8 +548,11 @@ export function CustomerWorkflow({
                     defaultValues={{
                         businessName: userProfile.businessName,
                         contactName: userProfile.contactName,
+                        contactTitle: userProfile.contactTitle,
                         email: userProfile.email,
                         cellPhone: userProfile.cellPhone,
+                        businessPhone: userProfile.businessPhone,
+                        adWebsiteUrl: userProfile.adWebsiteUrl,
                     }}
                     onSubmit={handleBusinessInfoSubmit}
                     isAdmin={isAdmin}

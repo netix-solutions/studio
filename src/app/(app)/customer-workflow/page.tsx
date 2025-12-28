@@ -296,6 +296,8 @@ export default function CustomerWorkflowPage() {
                 const autoApprovalDate = new Date();
                 autoApprovalDate.setHours(autoApprovalDate.getHours() + 48);
                 updateData.autoApprovalAt = autoApprovalDate;
+                // Clear revision notes when sending for approval - prevents stale revision state
+                updateData.revisionNotes = null;
             } else if (newStatus === 'approved') {
                 updateData.approvedAt = serverTimestamp();
             } else if (newStatus === 'live') {
@@ -350,6 +352,8 @@ export default function CustomerWorkflowPage() {
                 updatedAt: serverTimestamp(),
                 lastActionBy: 'admin',
                 lastActionAt: serverTimestamp(),
+                // Clear revision notes when sending new proof - prevents stale revision state
+                revisionNotes: null,
             });
 
             setSelectedAd({
