@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer, Group } from 'react-konva';
+import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer, Group, Circle, Line, Star, RegularPolygon, Ellipse } from 'react-konva';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,14 +35,45 @@ import {
   Redo,
   Save,
   Loader2,
+  Square,
+  Circle as CircleIcon,
+  Triangle,
+  Star as StarIcon,
+  Minus,
+  Pentagon,
+  Hexagon,
+  Heart,
+  Diamond,
 } from 'lucide-react';
 import Konva from 'konva';
 import { AD_DIMENSIONS } from '@/lib/types';
 
+// Gradient types
+export interface GradientStop {
+  offset: number; // 0-1
+  color: string;
+}
+
+export interface LinearGradient {
+  type: 'linear';
+  angle: number; // 0-360 degrees
+  stops: GradientStop[];
+}
+
+export interface RadialGradient {
+  type: 'radial';
+  stops: GradientStop[];
+}
+
+export type GradientFill = LinearGradient | RadialGradient;
+
+// Shape types
+export type ShapeType = 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'star' | 'pentagon' | 'hexagon' | 'diamond' | 'heart' | 'line' | 'arrow';
+
 // Types for canvas elements
 interface CanvasElement {
   id: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'shape';
   x: number;
   y: number;
   width?: number;
@@ -69,7 +100,26 @@ interface ImageElement extends CanvasElement {
   imageObj?: HTMLImageElement;
 }
 
-type DesignElement = TextElement | ImageElement;
+interface ShapeElement extends CanvasElement {
+  type: 'shape';
+  shapeType: ShapeType;
+  width: number;
+  height: number;
+  fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+  gradient?: GradientFill;
+  opacity?: number;
+  cornerRadius?: number;
+  // Star-specific
+  numPoints?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  // Line-specific
+  points?: number[];
+}
+
+type DesignElement = TextElement | ImageElement | ShapeElement;
 
 // Available fonts
 const FONTS = [
@@ -93,6 +143,96 @@ const COLOR_PALETTE = [
   '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
   '#EC4899', '#F43F5E',
 ];
+
+// Extended color palette for backgrounds/shapes
+const EXTENDED_COLOR_PALETTE = [
+  // Grays
+  '#000000', '#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB', '#F3F4F6', '#FFFFFF',
+  // Warm colors
+  '#7F1D1D', '#991B1B', '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2', '#FEF2F2',
+  '#7C2D12', '#9A3412', '#C2410C', '#EA580C', '#F97316', '#FB923C', '#FDBA74', '#FED7AA', '#FFEDD5', '#FFF7ED',
+  '#78350F', '#92400E', '#B45309', '#D97706', '#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7', '#FFFBEB',
+  // Cool colors
+  '#14532D', '#166534', '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0', '#DCFCE7', '#F0FDF4',
+  '#134E4A', '#115E59', '#0F766E', '#0D9488', '#14B8A6', '#2DD4BF', '#5EEAD4', '#99F6E4', '#CCFBF1', '#F0FDFA',
+  '#164E63', '#155E75', '#0E7490', '#0891B2', '#06B6D4', '#22D3EE', '#67E8F9', '#A5F3FC', '#CFFAFE', '#ECFEFF',
+  '#1E3A8A', '#1E40AF', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE', '#EFF6FF',
+  '#312E81', '#3730A3', '#4338CA', '#4F46E5', '#6366F1', '#818CF8', '#A5B4FC', '#C7D2FE', '#E0E7FF', '#EEF2FF',
+  '#4C1D95', '#5B21B6', '#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE', '#F5F3FF',
+  '#701A75', '#86198F', '#A21CAF', '#C026D3', '#D946EF', '#E879F9', '#F0ABFC', '#F5D0FE', '#FAE8FF', '#FDF4FF',
+  '#831843', '#9D174D', '#BE185D', '#DB2777', '#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3', '#FDF2F8',
+];
+
+// Gradient presets
+const GRADIENT_PRESETS: { name: string; gradient: GradientFill }[] = [
+  // Linear gradients - vibrant
+  { name: 'Sunset', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#F97316' }, { offset: 1, color: '#EC4899' }] } },
+  { name: 'Ocean', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#06B6D4' }, { offset: 1, color: '#3B82F6' }] } },
+  { name: 'Forest', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#22C55E' }, { offset: 1, color: '#14B8A6' }] } },
+  { name: 'Berry', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#8B5CF6' }, { offset: 1, color: '#EC4899' }] } },
+  { name: 'Fire', gradient: { type: 'linear', angle: 180, stops: [{ offset: 0, color: '#EF4444' }, { offset: 0.5, color: '#F97316' }, { offset: 1, color: '#EAB308' }] } },
+  { name: 'Aurora', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#22C55E' }, { offset: 0.5, color: '#06B6D4' }, { offset: 1, color: '#8B5CF6' }] } },
+  { name: 'Midnight', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#1E3A8A' }, { offset: 1, color: '#6366F1' }] } },
+  { name: 'Gold', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#F59E0B' }, { offset: 1, color: '#B45309' }] } },
+  // Radial gradients
+  { name: 'Spotlight', gradient: { type: 'radial', stops: [{ offset: 0, color: '#FFFFFF' }, { offset: 1, color: '#E5E7EB' }] } },
+  { name: 'Glow Blue', gradient: { type: 'radial', stops: [{ offset: 0, color: '#60A5FA' }, { offset: 1, color: '#1E40AF' }] } },
+  { name: 'Glow Pink', gradient: { type: 'radial', stops: [{ offset: 0, color: '#F472B6' }, { offset: 1, color: '#831843' }] } },
+  { name: 'Glow Green', gradient: { type: 'radial', stops: [{ offset: 0, color: '#4ADE80' }, { offset: 1, color: '#166534' }] } },
+  // Subtle gradients
+  { name: 'Silver', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#F3F4F6' }, { offset: 1, color: '#9CA3AF' }] } },
+  { name: 'Slate', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#475569' }, { offset: 1, color: '#1E293B' }] } },
+  { name: 'Pearl', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#FAFAFA' }, { offset: 0.5, color: '#F5F5F5' }, { offset: 1, color: '#E5E5E5' }] } },
+  { name: 'Royal', gradient: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#4338CA' }, { offset: 1, color: '#1E1B4B' }] } },
+];
+
+// Shape configurations
+const SHAPE_CONFIGS: { type: ShapeType; icon: React.ReactNode; label: string }[] = [
+  { type: 'rectangle', icon: <Square className="h-4 w-4" />, label: 'Rectangle' },
+  { type: 'circle', icon: <CircleIcon className="h-4 w-4" />, label: 'Circle' },
+  { type: 'ellipse', icon: <CircleIcon className="h-4 w-4 scale-x-125" />, label: 'Ellipse' },
+  { type: 'triangle', icon: <Triangle className="h-4 w-4" />, label: 'Triangle' },
+  { type: 'star', icon: <StarIcon className="h-4 w-4" />, label: 'Star' },
+  { type: 'pentagon', icon: <Pentagon className="h-4 w-4" />, label: 'Pentagon' },
+  { type: 'hexagon', icon: <Hexagon className="h-4 w-4" />, label: 'Hexagon' },
+  { type: 'diamond', icon: <Diamond className="h-4 w-4" />, label: 'Diamond' },
+  { type: 'line', icon: <Minus className="h-4 w-4" />, label: 'Line' },
+];
+
+// Helper to convert gradient to Konva fill
+function getKonvaFillFromGradient(gradient: GradientFill, width: number, height: number): object {
+  if (gradient.type === 'linear') {
+    const angleRad = (gradient.angle * Math.PI) / 180;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const length = Math.sqrt(width * width + height * height) / 2;
+
+    return {
+      fillLinearGradientStartPoint: { x: centerX - cos * length, y: centerY - sin * length },
+      fillLinearGradientEndPoint: { x: centerX + cos * length, y: centerY + sin * length },
+      fillLinearGradientColorStops: gradient.stops.flatMap(s => [s.offset, s.color]),
+    };
+  } else {
+    return {
+      fillRadialGradientStartPoint: { x: width / 2, y: height / 2 },
+      fillRadialGradientEndPoint: { x: width / 2, y: height / 2 },
+      fillRadialGradientStartRadius: 0,
+      fillRadialGradientEndRadius: Math.max(width, height) / 2,
+      fillRadialGradientColorStops: gradient.stops.flatMap(s => [s.offset, s.color]),
+    };
+  }
+}
+
+// Generate gradient CSS for preview
+function getGradientCSS(gradient: GradientFill): string {
+  const colorStops = gradient.stops.map(s => `${s.color} ${s.offset * 100}%`).join(', ');
+  if (gradient.type === 'linear') {
+    return `linear-gradient(${gradient.angle}deg, ${colorStops})`;
+  }
+  return `radial-gradient(circle, ${colorStops})`;
+}
 
 interface AdDesignerProps {
   width?: number;
@@ -221,6 +361,34 @@ export default function AdDesigner({
     const newElements = [...elements, newText];
     setElements(newElements);
     setSelectedId(newText.id);
+    saveToHistory(newElements, backgroundColor);
+  };
+
+  // Add shape element
+  const addShape = (shapeType: ShapeType) => {
+    const defaultSize = shapeType === 'line' ? { width: 100, height: 4 } : { width: 80, height: 80 };
+
+    const newShape: ShapeElement = {
+      id: generateId(),
+      type: 'shape',
+      shapeType,
+      x: width / 2 - defaultSize.width / 2,
+      y: height / 2 - defaultSize.height / 2,
+      width: defaultSize.width,
+      height: defaultSize.height,
+      fill: '#3B82F6',
+      stroke: undefined,
+      strokeWidth: 0,
+      opacity: 1,
+      cornerRadius: shapeType === 'rectangle' ? 0 : undefined,
+      numPoints: shapeType === 'star' ? 5 : undefined,
+      innerRadius: shapeType === 'star' ? 20 : undefined,
+      outerRadius: shapeType === 'star' ? 40 : undefined,
+    };
+
+    const newElements = [...elements, newShape];
+    setElements(newElements);
+    setSelectedId(newShape.id);
     saveToHistory(newElements, backgroundColor);
   };
 
@@ -514,6 +682,144 @@ export default function AdDesigner({
     saveToHistory(elements, color);
   };
 
+  // Render shape element
+  const renderShape = (element: ShapeElement) => {
+    const commonProps = {
+      key: element.id,
+      id: element.id,
+      x: element.x,
+      y: element.y,
+      rotation: element.rotation || 0,
+      opacity: element.opacity ?? 1,
+      draggable: true,
+      onClick: () => setSelectedId(element.id),
+      onTap: () => setSelectedId(element.id),
+      onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => handleDragEnd(e, element.id),
+      onTransformEnd: (e: Konva.KonvaEventObject<Event>) => handleTransformEnd(e, element.id),
+    };
+
+    // Get fill properties (gradient or solid)
+    const getFillProps = () => {
+      if (element.gradient) {
+        return getKonvaFillFromGradient(element.gradient, element.width, element.height);
+      }
+      return { fill: element.fill };
+    };
+
+    const strokeProps = element.stroke ? { stroke: element.stroke, strokeWidth: element.strokeWidth || 2 } : {};
+
+    switch (element.shapeType) {
+      case 'rectangle':
+        return (
+          <Rect
+            {...commonProps}
+            width={element.width}
+            height={element.height}
+            cornerRadius={element.cornerRadius || 0}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'circle':
+        return (
+          <Circle
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            radius={Math.min(element.width, element.height) / 2}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'ellipse':
+        return (
+          <Ellipse
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            radiusX={element.width / 2}
+            radiusY={element.height / 2}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'triangle':
+        return (
+          <RegularPolygon
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            sides={3}
+            radius={Math.min(element.width, element.height) / 2}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'pentagon':
+        return (
+          <RegularPolygon
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            sides={5}
+            radius={Math.min(element.width, element.height) / 2}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'hexagon':
+        return (
+          <RegularPolygon
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            sides={6}
+            radius={Math.min(element.width, element.height) / 2}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'diamond':
+        return (
+          <RegularPolygon
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            sides={4}
+            radius={Math.min(element.width, element.height) / 2}
+            rotation={(element.rotation || 0) + 45}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'star':
+        return (
+          <Star
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            numPoints={element.numPoints || 5}
+            innerRadius={element.innerRadius || element.width * 0.25}
+            outerRadius={element.outerRadius || element.width * 0.5}
+            {...getFillProps()}
+            {...strokeProps}
+          />
+        );
+      case 'line':
+        return (
+          <Line
+            {...commonProps}
+            points={element.points || [0, 0, element.width, 0]}
+            stroke={element.fill}
+            strokeWidth={element.height || 4}
+            lineCap="round"
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   // Render canvas element
   const renderElement = (element: DesignElement) => {
     const isSelected = selectedId === element.id;
@@ -566,6 +872,10 @@ export default function AdDesigner({
       );
     }
 
+    if (element.type === 'shape') {
+      return renderShape(element as ShapeElement);
+    }
+
     return null;
   };
 
@@ -574,7 +884,7 @@ export default function AdDesigner({
       {/* Left side: Canvas and inline toolbar */}
       <div className="flex flex-col gap-3">
         {/* Compact Toolbar above canvas */}
-        <div className="flex items-center gap-1 p-2 bg-muted rounded-lg" style={{ width: width * scale }}>
+        <div className="flex items-center gap-1 p-2 bg-muted rounded-lg flex-wrap" style={{ minWidth: width * scale }}>
           {/* Add Elements */}
           <Button variant="outline" size="sm" onClick={addText} className="h-8 px-2">
             <Type className="h-4 w-4 mr-1" /> Text
@@ -582,6 +892,37 @@ export default function AdDesigner({
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-8 px-2">
             <ImageIcon className="h-4 w-4 mr-1" /> Image
           </Button>
+
+          {/* Shapes Dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <Square className="h-4 w-4 mr-1" /> Shapes
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Add Shape</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SHAPE_CONFIGS.map((shape) => (
+                    <Button
+                      key={shape.type}
+                      variant="outline"
+                      size="sm"
+                      className="h-12 flex-col gap-1"
+                      onClick={() => {
+                        addShape(shape.type);
+                      }}
+                    >
+                      {shape.icon}
+                      <span className="text-[10px]">{shape.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -602,41 +943,65 @@ export default function AdDesigner({
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
-          {/* Background Color */}
+          {/* Background Color with Gradients */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2">
+              <Button variant="outline" size="sm" className="h-8 px-2" title="Background Color">
                 <div className="w-4 h-4 rounded border" style={{ backgroundColor }} />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-56">
-              <div className="space-y-2">
-                <Label className="text-xs">Background</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(e) => updateBackgroundColor(e.target.value)}
-                    className="w-10 h-8 p-1 cursor-pointer"
-                  />
-                  <Input
-                    type="text"
-                    value={backgroundColor}
-                    onChange={(e) => updateBackgroundColor(e.target.value)}
-                    className="flex-1 h-8 text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-11 gap-1">
-                  {COLOR_PALETTE.map((color) => (
-                    <button
-                      key={color}
-                      className="w-4 h-4 rounded border border-gray-200 hover:scale-110 transition-transform"
-                      style={{ backgroundColor: color }}
-                      onClick={() => updateBackgroundColor(color)}
+            <PopoverContent className="w-72 p-3">
+              <Tabs defaultValue="colors" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 h-8">
+                  <TabsTrigger value="colors" className="text-xs">Colors</TabsTrigger>
+                  <TabsTrigger value="gradients" className="text-xs">Gradients</TabsTrigger>
+                </TabsList>
+                <TabsContent value="colors" className="mt-2 space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={backgroundColor}
+                      onChange={(e) => updateBackgroundColor(e.target.value)}
+                      className="w-10 h-8 p-1 cursor-pointer"
                     />
-                  ))}
-                </div>
-              </div>
+                    <Input
+                      type="text"
+                      value={backgroundColor}
+                      onChange={(e) => updateBackgroundColor(e.target.value)}
+                      className="flex-1 h-8 text-xs font-mono"
+                      placeholder="#FFFFFF"
+                    />
+                  </div>
+                  <div className="grid grid-cols-10 gap-1">
+                    {EXTENDED_COLOR_PALETTE.slice(0, 50).map((color, idx) => (
+                      <button
+                        key={`${color}-${idx}`}
+                        className="w-5 h-5 rounded border border-gray-200 hover:scale-110 transition-transform hover:shadow-md"
+                        style={{ backgroundColor: color }}
+                        onClick={() => updateBackgroundColor(color)}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="gradients" className="mt-2 space-y-2">
+                  <p className="text-xs text-muted-foreground">Gradient backgrounds coming soon!</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {GRADIENT_PRESETS.slice(0, 8).map((preset) => (
+                      <button
+                        key={preset.name}
+                        className="h-10 rounded border border-gray-200 hover:scale-105 transition-transform hover:shadow-md"
+                        style={{ background: getGradientCSS(preset.gradient) }}
+                        title={preset.name}
+                        onClick={() => {
+                          // For now, just set the first color
+                          updateBackgroundColor(preset.gradient.stops[0].color);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </PopoverContent>
           </Popover>
 
@@ -652,7 +1017,7 @@ export default function AdDesigner({
           <div className="flex-1" />
 
           {/* Export/Save */}
-          <Button variant="outline" size="sm" onClick={exportToPNG} className="h-8 px-2">
+          <Button variant="outline" size="sm" onClick={exportToPNG} className="h-8 px-2" title="Download PNG">
             <Download className="h-4 w-4" />
           </Button>
           {onSave && (
@@ -719,7 +1084,7 @@ export default function AdDesigner({
                   {/* Element actions row */}
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground uppercase">
-                      {selectedElement.type === 'text' ? 'Text' : 'Image'}
+                      {selectedElement.type === 'text' ? 'Text' : selectedElement.type === 'image' ? 'Image' : (selectedElement as ShapeElement).shapeType}
                     </span>
                     <div className="flex gap-0.5">
                       <Button variant="ghost" size="icon" onClick={() => moveLayer('up')} title="Bring Forward" className="h-7 w-7">
@@ -957,13 +1322,224 @@ export default function AdDesigner({
                       </Button>
                     </div>
                   )}
+
+                  {/* Shape Properties */}
+                  {selectedElement.type === 'shape' && (
+                    <div className="space-y-3">
+                      {/* Fill Color or Gradient */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Fill</Label>
+                        <Tabs defaultValue={(selectedElement as ShapeElement).gradient ? 'gradient' : 'solid'} className="w-full">
+                          <TabsList className="grid w-full grid-cols-2 h-7">
+                            <TabsTrigger value="solid" className="text-[10px]">Solid</TabsTrigger>
+                            <TabsTrigger value="gradient" className="text-[10px]">Gradient</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="solid" className="mt-2 space-y-2">
+                            <div className="flex gap-2">
+                              <Input
+                                type="color"
+                                value={(selectedElement as ShapeElement).fill || '#3B82F6'}
+                                onChange={(e) => updateElementWithHistory(selectedElement.id, { fill: e.target.value, gradient: undefined })}
+                                className="w-8 h-8 p-1 cursor-pointer"
+                              />
+                              <Input
+                                type="text"
+                                value={(selectedElement as ShapeElement).fill || '#3B82F6'}
+                                onChange={(e) => updateElementWithHistory(selectedElement.id, { fill: e.target.value, gradient: undefined })}
+                                className="flex-1 h-8 text-xs font-mono"
+                              />
+                            </div>
+                            <div className="grid grid-cols-10 gap-1">
+                              {EXTENDED_COLOR_PALETTE.slice(0, 40).map((color, idx) => (
+                                <button
+                                  key={`shape-${color}-${idx}`}
+                                  className="w-4 h-4 rounded border border-gray-200 hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: color }}
+                                  onClick={() => updateElementWithHistory(selectedElement.id, { fill: color, gradient: undefined })}
+                                  title={color}
+                                />
+                              ))}
+                            </div>
+                          </TabsContent>
+                          <TabsContent value="gradient" className="mt-2 space-y-2">
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {GRADIENT_PRESETS.map((preset) => (
+                                <button
+                                  key={preset.name}
+                                  className={`h-8 rounded border hover:scale-105 transition-transform ${
+                                    JSON.stringify((selectedElement as ShapeElement).gradient) === JSON.stringify(preset.gradient)
+                                      ? 'border-primary ring-1 ring-primary'
+                                      : 'border-gray-200'
+                                  }`}
+                                  style={{ background: getGradientCSS(preset.gradient) }}
+                                  title={preset.name}
+                                  onClick={() => updateElementWithHistory(selectedElement.id, { gradient: preset.gradient })}
+                                />
+                              ))}
+                            </div>
+                            {(selectedElement as ShapeElement).gradient && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full h-7 text-xs"
+                                onClick={() => updateElementWithHistory(selectedElement.id, { gradient: undefined })}
+                              >
+                                Remove Gradient
+                              </Button>
+                            )}
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+
+                      {/* Stroke/Border */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Border</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={(selectedElement as ShapeElement).stroke || '#000000'}
+                            onChange={(e) => updateElementWithHistory(selectedElement.id, {
+                              stroke: e.target.value,
+                              strokeWidth: (selectedElement as ShapeElement).strokeWidth || 2
+                            })}
+                            className="w-8 h-8 p-1 cursor-pointer"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground w-10">Width:</span>
+                              <Slider
+                                value={[(selectedElement as ShapeElement).strokeWidth || 0]}
+                                onValueChange={([value]) => updateElement(selectedElement.id, {
+                                  strokeWidth: value,
+                                  stroke: value > 0 ? ((selectedElement as ShapeElement).stroke || '#000000') : undefined
+                                })}
+                                onValueCommit={([value]) => updateElementWithHistory(selectedElement.id, {
+                                  strokeWidth: value,
+                                  stroke: value > 0 ? ((selectedElement as ShapeElement).stroke || '#000000') : undefined
+                                })}
+                                min={0}
+                                max={20}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-[10px] w-6">{(selectedElement as ShapeElement).strokeWidth || 0}px</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Opacity */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Opacity</Label>
+                          <span className="text-[10px] text-muted-foreground">{Math.round(((selectedElement as ShapeElement).opacity ?? 1) * 100)}%</span>
+                        </div>
+                        <Slider
+                          value={[((selectedElement as ShapeElement).opacity ?? 1) * 100]}
+                          onValueChange={([value]) => updateElement(selectedElement.id, { opacity: value / 100 })}
+                          onValueCommit={([value]) => updateElementWithHistory(selectedElement.id, { opacity: value / 100 })}
+                          min={10}
+                          max={100}
+                          step={5}
+                        />
+                      </div>
+
+                      {/* Corner Radius (rectangles only) */}
+                      {(selectedElement as ShapeElement).shapeType === 'rectangle' && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Corner Radius</Label>
+                            <span className="text-[10px] text-muted-foreground">{(selectedElement as ShapeElement).cornerRadius || 0}px</span>
+                          </div>
+                          <Slider
+                            value={[(selectedElement as ShapeElement).cornerRadius || 0]}
+                            onValueChange={([value]) => updateElement(selectedElement.id, { cornerRadius: value })}
+                            onValueCommit={([value]) => updateElementWithHistory(selectedElement.id, { cornerRadius: value })}
+                            min={0}
+                            max={Math.min((selectedElement as ShapeElement).width, (selectedElement as ShapeElement).height) / 2}
+                            step={1}
+                          />
+                        </div>
+                      )}
+
+                      {/* Star Points (stars only) */}
+                      {(selectedElement as ShapeElement).shapeType === 'star' && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Points</Label>
+                            <span className="text-[10px] text-muted-foreground">{(selectedElement as ShapeElement).numPoints || 5}</span>
+                          </div>
+                          <Slider
+                            value={[(selectedElement as ShapeElement).numPoints || 5]}
+                            onValueChange={([value]) => updateElement(selectedElement.id, { numPoints: value })}
+                            onValueCommit={([value]) => updateElementWithHistory(selectedElement.id, { numPoints: value })}
+                            min={3}
+                            max={12}
+                            step={1}
+                          />
+                        </div>
+                      )}
+
+                      {/* Size */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Size</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-4">W</span>
+                            <Input
+                              type="number"
+                              value={Math.round((selectedElement as ShapeElement).width)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { width: parseInt(e.target.value) || 50 })}
+                              className="h-7 text-xs"
+                              min={10}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-4">H</span>
+                            <Input
+                              type="number"
+                              value={Math.round((selectedElement as ShapeElement).height)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { height: parseInt(e.target.value) || 50 })}
+                              className="h-7 text-xs"
+                              min={10}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Position */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Position</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-4">X</span>
+                            <Input
+                              type="number"
+                              value={Math.round(selectedElement.x)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { x: parseInt(e.target.value) || 0 })}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground w-4">Y</span>
+                            <Input
+                              type="number"
+                              value={Math.round(selectedElement.y)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { y: parseInt(e.target.value) || 0 })}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground">
                   <Move className="h-8 w-8 mx-auto mb-2 opacity-40" />
                   <p className="text-xs font-medium">Select an element to edit</p>
-                  <p className="text-xs mt-1">Click on any text or image on the canvas</p>
-                  <p className="text-xs mt-2 text-primary/70">Tip: Once selected, just start typing!</p>
+                  <p className="text-xs mt-1">Click any element on the canvas</p>
+                  <p className="text-xs mt-2 text-primary/70">Tip: Use Shapes for colors & gradients!</p>
                 </div>
               )}
             </CardContent>
@@ -973,32 +1549,64 @@ export default function AdDesigner({
             <CardContent className="p-3">
               {elements.length > 0 ? (
                 <div className="space-y-1">
-                  {[...elements].reverse().map((element, index) => (
-                    <div
-                      key={element.id}
-                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors text-sm ${
-                        selectedId === element.id ? 'bg-primary/10 border border-primary' : 'hover:bg-muted'
-                      }`}
-                      onClick={() => setSelectedId(element.id)}
-                    >
-                      {element.type === 'text' ? (
-                        <Type className="h-3.5 w-3.5 shrink-0" />
-                      ) : (
-                        <ImageIcon className="h-3.5 w-3.5 shrink-0" />
-                      )}
-                      <span className="text-xs truncate flex-1">
-                        {element.type === 'text'
-                          ? (element as TextElement).text.substring(0, 25) || 'Empty text'
-                          : `Image ${elements.length - index}`}
-                      </span>
-                    </div>
-                  ))}
+                  {[...elements].reverse().map((element, index) => {
+                    // Get appropriate icon for element type
+                    const getIcon = () => {
+                      if (element.type === 'text') return <Type className="h-3.5 w-3.5 shrink-0" />;
+                      if (element.type === 'image') return <ImageIcon className="h-3.5 w-3.5 shrink-0" />;
+                      // Shape icons
+                      const shapeEl = element as ShapeElement;
+                      switch (shapeEl.shapeType) {
+                        case 'rectangle': return <Square className="h-3.5 w-3.5 shrink-0" />;
+                        case 'circle':
+                        case 'ellipse': return <CircleIcon className="h-3.5 w-3.5 shrink-0" />;
+                        case 'triangle': return <Triangle className="h-3.5 w-3.5 shrink-0" />;
+                        case 'star': return <StarIcon className="h-3.5 w-3.5 shrink-0" />;
+                        case 'pentagon': return <Pentagon className="h-3.5 w-3.5 shrink-0" />;
+                        case 'hexagon': return <Hexagon className="h-3.5 w-3.5 shrink-0" />;
+                        case 'diamond': return <Diamond className="h-3.5 w-3.5 shrink-0" />;
+                        case 'line': return <Minus className="h-3.5 w-3.5 shrink-0" />;
+                        default: return <Square className="h-3.5 w-3.5 shrink-0" />;
+                      }
+                    };
+
+                    // Get element label
+                    const getLabel = () => {
+                      if (element.type === 'text') return (element as TextElement).text.substring(0, 20) || 'Empty text';
+                      if (element.type === 'image') return `Image ${elements.length - index}`;
+                      return `${(element as ShapeElement).shapeType.charAt(0).toUpperCase() + (element as ShapeElement).shapeType.slice(1)}`;
+                    };
+
+                    return (
+                      <div
+                        key={element.id}
+                        className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors text-sm ${
+                          selectedId === element.id ? 'bg-primary/10 border border-primary' : 'hover:bg-muted'
+                        }`}
+                        onClick={() => setSelectedId(element.id)}
+                      >
+                        {element.type === 'shape' && (element as ShapeElement).gradient ? (
+                          <div
+                            className="w-3.5 h-3.5 rounded shrink-0"
+                            style={{ background: getGradientCSS((element as ShapeElement).gradient!) }}
+                          />
+                        ) : element.type === 'shape' ? (
+                          <div
+                            className="w-3.5 h-3.5 rounded shrink-0 border border-gray-300"
+                            style={{ backgroundColor: (element as ShapeElement).fill }}
+                          />
+                        ) : null}
+                        {element.type !== 'shape' && getIcon()}
+                        <span className="text-xs truncate flex-1">{getLabel()}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground">
                   <Layers className="h-8 w-8 mx-auto mb-2 opacity-40" />
                   <p className="text-xs">No elements yet</p>
-                  <p className="text-xs mt-1">Add text or images to begin</p>
+                  <p className="text-xs mt-1">Add text, images, or shapes</p>
                 </div>
               )}
             </CardContent>
@@ -1010,4 +1618,4 @@ export default function AdDesigner({
 }
 
 // Export types for use in other components
-export type { DesignElement, TextElement, ImageElement };
+export type { DesignElement, TextElement, ImageElement, ShapeElement, ShapeType, GradientFill, LinearGradient, RadialGradient, GradientStop };

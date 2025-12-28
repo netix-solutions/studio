@@ -10,7 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle, Send, Sparkles, HelpCircle, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle, Send, Sparkles, HelpCircle, X, Smartphone, Monitor, Mail, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AD_DIMENSIONS } from '@/lib/types';
@@ -22,6 +32,17 @@ import {
   updateAdWithVersion,
   type AdDraftVersion,
 } from '@/lib/workflow/ad-draft-versions';
+
+// Helper to detect mobile device
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  // Check for mobile user agents
+  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+  // Also check screen width
+  const isSmallScreen = window.innerWidth < 768;
+  return mobileRegex.test(userAgent.toLowerCase()) || isSmallScreen;
+}
 
 // Dynamically import AdDesigner to avoid SSR issues with Konva
 const AdDesigner = dynamic(
@@ -67,6 +88,74 @@ export default function DesignAdPage() {
   const [hasSavedDesign, setHasSavedDesign] = useState(false);
   const [showHelpOffer, setShowHelpOffer] = useState(true);
   const [isRequestingDesign, setIsRequestingDesign] = useState(false);
+
+  // Mobile detection state
+  const [showMobileWarning, setShowMobileWarning] = useState(false);
+  const [mobileWarningDismissed, setMobileWarningDismissed] = useState(false);
+  const [emailForLink, setEmailForLink] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Check for mobile device on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !mobileWarningDismissed) {
+      const isMobile = isMobileDevice();
+      if (isMobile) {
+        setShowMobileWarning(true);
+      }
+    }
+  }, [mobileWarningDismissed]);
+
+  // Handle sending email with desktop link
+  const handleSendDesktopLink = async () => {
+    if (!emailForLink || !emailForLink.includes('@')) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      // Build the current URL for the desktop link
+      const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+      const response = await fetch('/api/send-desktop-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailForLink,
+          designUrl: currentUrl,
+          userName: userData?.contactName || userData?.firstName || 'there',
+          businessName: userData?.businessName || '',
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send email');
+      }
+
+      setEmailSent(true);
+      toast({
+        title: 'Email Sent!',
+        description: `We've sent a link to ${emailForLink}. Check your inbox!`,
+      });
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast({
+        title: 'Failed to Send Email',
+        description: error.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   // Check for active subscription and load saved design
   useEffect(() => {
@@ -548,6 +637,97 @@ export default function DesignAdPage() {
 
   return (
     <div className="flex-1 space-y-6">
+      {/* Mobile Warning Dialog */}
+      <Dialog open={showMobileWarning} onOpenChange={setShowMobileWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 bg-amber-100 rounded-full">
+                <Smartphone className="h-8 w-8 text-amber-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-center">Better on Desktop</DialogTitle>
+            <DialogDescription className="text-center">
+              The Ad Designer works best on a larger screen. For the best experience with shapes, colors, and gradients, we recommend using a desktop or laptop computer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {!emailSent ? (
+              <>
+                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <Mail className="h-5 w-5 text-blue-600 shrink-0" />
+                  <p className="text-sm text-blue-800">
+                    Want to continue on your computer? We'll send you a link!
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email-link" className="text-sm font-medium">
+                    Your email address
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="email-link"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={emailForLink}
+                      onChange={(e) => setEmailForLink(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleSendDesktopLink}
+                      disabled={isSendingEmail || !emailForLink}
+                      className="shrink-0"
+                    >
+                      {isSendingEmail ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-1" />
+                          Send
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+                <div className="text-center">
+                  <p className="font-medium text-green-800">Email Sent!</p>
+                  <p className="text-sm text-green-700">
+                    Check your inbox for the link to continue designing on your computer.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setShowMobileWarning(false);
+                setMobileWarningDismissed(true);
+              }}
+            >
+              <Monitor className="h-4 w-4 mr-2" />
+              Continue Anyway
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full sm:w-auto"
+              onClick={() => router.push('/account')}
+            >
+              Go Back
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href={isAdminMode ? `/advertisements/${advertisementId}?userId=${effectiveUserId}` : '/account'}>
