@@ -1,4 +1,4 @@
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, applicationDefault, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 
@@ -8,9 +8,11 @@ let adminAuth: Auth;
 
 function initializeAdminApp() {
   if (getApps().length === 0) {
-    // When running on Firebase App Hosting, credentials are automatically available
-    // via Application Default Credentials (ADC)
+    // When running on Firebase App Hosting, explicitly use Application Default Credentials (ADC)
+    // This ensures proper authentication for all Firebase Admin SDK operations,
+    // including Identity Toolkit API calls (createUser, generatePasswordResetLink, etc.)
     adminApp = initializeApp({
+      credential: applicationDefault(),
       projectId: process.env.FIREBASE_PROJECT_ID || 'studio-4614023416-d45cd',
     });
   } else {
