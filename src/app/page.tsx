@@ -407,45 +407,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof - Compact Testimonials */}
-      <section className="py-14 md:py-20 bg-gray-50">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-10 md:mb-12">
-            <div className="flex items-center justify-center gap-1 mb-3">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 md:h-6 md:w-6 text-amber-400 fill-current" />
-              ))}
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold font-headline text-brand-primary">
-              Trusted by Local Businesses
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-5 md:gap-6 max-w-5xl mx-auto">
-            {[
-              { quote: "The local targeting is exactly what our restaurant needed. New customers every week!", name: "Maria S.", business: "Family Restaurant", icon: Utensils },
-              { quote: "At $16 a month, this is the most affordable advertising we've found.", name: "James T.", business: "HVAC Services", icon: Building2 },
-              { quote: "Beautiful ad designed for us in 2 days. Already renewed for a second year!", name: "Dr. Sarah K.", business: "Family Dentistry", icon: Stethoscope },
-            ].map((item, i) => (
-              <Card key={i} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow rounded-xl">
-                <CardContent className="p-5 md:p-6">
-                  <p className="text-gray-700 text-sm md:text-base mb-4 leading-relaxed">"{item.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center">
-                      <item.icon className="h-5 w-5 text-brand-primary" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-brand-primary text-sm">{item.name}</div>
-                      <div className="text-xs text-gray-500">{item.business}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Community Connection Section with Background */}
       <section className="relative py-20 md:py-28 overflow-hidden">
         {/* Background Image */}
@@ -481,6 +442,45 @@ export default function LandingPage() {
                 <div className="text-sm text-white/60">Starting Price</div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof - Compact Testimonials */}
+      <section className="py-14 md:py-20 bg-gray-50">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-10 md:mb-12">
+            <div className="flex items-center justify-center gap-1 mb-3">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-5 w-5 md:h-6 md:w-6 text-amber-400 fill-current" />
+              ))}
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold font-headline text-brand-primary">
+              Trusted by Local Businesses
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 md:gap-6 max-w-5xl mx-auto">
+            {[
+              { quote: "The local targeting is exactly what our restaurant needed. New customers every week!", name: "Maria S.", business: "Family Restaurant", icon: Utensils },
+              { quote: "At $16 a month, this is the most affordable advertising we've found.", name: "James T.", business: "HVAC Services", icon: Building2 },
+              { quote: "Beautiful ad designed for us in 2 days. Already renewed for a second year!", name: "Dr. Sarah K.", business: "Family Dentistry", icon: Stethoscope },
+            ].map((item, i) => (
+              <Card key={i} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+                <CardContent className="p-5 md:p-6">
+                  <p className="text-gray-700 text-sm md:text-base mb-4 leading-relaxed">"{item.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center">
+                      <item.icon className="h-5 w-5 text-brand-primary" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-brand-primary text-sm">{item.name}</div>
+                      <div className="text-xs text-gray-500">{item.business}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -628,7 +628,7 @@ export default function LandingPage() {
                 </div>
             </div>
             <div className="mt-10 pt-6 border-t border-white/10 text-center text-xs text-white/50">
-                &copy; {new Date().getFullYear()} Community-Websites.com. All Rights Reserved.
+                &copy; {new Date().getFullYear()} Community-Websites.com. All rights reserved.
             </div>
         </div>
       </footer>
