@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
   var DEFAULT_WEBSITE = '${websiteParam}';
   var ROTATION_INTERVAL = 7500; // 7.5 seconds
   var TRANSITION_DURATION = 500; // 0.5 second transition
+  var MAX_ROTATION_DURATION = 300000; // 5 minutes - stop rotation after this to save resources
 
   // Display dimensions (scaled down from 600x200 to 300x100)
   var DISPLAY_WIDTH = 300;
@@ -258,6 +259,14 @@ export async function GET(request: NextRequest) {
         instance.rotationTimer = setInterval(function() {
           displayAd(instance, wrapper, false);
         }, ROTATION_INTERVAL);
+
+        // Stop rotation after 5 minutes to save system resources
+        setTimeout(function() {
+          if (instance.rotationTimer) {
+            clearInterval(instance.rotationTimer);
+            instance.rotationTimer = null;
+          }
+        }, MAX_ROTATION_DURATION);
       }
 
       // Fire loaded callback
