@@ -45,6 +45,7 @@ const PIPELINE_STAGES: AdStatus[] = [
   'pending_internal_review',
   'pending_ad_creation',
   'pending_customer_approval',
+  'holding',
   'live',
 ];
 
@@ -54,6 +55,7 @@ const STAGE_LABELS: Record<AdStatus, string> = {
   pending_internal_review: 'Under Review',
   pending_ad_creation: 'Creating Ad',
   pending_customer_approval: 'Customer Approval',
+  holding: 'Holding',
   live: 'Live',
   revision_requested: 'Revision Needed',
   approved: 'Approved',
@@ -93,6 +95,8 @@ function StageColumn({ stage, ads, onMoveToStage, onAdClick, isFirst, isLast }: 
         return <FileEdit className="h-4 w-4" />;
       case 'pending_customer_approval':
         return <CheckCircle2 className="h-4 w-4" />;
+      case 'holding':
+        return <Pause className="h-4 w-4" />;
       case 'live':
         return <Play className="h-4 w-4" />;
       default:
