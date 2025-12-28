@@ -170,24 +170,27 @@ export function DesignStep({
                             {!requestCustomDesign && <CheckCircle className="h-4 w-4 text-white" />}
                         </div>
                         <div className="flex-1">
-                            <h4 className="font-semibold text-lg">
-                                {isAdmin ? 'Customer Designs Their Own' : 'Design Your Own Ad'}
-                            </h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-lg">
+                                    {isAdmin ? 'Customer Designs Their Own' : 'Design Your Own Ad'}
+                                </h4>
+                                <Badge variant="secondary">Free</Badge>
+                            </div>
                             <p className="text-muted-foreground mt-1">
-                                Use our visual ad designer to create a custom {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} ad.
+                                Use our visual ad designer to create a custom {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} ad. Fully customizable with instant preview - design it now!
                             </p>
                             <ul className="text-sm text-muted-foreground mt-3 space-y-1">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-500" />
-                                    Drag and drop interface
+                                    Instant preview as you design
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-500" />
-                                    Multiple fonts and colors
+                                    Fully customizable - fonts, colors, images
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-500" />
-                                    Instant preview
+                                    Design and submit today
                                 </li>
                             </ul>
                         </div>
@@ -241,15 +244,15 @@ export function DesignStep({
                             <ul className="text-sm text-muted-foreground mt-3 space-y-1">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-500" />
-                                    Professional design team
+                                    Professional design team creates your ad
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-500" />
-                                    Quick turnaround
+                                    First draft within 72 hours (may take longer)
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-500" />
-                                    Unlimited revisions
+                                    Unlimited revisions included
                                 </li>
                             </ul>
                         </div>
