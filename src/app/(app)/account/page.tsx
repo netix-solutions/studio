@@ -816,11 +816,53 @@ export default function AccountPage() {
                 </Card>
             )}
 
+            {/* Visual Ad Designer CTA - Show for active subscriptions */}
+            {subscriptions.some(s => s.status === 'active' || s.status === 'trialing') && (
+                <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Palette className="h-5 w-5 text-primary" />
+                            Create Your Own Ad
+                        </CardTitle>
+                        <CardDescription>
+                            Use our visual ad designer to create a custom {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} ad yourself!
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                            <li className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                Drag and drop your logo and images
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                Add and customize text with different fonts
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                Resize and position elements freely
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                Export as PNG or submit for review
+                            </li>
+                        </ul>
+                        <Link href="/design-ad">
+                            <Button className="w-full md:w-auto">
+                                <Palette className="h-4 w-4 mr-2" />
+                                Open Ad Designer
+                                <ArrowRight className="h-4 w-4 ml-2" />
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Ad Designer Section - Show for active subscriptions */}
             {subscriptions.some(s => s.status === 'active' || s.status === 'trialing') && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Advertisement Designer</CardTitle>
+                        <CardTitle>Advertisement Details</CardTitle>
                         <CardDescription>
                             Provide your business information and design preferences to help us create your perfect ad.
                         </CardDescription>
