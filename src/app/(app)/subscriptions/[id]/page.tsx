@@ -10,13 +10,12 @@ import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Ca
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
-import { Separator } from '@/components/ui/separator';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { SendEmailDialog, type AdvertisementInfo } from '@/components/shared/send-email-dialog';
-import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
+import { CustomerActivity } from '@/components/customers/customer-activity';
 import {
     AD_STATUS_LABELS,
     AD_STATUS_COLORS,
@@ -72,6 +71,7 @@ export default function SubscriptionDetailPage() {
     const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
     const [user, setUser] = useState<UserDetails | null>(null);
     const [advertisement, setAdvertisement] = useState<AdvertisementInfo | null>(null);
+    const [leadId, setLeadId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -92,11 +92,14 @@ export default function SubscriptionDetailPage() {
                 const subDocRef = doc(firestore, 'customers', customerId, 'subscriptions', subscriptionId);
                 const userDocRef = doc(firestore, 'users', customerId);
                 const adQuery = query(collection(firestore, 'users', customerId, 'advertisements'), where('subscriptionId', '==', subscriptionId));
-                
-                const [subDocSnap, userDocSnap, adSnapshot] = await Promise.all([
+                // Find the lead that was converted to this customer (for activity tracking)
+                const leadQuery = query(collection(firestore, 'leads'), where('convertedToCustomerId', '==', customerId));
+
+                const [subDocSnap, userDocSnap, adSnapshot, leadSnapshot] = await Promise.all([
                     getDoc(subDocRef),
                     getDoc(userDocRef),
                     getDocs(adQuery),
+                    getDocs(leadQuery),
                 ]);
 
                 if (!subDocSnap.exists()) throw new Error("Subscription data could not be found for this customer.");
@@ -133,6 +136,11 @@ export default function SubscriptionDetailPage() {
                         adProofUrl: adData.adProofUrl,
                         adProofDestinationUrl: adData.adProofDestinationUrl || userData.adWebsiteUrl,
                     });
+                }
+
+                // Set lead ID if found (for activity tracking)
+                if (!leadSnapshot.empty) {
+                    setLeadId(leadSnapshot.docs[0].id);
                 }
 
             } catch (err: any) {
@@ -289,12 +297,12 @@ export default function SubscriptionDetailPage() {
                     </CardContent>
                  </Card>
                  
-                 <EmailHistoryDialog
-                    recipient={{ id: user.id, email: user.email }}
-                    isOpen={true}
-                    onOpenChange={() => {}}
-                    renderAsCard={true}
-                />
+                 {/* Unified Activity - combines activity timeline with emails */}
+                 <CustomerActivity
+                    leadId={leadId || undefined}
+                    recipientId={user.id}
+                    recipientEmail={user.email}
+                 />
 
                  <CommentsDialog
                     subscription={{id: subscription.id, customerId: subscription.customerId}}

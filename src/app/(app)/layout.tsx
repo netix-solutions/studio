@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { usePageVisitTracking } from '@/hooks/use-page-visit-tracking';
+import { useLoginTracking } from '@/hooks/use-login-tracking';
 
 // Admin routes - includes main pages and legacy routes for backwards compatibility
 const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard', '/users', '/automated-emails', '/import', '/legal', '/pipeline', '/ad-server', '/customer-workflow', '/manual-entry', '/discounts', '/reconciliation', '/admin-notifications'];
@@ -33,6 +34,9 @@ export default function ProtectedLayout({
 
   // Track page visits for logged-in users (records in lead activity timeline)
   usePageVisitTracking();
+
+  // Track login events for logged-in users (records in lead activity timeline)
+  useLoginTracking();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
