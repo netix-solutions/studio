@@ -25,6 +25,7 @@ import {
     RefreshCw,
     Archive,
     Trash2,
+    MessageSquare,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -77,12 +78,18 @@ type AdWithMeta = Advertisement & {
     changeRequestType?: 'self_design' | 'team_design';
     parentAdId?: string;
     liveAdId?: string;
+    // Revision tracking
+    revisionCount?: number;
+    revisionNotes?: string;
+    lastActionBy?: string;
+    hasRevisionRequest?: boolean; // Computed: true if in_review with revisionCount > 0
 };
 
 // Status filter options - Updated for new workflow
 const STATUS_FILTERS = [
     { value: 'all', label: 'All Ads', count: 0 },
     { value: 'action_required', label: 'Action Required', count: 0 },
+    { value: 'revision_requests', label: 'Revision Requests', count: 0 },
     { value: 'change_requests', label: 'Change Requests', count: 0 },
     { value: 'info_needed', label: 'Info Needed', count: 0 },
     { value: 'design_pending', label: 'Design Pending', count: 0 },
@@ -124,6 +131,10 @@ export default function AdvertisementsPage() {
                 const rawStatus = data.status || 'info_needed';
                 const normalizedStatus = normalizeAdStatus(rawStatus);
 
+                // Determine if this is a revision request (in_review with customer feedback)
+                const revisionCount = data.revisionCount || 0;
+                const hasRevisionRequest = normalizedStatus === 'in_review' && revisionCount > 0;
+
                 const ad: AdWithMeta = {
                     id: doc.id,
                     userId: data.userId,
@@ -145,6 +156,11 @@ export default function AdvertisementsPage() {
                     parentAdId: data.parentAdId,
                     // Live ad reference
                     liveAdId: data.pushedToAdServerId || data.liveAdId,
+                    // Revision tracking fields
+                    revisionCount,
+                    revisionNotes: data.revisionNotes,
+                    lastActionBy: data.lastActionBy,
+                    hasRevisionRequest,
                 };
 
                 // Check for auto-approve eligibility (customer_approval status with sent date)
@@ -159,17 +175,18 @@ export default function AdvertisementsPage() {
             adsData.sort((a, b) => {
                 const getPriority = (ad: AdWithMeta) => {
                     if (ad.shouldAutoApprove) return 0; // Auto-approve ready
-                    if (ad.status === 'in_review') return 1; // Needs admin action
-                    if (ad.status === 'design_pending') return 2; // Waiting on design
-                    if (ad.status === 'customer_approval') return 3; // Waiting on customer
-                    if (ad.status === 'approved') return 4; // Ready to go live
-                    if (ad.status === 'info_needed') return 5; // New/waiting on info
-                    if (ad.status === 'live') return 6;
-                    if (ad.status === 'paused') return 7;
-                    if (ad.status === 'completed') return 8;
-                    if (ad.status === 'canceled') return 9;
-                    if (ad.status === 'archived') return 10;
-                    return 11;
+                    if (ad.hasRevisionRequest) return 1; // Customer requested revisions - high priority
+                    if (ad.status === 'in_review') return 2; // Needs admin action
+                    if (ad.status === 'design_pending') return 3; // Waiting on design
+                    if (ad.status === 'customer_approval') return 4; // Waiting on customer
+                    if (ad.status === 'approved') return 5; // Ready to go live
+                    if (ad.status === 'info_needed') return 6; // New/waiting on info
+                    if (ad.status === 'live') return 7;
+                    if (ad.status === 'paused') return 8;
+                    if (ad.status === 'completed') return 9;
+                    if (ad.status === 'canceled') return 10;
+                    if (ad.status === 'archived') return 11;
+                    return 12;
                 };
 
                 const priorityDiff = getPriority(a) - getPriority(b);
@@ -278,8 +295,11 @@ export default function AdvertisementsPage() {
             action_required: advertisements.filter(ad =>
                 ad.status === 'in_review' ||  // Admin needs to create/finalize ad
                 ad.status === 'approved' ||   // Admin needs to push to ad server
-                ad.shouldAutoApprove          // Ready for auto-approval
+                ad.shouldAutoApprove ||       // Ready for auto-approval
+                ad.hasRevisionRequest         // Customer requested revisions
             ).length,
+            // Revision requests = ads where customer has requested changes
+            revision_requests: advertisements.filter(ad => ad.hasRevisionRequest).length,
             // Change requests = ads that are replacements for existing ads
             change_requests: advertisements.filter(ad => ad.isChangeRequest).length,
         };
@@ -313,8 +333,12 @@ export default function AdvertisementsPage() {
                     if (!(
                         ad.status === 'in_review' ||  // Admin needs to create/finalize ad
                         ad.status === 'approved' ||   // Admin needs to push to ad server
-                        ad.shouldAutoApprove          // Ready for auto-approval
+                        ad.shouldAutoApprove ||       // Ready for auto-approval
+                        ad.hasRevisionRequest         // Customer requested revisions
                     )) return false;
+                } else if (statusFilter === 'revision_requests') {
+                    // Only show ads with revision requests from customers
+                    if (!ad.hasRevisionRequest) return false;
                 } else if (statusFilter === 'change_requests') {
                     // Only show change request ads
                     if (!ad.isChangeRequest) return false;
@@ -329,6 +353,7 @@ export default function AdvertisementsPage() {
 
     const getStatusIcon = (ad: AdWithMeta) => {
         if (ad.shouldAutoApprove) return <CheckCircle className="h-4 w-4 text-green-500" />;
+        if (ad.hasRevisionRequest) return <MessageSquare className="h-4 w-4 text-orange-500" />;
         switch (ad.status) {
             case 'in_review':
                 return <Eye className="h-4 w-4 text-blue-500" />;
@@ -363,7 +388,7 @@ export default function AdvertisementsPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-5">
                 <Card
                     className={cn(
                         "cursor-pointer transition-all hover:shadow-md",
@@ -389,6 +414,21 @@ export default function AdvertisementsPage() {
                             Action Required
                         </CardDescription>
                         <CardTitle className="text-3xl text-amber-600">{counts.action_required}</CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card
+                    className={cn(
+                        "cursor-pointer transition-all hover:shadow-md",
+                        statusFilter === 'revision_requests' && "ring-2 ring-primary"
+                    )}
+                    onClick={() => setStatusFilter('revision_requests')}
+                >
+                    <CardHeader className="pb-2">
+                        <CardDescription className="flex items-center gap-1">
+                            <MessageSquare className="h-4 w-4 text-orange-500" />
+                            Revisions
+                        </CardDescription>
+                        <CardTitle className="text-3xl text-orange-600">{counts.revision_requests || 0}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card
@@ -481,7 +521,11 @@ export default function AdvertisementsPage() {
                             ? 'All Advertisements'
                             : statusFilter === 'action_required'
                                 ? 'Ads Requiring Action'
-                                : `${AD_STATUS_LABELS[statusFilter as AdStatus] || statusFilter} Ads`}
+                                : statusFilter === 'revision_requests'
+                                    ? 'Ads with Revision Requests'
+                                    : statusFilter === 'change_requests'
+                                        ? 'Change Request Ads'
+                                        : `${AD_STATUS_LABELS[statusFilter as AdStatus] || statusFilter} Ads`}
                     </CardTitle>
                     <CardDescription>
                         {filteredAds.length} advertisement{filteredAds.length !== 1 ? 's' : ''} found
@@ -524,7 +568,8 @@ export default function AdvertisementsPage() {
                                                 key={ad.id}
                                                 className={cn(
                                                     "cursor-pointer",
-                                                    ad.shouldAutoApprove && "bg-green-50 hover:bg-green-100"
+                                                    ad.shouldAutoApprove && "bg-green-50 hover:bg-green-100",
+                                                    ad.hasRevisionRequest && "bg-orange-50 hover:bg-orange-100"
                                                 )}
                                                 onClick={() => handleViewDetails(ad)}
                                             >
@@ -546,6 +591,12 @@ export default function AdvertisementsPage() {
                                                         >
                                                             {AD_STATUS_LABELS[ad.status] || ad.status}
                                                         </Badge>
+                                                        {ad.hasRevisionRequest && (
+                                                            <Badge variant="outline" className="text-xs w-fit bg-orange-100 text-orange-700 border-orange-300">
+                                                                <MessageSquare className="h-3 w-3 mr-1" />
+                                                                Revision
+                                                            </Badge>
+                                                        )}
                                                         {ad.isChangeRequest && (
                                                             <Badge variant="outline" className="text-xs w-fit">
                                                                 <RefreshCw className="h-3 w-3 mr-1" />
@@ -559,7 +610,18 @@ export default function AdvertisementsPage() {
                                                         ? format(ad.createdAt.toDate ? ad.createdAt.toDate() : new Date(ad.createdAt), 'MMM d, yyyy')
                                                         : 'N/A'}
                                                 </TableCell>
-                                                <TableCell className="hidden lg:table-cell">
+                                                <TableCell className="hidden lg:table-cell max-w-xs">
+                                                    {ad.hasRevisionRequest && ad.revisionNotes && (
+                                                        <div className="text-xs text-orange-700 font-medium">
+                                                            <span className="flex items-center gap-1 mb-1">
+                                                                <MessageSquare className="h-3 w-3" />
+                                                                Customer feedback:
+                                                            </span>
+                                                            <span className="text-orange-600 font-normal line-clamp-2">
+                                                                {ad.revisionNotes}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     {ad.shouldAutoApprove && (
                                                         <span className="text-xs text-green-700 font-medium flex items-center gap-1">
                                                             <CheckCircle className="h-3 w-3" />
@@ -571,7 +633,7 @@ export default function AdvertisementsPage() {
                                                             Auto-approves {formatDistanceToNow(calculateAutoApprovalDeadline(ad.sentForApprovalAt), { addSuffix: true })}
                                                         </span>
                                                     )}
-                                                    {ad.status === 'in_review' && (
+                                                    {ad.status === 'in_review' && !ad.hasRevisionRequest && (
                                                         <span className="text-xs text-blue-600 font-medium">
                                                             Needs review
                                                         </span>
