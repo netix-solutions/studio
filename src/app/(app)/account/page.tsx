@@ -195,7 +195,7 @@ export default function AccountPage() {
         if (!firestore || !user) return;
         setBillingLoading(true);
         try {
-            await goToBillingPortal(firestore, user.uid);
+            await goToBillingPortal(firestore, user.uid, window.location.href);
         } catch (error) {
             console.error('Error opening billing portal:', error);
             toast({
