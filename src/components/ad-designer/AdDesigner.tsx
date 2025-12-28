@@ -886,17 +886,17 @@ export default function AdDesigner({
         {/* Compact Toolbar above canvas */}
         <div className="flex items-center gap-1 p-2 bg-muted rounded-lg flex-wrap" style={{ minWidth: width * scale }}>
           {/* Add Elements */}
-          <Button variant="outline" size="sm" onClick={addText} className="h-8 px-2">
+          <Button type="button" variant="outline" size="sm" onClick={addText} className="h-8 px-2">
             <Type className="h-4 w-4 mr-1" /> Text
           </Button>
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-8 px-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-8 px-2">
             <ImageIcon className="h-4 w-4 mr-1" /> Image
           </Button>
 
           {/* Shapes Dropdown */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2">
+              <Button type="button" variant="outline" size="sm" className="h-8 px-2">
                 <Square className="h-4 w-4 mr-1" /> Shapes
               </Button>
             </PopoverTrigger>
@@ -934,10 +934,10 @@ export default function AdDesigner({
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Undo/Redo */}
-          <Button variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} title="Undo" className="h-8 w-8">
+          <Button type="button" variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} title="Undo" className="h-8 w-8">
             <Undo className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo" className="h-8 w-8">
+          <Button type="button" variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo" className="h-8 w-8">
             <Redo className="h-4 w-4" />
           </Button>
 
@@ -946,7 +946,7 @@ export default function AdDesigner({
           {/* Background Color with Gradients */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2 gap-1.5" title="Background Color">
+              <Button type="button" variant="outline" size="sm" className="h-8 px-2 gap-1.5" title="Background Color">
                 <div className="w-4 h-4 rounded border" style={{ backgroundColor }} />
                 <span className="text-xs">Background</span>
               </Button>
@@ -1007,22 +1007,22 @@ export default function AdDesigner({
           </Popover>
 
           {/* Zoom */}
-          <Button variant="ghost" size="icon" onClick={() => setScale(Math.max(0.5, scale - 0.1))} title="Zoom Out" className="h-8 w-8">
+          <Button type="button" variant="ghost" size="icon" onClick={() => setScale(Math.max(0.5, scale - 0.1))} title="Zoom Out" className="h-8 w-8">
             <ZoomOut className="h-4 w-4" />
           </Button>
           <span className="text-xs w-10 text-center">{Math.round(scale * 100)}%</span>
-          <Button variant="ghost" size="icon" onClick={() => setScale(Math.min(2, scale + 0.1))} title="Zoom In" className="h-8 w-8">
+          <Button type="button" variant="ghost" size="icon" onClick={() => setScale(Math.min(2, scale + 0.1))} title="Zoom In" className="h-8 w-8">
             <ZoomIn className="h-4 w-4" />
           </Button>
 
           <div className="flex-1" />
 
           {/* Export/Save */}
-          <Button variant="outline" size="sm" onClick={exportToPNG} className="h-8 px-2" title="Download PNG">
+          <Button type="button" variant="outline" size="sm" onClick={exportToPNG} className="h-8 px-2" title="Download PNG">
             <Download className="h-4 w-4" />
           </Button>
           {onSave && (
-            <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-3">
+            <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-3">
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-1" />
