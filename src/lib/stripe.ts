@@ -87,15 +87,29 @@ export const createCheckout = async (
   });
 };
 
-export const goToBillingPortal = async (firestore: Firestore, userId: string, returnUrl: string) => {
-  // 1. Create a new portal link document in the /customers/{uid}/portal_links collection
+export const goToBillingPortal = async (
+  firestore: Firestore,
+  userId: string,
+  userEmail: string | null | undefined,
+  returnUrl: string
+) => {
+  // 1. Ensure the customer doc exists (doc id MUST equal Firebase UID)
+  await setDoc(
+    doc(firestore, 'customers', userId),
+    {
+      email: userEmail ?? null,
+    },
+    { merge: true }
+  );
+
+  // 2. Create a new portal link document in the /customers/{uid}/portal_links collection
   const portalLinksRef = collection(firestore, 'customers', userId, 'portal_links');
   const docRef = await addDoc(portalLinksRef, {
     return_url: returnUrl,
     createdAt: serverTimestamp(),
   });
 
-  // 2. Wait for the Stripe extension to write the URL to the document with timeout
+  // 3. Wait for the Stripe extension to write the URL to the document with timeout
   return new Promise<void>((resolve, reject) => {
     let timeoutId: NodeJS.Timeout;
 
