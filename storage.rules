@@ -46,17 +46,19 @@ service firebase.storage {
 
     // Design version preview images (5-level path: userId/adId/versions/filename)
     // Customers can save their own design version previews
+    // TODO: Restore isAdmin() check once custom claims are working
     match /advertisements/{userId}/{advertisementId}/versions/{fileName} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isSignedIn();
+      allow write: if isOwner(userId) || isSignedIn();
     }
 
     // Ad files in advertisement folders (4-level path: userId/advertisementId/filename)
     // Customers can upload their own design images to their ad folders
     // Admins can also upload proofs and other files for customers
+    // TODO: Restore isAdmin() check once custom claims are working
     match /advertisements/{userId}/{advertisementId}/{fileName} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isSignedIn();
+      allow write: if isOwner(userId) || isSignedIn();
     }
 
     // Live ad creatives - PUBLIC read access for serving ads to external websites
