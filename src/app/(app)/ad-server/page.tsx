@@ -1103,9 +1103,10 @@ export default function AdServerPage() {
                     </DialogHeader>
 
                     <Tabs defaultValue="websites">
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-5">
                             <TabsTrigger value="websites">By Website</TabsTrigger>
                             <TabsTrigger value="wix">Wix Sites</TabsTrigger>
+                            <TabsTrigger value="directory">Sponsor Page</TabsTrigger>
                             <TabsTrigger value="simple">Generic</TabsTrigger>
                             <TabsTrigger value="advanced">Advanced</TabsTrigger>
                         </TabsList>
@@ -1571,6 +1572,179 @@ $w.onReady(function () {
                                                 toast({
                                                     title: 'Copied!',
                                                     description: 'Wix Velo code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="directory" className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    <span className="text-lg">Sponsor Directory Page</span>
+                                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">New</span>
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Display all your sponsors in a beautiful directory page. Perfect for a &quot;View Our Sponsors&quot; or &quot;Our Partners&quot; page on your Wix website.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Full Page Directory (Recommended)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Shows all active sponsors in a responsive grid with their ads and business names. Includes a call-to-action to become a sponsor.
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<iframe
+  src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-directory?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+  style="width: 100%; min-height: 600px; border: none;"
+  scrolling="auto"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="Our Sponsors">
+</iframe>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<iframe
+  src="${window.location.origin}/api/ads/wix-directory?website=${selectedEmbedWebsite || 'wesley-chapel'}"
+  style="width: 100%; min-height: 600px; border: none;"
+  scrolling="auto"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="Our Sponsors">
+</iframe>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: 'Sponsor directory embed code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>With Custom CTA Button</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Add your custom &quot;Become a Sponsor&quot; URL to drive new advertisers:
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<iframe
+  src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-directory?website=${selectedEmbedWebsite || 'wesley-chapel'}&ctaUrl=YOUR_SIGNUP_URL&ctaText=Become a Sponsor"
+  style="width: 100%; min-height: 600px; border: none;"
+  scrolling="auto"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="Our Sponsors">
+</iframe>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<iframe
+  src="${window.location.origin}/api/ads/wix-directory?website=${selectedEmbedWebsite || 'wesley-chapel'}&ctaUrl=YOUR_SIGNUP_URL&ctaText=Become a Sponsor"
+  style="width: 100%; min-height: 600px; border: none;"
+  scrolling="auto"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="Our Sponsors">
+</iframe>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: 'Directory with CTA code copied to clipboard.',
+                                                });
+                                            }}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Customization Options</Label>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="p-2 bg-muted rounded">
+                                            <code className="text-xs">title=Our Sponsors</code>
+                                            <p className="text-xs text-muted-foreground mt-1">Page title</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded">
+                                            <code className="text-xs">subtitle=...</code>
+                                            <p className="text-xs text-muted-foreground mt-1">Description text</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded">
+                                            <code className="text-xs">theme=light|dark|auto</code>
+                                            <p className="text-xs text-muted-foreground mt-1">Color theme</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded">
+                                            <code className="text-xs">columns=auto|2|3|4</code>
+                                            <p className="text-xs text-muted-foreground mt-1">Grid columns</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded">
+                                            <code className="text-xs">cta=false</code>
+                                            <p className="text-xs text-muted-foreground mt-1">Hide CTA section</p>
+                                        </div>
+                                        <div className="p-2 bg-muted rounded">
+                                            <code className="text-xs">branding=false</code>
+                                            <p className="text-xs text-muted-foreground mt-1">Hide branding</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Dark Theme Version</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        For websites with dark backgrounds:
+                                    </p>
+                                    <div className="relative">
+                                        <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+{`<iframe
+  src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/wix-directory?website=${selectedEmbedWebsite || 'wesley-chapel'}&theme=dark"
+  style="width: 100%; min-height: 600px; border: none;"
+  scrolling="auto"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="Our Sponsors">
+</iframe>`}
+                                        </pre>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="absolute top-2 right-2"
+                                            onClick={() => {
+                                                const code = `<iframe
+  src="${window.location.origin}/api/ads/wix-directory?website=${selectedEmbedWebsite || 'wesley-chapel'}&theme=dark"
+  style="width: 100%; min-height: 600px; border: none;"
+  scrolling="auto"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="Our Sponsors">
+</iframe>`;
+                                                navigator.clipboard.writeText(code);
+                                                toast({
+                                                    title: 'Copied!',
+                                                    description: 'Dark theme directory code copied to clipboard.',
                                                 });
                                             }}
                                         >
