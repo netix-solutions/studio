@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, Loader2, AlertCircle, Eye, Megaphone } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
+import { normalizeAdStatus } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
 import { useRouter } from 'next/navigation';
@@ -26,23 +27,34 @@ interface EnrichedSubscription {
     startDate: string;
     endDate: string;
     status: string;
-    adStatus: 'pending_ad_creation' | 'pending_customer_approval' | 'live' | 'canceled_inactive' | 'Not Started';
+    adStatus: string;
+    adId?: string; // Advertisement ID for direct navigation
     amount: number;
 }
 
 const adStatusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
-    pending_ad_creation: 'outline',
-    pending_customer_approval: 'default',
+    info_needed: 'outline',
+    design_pending: 'outline',
+    in_review: 'default',
+    customer_approval: 'default',
+    approved: 'secondary',
     live: 'secondary',
-    canceled_inactive: 'destructive',
+    paused: 'outline',
+    completed: 'outline',
+    canceled: 'destructive',
     'Not Started': 'outline',
 };
 
 const adStatusTextMap: { [key: string]: string } = {
-    pending_ad_creation: 'Pending Ad Creation',
-    pending_customer_approval: 'Pending Approval',
+    info_needed: 'Info Needed',
+    design_pending: 'Design Pending',
+    in_review: 'In Review',
+    customer_approval: 'Pending Approval',
+    approved: 'Ready to Publish',
     live: 'Live',
-    canceled_inactive: 'Canceled/Inactive',
+    paused: 'Paused',
+    completed: 'Completed',
+    canceled: 'Canceled',
     'Not Started': 'Not Started',
 };
 
@@ -105,17 +117,20 @@ export default function SubscriptionsPage() {
 
                         const adQuery = query(collection(firestore, 'users', customerId, 'advertisements'));
                         const adsSnapshot = await getDocs(adQuery);
-                        const adsMap = new Map<string, any>();
+                        const adsMap = new Map<string, { id: string; status: string }>();
                         adsSnapshot.forEach(adDoc => {
                             const adData = adDoc.data();
                             if (adData.subscriptionId) {
-                                adsMap.set(adData.subscriptionId, adData);
+                                adsMap.set(adData.subscriptionId, {
+                                    id: adDoc.id,
+                                    status: normalizeAdStatus(adData.status || 'info_needed'),
+                                });
                             }
                         });
 
                         subsSnaps.forEach(subDoc => {
                             const subData = subDoc.data();
-                            const adData = adsMap.get(subDoc.id);
+                            const adInfo = adsMap.get(subDoc.id);
 
                             const startDate = subData.created?.seconds ? new Date(subData.created.seconds * 1000) : new Date();
                             const endDate = subData.current_period_end?.seconds ? new Date(subData.current_period_end.seconds * 1000) : new Date();
@@ -132,7 +147,8 @@ export default function SubscriptionsPage() {
                                 startDate: format(startDate, 'yyyy-MM-dd'),
                                 endDate: format(endDate, 'yyyy-MM-dd'),
                                 status: subData.status || 'unknown',
-                                adStatus: adData?.status || 'Not Started',
+                                adStatus: adInfo?.status || 'Not Started',
+                                adId: adInfo?.id,
                                 amount: unitAmount / 100,
                             });
                         });
@@ -310,10 +326,20 @@ export default function SubscriptionsPage() {
                         <Badge variant={getStatusBadgeVariant(sub.status)}>{capitalize(sub.status)}</Badge>
                     </TableCell>
                     {isAdmin && (
-                        <TableCell>
-                           <Badge variant={adStatusVariantMap[sub.adStatus] || 'outline'}>
-                                {adStatusTextMap[sub.adStatus] || sub.adStatus}
-                           </Badge>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                           {sub.adId ? (
+                               <Badge
+                                   variant={adStatusVariantMap[sub.adStatus] || 'outline'}
+                                   className="cursor-pointer hover:opacity-80"
+                                   onClick={() => router.push(`/advertisements/${sub.adId}?userId=${sub.customerId}`)}
+                               >
+                                   {adStatusTextMap[sub.adStatus] || sub.adStatus}
+                               </Badge>
+                           ) : (
+                               <Badge variant="outline">
+                                   {adStatusTextMap[sub.adStatus] || sub.adStatus}
+                               </Badge>
+                           )}
                         </TableCell>
                     )}
                     <TableCell className="text-right">${sub.amount.toFixed(2)}</TableCell>
@@ -334,8 +360,18 @@ export default function SubscriptionsPage() {
                                     e.stopPropagation();
                                     handleRowClick(sub);
                                 }}>
+                                    <Eye className="mr-2 h-4 w-4" />
                                     View Details
                                 </DropdownMenuItem>
+                                {sub.adId && (
+                                    <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(`/advertisements/${sub.adId}?userId=${sub.customerId}`);
+                                    }}>
+                                        <Megaphone className="mr-2 h-4 w-4" />
+                                        Manage Ad
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem>Cancel Subscription</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

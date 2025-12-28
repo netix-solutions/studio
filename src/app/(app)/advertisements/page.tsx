@@ -99,11 +99,15 @@ export default function AdvertisementsPage() {
         const unsubscribe = onSnapshot(adsQuery, (snapshot) => {
             const adsData: AdWithMeta[] = snapshot.docs.map(doc => {
                 const data = doc.data();
+                // Normalize legacy statuses to new workflow statuses
+                const rawStatus = data.status || 'info_needed';
+                const normalizedStatus = normalizeAdStatus(rawStatus);
+
                 const ad: AdWithMeta = {
                     id: doc.id,
                     userId: data.userId,
                     subscriptionId: data.subscriptionId || '',
-                    status: data.status || 'pending_info',
+                    status: normalizedStatus,
                     adProofUrl: data.adProofUrl,
                     adProofDestinationUrl: data.adProofDestinationUrl,
                     businessName: data.businessName,
@@ -113,9 +117,11 @@ export default function AdvertisementsPage() {
                     sentForApprovalAt: data.sentForApprovalAt,
                     createdAt: data.createdAt,
                     updatedAt: data.updatedAt,
+                    normalizedStatus,
                 };
 
-                if (ad.status === 'pending_customer_approval' && ad.sentForApprovalAt) {
+                // Check for auto-approve eligibility (customer_approval status with sent date)
+                if (normalizedStatus === 'customer_approval' && ad.sentForApprovalAt) {
                     ad.shouldAutoApprove = shouldAutoApprove(ad.sentForApprovalAt);
                 }
 
@@ -125,16 +131,16 @@ export default function AdvertisementsPage() {
             // Sort by status priority (action required first) then by date
             adsData.sort((a, b) => {
                 const getPriority = (ad: AdWithMeta) => {
-                    if (ad.shouldAutoApprove) return 0;
-                    if (ad.status === 'pending_internal_review') return 1;
-                    if (ad.status === 'pending_ad_creation') return 2;
-                    if (ad.status === 'revision_requested') return 3;
-                    if (ad.status === 'pending_customer_approval') return 4;
-                    if (ad.status === 'holding') return 5;
-                    if (ad.status === 'pending_info') return 6;
-                    if (ad.status === 'live') return 7;
-                    if (ad.status === 'paused') return 8;
-                    if (ad.status === 'canceled_inactive') return 11;
+                    if (ad.shouldAutoApprove) return 0; // Auto-approve ready
+                    if (ad.status === 'in_review') return 1; // Needs admin action
+                    if (ad.status === 'design_pending') return 2; // Waiting on design
+                    if (ad.status === 'customer_approval') return 3; // Waiting on customer
+                    if (ad.status === 'approved') return 4; // Ready to go live
+                    if (ad.status === 'info_needed') return 5; // New/waiting on info
+                    if (ad.status === 'live') return 6;
+                    if (ad.status === 'paused') return 7;
+                    if (ad.status === 'completed') return 8;
+                    if (ad.status === 'canceled') return 9;
                     return 10;
                 };
 
@@ -177,9 +183,12 @@ export default function AdvertisementsPage() {
                 updatedAt: serverTimestamp(),
             };
 
-            if (newStatus === 'holding') {
+            // Add timestamps for status transitions
+            if (newStatus === 'customer_approval') {
+                updateData.sentForApprovalAt = serverTimestamp();
+            }
+            if (newStatus === 'approved') {
                 updateData.approvedAt = serverTimestamp();
-                updateData.holdingAt = serverTimestamp();
             }
             if (newStatus === 'live') {
                 updateData.liveAt = serverTimestamp();
@@ -203,14 +212,15 @@ export default function AdvertisementsPage() {
     const counts = useMemo(() => {
         const result: Record<string, number> = {
             all: advertisements.length,
+            // Action required = ads that need admin attention
             action_required: advertisements.filter(ad =>
-                ad.status === 'pending_internal_review' ||
-                ad.status === 'pending_ad_creation' ||
-                ad.status === 'revision_requested' ||
-                ad.shouldAutoApprove
+                ad.status === 'in_review' ||  // Admin needs to create/finalize ad
+                ad.status === 'approved' ||   // Admin needs to push to ad server
+                ad.shouldAutoApprove          // Ready for auto-approval
             ).length,
         };
 
+        // Count each status
         Object.keys(AD_STATUSES).forEach(key => {
             const status = AD_STATUSES[key as keyof typeof AD_STATUSES];
             result[status] = advertisements.filter(ad => ad.status === status).length;
@@ -235,11 +245,11 @@ export default function AdvertisementsPage() {
             // Status filter
             if (statusFilter !== 'all') {
                 if (statusFilter === 'action_required') {
+                    // Action required = ads that need admin attention
                     if (!(
-                        ad.status === 'pending_internal_review' ||
-                        ad.status === 'pending_ad_creation' ||
-                        ad.status === 'revision_requested' ||
-                        ad.shouldAutoApprove
+                        ad.status === 'in_review' ||  // Admin needs to create/finalize ad
+                        ad.status === 'approved' ||   // Admin needs to push to ad server
+                        ad.shouldAutoApprove          // Ready for auto-approval
                     )) return false;
                 } else if (ad.status !== statusFilter) {
                     return false;
@@ -253,13 +263,15 @@ export default function AdvertisementsPage() {
     const getStatusIcon = (ad: AdWithMeta) => {
         if (ad.shouldAutoApprove) return <CheckCircle className="h-4 w-4 text-green-500" />;
         switch (ad.status) {
-            case 'pending_internal_review':
+            case 'in_review':
                 return <Eye className="h-4 w-4 text-blue-500" />;
-            case 'pending_ad_creation':
-            case 'revision_requested':
+            case 'design_pending':
+            case 'info_needed':
                 return <AlertCircle className="h-4 w-4 text-amber-500" />;
-            case 'pending_customer_approval':
+            case 'customer_approval':
                 return <Clock className="h-4 w-4 text-amber-500" />;
+            case 'approved':
+                return <CheckCircle className="h-4 w-4 text-indigo-500" />;
             case 'live':
                 return <Play className="h-4 w-4 text-green-500" />;
             case 'paused':
@@ -313,16 +325,16 @@ export default function AdvertisementsPage() {
                 <Card
                     className={cn(
                         "cursor-pointer transition-all hover:shadow-md",
-                        statusFilter === 'pending_customer_approval' && "ring-2 ring-primary"
+                        statusFilter === 'customer_approval' && "ring-2 ring-primary"
                     )}
-                    onClick={() => setStatusFilter('pending_customer_approval')}
+                    onClick={() => setStatusFilter('customer_approval')}
                 >
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             Pending Approval
                         </CardDescription>
-                        <CardTitle className="text-3xl">{counts.pending_customer_approval || 0}</CardTitle>
+                        <CardTitle className="text-3xl">{counts.customer_approval || 0}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card
@@ -477,14 +489,19 @@ export default function AdvertisementsPage() {
                                                             Ready for auto-approve
                                                         </span>
                                                     )}
-                                                    {ad.status === 'pending_customer_approval' && ad.sentForApprovalAt && !ad.shouldAutoApprove && (
+                                                    {ad.status === 'customer_approval' && ad.sentForApprovalAt && !ad.shouldAutoApprove && (
                                                         <span className="text-xs text-muted-foreground">
                                                             Auto-approves {formatDistanceToNow(calculateAutoApprovalDeadline(ad.sentForApprovalAt), { addSuffix: true })}
                                                         </span>
                                                     )}
-                                                    {ad.status === 'pending_internal_review' && (
+                                                    {ad.status === 'in_review' && (
                                                         <span className="text-xs text-blue-600 font-medium">
                                                             Needs review
+                                                        </span>
+                                                    )}
+                                                    {ad.status === 'approved' && (
+                                                        <span className="text-xs text-indigo-600 font-medium">
+                                                            Ready to publish
                                                         </span>
                                                     )}
                                                 </TableCell>
@@ -515,19 +532,19 @@ export default function AdvertisementsPage() {
                                                             )}
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
-                                                            {ad.status === 'pending_internal_review' && (
-                                                                <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'pending_ad_creation')}>
+                                                            {ad.status === 'in_review' && (
+                                                                <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'customer_approval')}>
                                                                     <CheckCircle className="mr-2 h-4 w-4" />
-                                                                    Approve for Ad Creation
+                                                                    Send for Customer Approval
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {(ad.status === 'pending_customer_approval' || ad.status === 'approved') && (
-                                                                <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'holding')}>
+                                                            {ad.status === 'customer_approval' && (
+                                                                <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'approved')}>
                                                                     <CheckCircle className="mr-2 h-4 w-4" />
-                                                                    Approve & Move to Holding
+                                                                    Approve Ad
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {ad.status === 'holding' && (
+                                                            {ad.status === 'approved' && (
                                                                 <DropdownMenuItem onClick={() => handleQuickStatusUpdate(ad, 'live')}>
                                                                     <Play className="mr-2 h-4 w-4" />
                                                                     Go Live
@@ -545,9 +562,9 @@ export default function AdvertisementsPage() {
                                                                     Resume Ad
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {ad.status !== 'canceled_inactive' && ad.status !== 'completed' && (
+                                                            {ad.status !== 'canceled' && ad.status !== 'completed' && (
                                                                 <DropdownMenuItem
-                                                                    onClick={() => handleQuickStatusUpdate(ad, 'canceled_inactive')}
+                                                                    onClick={() => handleQuickStatusUpdate(ad, 'canceled')}
                                                                     className="text-destructive"
                                                                 >
                                                                     <AlertCircle className="mr-2 h-4 w-4" />
