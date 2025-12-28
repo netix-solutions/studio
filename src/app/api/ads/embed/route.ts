@@ -396,7 +396,7 @@ export async function GET(request: NextRequest) {
 
   /**
    * Auto-initialize ads with data attributes
-   * Usage: <div data-community-ad data-placement="banner" data-site="wesley-chapel"></div>
+   * Usage: <div data-community-ad data-placement="inline" data-site="wesley-chapel"></div>
    */
   function autoInit() {
     var adContainers = document.querySelectorAll('[data-community-ad]');
