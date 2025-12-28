@@ -864,7 +864,7 @@ export default function LandingPage() {
                         <h4 className="font-semibold text-white mb-4">Account</h4>
                         <ul className="space-y-2.5 text-sm">
                             <li><Link href="/login" className="hover:text-white transition-colors">Customer Login</Link></li>
-                            <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                            <li><Link href="#get-started" className="hover:text-white transition-colors">Pricing</Link></li>
                         </ul>
                     </div>
                      <div>
