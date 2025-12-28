@@ -558,16 +558,17 @@ export default function AdDesigner({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Main Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 p-3 bg-muted rounded-lg">
-        {/* Add Elements */}
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={addText}>
-            <Type className="h-4 w-4 mr-1" /> Add Text
+    <div className="flex gap-4">
+      {/* Left side: Canvas and inline toolbar */}
+      <div className="flex flex-col gap-3">
+        {/* Compact Toolbar above canvas */}
+        <div className="flex items-center gap-1 p-2 bg-muted rounded-lg" style={{ width: width * scale }}>
+          {/* Add Elements */}
+          <Button variant="outline" size="sm" onClick={addText} className="h-8 px-2">
+            <Type className="h-4 w-4 mr-1" /> Text
           </Button>
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <ImageIcon className="h-4 w-4 mr-1" /> Add Image
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-8 px-2">
+            <ImageIcon className="h-4 w-4 mr-1" /> Image
           </Button>
           <input
             ref={fileInputRef}
@@ -576,503 +577,418 @@ export default function AdDesigner({
             className="hidden"
             onChange={handleImageUpload}
           />
-        </div>
 
-        <Separator orientation="vertical" className="h-8" />
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
-        {/* Undo/Redo */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={undo}
-            disabled={historyIndex <= 0}
-            title="Undo"
-          >
+          {/* Undo/Redo */}
+          <Button variant="ghost" size="icon" onClick={undo} disabled={historyIndex <= 0} title="Undo" className="h-8 w-8">
             <Undo className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={redo}
-            disabled={historyIndex >= history.length - 1}
-            title="Redo"
-          >
+          <Button variant="ghost" size="icon" onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo" className="h-8 w-8">
             <Redo className="h-4 w-4" />
           </Button>
-        </div>
 
-        <Separator orientation="vertical" className="h-8" />
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
-        {/* Background Color */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm">
-              <div
-                className="w-4 h-4 rounded border mr-2"
-                style={{ backgroundColor }}
-              />
-              Background
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64">
-            <div className="space-y-3">
-              <Label>Background Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="color"
-                  value={backgroundColor}
-                  onChange={(e) => updateBackgroundColor(e.target.value)}
-                  className="w-12 h-10 p-1 cursor-pointer"
-                />
-                <Input
-                  type="text"
-                  value={backgroundColor}
-                  onChange={(e) => updateBackgroundColor(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {COLOR_PALETTE.map((color) => (
-                  <button
-                    key={color}
-                    className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
-                    style={{ backgroundColor: color }}
-                    onClick={() => updateBackgroundColor(color)}
+          {/* Background Color */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <div className="w-4 h-4 rounded border" style={{ backgroundColor }} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-2">
+                <Label className="text-xs">Background</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(e) => updateBackgroundColor(e.target.value)}
+                    className="w-10 h-8 p-1 cursor-pointer"
                   />
-                ))}
+                  <Input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => updateBackgroundColor(e.target.value)}
+                    className="flex-1 h-8 text-xs"
+                  />
+                </div>
+                <div className="grid grid-cols-11 gap-1">
+                  {COLOR_PALETTE.map((color) => (
+                    <button
+                      key={color}
+                      className="w-4 h-4 rounded border border-gray-200 hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                      onClick={() => updateBackgroundColor(color)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
 
-        <Separator orientation="vertical" className="h-8" />
-
-        {/* Zoom */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setScale(Math.max(0.5, scale - 0.1))}
-            title="Zoom Out"
-          >
+          {/* Zoom */}
+          <Button variant="ghost" size="icon" onClick={() => setScale(Math.max(0.5, scale - 0.1))} title="Zoom Out" className="h-8 w-8">
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className="text-sm w-12 text-center">{Math.round(scale * 100)}%</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setScale(Math.min(2, scale + 0.1))}
-            title="Zoom In"
-          >
+          <span className="text-xs w-10 text-center">{Math.round(scale * 100)}%</span>
+          <Button variant="ghost" size="icon" onClick={() => setScale(Math.min(2, scale + 0.1))} title="Zoom In" className="h-8 w-8">
             <ZoomIn className="h-4 w-4" />
           </Button>
-        </div>
 
-        <div className="flex-1" />
+          <div className="flex-1" />
 
-        {/* Export/Save */}
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={exportToPNG}>
-            <Download className="h-4 w-4 mr-1" /> Export PNG
+          {/* Export/Save */}
+          <Button variant="outline" size="sm" onClick={exportToPNG} className="h-8 px-2">
+            <Download className="h-4 w-4" />
           </Button>
           {onSave && (
-            <Button size="sm" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-1" /> Save
-                </>
-              )}
+            <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-3">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             </Button>
           )}
         </div>
-      </div>
 
-      <div className="flex gap-4">
-        {/* Canvas Container */}
-        <div className="flex-1">
-          <div
-            className="border rounded-lg overflow-hidden bg-gray-100 inline-block"
-            style={{
-              boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-            }}
+        {/* Canvas */}
+        <div
+          className="border rounded-lg overflow-hidden bg-gray-100"
+          style={{ boxShadow: '0 0 20px rgba(0,0,0,0.1)' }}
+        >
+          <Stage
+            ref={stageRef}
+            width={width * scale}
+            height={height * scale}
+            scaleX={scale}
+            scaleY={scale}
+            onClick={handleStageClick}
+            onTap={handleStageClick}
+            style={{ backgroundColor: '#f3f4f6' }}
           >
-            <Stage
-              ref={stageRef}
-              width={width * scale}
-              height={height * scale}
-              scaleX={scale}
-              scaleY={scale}
-              onClick={handleStageClick}
-              onTap={handleStageClick}
-              style={{ backgroundColor: '#f3f4f6' }}
-            >
-              <Layer>
-                {/* Background */}
-                <Rect
-                  x={0}
-                  y={0}
-                  width={width}
-                  height={height}
-                  fill={backgroundColor}
-                />
-
-                {/* Elements */}
-                {elements.map(renderElement)}
-
-                {/* Transformer */}
-                <Transformer
-                  ref={transformerRef}
-                  boundBoxFunc={(oldBox, newBox) => {
-                    // Limit minimum size
-                    if (newBox.width < 20 || newBox.height < 20) {
-                      return oldBox;
-                    }
-                    return newBox;
-                  }}
-                  enabledAnchors={[
-                    'top-left', 'top-right',
-                    'bottom-left', 'bottom-right',
-                    'middle-left', 'middle-right',
-                  ]}
-                  rotateEnabled={true}
-                  borderStroke="#3B82F6"
-                  anchorFill="#FFFFFF"
-                  anchorStroke="#3B82F6"
-                  anchorSize={10}
-                  anchorCornerRadius={5}
-                />
-              </Layer>
-            </Stage>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            {width} x {height} px - Click to select, drag to move, double-click text to edit
-          </p>
+            <Layer>
+              <Rect x={0} y={0} width={width} height={height} fill={backgroundColor} />
+              {elements.map(renderElement)}
+              <Transformer
+                ref={transformerRef}
+                boundBoxFunc={(oldBox, newBox) => {
+                  if (newBox.width < 20 || newBox.height < 20) return oldBox;
+                  return newBox;
+                }}
+                enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right']}
+                rotateEnabled={true}
+                borderStroke="#3B82F6"
+                anchorFill="#FFFFFF"
+                anchorStroke="#3B82F6"
+                anchorSize={10}
+                anchorCornerRadius={5}
+              />
+            </Layer>
+          </Stage>
         </div>
-
-        {/* Properties Panel */}
-        <Card className="w-72 shrink-0">
-          <CardContent className="p-4">
-            {selectedElement ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">
-                    {selectedElement.type === 'text' ? 'Text' : 'Image'} Properties
-                  </h3>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveLayer('up')}
-                      title="Bring Forward"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveLayer('down')}
-                      title="Send Backward"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={duplicateSelected}
-                      title="Duplicate"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={deleteSelected}
-                      className="text-destructive"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Text Properties */}
-                {selectedElement.type === 'text' && (
-                  <div className="space-y-4">
-                    {/* Text Content */}
-                    <div className="space-y-2">
-                      <Label>Text</Label>
-                      <Input
-                        value={(selectedElement as TextElement).text}
-                        onChange={(e) => updateElementWithHistory(selectedElement.id, { text: e.target.value })}
-                      />
-                    </div>
-
-                    {/* Font Family */}
-                    <div className="space-y-2">
-                      <Label>Font</Label>
-                      <Select
-                        value={(selectedElement as TextElement).fontFamily}
-                        onValueChange={(value) => updateElementWithHistory(selectedElement.id, { fontFamily: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {FONTS.map((font) => (
-                            <SelectItem key={font.value} value={font.value}>
-                              <span style={{ fontFamily: font.value }}>{font.label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Font Size */}
-                    <div className="space-y-2">
-                      <Label>Size: {(selectedElement as TextElement).fontSize}px</Label>
-                      <Slider
-                        value={[(selectedElement as TextElement).fontSize]}
-                        onValueChange={([value]) => updateElement(selectedElement.id, { fontSize: value })}
-                        onValueCommit={([value]) => updateElementWithHistory(selectedElement.id, { fontSize: value })}
-                        min={8}
-                        max={72}
-                        step={1}
-                      />
-                    </div>
-
-                    {/* Font Style */}
-                    <div className="space-y-2">
-                      <Label>Style</Label>
-                      <div className="flex gap-1">
-                        <Button
-                          variant={(selectedElement as TextElement).fontStyle.includes('bold') ? 'default' : 'outline'}
-                          size="icon"
-                          onClick={() => {
-                            const current = (selectedElement as TextElement).fontStyle;
-                            const isBold = current.includes('bold');
-                            const isItalic = current.includes('italic');
-                            let newStyle = 'normal';
-                            if (!isBold && !isItalic) newStyle = 'bold';
-                            else if (!isBold && isItalic) newStyle = 'bold italic';
-                            else if (isBold && !isItalic) newStyle = 'normal';
-                            else newStyle = 'italic';
-                            updateElementWithHistory(selectedElement.id, { fontStyle: newStyle });
-                          }}
-                        >
-                          <Bold className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant={(selectedElement as TextElement).fontStyle.includes('italic') ? 'default' : 'outline'}
-                          size="icon"
-                          onClick={() => {
-                            const current = (selectedElement as TextElement).fontStyle;
-                            const isBold = current.includes('bold');
-                            const isItalic = current.includes('italic');
-                            let newStyle = 'normal';
-                            if (!isBold && !isItalic) newStyle = 'italic';
-                            else if (isBold && !isItalic) newStyle = 'bold italic';
-                            else if (!isBold && isItalic) newStyle = 'normal';
-                            else newStyle = 'bold';
-                            updateElementWithHistory(selectedElement.id, { fontStyle: newStyle });
-                          }}
-                        >
-                          <Italic className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Text Alignment */}
-                    <div className="space-y-2">
-                      <Label>Alignment</Label>
-                      <div className="flex gap-1">
-                        <Button
-                          variant={(selectedElement as TextElement).align === 'left' ? 'default' : 'outline'}
-                          size="icon"
-                          onClick={() => updateElementWithHistory(selectedElement.id, { align: 'left' })}
-                        >
-                          <AlignLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant={(selectedElement as TextElement).align === 'center' ? 'default' : 'outline'}
-                          size="icon"
-                          onClick={() => updateElementWithHistory(selectedElement.id, { align: 'center' })}
-                        >
-                          <AlignCenter className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant={(selectedElement as TextElement).align === 'right' ? 'default' : 'outline'}
-                          size="icon"
-                          onClick={() => updateElementWithHistory(selectedElement.id, { align: 'right' })}
-                        >
-                          <AlignRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Text Color */}
-                    <div className="space-y-2">
-                      <Label>Color</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={(selectedElement as TextElement).fill}
-                          onChange={(e) => updateElementWithHistory(selectedElement.id, { fill: e.target.value })}
-                          className="w-12 h-10 p-1 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={(selectedElement as TextElement).fill}
-                          onChange={(e) => updateElementWithHistory(selectedElement.id, { fill: e.target.value })}
-                          className="flex-1"
-                        />
-                      </div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {COLOR_PALETTE.slice(0, 14).map((color) => (
-                          <button
-                            key={color}
-                            className="w-5 h-5 rounded border border-gray-200 hover:scale-110 transition-transform"
-                            style={{ backgroundColor: color }}
-                            onClick={() => updateElementWithHistory(selectedElement.id, { fill: color })}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Image Properties */}
-                {selectedElement.type === 'image' && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Width: {Math.round(selectedElement.width || 100)}px</Label>
-                      <Slider
-                        value={[selectedElement.width || 100]}
-                        onValueChange={([value]) => {
-                          const ratio = (selectedElement.height || 100) / (selectedElement.width || 100);
-                          updateElement(selectedElement.id, {
-                            width: value,
-                            height: value * ratio,
-                          });
-                        }}
-                        onValueCommit={([value]) => {
-                          const ratio = (selectedElement.height || 100) / (selectedElement.width || 100);
-                          updateElementWithHistory(selectedElement.id, {
-                            width: value,
-                            height: value * ratio,
-                          });
-                        }}
-                        min={20}
-                        max={width}
-                        step={1}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Position</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">X</Label>
-                          <Input
-                            type="number"
-                            value={Math.round(selectedElement.x)}
-                            onChange={(e) => updateElementWithHistory(selectedElement.id, { x: parseInt(e.target.value) || 0 })}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Y</Label>
-                          <Input
-                            type="number"
-                            value={Math.round(selectedElement.y)}
-                            onChange={(e) => updateElementWithHistory(selectedElement.id, { y: parseInt(e.target.value) || 0 })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-4 w-4 mr-2" /> Replace Image
-                    </Button>
-                  </div>
-                )}
-
-                {/* Position (common to all) */}
-                {selectedElement.type === 'text' && (
-                  <div className="space-y-2">
-                    <Label>Position</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs">X</Label>
-                        <Input
-                          type="number"
-                          value={Math.round(selectedElement.x)}
-                          onChange={(e) => updateElementWithHistory(selectedElement.id, { x: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Y</Label>
-                        <Input
-                          type="number"
-                          value={Math.round(selectedElement.y)}
-                          onChange={(e) => updateElementWithHistory(selectedElement.id, { y: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Layers className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Select an element to edit its properties</p>
-                <p className="text-xs mt-2">Or add text/images using the toolbar above</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <p className="text-xs text-muted-foreground text-center">
+          {width} x {height}px &middot; Double-click text to edit
+        </p>
       </div>
 
-      {/* Elements List */}
-      {elements.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="font-semibold mb-2">Layers ({elements.length})</h3>
-            <div className="space-y-1">
-              {[...elements].reverse().map((element, index) => (
-                <div
-                  key={element.id}
-                  className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                    selectedId === element.id ? 'bg-primary/10 border border-primary' : 'hover:bg-muted'
-                  }`}
-                  onClick={() => setSelectedId(element.id)}
-                >
-                  {element.type === 'text' ? (
-                    <Type className="h-4 w-4 shrink-0" />
-                  ) : (
-                    <ImageIcon className="h-4 w-4 shrink-0" />
+      {/* Right side: Properties & Layers Panel */}
+      <Card className="w-64 shrink-0 self-start">
+        <Tabs defaultValue="properties" className="w-full">
+          <TabsList className="w-full grid grid-cols-2 h-9">
+            <TabsTrigger value="properties" className="text-xs">Properties</TabsTrigger>
+            <TabsTrigger value="layers" className="text-xs">
+              Layers {elements.length > 0 && `(${elements.length})`}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="properties" className="m-0">
+            <CardContent className="p-3">
+              {selectedElement ? (
+                <div className="space-y-3">
+                  {/* Element actions row */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground uppercase">
+                      {selectedElement.type === 'text' ? 'Text' : 'Image'}
+                    </span>
+                    <div className="flex gap-0.5">
+                      <Button variant="ghost" size="icon" onClick={() => moveLayer('up')} title="Bring Forward" className="h-7 w-7">
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => moveLayer('down')} title="Send Backward" className="h-7 w-7">
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={duplicateSelected} title="Duplicate" className="h-7 w-7">
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={deleteSelected} className="h-7 w-7 text-destructive" title="Delete">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Text Properties */}
+                  {selectedElement.type === 'text' && (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Text</Label>
+                        <Input
+                          value={(selectedElement as TextElement).text}
+                          onChange={(e) => updateElementWithHistory(selectedElement.id, { text: e.target.value })}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Font</Label>
+                          <Select
+                            value={(selectedElement as TextElement).fontFamily}
+                            onValueChange={(value) => updateElementWithHistory(selectedElement.id, { fontFamily: value })}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FONTS.map((font) => (
+                                <SelectItem key={font.value} value={font.value} className="text-xs">
+                                  <span style={{ fontFamily: font.value }}>{font.value}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Size</Label>
+                          <Input
+                            type="number"
+                            value={(selectedElement as TextElement).fontSize}
+                            onChange={(e) => updateElementWithHistory(selectedElement.id, { fontSize: parseInt(e.target.value) || 24 })}
+                            min={8}
+                            max={72}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-0.5">
+                          <Button
+                            variant={(selectedElement as TextElement).fontStyle.includes('bold') ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              const current = (selectedElement as TextElement).fontStyle;
+                              const isBold = current.includes('bold');
+                              const isItalic = current.includes('italic');
+                              let newStyle = 'normal';
+                              if (!isBold && !isItalic) newStyle = 'bold';
+                              else if (!isBold && isItalic) newStyle = 'bold italic';
+                              else if (isBold && !isItalic) newStyle = 'normal';
+                              else newStyle = 'italic';
+                              updateElementWithHistory(selectedElement.id, { fontStyle: newStyle });
+                            }}
+                          >
+                            <Bold className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant={(selectedElement as TextElement).fontStyle.includes('italic') ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              const current = (selectedElement as TextElement).fontStyle;
+                              const isBold = current.includes('bold');
+                              const isItalic = current.includes('italic');
+                              let newStyle = 'normal';
+                              if (!isBold && !isItalic) newStyle = 'italic';
+                              else if (isBold && !isItalic) newStyle = 'bold italic';
+                              else if (!isBold && isItalic) newStyle = 'normal';
+                              else newStyle = 'bold';
+                              updateElementWithHistory(selectedElement.id, { fontStyle: newStyle });
+                            }}
+                          >
+                            <Italic className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <Separator orientation="vertical" className="h-5" />
+                        <div className="flex gap-0.5">
+                          <Button
+                            variant={(selectedElement as TextElement).align === 'left' ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateElementWithHistory(selectedElement.id, { align: 'left' })}
+                          >
+                            <AlignLeft className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant={(selectedElement as TextElement).align === 'center' ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateElementWithHistory(selectedElement.id, { align: 'center' })}
+                          >
+                            <AlignCenter className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant={(selectedElement as TextElement).align === 'right' ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateElementWithHistory(selectedElement.id, { align: 'right' })}
+                          >
+                            <AlignRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Color</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={(selectedElement as TextElement).fill}
+                            onChange={(e) => updateElementWithHistory(selectedElement.id, { fill: e.target.value })}
+                            className="w-8 h-8 p-1 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={(selectedElement as TextElement).fill}
+                            onChange={(e) => updateElementWithHistory(selectedElement.id, { fill: e.target.value })}
+                            className="flex-1 h-8 text-xs"
+                          />
+                        </div>
+                        <div className="grid grid-cols-11 gap-1 pt-1">
+                          {COLOR_PALETTE.map((color) => (
+                            <button
+                              key={color}
+                              className="w-4 h-4 rounded border border-gray-200 hover:scale-110 transition-transform"
+                              style={{ backgroundColor: color }}
+                              onClick={() => updateElementWithHistory(selectedElement.id, { fill: color })}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Position</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground w-4">X</span>
+                            <Input
+                              type="number"
+                              value={Math.round(selectedElement.x)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { x: parseInt(e.target.value) || 0 })}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground w-4">Y</span>
+                            <Input
+                              type="number"
+                              value={Math.round(selectedElement.y)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { y: parseInt(e.target.value) || 0 })}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                  <span className="text-sm truncate flex-1">
-                    {element.type === 'text'
-                      ? (element as TextElement).text.substring(0, 30) || 'Empty text'
-                      : `Image ${elements.length - index}`
-                    }
-                  </span>
+
+                  {/* Image Properties */}
+                  {selectedElement.type === 'image' && (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Size: {Math.round(selectedElement.width || 100)}px</Label>
+                        <Slider
+                          value={[selectedElement.width || 100]}
+                          onValueChange={([value]) => {
+                            const ratio = (selectedElement.height || 100) / (selectedElement.width || 100);
+                            updateElement(selectedElement.id, { width: value, height: value * ratio });
+                          }}
+                          onValueCommit={([value]) => {
+                            const ratio = (selectedElement.height || 100) / (selectedElement.width || 100);
+                            updateElementWithHistory(selectedElement.id, { width: value, height: value * ratio });
+                          }}
+                          min={20}
+                          max={width}
+                          step={1}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Position</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground w-4">X</span>
+                            <Input
+                              type="number"
+                              value={Math.round(selectedElement.x)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { x: parseInt(e.target.value) || 0 })}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground w-4">Y</span>
+                            <Input
+                              type="number"
+                              value={Math.round(selectedElement.y)}
+                              onChange={(e) => updateElementWithHistory(selectedElement.id, { y: parseInt(e.target.value) || 0 })}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button variant="outline" size="sm" className="w-full h-8" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5 mr-1" /> Replace Image
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Move className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs">Select an element to edit</p>
+                </div>
+              )}
+            </CardContent>
+          </TabsContent>
+
+          <TabsContent value="layers" className="m-0">
+            <CardContent className="p-3">
+              {elements.length > 0 ? (
+                <div className="space-y-1">
+                  {[...elements].reverse().map((element, index) => (
+                    <div
+                      key={element.id}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors text-sm ${
+                        selectedId === element.id ? 'bg-primary/10 border border-primary' : 'hover:bg-muted'
+                      }`}
+                      onClick={() => setSelectedId(element.id)}
+                    >
+                      {element.type === 'text' ? (
+                        <Type className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <ImageIcon className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="text-xs truncate flex-1">
+                        {element.type === 'text'
+                          ? (element as TextElement).text.substring(0, 25) || 'Empty text'
+                          : `Image ${elements.length - index}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Layers className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs">No elements yet</p>
+                  <p className="text-xs mt-1">Add text or images to begin</p>
+                </div>
+              )}
+            </CardContent>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 }
