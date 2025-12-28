@@ -120,10 +120,10 @@ export const signInWithEmailLink = (auth: Auth, email: string, emailLink: string
  * Sets up a reCAPTCHA verifier for phone number authentication.
  * This should be called once when the component mounts.
  * @param auth - Firebase Auth instance
- * @param containerId - The ID of the HTML element where reCAPTCHA will be rendered
+ * @param container - The HTML element where reCAPTCHA will be rendered
  * @returns {RecaptchaVerifier} The reCAPTCHA verifier instance
  */
-export const setupRecaptcha = (auth: Auth, containerId: string): RecaptchaVerifier => {
+export const setupRecaptcha = (auth: Auth, container: HTMLElement): RecaptchaVerifier => {
     // This will be attached to window by the Firebase SDK
     const globalRecaptcha = (window as any).recaptchaVerifier;
 
@@ -132,7 +132,7 @@ export const setupRecaptcha = (auth: Auth, containerId: string): RecaptchaVerifi
         globalRecaptcha.clear();
     }
 
-    const recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+    const recaptchaVerifier = new RecaptchaVerifier(auth, container, {
         size: 'invisible',
         callback: (response: any) => {
             // reCAPTCHA solved, allow signInWithPhoneNumber.

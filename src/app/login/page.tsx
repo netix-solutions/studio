@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -64,12 +64,14 @@ export default function LoginPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
-  // Set up reCAPTCHA on mount
+
+  // Set up reCAPTCHA on mount when the container is ready
   useEffect(() => {
-    if (auth) {
-      const verifier = setupRecaptcha(auth, 'recaptcha-container');
-      setRecaptchaVerifier(verifier);
+    if (auth && recaptchaContainerRef.current) {
+        const verifier = setupRecaptcha(auth, recaptchaContainerRef.current);
+        setRecaptchaVerifier(verifier);
     }
   }, [auth]);
 
@@ -388,7 +390,7 @@ export default function LoginPage() {
               </div>
             </CardContent>
           </Card>
-          <div id="recaptcha-container" className="mt-4"></div>
+          <div ref={recaptchaContainerRef} className="mt-4"></div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 text-xs md:text-sm text-gray-500">
             <div className="flex items-center gap-1.5">
