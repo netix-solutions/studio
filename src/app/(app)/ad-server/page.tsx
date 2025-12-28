@@ -420,12 +420,12 @@ export default function AdServerPage() {
                 code = `<script src="${baseUrl}/api/ads/embed${websiteParam}"></script>`;
                 break;
             case 'div':
-                code = `<div data-community-ad data-placement="banner"${dataSiteAttr}></div>`;
+                code = `<div data-community-ad data-placement="inline"${dataSiteAttr}></div>`;
                 break;
             case 'full':
                 code = `<!-- Community Ads Embed${websiteId ? ` - ${COMMUNITY_WEBSITE_CONFIG[websiteId].name}` : ''} -->
 <script src="${baseUrl}/api/ads/embed${websiteParam}"></script>
-<div data-community-ad data-placement="banner"${dataSiteAttr}></div>`;
+<div data-community-ad data-placement="inline"${dataSiteAttr}></div>`;
                 break;
         }
 
@@ -1141,7 +1141,7 @@ export default function AdServerPage() {
                                                     <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
 {`<!-- Community Ads - ${website.name} -->
 <script src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/embed?website=${website.id}"></script>
-<div data-community-ad data-placement="banner" data-site="${website.id}"></div>`}
+<div data-community-ad data-placement="inline" data-site="${website.id}"></div>`}
                                                     </pre>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-2">
@@ -1176,7 +1176,7 @@ export default function AdServerPage() {
                                     <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
 {`<!-- Community Ads -->
 <script src="${typeof window !== 'undefined' ? window.location.origin : ''}/api/ads/embed"></script>
-<div data-community-ad data-placement="banner"></div>`}
+<div data-community-ad data-placement="inline"></div>`}
                                     </pre>
                                     <Button
                                         size="sm"
