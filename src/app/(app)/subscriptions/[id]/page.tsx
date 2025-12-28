@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc, limit } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, ExternalLink, Plus } from 'lucide-react';
@@ -141,6 +141,28 @@ export default function SubscriptionDetailPage() {
                 // Set lead ID if found (for activity tracking)
                 if (!leadSnapshot.empty) {
                     setLeadId(leadSnapshot.docs[0].id);
+                } else if (userData.email) {
+                    // Fallback: try to find lead by email if convertedToCustomerId didn't match
+                    const emailLeadQuery = query(
+                        collection(firestore, 'leads'),
+                        where('email', '==', userData.email.toLowerCase()),
+                        limit(1)
+                    );
+                    const emailLeadSnapshot = await getDocs(emailLeadQuery);
+                    if (!emailLeadSnapshot.empty) {
+                        setLeadId(emailLeadSnapshot.docs[0].id);
+                    } else {
+                        // Also try without lowercase
+                        const emailLeadQuery2 = query(
+                            collection(firestore, 'leads'),
+                            where('email', '==', userData.email),
+                            limit(1)
+                        );
+                        const emailLeadSnapshot2 = await getDocs(emailLeadQuery2);
+                        if (!emailLeadSnapshot2.empty) {
+                            setLeadId(emailLeadSnapshot2.docs[0].id);
+                        }
+                    }
                 }
 
             } catch (err: any) {

@@ -13,7 +13,7 @@ import { Loader2, AlertCircle, Clock } from 'lucide-react';
 import { WorkflowProgress, WorkflowStatusBanner } from './WorkflowProgress';
 import { BusinessInfoStep, type BusinessInfoFormData } from './steps/BusinessInfoStep';
 import { DesignStep } from './steps/DesignStep';
-import { ApprovalStep, WaitingForReviewStep, ApprovedStep, LiveStep } from './steps/ApprovalStep';
+import { ApprovalStep, WaitingForReviewStep, ApprovedStep, LiveStep, AdManagementCard } from './steps/ApprovalStep';
 import { AdChangeRequest, PendingChangeRequest } from './steps/AdChangeRequest';
 import { AdHistory } from './AdHistory';
 import {
@@ -266,6 +266,123 @@ export function CustomerWorkflow({
         }
     };
 
+    // Handle pause ad
+    const handlePauseAd = async () => {
+        if (!firestore || !advertisement) return;
+
+        try {
+            const adRef = doc(firestore, 'users', userId, 'advertisements', advertisement.id);
+            await updateDoc(adRef, {
+                status: 'paused',
+                pausedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastActionBy: isAdmin ? 'admin' : 'customer',
+                lastActionAt: serverTimestamp(),
+            });
+
+            // Also pause the live ad if it exists
+            if (advertisement.liveAdId) {
+                const liveAdRef = doc(firestore, 'live_ads', advertisement.liveAdId);
+                await updateDoc(liveAdRef, {
+                    status: 'paused',
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
+            toast({
+                title: 'Ad paused',
+                description: 'Your advertisement has been paused and will not be shown.',
+            });
+
+            onRefresh?.();
+        } catch (error) {
+            console.error('Error pausing ad:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to pause ad. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    // Handle resume ad
+    const handleResumeAd = async () => {
+        if (!firestore || !advertisement) return;
+
+        try {
+            const adRef = doc(firestore, 'users', userId, 'advertisements', advertisement.id);
+            await updateDoc(adRef, {
+                status: 'live',
+                resumedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastActionBy: isAdmin ? 'admin' : 'customer',
+                lastActionAt: serverTimestamp(),
+            });
+
+            // Also resume the live ad if it exists
+            if (advertisement.liveAdId) {
+                const liveAdRef = doc(firestore, 'live_ads', advertisement.liveAdId);
+                await updateDoc(liveAdRef, {
+                    status: 'active',
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
+            toast({
+                title: 'Ad resumed',
+                description: 'Your advertisement is now live again.',
+            });
+
+            onRefresh?.();
+        } catch (error) {
+            console.error('Error resuming ad:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to resume ad. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    // Handle cancel ad
+    const handleCancelAd = async () => {
+        if (!firestore || !advertisement) return;
+
+        try {
+            const adRef = doc(firestore, 'users', userId, 'advertisements', advertisement.id);
+            await updateDoc(adRef, {
+                status: 'canceled',
+                canceledAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastActionBy: isAdmin ? 'admin' : 'customer',
+                lastActionAt: serverTimestamp(),
+            });
+
+            // Also archive the live ad if it exists
+            if (advertisement.liveAdId) {
+                const liveAdRef = doc(firestore, 'live_ads', advertisement.liveAdId);
+                await updateDoc(liveAdRef, {
+                    status: 'archived',
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
+            toast({
+                title: 'Ad canceled',
+                description: 'Your advertisement has been canceled and will no longer be shown.',
+            });
+
+            onRefresh?.();
+        } catch (error) {
+            console.error('Error canceling ad:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to cancel ad. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
     // Handle publish to ad manager (admin only)
     const handlePublish = async () => {
         if (!firestore || !advertisement) return;
@@ -439,6 +556,16 @@ export function CustomerWorkflow({
                             isAdmin={isAdmin}
                         />
 
+                        {/* Ad Management Card for customers */}
+                        {advertisement && !isAdmin && (
+                            <AdManagementCard
+                                status="live"
+                                onPause={handlePauseAd}
+                                onCancel={handleCancelAd}
+                                isAdmin={isAdmin}
+                            />
+                        )}
+
                         {/* Show pending change request or change request option */}
                         {advertisement && (
                             pendingChangeRequest ? (
@@ -469,10 +596,20 @@ export function CustomerWorkflow({
                                     Ad Paused
                                 </CardTitle>
                                 <CardDescription>
-                                    This advertisement is currently paused.
+                                    This advertisement is currently paused and not being displayed.
                                 </CardDescription>
                             </CardHeader>
                         </Card>
+
+                        {/* Ad Management Card for customers */}
+                        {advertisement && !isAdmin && (
+                            <AdManagementCard
+                                status="paused"
+                                onResume={handleResumeAd}
+                                onCancel={handleCancelAd}
+                                isAdmin={isAdmin}
+                            />
+                        )}
 
                         {/* Show pending change request or change request option */}
                         {advertisement && (

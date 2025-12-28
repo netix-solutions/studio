@@ -401,3 +401,156 @@ export function LiveStep({ adProofUrl, impressions = 0, clicks = 0, isAdmin, onP
         </Card>
     );
 }
+
+// Ad Management Card for customers to pause/cancel their ad
+interface AdManagementCardProps {
+    status: 'live' | 'paused';
+    onPause?: () => Promise<void>;
+    onResume?: () => Promise<void>;
+    onCancel?: () => Promise<void>;
+    isAdmin?: boolean;
+}
+
+export function AdManagementCard({ status, onPause, onResume, onCancel, isAdmin }: AdManagementCardProps) {
+    const [isPausing, setIsPausing] = useState(false);
+    const [isResuming, setIsResuming] = useState(false);
+    const [isCanceling, setIsCanceling] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+    const handlePause = async () => {
+        if (!onPause) return;
+        setIsPausing(true);
+        try {
+            await onPause();
+        } finally {
+            setIsPausing(false);
+        }
+    };
+
+    const handleResume = async () => {
+        if (!onResume) return;
+        setIsResuming(true);
+        try {
+            await onResume();
+        } finally {
+            setIsResuming(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        if (!onCancel) return;
+        setIsCanceling(true);
+        try {
+            await onCancel();
+            setShowCancelConfirm(false);
+        } finally {
+            setIsCanceling(false);
+        }
+    };
+
+    // Don't show for admins - they have different controls
+    if (isAdmin) return null;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-base">Ad Management</CardTitle>
+                <CardDescription>
+                    Control your advertisement display
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {!showCancelConfirm ? (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        {status === 'live' && onPause && (
+                            <Button
+                                variant="outline"
+                                onClick={handlePause}
+                                disabled={isPausing}
+                                className="flex-1"
+                            >
+                                {isPausing ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Pausing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Clock className="mr-2 h-4 w-4" />
+                                        Pause Ad
+                                    </>
+                                )}
+                            </Button>
+                        )}
+                        {status === 'paused' && onResume && (
+                            <Button
+                                variant="default"
+                                onClick={handleResume}
+                                disabled={isResuming}
+                                className="flex-1"
+                            >
+                                {isResuming ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Resuming...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Resume Ad
+                                    </>
+                                )}
+                            </Button>
+                        )}
+                        {onCancel && (
+                            <Button
+                                variant="destructive"
+                                onClick={() => setShowCancelConfirm(true)}
+                                className="flex-1"
+                            >
+                                <AlertCircle className="mr-2 h-4 w-4" />
+                                Cancel Ad
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Are you sure?</AlertTitle>
+                            <AlertDescription>
+                                Canceling your ad will stop it from being displayed. This action cannot be undone.
+                                Your subscription will remain active - contact support to cancel your subscription.
+                            </AlertDescription>
+                        </Alert>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowCancelConfirm(false)}
+                                disabled={isCanceling}
+                                className="flex-1"
+                            >
+                                Go Back
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleCancel}
+                                disabled={isCanceling}
+                                className="flex-1"
+                            >
+                                {isCanceling ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Canceling...
+                                    </>
+                                ) : (
+                                    'Yes, Cancel My Ad'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}

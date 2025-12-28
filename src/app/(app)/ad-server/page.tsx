@@ -732,7 +732,11 @@ export default function AdServerPage() {
                                         const ctr = calculateCTR(ad.impressions || 0, ad.clicks || 0);
 
                                         return (
-                                            <TableRow key={ad.id}>
+                                            <TableRow
+                                                key={ad.id}
+                                                className="cursor-pointer hover:bg-muted/50"
+                                                onClick={() => handleOpenEdit(ad)}
+                                            >
                                                 <TableCell>
                                                     {ad.imageUrl ? (
                                                         <img
@@ -790,7 +794,7 @@ export default function AdServerPage() {
                                                 <TableCell className="text-right font-mono">
                                                     {ctr}%
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -853,10 +857,10 @@ export default function AdServerPage() {
                 </CardContent>
             </Card>
 
-            {/* Create/Edit Dialog */}
+            {/* Create/Edit Dialog - Full Page */}
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
+                <DialogContent className="max-w-full w-full h-full max-h-full sm:max-w-full sm:h-full sm:max-h-full sm:rounded-none flex flex-col">
+                    <DialogHeader className="px-6 py-4 border-b shrink-0">
                         <DialogTitle>{editingAd ? 'Edit Advertisement' : 'Create Advertisement'}</DialogTitle>
                         <DialogDescription>
                             {editingAd
@@ -865,7 +869,8 @@ export default function AdServerPage() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid gap-4 py-4">
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
+                        <div className="max-w-2xl mx-auto grid gap-4">
                         {/* Image Upload */}
                         <div className="space-y-2">
                             <Label>Ad Creative *</Label>
@@ -1069,9 +1074,10 @@ export default function AdServerPage() {
                                 ))}
                             </div>
                         </div>
+                        </div>
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="px-6 py-4 border-t shrink-0">
                         <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
                             Cancel
                         </Button>

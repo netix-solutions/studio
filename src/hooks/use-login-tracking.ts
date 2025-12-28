@@ -43,12 +43,34 @@ export function useLoginTracking() {
       try {
         // Find the lead associated with this user
         const leadsRef = collection(firestore, 'leads');
-        const leadQuery = query(
+
+        // First try to find by convertedToCustomerId
+        let leadQuery = query(
           leadsRef,
           where('convertedToCustomerId', '==', user.uid),
           limit(1)
         );
-        const leadSnapshot = await getDocs(leadQuery);
+        let leadSnapshot = await getDocs(leadQuery);
+
+        // If not found by convertedToCustomerId, try finding by email
+        if (leadSnapshot.empty && user.email) {
+          leadQuery = query(
+            leadsRef,
+            where('email', '==', user.email.toLowerCase()),
+            limit(1)
+          );
+          leadSnapshot = await getDocs(leadQuery);
+
+          // Also try without lowercase
+          if (leadSnapshot.empty) {
+            leadQuery = query(
+              leadsRef,
+              where('email', '==', user.email),
+              limit(1)
+            );
+            leadSnapshot = await getDocs(leadQuery);
+          }
+        }
 
         if (leadSnapshot.empty) {
           // No associated lead found, nothing to track
@@ -67,6 +89,7 @@ export function useLoginTracking() {
           description: 'Customer logged into their account',
           metadata: {
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+            userId: user.uid,
           },
           createdBy: user.uid,
           createdByName: user.displayName || user.email || 'Customer',
@@ -78,6 +101,9 @@ export function useLoginTracking() {
       } catch (error) {
         // Silently fail - we don't want to disrupt user experience for tracking failures
         console.error('Failed to track login:', error);
+        // Still mark as tracked to prevent retry loops
+        hasTrackedLogin.current = true;
+        lastTrackedUserId.current = user.uid;
       }
     };
 
