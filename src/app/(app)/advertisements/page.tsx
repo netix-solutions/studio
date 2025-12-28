@@ -17,13 +17,11 @@ import {
     CheckCircle,
     Eye,
     Search,
-    ArrowRight,
     Play,
     Pause,
     Mail,
     ExternalLink,
     Filter,
-    ChevronDown,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -278,13 +276,9 @@ export default function AdvertisementsPage() {
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold tracking-tight">Advertisements</h1>
                     <p className="text-muted-foreground text-sm md:text-base">
-                        Manage all customer advertisements across the workflow
+                        View, manage, and approve customer advertisements
                     </p>
                 </div>
-                <Button onClick={() => router.push('/pipeline')} className="w-full sm:w-auto">
-                    View Pipeline
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
             </div>
 
             {/* Quick Stats */}

@@ -12,19 +12,12 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import {
-  LayoutDashboard,
-  Kanban,
   Megaphone,
   Handshake,
   Ticket,
-  Users,
-  Mail,
-  FileText,
   User,
   ShoppingBag,
-  Search,
   ArrowRight,
-  UserCog,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -33,33 +26,24 @@ interface CommandItem {
   icon: React.ElementType;
   href: string;
   keywords?: string[];
-  group: 'navigation' | 'workflow' | 'crm' | 'admin';
+  group: 'main' | 'quick';
 }
 
+// Simplified admin commands - just the essentials
 const ADMIN_COMMANDS: CommandItem[] = [
-  // Navigation
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', keywords: ['home', 'overview', 'stats'], group: 'navigation' },
+  // Main pages
+  { id: 'leads', label: 'Leads', icon: Handshake, href: '/leads', keywords: ['prospects', 'sales', 'pipeline'], group: 'main' },
+  { id: 'customers', label: 'Customers', icon: Ticket, href: '/subscriptions', keywords: ['subscribers', 'subscriptions', 'billing'], group: 'main' },
+  { id: 'advertisements', label: 'Advertisements', icon: Megaphone, href: '/advertisements', keywords: ['ads', 'list', 'all', 'approve'], group: 'main' },
 
-  // Workflow
-  { id: 'pipeline', label: 'Ad Pipeline', icon: Kanban, href: '/pipeline', keywords: ['kanban', 'workflow', 'stages', 'board'], group: 'workflow' },
-  { id: 'advertisements', label: 'All Advertisements', icon: Megaphone, href: '/advertisements', keywords: ['ads', 'list', 'all'], group: 'workflow' },
-  { id: 'customer-workflow', label: 'Customer Workflow', icon: UserCog, href: '/customer-workflow', keywords: ['manage', 'customer', 'override', 'manual', 'onboarding'], group: 'workflow' },
-  { id: 'action-required', label: 'Ads Requiring Action', icon: Megaphone, href: '/advertisements?status=action_required', keywords: ['action', 'pending', 'review'], group: 'workflow' },
-  { id: 'live-ads', label: 'Live Ads', icon: Megaphone, href: '/advertisements?status=live', keywords: ['active', 'running'], group: 'workflow' },
-
-  // CRM
-  { id: 'leads', label: 'Leads', icon: Handshake, href: '/leads', keywords: ['prospects', 'sales', 'pipeline'], group: 'crm' },
-  { id: 'customers', label: 'Customers', icon: Ticket, href: '/subscriptions', keywords: ['subscribers', 'subscriptions', 'billing'], group: 'crm' },
-
-  // Admin
-  { id: 'users', label: 'User Management', icon: Users, href: '/users', keywords: ['accounts', 'people'], group: 'admin' },
-  { id: 'emails', label: 'Email Templates', icon: Mail, href: '/automated-emails', keywords: ['templates', 'automation'], group: 'admin' },
-  { id: 'legal', label: 'Legal Documents', icon: FileText, href: '/legal', keywords: ['terms', 'privacy', 'policy'], group: 'admin' },
+  // Quick filters
+  { id: 'action-required', label: 'Ads Needing Approval', icon: Megaphone, href: '/advertisements?status=action_required', keywords: ['action', 'pending', 'review', 'approve'], group: 'quick' },
+  { id: 'live-ads', label: 'Live Ads', icon: Megaphone, href: '/advertisements?status=live', keywords: ['active', 'running'], group: 'quick' },
 ];
 
 const USER_COMMANDS: CommandItem[] = [
-  { id: 'account', label: 'My Account', icon: User, href: '/account', keywords: ['profile', 'settings'], group: 'navigation' },
-  { id: 'pricing', label: 'Change Plan', icon: ShoppingBag, href: '/pricing', keywords: ['upgrade', 'subscription', 'billing'], group: 'navigation' },
+  { id: 'account', label: 'My Account', icon: User, href: '/account', keywords: ['profile', 'settings'], group: 'main' },
+  { id: 'pricing', label: 'Change Plan', icon: ShoppingBag, href: '/pricing', keywords: ['upgrade', 'subscription', 'billing'], group: 'main' },
 ];
 
 interface CommandPaletteProps {
@@ -90,10 +74,8 @@ export function CommandPalette({ isAdmin }: CommandPaletteProps) {
   }, []);
 
   const groupLabels: Record<string, string> = {
-    navigation: 'Navigation',
-    workflow: 'Ad Workflow',
-    crm: 'CRM',
-    admin: 'Administration',
+    main: 'Go to',
+    quick: 'Quick Filters',
   };
 
   const groupedCommands = commands.reduce((acc, cmd) => {
