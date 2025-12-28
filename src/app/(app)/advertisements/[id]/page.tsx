@@ -441,7 +441,7 @@ export default function AdvertisementDetailPage() {
             };
 
             // Add relevant timestamps based on status transition
-            if (newStatus === 'pending_ad_creation') {
+            if (newStatus === 'in_review') {
                 updateData.sentForReviewAt = serverTimestamp();
             }
 
@@ -1015,10 +1015,28 @@ export default function AdvertisementDetailPage() {
                                     {advertisement.adProofUrl ? 'Update Advertisement Proof' : 'Create Advertisement Proof'}
                                 </CardTitle>
                                 <CardDescription>
-                                    Upload the ad creative designed in your external application.
+                                    Edit the design in our visual designer, or upload an ad creative.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
+                                {/* Open Ad Designer Button */}
+                                <div className="p-4 border-2 border-dashed rounded-lg bg-muted/30 text-center">
+                                    <Palette className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        {advertisement.customerSampleAdUrl
+                                            ? 'Edit the customer\'s design or create a new one'
+                                            : 'Create an ad design for this customer'}
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push(`/design-ad?userId=${advertisement.userId}&adId=${advertisement.id}`)}
+                                    >
+                                        <Palette className="mr-2 h-4 w-4" />
+                                        Open Ad Designer
+                                    </Button>
+                                </div>
+
+                                <Separator />
+
                                 {/* Current Proof Preview */}
                                 {advertisement.adProofUrl && (
                                     <div className="space-y-4">
@@ -1040,7 +1058,7 @@ export default function AdvertisementDetailPage() {
 
                                 {/* Upload New Proof */}
                                 <div className="space-y-4">
-                                    <h4 className="font-medium">{advertisement.adProofUrl ? 'Upload New Proof' : 'Upload Proof'}</h4>
+                                    <h4 className="font-medium">{advertisement.adProofUrl ? 'Or Upload New Proof' : 'Or Upload Proof File'}</h4>
                                     <div className="space-y-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="ad-proof-file">Ad Image File ({AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT})</Label>

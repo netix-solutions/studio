@@ -147,7 +147,7 @@ function StageColumn({ stage, ads, onMoveToStage, onAdClick, isFirst, isLast }: 
                 </div>
 
                 {/* Auto-approval indicator */}
-                {stage === 'pending_customer_approval' && ad.sentForApprovalAt && (
+                {stage === 'customer_approval' && ad.sentForApprovalAt && (
                   <div className="mb-2">
                     {ad.shouldAutoApprove ? (
                       <Badge className="text-xs bg-green-100 text-green-700 border-green-200 w-full justify-center">
@@ -275,7 +275,7 @@ export default function PipelinePage() {
             updatedAt: data.updatedAt,
           };
 
-          if (ad.status === 'pending_customer_approval' && ad.sentForApprovalAt) {
+          if (ad.status === 'customer_approval' && ad.sentForApprovalAt) {
             ad.shouldAutoApprove = shouldAutoApprove(ad.sentForApprovalAt);
           }
 
@@ -314,9 +314,9 @@ export default function PipelinePage() {
       };
 
       // Add timestamp tracking for specific transitions
-      if (newStage === 'pending_internal_review') {
+      if (newStage === 'in_review') {
         updateData.infoSubmittedAt = serverTimestamp();
-      } else if (newStage === 'pending_customer_approval') {
+      } else if (newStage === 'customer_approval') {
         updateData.sentForApprovalAt = serverTimestamp();
         updateData.autoApprovalAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
       } else if (newStage === 'live') {
@@ -379,15 +379,14 @@ export default function PipelinePage() {
   const stats = useMemo(() => {
     const totalAds = filteredAds.length;
     const liveAds = adsByStage.live?.length || 0;
-    const pendingApprovalAds = adsByStage.pending_customer_approval?.length || 0;
+    const pendingApprovalAds = adsByStage.customer_approval?.length || 0;
     const actionRequired =
-      (adsByStage.pending_internal_review?.length || 0) +
-      (adsByStage.pending_ad_creation?.length || 0) +
-      (specialStageAds.revision_requested?.length || 0) +
+      (adsByStage.in_review?.length || 0) +
+      (adsByStage.design_pending?.length || 0) +
       filteredAds.filter((ad) => ad.shouldAutoApprove).length;
 
     return { totalAds, liveAds, pendingApprovalAds, actionRequired };
-  }, [filteredAds, adsByStage, specialStageAds]);
+  }, [filteredAds, adsByStage]);
 
   const hasSpecialStageAds = SPECIAL_STAGES.some(
     (stage) => (specialStageAds[stage]?.length || 0) > 0
@@ -524,19 +523,6 @@ export default function PipelinePage() {
                             </p>
                             {/* Quick action buttons */}
                             <div className="flex gap-1 mt-2">
-                              {stage === 'revision_requested' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 text-xs flex-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMoveToStage(ad, 'pending_ad_creation');
-                                  }}
-                                >
-                                  Start Revision
-                                </Button>
-                              )}
                               {stage === 'approved' && (
                                 <Button
                                   variant="outline"

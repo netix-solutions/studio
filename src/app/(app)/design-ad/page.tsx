@@ -3,17 +3,25 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useUser, useFirebase } from '@/firebase';
-import { useRouter } from 'next/navigation';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, limit as firestoreLimit, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, ArrowLeft, Info, Palette } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, ArrowLeft, Info, Palette, History, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AD_DIMENSIONS } from '@/lib/types';
 import type { DesignElement } from '@/components/ad-designer';
+import {
+  saveDesignVersion,
+  getLatestVersion,
+  loadVersionElements,
+  updateAdWithVersion,
+  type AdDraftVersion,
+} from '@/lib/workflow/ad-draft-versions';
 
 // Dynamically import AdDesigner to avoid SSR issues with Konva
 const AdDesigner = dynamic(
@@ -38,7 +46,14 @@ export default function DesignAdPage() {
   const { user, isUserLoading: userLoading } = useUser();
   const { firestore, storage } = useFirebase();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  // Check for admin mode (userId param indicates admin editing customer's design)
+  const targetUserId = searchParams.get('userId');
+  const adId = searchParams.get('adId');
+  const isAdminMode = !!targetUserId && !!adId;
+  const effectiveUserId = targetUserId || user?.uid;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -46,31 +61,65 @@ export default function DesignAdPage() {
   const [initialElements, setInitialElements] = useState<DesignElement[]>([]);
   const [initialBackgroundColor, setInitialBackgroundColor] = useState('#FFFFFF');
   const [userData, setUserData] = useState<any>(null);
+  const [currentVersion, setCurrentVersion] = useState<AdDraftVersion | null>(null);
+  const [advertisementId, setAdvertisementId] = useState<string | null>(adId);
 
   // Check for active subscription and load saved design
   useEffect(() => {
     const checkSubscriptionAndLoadDesign = async () => {
-      if (!user || !firestore) {
+      if (!effectiveUserId || !firestore) {
         setIsLoading(false);
         return;
       }
 
       try {
-        // Check for active subscriptions
-        const subsRef = collection(firestore, 'customers', user.uid, 'subscriptions');
-        const subsSnapshot = await getDocs(subsRef);
-        const activeSubs = subsSnapshot.docs.filter(doc =>
-          doc.data().status === 'active' || doc.data().status === 'trialing'
-        );
-        setHasActiveSubscription(activeSubs.length > 0);
+        // In admin mode, skip subscription check (admin can edit any ad)
+        if (!isAdminMode) {
+          // Check for active subscriptions
+          const subsRef = collection(firestore, 'customers', effectiveUserId, 'subscriptions');
+          const subsSnapshot = await getDocs(subsRef);
+          const activeSubs = subsSnapshot.docs.filter(doc =>
+            doc.data().status === 'active' || doc.data().status === 'trialing'
+          );
+          setHasActiveSubscription(activeSubs.length > 0);
+        } else {
+          setHasActiveSubscription(true); // Admin mode always has access
+        }
 
         // Load user data
-        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDocRef = doc(firestore, 'users', effectiveUserId);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setUserData(userDoc.data());
+        }
 
-          // Load saved design if exists
+        // Find the advertisement if not provided
+        let adIdToUse = advertisementId;
+        if (!adIdToUse) {
+          const adsRef = collection(firestore, 'users', effectiveUserId, 'advertisements');
+          const adsQuery = query(adsRef, orderBy('createdAt', 'desc'), firestoreLimit(1));
+          const adsSnapshot = await getDocs(adsQuery);
+          if (!adsSnapshot.empty) {
+            adIdToUse = adsSnapshot.docs[0].id;
+            setAdvertisementId(adIdToUse);
+          }
+        }
+
+        // Try to load from versions subcollection first
+        if (adIdToUse) {
+          const latestVersion = await getLatestVersion(firestore, effectiveUserId, adIdToUse);
+          if (latestVersion) {
+            setCurrentVersion(latestVersion);
+            const elementsWithImages = await loadVersionElements(latestVersion);
+            setInitialElements(elementsWithImages as DesignElement[]);
+            setInitialBackgroundColor(latestVersion.backgroundColor || '#FFFFFF');
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Fall back to legacy design in user document
+        if (userDoc.exists()) {
           const savedDesign = userDoc.data().adDesign as SavedDesign | undefined;
           if (savedDesign) {
             // Need to reload images for ImageElements
@@ -79,6 +128,7 @@ export default function DesignAdPage() {
                 if (element.type === 'image' && 'src' in element) {
                   return new Promise<DesignElement>((resolve) => {
                     const img = new window.Image();
+                    img.crossOrigin = 'anonymous';
                     img.src = element.src as string;
                     img.onload = () => {
                       resolve({
@@ -172,11 +222,11 @@ export default function DesignAdPage() {
     if (!userLoading) {
       checkSubscriptionAndLoadDesign();
     }
-  }, [user, firestore, userLoading, toast]);
+  }, [effectiveUserId, firestore, userLoading, toast, isAdminMode, advertisementId]);
 
   // Handle save
   const handleSave = async (imageDataUrl: string, elements: DesignElement[], backgroundColor: string) => {
-    if (!user || !firestore || !storage) {
+    if (!user || !firestore || !storage || !effectiveUserId) {
       toast({
         title: 'Error',
         description: 'Not signed in. Please refresh and try again.',
@@ -188,52 +238,81 @@ export default function DesignAdPage() {
     setIsSaving(true);
 
     try {
-      // Save the design state (without imageObj which can't be serialized)
-      const elementsToSave = elements.map(el => {
-        if (el.type === 'image') {
-          const { imageObj, ...rest } = el as any;
-          return rest;
-        }
-        return el;
-      });
+      // Find or create advertisement
+      let adIdToUse = advertisementId;
 
-      const userDocRef = doc(firestore, 'users', user.uid);
-
-      // Upload the generated image to storage
-      const imagePath = `advertisements/${user.uid}/designed-ad-${Date.now()}.png`;
-      const imageRef = storageRef(storage, imagePath);
-      await uploadString(imageRef, imageDataUrl, 'data_url');
-      const imageUrl = await getDownloadURL(imageRef);
-
-      // Save design state and image URL to user document
-      await setDoc(userDocRef, {
-        adDesign: {
-          elements: elementsToSave,
-          backgroundColor,
-          savedAt: serverTimestamp(),
-        },
-        customerSampleAdUrl: imageUrl,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-
-      // Also update any pending advertisements
-      const adsRef = collection(firestore, 'users', user.uid, 'advertisements');
-      const adsSnapshot = await getDocs(adsRef);
-
-      for (const adDoc of adsSnapshot.docs) {
-        const adData = adDoc.data();
-        if (['pending_info', 'pending_internal_review', 'pending_ad_creation', 'revision_requested'].includes(adData.status)) {
-          await updateDoc(doc(adsRef, adDoc.id), {
-            customerSampleAdUrl: imageUrl,
-            updatedAt: serverTimestamp(),
-          });
+      if (!adIdToUse) {
+        const adsRef = collection(firestore, 'users', effectiveUserId, 'advertisements');
+        const adsQuery = query(adsRef, orderBy('createdAt', 'desc'), firestoreLimit(1));
+        const adsSnapshot = await getDocs(adsQuery);
+        if (!adsSnapshot.empty) {
+          adIdToUse = adsSnapshot.docs[0].id;
+          setAdvertisementId(adIdToUse);
         }
       }
 
-      toast({
-        title: 'Design Saved!',
-        description: 'Your ad design has been saved successfully.',
-      });
+      if (adIdToUse) {
+        // Save as a new version in the versions subcollection
+        const newVersion = await saveDesignVersion(
+          firestore,
+          storage,
+          effectiveUserId,
+          adIdToUse,
+          {
+            elements: elements as any, // Cast to AdDesignElement[]
+            backgroundColor,
+            previewImageDataUrl: imageDataUrl,
+            createdBy: isAdminMode ? 'admin' : 'customer',
+            createdByUserId: user.uid,
+            notes: currentVersion
+              ? `Updated from version ${currentVersion.versionNumber}`
+              : 'Initial design',
+          }
+        );
+
+        // Update the advertisement with the latest version
+        await updateAdWithVersion(firestore, effectiveUserId, adIdToUse, newVersion, isAdminMode);
+
+        setCurrentVersion(newVersion);
+
+        toast({
+          title: 'Design Saved!',
+          description: `Version ${newVersion.versionNumber} saved successfully.`,
+        });
+      } else {
+        // Fallback: Save to user document (legacy behavior for users without ads yet)
+        const elementsToSave = elements.map(el => {
+          if (el.type === 'image') {
+            const { imageObj, ...rest } = el as any;
+            return rest;
+          }
+          return el;
+        });
+
+        const userDocRef = doc(firestore, 'users', effectiveUserId);
+
+        // Upload the generated image to storage
+        const imagePath = `advertisements/${effectiveUserId}/designed-ad-${Date.now()}.png`;
+        const imageRef = storageRef(storage, imagePath);
+        await uploadString(imageRef, imageDataUrl, 'data_url');
+        const imageUrl = await getDownloadURL(imageRef);
+
+        // Save design state and image URL to user document
+        await setDoc(userDocRef, {
+          adDesign: {
+            elements: elementsToSave,
+            backgroundColor,
+            savedAt: serverTimestamp(),
+          },
+          customerSampleAdUrl: imageUrl,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+
+        toast({
+          title: 'Design Saved!',
+          description: 'Your ad design has been saved successfully.',
+        });
+      }
     } catch (error: any) {
       console.error('Error saving design:', error);
       toast({
@@ -328,18 +407,41 @@ export default function DesignAdPage() {
     <div className="flex-1 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/account">
+        <Link href={isAdminMode ? `/advertisements/${advertisementId}?userId=${effectiveUserId}` : '/account'}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Palette className="h-6 w-6" />
-            Ad Designer
-          </h1>
-          <p className="text-muted-foreground">Create your custom {AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT} advertisement</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Palette className="h-6 w-6" />
+              Ad Designer
+            </h1>
+            {isAdminMode && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                Admin Mode
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground">
+            {isAdminMode
+              ? `Editing design for ${userData?.businessName || userData?.contactName || 'customer'}`
+              : `Create your custom ${AD_DIMENSIONS.WIDTH}x${AD_DIMENSIONS.HEIGHT} advertisement`}
+          </p>
         </div>
+        {currentVersion && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <History className="h-4 w-4" />
+            <span>Version {currentVersion.versionNumber}</span>
+            {currentVersion.isApproved && (
+              <Badge variant="outline" className="text-green-600 border-green-300">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Approved
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Instructions */}

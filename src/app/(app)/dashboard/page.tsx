@@ -96,11 +96,11 @@ export default function DashboardPage() {
             sentForApprovalAt: data.sentForApprovalAt,
           };
 
-          // Check for action required
-          if (ad.status === 'pending_internal_review' || ad.status === 'pending_ad_creation') {
+          // Check for action required (using normalized status names)
+          if (ad.status === 'in_review' || ad.status === 'design_pending') {
             actionRequired++;
           }
-          if (ad.status === 'pending_customer_approval') {
+          if (ad.status === 'customer_approval') {
             pendingApproval++;
             if (ad.sentForApprovalAt && shouldAutoApprove(ad.sentForApprovalAt)) {
               ad.shouldAutoApprove = true;
@@ -113,10 +113,9 @@ export default function DashboardPage() {
 
           // Collect ads needing action
           if (
-            ad.status === 'pending_internal_review' ||
-            ad.status === 'pending_ad_creation' ||
-            ad.status === 'revision_requested' ||
-            (ad.status === 'pending_customer_approval' && ad.shouldAutoApprove)
+            ad.status === 'in_review' ||
+            ad.status === 'design_pending' ||
+            (ad.status === 'customer_approval' && ad.shouldAutoApprove)
           ) {
             ads.push(ad);
           }
@@ -302,16 +301,13 @@ export default function DashboardPage() {
                             colors.bg
                           )}
                         >
-                          {ad.status === 'pending_internal_review' && (
+                          {ad.status === 'in_review' && (
                             <Eye className={cn('h-5 w-5', colors.text)} />
                           )}
-                          {ad.status === 'pending_ad_creation' && (
+                          {ad.status === 'design_pending' && (
                             <FileEdit className={cn('h-5 w-5', colors.text)} />
                           )}
-                          {ad.status === 'revision_requested' && (
-                            <AlertCircle className={cn('h-5 w-5', colors.text)} />
-                          )}
-                          {ad.status === 'pending_customer_approval' && (
+                          {ad.status === 'customer_approval' && (
                             <Clock className={cn('h-5 w-5', colors.text)} />
                           )}
                         </div>

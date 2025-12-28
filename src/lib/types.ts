@@ -1122,3 +1122,172 @@ export interface ReconciliationOptions {
   checkUsers: boolean;
   autoFixEnabled: boolean;
 }
+
+// ============================================================================
+// EMAIL EVENT TRACKING
+// ============================================================================
+
+/**
+ * Email event types for tracking
+ */
+export const EMAIL_EVENT_TYPES = {
+  APPROVAL_REQUEST: 'approval_request',
+  APPROVAL_REMINDER: 'approval_reminder',
+  AD_APPROVED: 'ad_approved',
+  AD_LIVE: 'ad_live',
+  WELCOME: 'welcome',
+  PASSWORD_RESET: 'password_reset',
+  CUSTOM: 'custom',
+} as const;
+
+export type EmailEventType = typeof EMAIL_EVENT_TYPES[keyof typeof EMAIL_EVENT_TYPES];
+
+/**
+ * Email event record for idempotency and tracking
+ * Stored in /users/{userId}/advertisements/{adId}/emailEvents/{eventId}
+ */
+export interface EmailEvent {
+  id: string;
+  type: EmailEventType;
+  recipientEmail: string;
+  subject: string;
+  sentAt: any; // Firestore Timestamp
+  sentBy: 'system' | 'admin';
+  sentByUserId?: string;
+
+  // For idempotency - unique key to prevent duplicate sends
+  idempotencyKey?: string;
+
+  // Tracking
+  mailDocId?: string; // Reference to /mail collection doc
+
+  // Metadata
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Generate an idempotency key for an email event
+ * Used to prevent duplicate emails within a time window
+ */
+export function generateEmailIdempotencyKey(
+  adId: string,
+  eventType: EmailEventType,
+  timeWindowMinutes: number = 60
+): string {
+  const windowStart = Math.floor(Date.now() / (timeWindowMinutes * 60 * 1000));
+  return `${adId}:${eventType}:${windowStart}`;
+}
+
+// ============================================================================
+// AD DRAFT VERSION TYPES (for designer state storage)
+// ============================================================================
+
+/**
+ * Ad draft version for storing designer state history
+ * Stored in /users/{userId}/advertisements/{adId}/versions/{versionId}
+ */
+export interface AdDraftVersion {
+  id: string;
+  versionNumber: number;
+  elements: AdDesignElement[];
+  backgroundColor: string;
+  previewImageUrl: string;
+  createdAt: any; // Firestore Timestamp
+  createdBy: 'customer' | 'admin';
+  createdByUserId: string;
+  notes?: string;
+  isApproved?: boolean;
+  isFinal?: boolean;
+}
+
+// ============================================================================
+// SUBSCRIPTION INTEGRATION TYPES
+// ============================================================================
+
+/**
+ * Stripe customer record (synced from Stripe via Firebase Extension)
+ * Stored in /customers/{userId}
+ */
+export interface StripeCustomer {
+  email: string;
+  stripeId?: string;
+  stripeLink?: string;
+
+  // For manual entries
+  isManualEntry?: boolean;
+
+  // Metadata
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+/**
+ * Subscription record (synced from Stripe or manual)
+ * Stored in /customers/{userId}/subscriptions/{subscriptionId}
+ */
+export interface Subscription {
+  id: string;
+  status: 'active' | 'trialing' | 'canceled' | 'unpaid' | 'past_due' | 'incomplete';
+
+  // Stripe data
+  created?: any; // Timestamp
+  current_period_start?: any;
+  current_period_end?: any;
+  cancel_at_period_end?: boolean;
+
+  // Plan info
+  items?: Array<{
+    price: {
+      id: string;
+      unit_amount: number;
+      recurring?: { interval: 'month' | 'year' };
+      product: { name: string };
+    };
+  }>;
+
+  // For manual entries
+  isManualEntry?: boolean;
+  planName?: string;
+  amount?: number;
+  billingPeriod?: 'monthly' | 'quarterly' | 'yearly' | 'one_time' | 'custom';
+  paymentMethod?: string;
+  paymentNotes?: string;
+  createdBy?: string;
+}
+
+/**
+ * Check if a subscription is active
+ */
+export function isSubscriptionActive(subscription: Subscription): boolean {
+  return subscription.status === 'active' || subscription.status === 'trialing';
+}
+
+/**
+ * Get subscription display info
+ */
+export function getSubscriptionDisplayInfo(subscription: Subscription): {
+  planName: string;
+  priceDisplay: string;
+  renewalDate: string | null;
+} {
+  const planName = subscription.items?.[0]?.price?.product?.name
+    || subscription.planName
+    || 'Subscription';
+
+  const amount = subscription.items?.[0]?.price?.unit_amount
+    ? subscription.items[0].price.unit_amount / 100
+    : subscription.amount || 0;
+
+  const interval = subscription.items?.[0]?.price?.recurring?.interval
+    || subscription.billingPeriod
+    || 'month';
+
+  const priceDisplay = `$${amount}/${interval}`;
+
+  const periodEnd = subscription.current_period_end;
+  const renewalDate = periodEnd?.seconds
+    ? new Date(periodEnd.seconds * 1000).toLocaleDateString()
+    : null;
+
+  return { planName, priceDisplay, renewalDate };
+}
