@@ -113,8 +113,9 @@ export default function AutomatedEmailsPage() {
         const outdated: string[] = [];
         for (const defaultTemplate of defaultTemplates) {
             const existing = currentTemplates.find(t => t.id === defaultTemplate.id);
-            if (existing && existing.isSystemTemplate) {
-                // Only check version for system templates
+            if (existing) {
+                // Check version for any template that matches a default template ID
+                // This handles both templates with isSystemTemplate flag and legacy templates without it
                 const existingVersion = existing.version || 0;
                 if (existingVersion < TEMPLATE_VERSION) {
                     outdated.push(defaultTemplate.id);
@@ -181,8 +182,9 @@ export default function AutomatedEmailsPage() {
                     const existingData = templateSnap.data();
                     const existingVersion = existingData.version || 0;
 
-                    // Only update system templates that are outdated
-                    if (existingData.isSystemTemplate && existingVersion < TEMPLATE_VERSION) {
+                    // Update any template that matches a default template ID and is outdated
+                    // This handles both templates with isSystemTemplate flag and legacy templates without it
+                    if (existingVersion < TEMPLATE_VERSION) {
                         await setDoc(templateRef, {
                             ...defaultTemplate,
                             version: TEMPLATE_VERSION,
@@ -721,7 +723,8 @@ function TemplateGrid({
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map((template) => {
                 const isOutdated = outdatedTemplates.includes(template.id);
-                const isSystemTemplate = template.isSystemTemplate && defaultTemplates.some(t => t.id === template.id);
+                // Show as system template if it matches a default template ID (handles legacy templates without flag)
+                const isSystemTemplate = defaultTemplates.some(t => t.id === template.id);
 
                 return (
                     <Card key={template.id} className={`overflow-hidden group hover:shadow-md transition-shadow ${isOutdated ? 'ring-2 ring-orange-400' : ''}`}>
@@ -831,7 +834,8 @@ function TemplateList({
                 <TableBody>
                     {templates.map((template) => {
                         const isOutdated = outdatedTemplates.includes(template.id);
-                        const isSystemTemplate = template.isSystemTemplate && defaultTemplates.some(t => t.id === template.id);
+                        // Show as system template if it matches a default template ID (handles legacy templates without flag)
+                        const isSystemTemplate = defaultTemplates.some(t => t.id === template.id);
 
                         return (
                             <TableRow key={template.id} className={isOutdated ? 'bg-orange-50' : ''}>
