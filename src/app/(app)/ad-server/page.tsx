@@ -395,12 +395,24 @@ export default function AdServerPage() {
         }
 
         try {
+            // If this live ad was linked to a customer advertisement, clear the reference
+            if (ad.sourceAdvertisementId && ad.customerId) {
+                const sourceAdRef = doc(firestore, 'users', ad.customerId, 'advertisements', ad.sourceAdvertisementId);
+                await updateDoc(sourceAdRef, {
+                    pushedToAdServerId: null,
+                    pushedToAdServerAt: null,
+                    liveAdId: null,
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
             await deleteDoc(doc(firestore, 'live_ads', ad.id));
             toast({
                 title: 'Ad Deleted',
                 description: 'The advertisement has been deleted.',
             });
         } catch (err) {
+            console.error('Failed to delete advertisement:', err);
             toast({
                 title: 'Error',
                 description: 'Failed to delete the advertisement.',
