@@ -558,7 +558,8 @@
       "password",
       "anonymous",
       "google.com",
-      "emailLink"
+      "emailLink",
+      "phone"
     ]
   },
   "firestore": {
