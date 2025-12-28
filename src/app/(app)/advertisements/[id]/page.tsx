@@ -470,7 +470,9 @@ export default function AdvertisementDetailPage() {
     };
 
     const handleRequestApproval = async () => {
-        if (!firestore || !user || !advertisement?.adProofUrl || !advertisement?.adProofDestinationUrl) {
+        // Check for destination URL - fall back to user's website URL if ad doesn't have one
+        const destinationUrl = advertisement?.adProofDestinationUrl || user?.adWebsiteUrl;
+        if (!firestore || !user || !advertisement?.adProofUrl || !destinationUrl) {
             toast({ title: 'Error', description: 'A saved ad proof and destination URL are required before requesting approval.', variant: 'destructive' });
             return;
         }
@@ -980,11 +982,11 @@ export default function AdvertisementDetailPage() {
                             <CardContent>
                                 <div className="flex gap-3">
                                     <Button
-                                        onClick={() => handleUpdateStatus('customer_approval')}
-                                        disabled={isUpdatingStatus || !advertisement.adProofUrl}
+                                        onClick={handleRequestApproval}
+                                        disabled={isRequestingApproval || !advertisement.adProofUrl}
                                         className="bg-blue-600 hover:bg-blue-700"
                                     >
-                                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                        {isRequestingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                         Send for Customer Approval
                                     </Button>
                                     <Button
