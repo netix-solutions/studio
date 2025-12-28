@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import { cn, formatPhoneNumber, fixUrl } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -809,7 +809,14 @@ export default function AccountPage() {
                                         <Controller
                                             name="cellPhone"
                                             control={adDetailsForm.control}
-                                            render={({ field }) => <Input id="cellPhone" placeholder="(555) 123-4567" {...field} />}
+                                            render={({ field }) => (
+                                                <Input
+                                                    id="cellPhone"
+                                                    placeholder="(555) 123-4567"
+                                                    {...field}
+                                                    onChange={(e) => field.onChange(formatPhoneNumber(e.target.value))}
+                                                />
+                                            )}
                                         />
                                         {adDetailsForm.formState.errors.cellPhone && (
                                             <p className="text-sm text-destructive">{adDetailsForm.formState.errors.cellPhone.message}</p>
@@ -839,7 +846,14 @@ export default function AccountPage() {
                                         <Controller
                                             name="businessPhone"
                                             control={adDetailsForm.control}
-                                            render={({ field }) => <Input id="businessPhone" placeholder="(555) 123-4567" {...field} />}
+                                            render={({ field }) => (
+                                                <Input
+                                                    id="businessPhone"
+                                                    placeholder="(555) 123-4567"
+                                                    {...field}
+                                                    onChange={(e) => field.onChange(formatPhoneNumber(e.target.value))}
+                                                />
+                                            )}
                                         />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
@@ -847,7 +861,19 @@ export default function AccountPage() {
                                         <Controller
                                             name="adWebsiteUrl"
                                             control={adDetailsForm.control}
-                                            render={({ field }) => <Input id="adWebsiteUrl" placeholder="https://example.com" {...field} />}
+                                            render={({ field }) => (
+                                                <Input
+                                                    id="adWebsiteUrl"
+                                                    placeholder="https://example.com"
+                                                    {...field}
+                                                    onBlur={(e) => {
+                                                        field.onBlur();
+                                                        if (e.target.value) {
+                                                            field.onChange(fixUrl(e.target.value));
+                                                        }
+                                                    }}
+                                                />
+                                            )}
                                         />
                                         {adDetailsForm.formState.errors.adWebsiteUrl && (
                                             <p className="text-sm text-destructive">{adDetailsForm.formState.errors.adWebsiteUrl.message}</p>
