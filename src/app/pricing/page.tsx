@@ -964,7 +964,7 @@ function PricingPageContent() {
             {/* Branding */}
             <div className="md:col-span-2 space-y-4">
               <div className="flex items-center gap-3">
-                <Image src="/logo.png" alt="Community-Websites.com Logo" width={44} height={24} className="h-[28px] w-auto brightness-0 invert" />
+                <Image src="/logo.png" alt="Community-Websites.com Logo" width={44} height={24} className="h-[28px] w-auto" />
                 <span className="font-headline text-white text-lg font-bold">Community-Websites.com</span>
               </div>
               <p className="text-sm text-white/50 max-w-sm leading-relaxed">

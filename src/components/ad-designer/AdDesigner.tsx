@@ -946,8 +946,9 @@ export default function AdDesigner({
           {/* Background Color with Gradients */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2" title="Background Color">
+              <Button variant="outline" size="sm" className="h-8 px-2 gap-1.5" title="Background Color">
                 <div className="w-4 h-4 rounded border" style={{ backgroundColor }} />
+                <span className="text-xs">Background</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-3">
@@ -1022,7 +1023,17 @@ export default function AdDesigner({
           </Button>
           {onSave && (
             <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-3">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-1" />
+                  Save
+                </>
+              )}
             </Button>
           )}
         </div>
