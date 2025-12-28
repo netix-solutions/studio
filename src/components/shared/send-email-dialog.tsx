@@ -138,11 +138,12 @@ export function SendEmailDialog({
           }),
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
           throw new Error(data.error || 'Failed to send approval email');
         }
+
+        const data = await response.json();
 
         toast({
           title: 'Approval Email Sent',

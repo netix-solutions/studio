@@ -282,6 +282,7 @@ export async function loadVersionElements(
           };
           img.onerror = () => {
             // Return element without imageObj if loading fails
+            console.warn('Failed to load image:', element.src);
             resolve(element);
           };
         });

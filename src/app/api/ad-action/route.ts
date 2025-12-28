@@ -3,6 +3,18 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 import { verifyApprovalToken, type TokenPayload } from '@/lib/approval-tokens';
 import { FieldValue } from 'firebase-admin/firestore';
 
+// Escape HTML special characters to prevent XSS
+function escapeHtml(text: string): string {
+    const htmlEntities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
+    return text.replace(/[&<>"']/g, char => htmlEntities[char]);
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -133,7 +145,7 @@ export async function POST(request: NextRequest) {
                             <p><strong>Email:</strong> ${adData.email || userData?.email}</p>
                             <hr/>
                             <p><strong>Revision Notes:</strong></p>
-                            <p style="background: #fef3c7; padding: 12px; border-radius: 4px;">${revisionNotes.replace(/\n/g, '<br/>')}</p>
+                            <p style="background: #fef3c7; padding: 12px; border-radius: 4px;">${escapeHtml(revisionNotes).replace(/\n/g, '<br/>')}</p>
                         `,
                     },
                 });

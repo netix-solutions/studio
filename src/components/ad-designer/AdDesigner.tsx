@@ -1628,5 +1628,5 @@ export default function AdDesigner({
   );
 }
 
-// Export types for use in other components
-export type { DesignElement, TextElement, ImageElement, ShapeElement, ShapeType, GradientFill, LinearGradient, RadialGradient, GradientStop };
+// Export types for use in other components (GradientStop, LinearGradient, RadialGradient, GradientFill, ShapeType already exported at definition)
+export type { DesignElement, TextElement, ImageElement, ShapeElement };
