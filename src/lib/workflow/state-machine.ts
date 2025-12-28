@@ -43,6 +43,7 @@ export const AD_WORKFLOW_STATUSES = {
   // End states
   COMPLETED: 'completed',
   CANCELED: 'canceled',
+  ARCHIVED: 'archived',
 } as const;
 
 /**
@@ -65,15 +66,16 @@ export const VALID_TRANSITIONS: Record<AdStatus, AdStatus[]> = {
   // Approved -> go live or back to review
   'approved': ['live', 'in_review', 'canceled'],
 
-  // Live -> pause, complete, or back to approved for updates
-  'live': ['paused', 'completed', 'approved'],
+  // Live -> pause, complete, archive (when replaced by new ad), or back to approved for updates
+  'live': ['paused', 'completed', 'approved', 'archived'],
 
-  // Paused -> resume or complete
-  'paused': ['live', 'completed', 'canceled'],
+  // Paused -> resume, complete, or archive (when replaced)
+  'paused': ['live', 'completed', 'canceled', 'archived'],
 
   // End states - no transitions allowed
   'completed': [],
   'canceled': [],
+  'archived': [],
 };
 
 /**
@@ -93,6 +95,7 @@ export type WorkflowAction =
   | 'ADMIN_RESUME'
   | 'COMPLETE_SUBSCRIPTION'
   | 'CANCEL_SUBSCRIPTION'
+  | 'ARCHIVE_FOR_REPLACEMENT'  // Archive ad when replaced by a new version
   | 'ADMIN_OVERRIDE'; // Admin can force any valid transition
 
 /**
@@ -150,6 +153,10 @@ export const ACTION_TRANSITIONS: Record<WorkflowAction, { from: AdStatus[]; to: 
   CANCEL_SUBSCRIPTION: {
     from: ['info_needed', 'design_pending', 'in_review', 'customer_approval', 'approved', 'live', 'paused'],
     to: 'canceled',
+  },
+  ARCHIVE_FOR_REPLACEMENT: {
+    from: ['live', 'paused'],
+    to: 'archived',
   },
   ADMIN_OVERRIDE: {
     from: ['info_needed', 'design_pending', 'in_review', 'customer_approval', 'approved', 'live', 'paused'],
@@ -212,7 +219,7 @@ export const STATUS_CATEGORIES = {
   ADMIN_ACTION_NEEDED: ['in_review', 'approved'] as AdStatus[],
   ACTIVE: ['live'] as AdStatus[],
   INACTIVE: ['paused'] as AdStatus[],
-  ENDED: ['completed', 'canceled'] as AdStatus[],
+  ENDED: ['completed', 'canceled', 'archived'] as AdStatus[],
 };
 
 /**
@@ -241,6 +248,7 @@ export const ADMIN_QUEUE_PRIORITY: Record<AdStatus, number> = {
   'paused': 7,            // Inactive
   'completed': 8,         // Done
   'canceled': 9,          // Done
+  'archived': 10,         // Historical, view only
 };
 
 /**
@@ -284,6 +292,10 @@ export function getNextStepDescription(status: AdStatus, isAdmin: boolean): stri
       admin: 'Subscription was canceled',
       customer: 'Your subscription has been canceled',
     },
+    'archived': {
+      admin: 'This ad version has been replaced with a newer version',
+      customer: 'This is a previous version of your advertisement',
+    },
   };
 
   return descriptions[status]?.[isAdmin ? 'admin' : 'customer'] || 'Unknown status';
@@ -302,6 +314,7 @@ export const WORKFLOW_STEP_NUMBERS: Record<AdStatus, number> = {
   'paused': 6,
   'completed': 6,
   'canceled': 0,
+  'archived': 6,
 };
 
 /**

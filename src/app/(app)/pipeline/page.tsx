@@ -61,6 +61,7 @@ const STAGE_LABELS: Record<AdStatus, string> = {
   paused: 'Paused',
   completed: 'Completed',
   canceled: 'Canceled',
+  archived: 'Archived',
 };
 
 // Special stages section - Updated for new workflow

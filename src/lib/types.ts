@@ -292,6 +292,8 @@ export const AD_STATUSES = {
   COMPLETED: 'completed',
   // Subscription canceled
   CANCELED: 'canceled',
+  // Ad replaced by a new version, kept for history
+  ARCHIVED: 'archived',
 } as const;
 
 export type AdStatus = typeof AD_STATUSES[keyof typeof AD_STATUSES];
@@ -327,6 +329,7 @@ export const AD_STATUS_LABELS: Record<AdStatus, string> = {
   paused: 'Paused',
   completed: 'Completed',
   canceled: 'Canceled',
+  archived: 'Archived',
 };
 
 // Customer-facing labels (more friendly)
@@ -340,6 +343,7 @@ export const AD_STATUS_CUSTOMER_LABELS: Record<AdStatus, string> = {
   paused: 'Your Ad is Paused',
   completed: 'Advertising Complete',
   canceled: 'Canceled',
+  archived: 'Previous Ad Version',
 };
 
 // Admin action labels - what needs to be done
@@ -353,6 +357,7 @@ export const AD_STATUS_ADMIN_ACTIONS: Record<AdStatus, string> = {
   paused: 'Resume when ready',
   completed: 'No action needed',
   canceled: 'No action needed',
+  archived: 'View historical version',
 };
 
 export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -365,6 +370,7 @@ export const AD_STATUS_COLORS: Record<AdStatus, { variant: 'default' | 'secondar
   paused: { variant: 'outline' },
   completed: { variant: 'outline' },
   canceled: { variant: 'destructive' },
+  archived: { variant: 'outline' },
 };
 
 /**
@@ -380,6 +386,7 @@ export const AD_PIPELINE_STAGE_COLORS: Record<AdStatus, { bg: string; text: stri
   paused: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
   completed: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-300' },
   canceled: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+  archived: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' },
 };
 
 /**
@@ -404,6 +411,7 @@ export function getWorkflowStepNumber(status: AdStatus): number {
   if (status === 'paused') return 6;
   if (status === 'completed') return 6;
   if (status === 'canceled') return 0;
+  if (status === 'archived') return 6;
   return 1;
 }
 
@@ -411,14 +419,14 @@ export function getWorkflowStepNumber(status: AdStatus): number {
  * Check if workflow is complete (live or end state)
  */
 export function isWorkflowComplete(status: AdStatus): boolean {
-  return ['live', 'paused', 'completed', 'canceled'].includes(status);
+  return ['live', 'paused', 'completed', 'canceled', 'archived'].includes(status);
 }
 
 /**
  * Check if ad is in an active/actionable state
  */
 export function isAdActive(status: AdStatus): boolean {
-  return !['completed', 'canceled'].includes(status);
+  return !['completed', 'canceled', 'archived'].includes(status);
 }
 
 /**
@@ -530,6 +538,14 @@ export interface Advertisement {
   // Revision tracking
   revisionCount?: number;
   revisionNotes?: string;
+
+  // Ad change request tracking - for ad replacements
+  isChangeRequest?: boolean;           // True if this ad was created as a change request
+  changeRequestType?: 'self_design' | 'team_design';  // How the change was requested
+  changeRequestedAt?: any;             // When the change was requested
+  parentAdId?: string;                 // ID of the ad this is replacing (for new ads)
+  replacedByAdId?: string;             // ID of the new ad that replaced this one (for archived ads)
+  archivedAt?: any;                    // When this ad was archived
 
   // Ad Manager link - references live_ads collection
   liveAdId?: string;           // ID of the live_ad document when published

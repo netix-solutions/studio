@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,6 +14,8 @@ import { WorkflowProgress, WorkflowStatusBanner } from './WorkflowProgress';
 import { BusinessInfoStep, type BusinessInfoFormData } from './steps/BusinessInfoStep';
 import { DesignStep } from './steps/DesignStep';
 import { ApprovalStep, WaitingForReviewStep, ApprovedStep, LiveStep } from './steps/ApprovalStep';
+import { AdChangeRequest, PendingChangeRequest } from './steps/AdChangeRequest';
+import { AdHistory } from './AdHistory';
 import {
     type Advertisement,
     type AdStatus,
@@ -28,6 +31,7 @@ interface CustomerWorkflowProps {
     subscriptionId: string;
     isAdmin?: boolean;
     onRefresh?: () => void;
+    allAdvertisements?: Advertisement[];  // All ads for this subscription (for history)
 }
 
 export function CustomerWorkflow({
@@ -36,16 +40,51 @@ export function CustomerWorkflow({
     advertisement,
     subscriptionId,
     isAdmin = false,
-    onRefresh
+    onRefresh,
+    allAdvertisements = []
 }: CustomerWorkflowProps) {
     const router = useRouter();
-    const { firestore, storage } = useFirebase();
+    const { firestore, storage, firebaseApp } = useFirebase();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
     const status: AdStatus = advertisement?.status
         ? normalizeAdStatus(advertisement.status)
         : 'info_needed';
+
+    // Check if there's a pending change request for this ad
+    const pendingChangeRequest = allAdvertisements.find(
+        ad => ad.parentAdId === advertisement?.id &&
+            !['live', 'completed', 'canceled', 'archived'].includes(ad.status)
+    );
+
+    // Get auth token for API calls
+    const getAuthToken = useCallback(async (): Promise<string> => {
+        const auth = getAuth(firebaseApp);
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not authenticated');
+        return user.getIdToken();
+    }, [firebaseApp]);
+
+    // Handle change request created
+    const handleChangeRequested = (newAdId: string, changeType: 'self_design' | 'team_design') => {
+        toast({
+            title: 'Change request created',
+            description: changeType === 'self_design'
+                ? 'You can now design your new ad.'
+                : 'Our team will start working on your new design.',
+        });
+        onRefresh?.();
+        // Navigate to the new ad if self-design
+        if (changeType === 'self_design') {
+            router.push('/design-ad');
+        }
+    };
+
+    // Handle viewing pending change request
+    const handleViewPendingRequest = () => {
+        onRefresh?.();
+    };
 
     // Handle business info submission
     const handleBusinessInfoSubmit = async (data: BusinessInfoFormData) => {
@@ -272,9 +311,33 @@ export function CustomerWorkflow({
                 lastActionAt: serverTimestamp(),
             });
 
+            // If this is a change request, archive the parent ad
+            if (advertisement.isChangeRequest && advertisement.parentAdId) {
+                const parentAdRef = doc(firestore, 'users', userId, 'advertisements', advertisement.parentAdId);
+                await updateDoc(parentAdRef, {
+                    status: 'archived',
+                    archivedAt: serverTimestamp(),
+                    replacedByAdId: advertisement.id,
+                    updatedAt: serverTimestamp(),
+                    notes: `Archived - replaced by ad ${advertisement.id}`,
+                });
+
+                // Also deactivate the parent's live ad if it exists
+                const parentAd = allAdvertisements.find(ad => ad.id === advertisement.parentAdId);
+                if (parentAd?.liveAdId) {
+                    const parentLiveAdRef = doc(firestore, 'live_ads', parentAd.liveAdId);
+                    await updateDoc(parentLiveAdRef, {
+                        status: 'archived',
+                        updatedAt: serverTimestamp(),
+                    });
+                }
+            }
+
             toast({
                 title: 'Ad published!',
-                description: 'The ad is now live on community websites.',
+                description: advertisement.isChangeRequest
+                    ? 'The new ad is now live and the previous version has been archived.'
+                    : 'The ad is now live on community websites.',
             });
 
             onRefresh?.();
@@ -368,27 +431,67 @@ export function CustomerWorkflow({
 
             case 'live':
                 return (
-                    <LiveStep
-                        adProofUrl={advertisement?.adProofUrl}
-                        impressions={advertisement?.impressions}
-                        clicks={advertisement?.clicks}
-                        isAdmin={isAdmin}
-                    />
+                    <div className="space-y-6">
+                        <LiveStep
+                            adProofUrl={advertisement?.adProofUrl}
+                            impressions={advertisement?.impressions}
+                            clicks={advertisement?.clicks}
+                            isAdmin={isAdmin}
+                        />
+
+                        {/* Show pending change request or change request option */}
+                        {advertisement && (
+                            pendingChangeRequest ? (
+                                <PendingChangeRequest
+                                    pendingAd={pendingChangeRequest}
+                                    onViewPending={handleViewPendingRequest}
+                                />
+                            ) : (
+                                <AdChangeRequest
+                                    advertisement={advertisement}
+                                    userId={userId}
+                                    onChangeRequested={handleChangeRequested}
+                                    getAuthToken={getAuthToken}
+                                    isAdmin={isAdmin}
+                                />
+                            )
+                        )}
+                    </div>
                 );
 
             case 'paused':
                 return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-amber-600">
-                                <Clock className="h-5 w-5" />
-                                Ad Paused
-                            </CardTitle>
-                            <CardDescription>
-                                This advertisement is currently paused.
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
+                    <div className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-amber-600">
+                                    <Clock className="h-5 w-5" />
+                                    Ad Paused
+                                </CardTitle>
+                                <CardDescription>
+                                    This advertisement is currently paused.
+                                </CardDescription>
+                            </CardHeader>
+                        </Card>
+
+                        {/* Show pending change request or change request option */}
+                        {advertisement && (
+                            pendingChangeRequest ? (
+                                <PendingChangeRequest
+                                    pendingAd={pendingChangeRequest}
+                                    onViewPending={handleViewPendingRequest}
+                                />
+                            ) : (
+                                <AdChangeRequest
+                                    advertisement={advertisement}
+                                    userId={userId}
+                                    onChangeRequested={handleChangeRequested}
+                                    getAuthToken={getAuthToken}
+                                    isAdmin={isAdmin}
+                                />
+                            )
+                        )}
+                    </div>
                 );
 
             case 'completed':
@@ -404,6 +507,22 @@ export function CustomerWorkflow({
                                 {status === 'completed'
                                     ? 'Your advertising period has ended. Thank you for advertising with us!'
                                     : 'This subscription has been canceled.'}
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+                );
+
+            case 'archived':
+                return (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                                <AlertCircle className="h-5 w-5" />
+                                Archived Ad Version
+                            </CardTitle>
+                            <CardDescription>
+                                This advertisement has been replaced by a newer version.
+                                {advertisement?.replacedByAdId && ' Check Ad History for the current version.'}
                             </CardDescription>
                         </CardHeader>
                     </Card>
@@ -444,6 +563,15 @@ export function CustomerWorkflow({
             <WorkflowStatusBanner currentStatus={status} />
             <WorkflowProgress currentStatus={status} className="mb-8" />
             {renderStep()}
+
+            {/* Show ad history if there are multiple versions */}
+            {allAdvertisements.length > 1 && (
+                <AdHistory
+                    advertisements={allAdvertisements}
+                    currentAdId={advertisement?.id}
+                    isAdmin={isAdmin}
+                />
+            )}
         </div>
     );
 }
