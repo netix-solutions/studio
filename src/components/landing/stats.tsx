@@ -120,32 +120,32 @@ export function LiveStatsBar() {
   ];
 
   return (
-    <section className="bg-gray-900 py-6 border-y border-gray-800">
-      <div className="container mx-auto px-4 md:px-6">
+    <section className="bg-gray-900 py-4 sm:py-6 border-y border-gray-800">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6">
         <div
-          className={`grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 transition-all duration-700 ${
+          className={`grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 transition-all duration-700 ${
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 justify-center md:justify-start"
+              className="flex items-center gap-2 sm:gap-3 justify-center md:justify-start"
             >
-              <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <stat.icon className="h-5 w-5 text-blue-400" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-white">{stat.value}</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-base sm:text-xl font-bold text-white truncate">{stat.value}</span>
                   {stat.live && (
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-2 w-2 flex-shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-gray-400">{stat.label}</div>
+                <div className="text-[10px] sm:text-xs text-gray-400 truncate">{stat.label}</div>
               </div>
             </div>
           ))}
