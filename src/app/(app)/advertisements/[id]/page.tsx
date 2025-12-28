@@ -29,6 +29,7 @@ import {
     AD_PLACEMENT_DIMENSIONS,
     calculateAutoApprovalDeadline,
     shouldAutoApprove,
+    normalizeAdStatus,
     type AdStatus,
     type Advertisement,
     type AdDesignPreferences,
@@ -59,22 +60,23 @@ interface AdDetails extends Advertisement {
     // Extended for this page
 }
 
-// Workflow steps for admin view (more detailed)
+// Workflow steps for admin view (using normalized status names)
 const adminWorkflowSteps = [
-    { id: 'pending_info', title: 'Customer Info', description: 'Waiting for customer to submit business details' },
-    { id: 'pending_internal_review', title: 'Internal Review', description: 'Review customer submission' },
-    { id: 'pending_ad_creation', title: 'Ad Creation', description: 'Creating ad with external application' },
-    { id: 'pending_customer_approval', title: 'Customer Approval', description: 'Waiting for customer to approve' },
-    { id: 'holding', title: 'Holding', description: 'Set final settings before going live' },
+    { id: 'info_needed', title: 'Customer Info', description: 'Waiting for customer to submit business details' },
+    { id: 'design_pending', title: 'Design', description: 'Customer designing ad or requesting custom design' },
+    { id: 'in_review', title: 'In Review', description: 'Admin creating/finalizing ad' },
+    { id: 'customer_approval', title: 'Customer Approval', description: 'Waiting for customer to approve' },
+    { id: 'approved', title: 'Approved', description: 'Ready to go live' },
     { id: 'live', title: 'Live', description: 'Ad is active on websites' },
 ];
 
 function WorkflowStepper({ currentStatus, onStatusChange }: { currentStatus: AdStatus, onStatusChange?: (status: AdStatus) => void }) {
     const getCurrentIndex = () => {
         const index = adminWorkflowSteps.findIndex(s => s.id === currentStatus);
-        if (currentStatus === 'approved') return adminWorkflowSteps.findIndex(s => s.id === 'holding');
-        if (currentStatus === 'holding') return adminWorkflowSteps.findIndex(s => s.id === 'holding');
         if (currentStatus === 'live') return adminWorkflowSteps.length - 1;
+        if (currentStatus === 'paused') return adminWorkflowSteps.length - 1; // Show as live step
+        if (currentStatus === 'completed') return adminWorkflowSteps.length - 1;
+        if (index === -1) return 0; // Default to first step if not found
         return index;
     };
 
@@ -220,11 +222,14 @@ export default function AdvertisementDetailPage() {
                 const adData = adDocSnap.data();
                 const userData = userDocSnap.data();
 
+                // Normalize status for consistent UI display
+                const normalizedStatus = normalizeAdStatus(adData.status || 'info_needed');
+
                 const fullAd: AdDetails = {
                     id: adDocSnap.id,
                     userId: adData.userId || userId!,
                     subscriptionId: adData.subscriptionId || '',
-                    status: adData.status || 'pending_info',
+                    status: normalizedStatus,
                     adProofUrl: adData.adProofUrl,
                     adProofDestinationUrl: adData.adProofDestinationUrl,
                     customerSampleAdUrl: adData.customerSampleAdUrl,
@@ -461,7 +466,7 @@ export default function AdvertisementDetailPage() {
             const autoApprovalDeadline = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
             await updateDoc(adDocRef, {
-                status: 'pending_customer_approval',
+                status: 'customer_approval',
                 sentForApprovalAt: serverTimestamp(),
                 autoApprovalAt: autoApprovalDeadline,
                 updatedAt: serverTimestamp(),
@@ -469,7 +474,7 @@ export default function AdvertisementDetailPage() {
 
             setAdvertisement(prev => prev ? {
                 ...prev,
-                status: 'pending_customer_approval',
+                status: 'customer_approval',
                 sentForApprovalAt: new Date(),
                 autoApprovalAt: autoApprovalDeadline
             } : null);
@@ -514,7 +519,7 @@ export default function AdvertisementDetailPage() {
         }
     };
 
-    // Move to holding status after approval
+    // Move to approved status after customer approval
     const handleMoveToHolding = async () => {
         if (!firestore || !user || !advertisement) {
             toast({ title: 'Error', description: 'Required information is missing.', variant: 'destructive' });
@@ -525,9 +530,8 @@ export default function AdvertisementDetailPage() {
         try {
             const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
             await updateDoc(adDocRef, {
-                status: 'holding',
+                status: 'approved',
                 approvedAt: serverTimestamp(),
-                holdingAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
 
@@ -555,8 +559,8 @@ export default function AdvertisementDetailPage() {
                 triggerType: 'manual_send',
             });
 
-            setAdvertisement(prev => prev ? { ...prev, status: 'holding' } : null);
-            toast({ title: 'Moved to Holding!', description: `The ad has been approved and moved to holding status.` });
+            setAdvertisement(prev => prev ? { ...prev, status: 'approved' } : null);
+            toast({ title: 'Ad Approved!', description: `The ad has been approved and is ready to go live.` });
         } catch (error: any) {
             console.error("Error moving to holding:", error);
             toast({ title: 'Error', description: error.message || 'Could not move to holding.', variant: 'destructive' });
@@ -758,7 +762,7 @@ export default function AdvertisementDetailPage() {
     }
 
     // Check if auto-approval should happen
-    const shouldAutoApproveNow = advertisement.status === 'pending_customer_approval' &&
+    const shouldAutoApproveNow = advertisement.status === 'customer_approval' &&
         advertisement.sentForApprovalAt &&
         shouldAutoApprove(advertisement.sentForApprovalAt);
 
@@ -827,8 +831,31 @@ export default function AdvertisementDetailPage() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Status-specific action cards */}
 
-                    {/* Pending Internal Review */}
-                    {advertisement.status === 'pending_internal_review' && (
+                    {/* Info Needed - Waiting for customer to submit info */}
+                    {advertisement.status === 'info_needed' && (
+                        <Card className="border-amber-200 bg-amber-50">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-amber-700">
+                                    <Clock className="h-5 w-5" />
+                                    Waiting for Customer Info
+                                </CardTitle>
+                                <CardDescription>
+                                    The customer hasn&apos;t submitted their business details yet. They need to complete the onboarding form.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Alert className="bg-amber-100 border-amber-300">
+                                    <Mail className="h-4 w-4 text-amber-700" />
+                                    <AlertDescription className="text-amber-800">
+                                        The customer will receive automated reminders to complete their ad setup. You can also email them directly.
+                                    </AlertDescription>
+                                </Alert>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* In Review - Admin needs to create/finalize ad */}
+                    {advertisement.status === 'in_review' && (
                         <Card className="border-blue-200 bg-blue-50">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-blue-700">
@@ -836,22 +863,22 @@ export default function AdvertisementDetailPage() {
                                     Review Customer Submission
                                 </CardTitle>
                                 <CardDescription>
-                                    The customer has submitted their information. Review it and move to ad creation.
+                                    The customer has submitted their information. Review it and create the ad proof.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex gap-3">
                                     <Button
-                                        onClick={() => handleUpdateStatus('pending_ad_creation')}
-                                        disabled={isUpdatingStatus}
+                                        onClick={() => handleUpdateStatus('customer_approval')}
+                                        disabled={isUpdatingStatus || !advertisement.adProofUrl}
                                         className="bg-blue-600 hover:bg-blue-700"
                                     >
-                                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                        Approve & Start Ad Creation
+                                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                        Send for Customer Approval
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        onClick={() => handleUpdateStatus('pending_info')}
+                                        onClick={() => handleUpdateStatus('info_needed')}
                                         disabled={isUpdatingStatus}
                                     >
                                         Request More Info
@@ -861,12 +888,12 @@ export default function AdvertisementDetailPage() {
                         </Card>
                     )}
 
-                    {/* Pending Ad Creation */}
-                    {(advertisement.status === 'pending_ad_creation' || advertisement.status === 'revision_requested') && (
+                    {/* Ad Creation/Upload section - shown for in_review and design_pending */}
+                    {(advertisement.status === 'in_review' || advertisement.status === 'design_pending') && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>
-                                    {advertisement.status === 'revision_requested' ? 'Create Revised Ad Proof' : 'Create Advertisement Proof'}
+                                    {advertisement.adProofUrl ? 'Update Advertisement Proof' : 'Create Advertisement Proof'}
                                 </CardTitle>
                                 <CardDescription>
                                     Upload the ad creative designed in your external application.
@@ -933,8 +960,8 @@ export default function AdvertisementDetailPage() {
                         </Card>
                     )}
 
-                    {/* Pending Customer Approval */}
-                    {advertisement.status === 'pending_customer_approval' && (
+                    {/* Customer Approval - Waiting for customer response */}
+                    {advertisement.status === 'customer_approval' && (
                         <Card className="border-amber-200 bg-amber-50">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-amber-700">
@@ -966,7 +993,7 @@ export default function AdvertisementDetailPage() {
                                 <div className="flex gap-3 flex-wrap">
                                     <Button onClick={handleMoveToHolding} disabled={isMovingToHolding} className="bg-green-600 hover:bg-green-700">
                                         {isMovingToHolding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                        Approve & Move to Holding
+                                        Approve Ad
                                     </Button>
                                     <Button variant="secondary" onClick={handleResendApproval} disabled={isResendingApproval}>
                                         {isResendingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
@@ -974,25 +1001,25 @@ export default function AdvertisementDetailPage() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        onClick={() => handleUpdateStatus('pending_ad_creation')}
+                                        onClick={() => handleUpdateStatus('in_review')}
                                         disabled={isUpdatingStatus}
                                     >
-                                        Back to Ad Creation
+                                        Back to Review
                                     </Button>
                                 </div>
                             </CardContent>
                         </Card>
                     )}
 
-                    {/* Holding - Awaiting Final Settings */}
-                    {(advertisement.status === 'holding' || advertisement.status === 'approved') && (
-                        <Card className="border-cyan-200 bg-cyan-50">
+                    {/* Approved - Ready to go live */}
+                    {advertisement.status === 'approved' && (
+                        <Card className="border-indigo-200 bg-indigo-50">
                             <CardHeader>
-                                <CardTitle className="text-cyan-700 flex items-center gap-2">
-                                    <Clock className="h-5 w-5" />
-                                    Holding - Set Final Settings
+                                <CardTitle className="text-indigo-700 flex items-center gap-2">
+                                    <CheckCircle className="h-5 w-5" />
+                                    Approved - Ready to Publish
                                 </CardTitle>
-                                <CardDescription>The ad has been approved. Configure display settings before going live.</CardDescription>
+                                <CardDescription>The ad has been approved by the customer. Ready to go live!</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {advertisement.adProofUrl && (
@@ -1009,10 +1036,10 @@ export default function AdvertisementDetailPage() {
                                         </p>
                                     </div>
                                 )}
-                                <Alert className="bg-cyan-100 border-cyan-300">
-                                    <Clock className="h-4 w-4 text-cyan-700" />
-                                    <AlertDescription className="text-cyan-800">
-                                        Set display location, weight, and other settings in the Ad Server after pushing this ad live.
+                                <Alert className="bg-indigo-100 border-indigo-300">
+                                    <Radio className="h-4 w-4 text-indigo-700" />
+                                    <AlertDescription className="text-indigo-800">
+                                        After going live, configure display settings (weight, targeting) in the Ad Server.
                                     </AlertDescription>
                                 </Alert>
                                 <div className="flex gap-3 flex-wrap">
@@ -1022,10 +1049,10 @@ export default function AdvertisementDetailPage() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        onClick={() => handleUpdateStatus('pending_ad_creation')}
+                                        onClick={() => handleUpdateStatus('in_review')}
                                         disabled={isUpdatingStatus}
                                     >
-                                        Back to Ad Creation
+                                        Back to Review
                                     </Button>
                                 </div>
                             </CardContent>
@@ -1158,7 +1185,7 @@ export default function AdvertisementDetailPage() {
                                             height={AD_DIMENSIONS.HEIGHT}
                                             className="border rounded"
                                         />
-                                        {(advertisement.status === 'pending_ad_creation' || advertisement.status === 'pending_internal_review') && (
+                                        {(advertisement.status === 'in_review' || advertisement.status === 'design_pending') && (
                                             <Button
                                                 onClick={handleUseCustomerSampleAd}
                                                 disabled={isUsingCustomerSample}
