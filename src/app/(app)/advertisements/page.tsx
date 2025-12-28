@@ -22,6 +22,8 @@ import {
     Mail,
     ExternalLink,
     Filter,
+    RefreshCw,
+    Archive,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -60,12 +62,16 @@ import {
 type AdWithMeta = Advertisement & {
     shouldAutoApprove?: boolean;
     normalizedStatus?: AdStatus;
+    isChangeRequest?: boolean;
+    changeRequestType?: 'self_design' | 'team_design';
+    parentAdId?: string;
 };
 
 // Status filter options - Updated for new workflow
 const STATUS_FILTERS = [
     { value: 'all', label: 'All Ads', count: 0 },
     { value: 'action_required', label: 'Action Required', count: 0 },
+    { value: 'change_requests', label: 'Change Requests', count: 0 },
     { value: 'info_needed', label: 'Info Needed', count: 0 },
     { value: 'design_pending', label: 'Design Pending', count: 0 },
     { value: 'in_review', label: 'In Review', count: 0 },
@@ -75,6 +81,7 @@ const STATUS_FILTERS = [
     { value: 'paused', label: 'Paused', count: 0 },
     { value: 'completed', label: 'Completed', count: 0 },
     { value: 'canceled', label: 'Canceled', count: 0 },
+    { value: 'archived', label: 'Archived', count: 0 },
 ];
 
 export default function AdvertisementsPage() {
@@ -118,6 +125,10 @@ export default function AdvertisementsPage() {
                     createdAt: data.createdAt,
                     updatedAt: data.updatedAt,
                     normalizedStatus,
+                    // Change request fields
+                    isChangeRequest: data.isChangeRequest || false,
+                    changeRequestType: data.changeRequestType,
+                    parentAdId: data.parentAdId,
                 };
 
                 // Check for auto-approve eligibility (customer_approval status with sent date)
@@ -141,7 +152,8 @@ export default function AdvertisementsPage() {
                     if (ad.status === 'paused') return 7;
                     if (ad.status === 'completed') return 8;
                     if (ad.status === 'canceled') return 9;
-                    return 10;
+                    if (ad.status === 'archived') return 10;
+                    return 11;
                 };
 
                 const priorityDiff = getPriority(a) - getPriority(b);
@@ -218,6 +230,8 @@ export default function AdvertisementsPage() {
                 ad.status === 'approved' ||   // Admin needs to push to ad server
                 ad.shouldAutoApprove          // Ready for auto-approval
             ).length,
+            // Change requests = ads that are replacements for existing ads
+            change_requests: advertisements.filter(ad => ad.isChangeRequest).length,
         };
 
         // Count each status
@@ -251,6 +265,9 @@ export default function AdvertisementsPage() {
                         ad.status === 'approved' ||   // Admin needs to push to ad server
                         ad.shouldAutoApprove          // Ready for auto-approval
                     )) return false;
+                } else if (statusFilter === 'change_requests') {
+                    // Only show change request ads
+                    if (!ad.isChangeRequest) return false;
                 } else if (ad.status !== statusFilter) {
                     return false;
                 }
@@ -276,6 +293,8 @@ export default function AdvertisementsPage() {
                 return <Play className="h-4 w-4 text-green-500" />;
             case 'paused':
                 return <Pause className="h-4 w-4 text-slate-500" />;
+            case 'archived':
+                return <Archive className="h-4 w-4 text-gray-400" />;
             default:
                 return null;
         }
@@ -470,12 +489,20 @@ export default function AdvertisementsPage() {
                                                     <div className="font-medium">{ad.businessName || 'N/A'}</div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={cn(colors?.bg, colors?.text, 'border', colors?.border)}
-                                                    >
-                                                        {AD_STATUS_LABELS[ad.status] || ad.status}
-                                                    </Badge>
+                                                    <div className="flex flex-col gap-1">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={cn(colors?.bg, colors?.text, 'border', colors?.border)}
+                                                        >
+                                                            {AD_STATUS_LABELS[ad.status] || ad.status}
+                                                        </Badge>
+                                                        {ad.isChangeRequest && (
+                                                            <Badge variant="outline" className="text-xs w-fit">
+                                                                <RefreshCw className="h-3 w-3 mr-1" />
+                                                                Change
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                                                     {ad.createdAt
