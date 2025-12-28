@@ -47,9 +47,10 @@ service cloud.firestore {
 
     // USER DATA
     // Users can manage their own profile. Admins can manage any user.
+    // Note: Admins can create users via the Admin SDK (bypasses rules) for manual entry.
     match /users/{userId} {
       allow read, update: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow delete: if false; // Users should not be deletable from the client
 
