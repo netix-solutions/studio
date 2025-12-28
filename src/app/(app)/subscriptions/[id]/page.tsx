@@ -15,7 +15,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { SendEmailDialog } from '@/components/shared/send-email-dialog';
+import { SendEmailDialog, type AdvertisementInfo } from '@/components/shared/send-email-dialog';
 import { EmailHistoryDialog } from '@/components/emails/email-history-dialog';
 import {
     AD_STATUS_LABELS,
@@ -71,9 +71,10 @@ export default function SubscriptionDetailPage() {
 
     const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
     const [user, setUser] = useState<UserDetails | null>(null);
+    const [advertisement, setAdvertisement] = useState<AdvertisementInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
 
 
@@ -123,6 +124,16 @@ export default function SubscriptionDetailPage() {
 
                 setUser({ id: userDocSnap.id, ...userData });
                 setSubscription(subDetails);
+
+                // Store advertisement info for sending ad proof approval emails
+                if (adDoc && adData) {
+                    setAdvertisement({
+                        id: adDoc.id,
+                        userId: customerId,
+                        adProofUrl: adData.adProofUrl,
+                        adProofDestinationUrl: adData.adProofDestinationUrl || userData.adWebsiteUrl,
+                    });
+                }
 
             } catch (err: any) {
                 console.error("Error fetching subscription details:", err);
@@ -329,6 +340,7 @@ export default function SubscriptionDetailPage() {
                 recipientType="customer"
                 isOpen={isManualEmailDialogOpen}
                 onOpenChange={setIsManualEmailDialogOpen}
+                advertisement={advertisement ?? undefined}
             />
 
         </div>

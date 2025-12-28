@@ -24,11 +24,24 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/firebase/email';
 import { generateEmailUrls, wrapEmailContent, replaceEmailPlaceholders } from '@/lib/email-utils';
 import type { EmailTemplate } from '@/lib/email-templates';
+
+/** Special template ID for ad proof approval - handled via API */
+const AD_PROOF_APPROVAL_ID = '__ad_proof_approval__';
+
+/**
+ * Advertisement info for sending ad proof approval emails
+ */
+export interface AdvertisementInfo {
+  id: string;
+  userId: string;
+  adProofUrl?: string;
+  adProofDestinationUrl?: string;
+}
 
 const formSchema = z.object({
   templateId: z.string().min(1, 'You must select an email template.'),
@@ -50,23 +63,32 @@ type SendEmailDialogProps = {
   onOpenChange: (isOpen: boolean) => void;
   /** Type of recipient for tracking purposes */
   recipientType?: 'lead' | 'customer';
+  /** Advertisement info for sending ad proof approval emails */
+  advertisement?: AdvertisementInfo;
 };
 
 /**
  * Unified email dialog component for sending manual emails to both leads and customers.
  * This component consolidates the previously separate SendManualEmailDialog and SendCustomerEmailDialog.
+ *
+ * If an advertisement with an adProofUrl is provided, it also offers the option to send
+ * an ad proof approval email via the dedicated API endpoint.
  */
 export function SendEmailDialog({
   recipient,
   isOpen,
   onOpenChange,
-  recipientType = 'customer'
+  recipientType = 'customer',
+  advertisement,
 }: SendEmailDialogProps) {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [manualTemplates, setManualTemplates] = useState<EmailTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+
+  // Check if ad proof approval email can be sent
+  const canSendAdProofApproval = advertisement?.adProofUrl && advertisement?.adProofDestinationUrl;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -101,6 +123,37 @@ export function SendEmailDialog({
 
     setIsSubmitting(true);
     try {
+      // Handle ad proof approval via dedicated API
+      if (values.templateId === AD_PROOF_APPROVAL_ID) {
+        if (!advertisement) {
+          throw new Error("Advertisement information is required for ad proof approval.");
+        }
+
+        const response = await fetch('/api/send-approval-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adId: advertisement.id,
+            userId: advertisement.userId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send approval email');
+        }
+
+        toast({
+          title: 'Approval Email Sent',
+          description: `Ad proof approval request sent to ${recipient.email}.`,
+        });
+        onOpenChange(false);
+        form.reset();
+        return;
+      }
+
+      // Handle regular email templates
       const selectedTemplate = manualTemplates.find(t => t.id === values.templateId);
       if (!selectedTemplate) {
         throw new Error("Selected template not found.");
@@ -148,7 +201,7 @@ export function SendEmailDialog({
       console.error('Error sending manual email:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send the manual email. Please try again.',
+        description: error.message || 'Failed to send the email. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -180,8 +233,16 @@ export function SendEmailDialog({
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {!loadingTemplates && manualTemplates.length === 0 && (
+                            {!loadingTemplates && manualTemplates.length === 0 && !canSendAdProofApproval && (
                                 <SelectItem value="none" disabled>No manual templates found</SelectItem>
+                            )}
+                            {canSendAdProofApproval && (
+                                <SelectItem value={AD_PROOF_APPROVAL_ID} className="font-medium">
+                                    <span className="flex items-center gap-2">
+                                        <Send className="h-4 w-4" />
+                                        Ad Proof for Your Approval
+                                    </span>
+                                </SelectItem>
                             )}
                             {manualTemplates.map(template => (
                                 <SelectItem key={template.id} value={template.id}>
