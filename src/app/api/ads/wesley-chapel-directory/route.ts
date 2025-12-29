@@ -235,19 +235,6 @@ export async function GET(request: NextRequest) {
       object-fit: contain;
     }
 
-    .wc-logo-placeholder {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 20px;
-    }
-
     .wc-site-name {
       color: white;
     }
@@ -269,26 +256,6 @@ export async function GET(request: NextRequest) {
       flex-direction: column;
       gap: 8px;
       align-items: flex-end;
-    }
-
-    .wc-signin-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: transparent;
-      border: 2px solid rgba(255,255,255,0.3);
-      color: white;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .wc-signin-btn:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.5);
     }
 
     .wc-advertise-btn {
@@ -810,7 +777,7 @@ export async function GET(request: NextRequest) {
     <div class="wc-header-top">
       <a href="${wesleyChapelBaseUrl}" class="wc-logo-container" target="_top">
         <div class="wc-logo">
-          <div class="wc-logo-placeholder">WC</div>
+          <img src="${baseUrl}/WESLEYCHAPEL.png" alt="Wesley Chapel Community" />
         </div>
         <div class="wc-site-name">
           <div class="wc-site-name-main">Wesley Chapel</div>
@@ -818,13 +785,6 @@ export async function GET(request: NextRequest) {
         </div>
       </a>
       <div class="wc-header-actions">
-        <a href="${wesleyChapelBaseUrl}/sign-in" class="wc-signin-btn" target="_top">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M20 21a8 8 0 1 0-16 0"/>
-          </svg>
-          Sign In
-        </a>
         <a href="${wesleyChapelBaseUrl}/advertise" class="wc-advertise-btn" target="_top">
           Advertise With Us &gt;
         </a>
