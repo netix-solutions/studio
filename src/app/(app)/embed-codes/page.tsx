@@ -76,6 +76,8 @@ interface EmbedConfig {
     layout: LayoutOption;
 }
 
+type WixEmbedMode = 'full' | 'widget' | 'custom-element';
+
 interface DirectoryConfig {
     website: CommunityWebsiteId | '';
     theme: ThemeOption;
@@ -89,6 +91,13 @@ interface DirectoryConfig {
     category: BusinessCategory | '';
     showContact: boolean;
     showSocial: boolean;
+    // Wix-specific options
+    wixMode: WixEmbedMode;
+    maxInitial: number;
+    viewMode: 'scroll' | 'expandable';
+    widgetLayout: 'grid' | 'carousel' | 'list';
+    widgetMax: number;
+    viewAllUrl: string;
 }
 
 type EmailModeOption = 'dynamic' | 'static';
@@ -131,6 +140,13 @@ export default function EmbedCodesPage() {
         category: '',
         showContact: true,
         showSocial: true,
+        // Wix-specific defaults
+        wixMode: 'full',
+        maxInitial: 6,
+        viewMode: 'expandable',
+        widgetLayout: 'grid',
+        widgetMax: 4,
+        viewAllUrl: '',
     });
 
     // Email Embed Configuration
@@ -209,8 +225,60 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
 </div>`;
     }, [rotatorConfig, baseUrl]);
 
-    // Generate Directory embed code
+    // Generate Directory embed code based on Wix mode
     const directoryEmbedCode = useMemo(() => {
+        // For Custom Element mode, return the custom element code
+        if (directoryConfig.wixMode === 'custom-element') {
+            const attrs: string[] = [];
+            if (directoryConfig.website) attrs.push(`website="${directoryConfig.website}"`);
+            attrs.push(`theme="${directoryConfig.theme}"`);
+            attrs.push(`columns="${directoryConfig.columns}"`);
+            if (directoryConfig.title !== 'Our Sponsors') attrs.push(`title="${directoryConfig.title}"`);
+            if (directoryConfig.subtitle !== 'Thank you to these amazing local businesses for supporting our community!') {
+                attrs.push(`subtitle="${directoryConfig.subtitle}"`);
+            }
+            attrs.push(`show-cta="${directoryConfig.showCta}"`);
+            if (directoryConfig.ctaUrl) attrs.push(`cta-url="${directoryConfig.ctaUrl}"`);
+            if (directoryConfig.ctaText !== 'Become a Sponsor') attrs.push(`cta-text="${directoryConfig.ctaText}"`);
+            attrs.push(`show-branding="${directoryConfig.branding}"`);
+            if (directoryConfig.category) attrs.push(`category="${directoryConfig.category}"`);
+            attrs.push(`show-contact="${directoryConfig.showContact}"`);
+            attrs.push(`show-social="${directoryConfig.showSocial}"`);
+
+            return `<!-- Load the Custom Element script -->
+<script src="${baseUrl}/api/ads/wix-custom-element"></script>
+
+<!-- Use the Custom Element -->
+<community-sponsors-directory
+  ${attrs.join('\n  ')}
+></community-sponsors-directory>`;
+        }
+
+        // For Widget mode, use the compact widget
+        if (directoryConfig.wixMode === 'widget') {
+            const params = new URLSearchParams();
+            if (directoryConfig.website) params.set('website', directoryConfig.website);
+            params.set('theme', directoryConfig.theme);
+            params.set('max', directoryConfig.widgetMax.toString());
+            if (directoryConfig.title !== 'Our Sponsors') params.set('title', directoryConfig.title);
+            if (directoryConfig.viewAllUrl) params.set('viewAllUrl', directoryConfig.viewAllUrl);
+            params.set('layout', directoryConfig.widgetLayout);
+            if (!directoryConfig.branding) params.set('branding', 'false');
+
+            const widgetUrl = `${baseUrl}/api/ads/wix-directory-widget?${params.toString()}`;
+
+            return `<iframe
+  src="${widgetUrl}"
+  style="width: 100%; height: 350px; border: none;"
+  scrolling="no"
+  frameborder="0"
+  allowtransparency="true"
+  loading="lazy"
+  title="${directoryConfig.title}">
+</iframe>`;
+        }
+
+        // Full directory (default)
         const params = new URLSearchParams();
         if (directoryConfig.website) params.set('website', directoryConfig.website);
         params.set('theme', directoryConfig.theme);
@@ -226,6 +294,12 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
         if (directoryConfig.category) params.set('category', directoryConfig.category);
         if (!directoryConfig.showContact) params.set('showContact', 'false');
         if (!directoryConfig.showSocial) params.set('showSocial', 'false');
+
+        // Add expandable mode options
+        if (directoryConfig.viewMode === 'expandable' && directoryConfig.maxInitial > 0) {
+            params.set('viewMode', 'expandable');
+            params.set('maxInitial', directoryConfig.maxInitial.toString());
+        }
 
         const directoryUrl = `${baseUrl}/api/ads/wix-directory?${params.toString()}`;
 
@@ -255,11 +329,30 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
         const params = new URLSearchParams();
         if (directoryConfig.website) params.set('website', directoryConfig.website);
         params.set('theme', directoryConfig.theme);
+
+        // Widget mode uses the widget endpoint
+        if (directoryConfig.wixMode === 'widget') {
+            params.set('max', directoryConfig.widgetMax.toString());
+            if (directoryConfig.title !== 'Our Sponsors') params.set('title', directoryConfig.title);
+            if (directoryConfig.viewAllUrl) params.set('viewAllUrl', directoryConfig.viewAllUrl);
+            params.set('layout', directoryConfig.widgetLayout);
+            if (!directoryConfig.branding) params.set('branding', 'false');
+            return `${baseUrl}/api/ads/wix-directory-widget?${params.toString()}`;
+        }
+
+        // Full directory (also used for custom element preview)
         params.set('columns', directoryConfig.columns);
         if (directoryConfig.title !== 'Our Sponsors') params.set('title', directoryConfig.title);
         if (!directoryConfig.showCta) params.set('cta', 'false');
         if (directoryConfig.ctaUrl) params.set('ctaUrl', directoryConfig.ctaUrl);
         if (!directoryConfig.branding) params.set('branding', 'false');
+
+        // Add expandable mode for full directory
+        if (directoryConfig.wixMode === 'full' && directoryConfig.viewMode === 'expandable' && directoryConfig.maxInitial > 0) {
+            params.set('viewMode', 'expandable');
+            params.set('maxInitial', directoryConfig.maxInitial.toString());
+        }
+
         return `${baseUrl}/api/ads/wix-directory?${params.toString()}`;
     }, [directoryConfig, baseUrl]);
 
@@ -698,6 +791,36 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
+                                {/* Wix Embed Mode */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Layout className="h-4 w-4" />
+                                        Embed Type
+                                    </Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[
+                                            { value: 'full', label: 'Full Directory', desc: 'All sponsors with scrolling' },
+                                            { value: 'widget', label: 'Compact Widget', desc: 'Fixed height preview' },
+                                            { value: 'custom-element', label: 'Custom Element', desc: 'Native Wix integration' },
+                                        ].map((mode) => (
+                                            <Button
+                                                key={mode.value}
+                                                variant={directoryConfig.wixMode === mode.value ? 'default' : 'outline'}
+                                                className="h-auto py-3 flex-col gap-1"
+                                                onClick={() => setDirectoryConfig({ ...directoryConfig, wixMode: mode.value as WixEmbedMode })}
+                                            >
+                                                <span className="font-medium text-xs">{mode.label}</span>
+                                                <span className="text-[10px] opacity-70 text-center">{mode.desc}</span>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {directoryConfig.wixMode === 'full' && 'Shows all sponsors in a scrollable list. Best for dedicated sponsor pages.'}
+                                        {directoryConfig.wixMode === 'widget' && 'Compact preview with "View All" link. Best for sidebars or homepage sections.'}
+                                        {directoryConfig.wixMode === 'custom-element' && 'Native Web Component for Wix. Best performance, no iframe issues.'}
+                                    </p>
+                                </div>
+
                                 {/* Target Website */}
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-2">
@@ -729,6 +852,104 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                {/* Widget-specific options */}
+                                {directoryConfig.wixMode === 'widget' && (
+                                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                        <Label className="text-sm font-medium">Widget Options</Label>
+                                        <div className="space-y-3">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-normal">Layout Style</Label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {[
+                                                        { value: 'grid', label: 'Grid' },
+                                                        { value: 'carousel', label: 'Carousel' },
+                                                        { value: 'list', label: 'List' },
+                                                    ].map((layout) => (
+                                                        <Button
+                                                            key={layout.value}
+                                                            variant={directoryConfig.widgetLayout === layout.value ? 'default' : 'outline'}
+                                                            size="sm"
+                                                            onClick={() => setDirectoryConfig({ ...directoryConfig, widgetLayout: layout.value as 'grid' | 'carousel' | 'list' })}
+                                                        >
+                                                            {layout.label}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-normal">Max Sponsors to Show</Label>
+                                                <Select
+                                                    value={directoryConfig.widgetMax.toString()}
+                                                    onValueChange={(value) => setDirectoryConfig({ ...directoryConfig, widgetMax: parseInt(value) })}
+                                                >
+                                                    <SelectTrigger className="h-8">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="2">2 sponsors</SelectItem>
+                                                        <SelectItem value="3">3 sponsors</SelectItem>
+                                                        <SelectItem value="4">4 sponsors</SelectItem>
+                                                        <SelectItem value="6">6 sponsors</SelectItem>
+                                                        <SelectItem value="8">8 sponsors</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-normal">View All URL</Label>
+                                                <Input
+                                                    value={directoryConfig.viewAllUrl}
+                                                    onChange={(e) => setDirectoryConfig({ ...directoryConfig, viewAllUrl: e.target.value })}
+                                                    placeholder="https://your-site.com/sponsors"
+                                                    className="h-8 text-xs"
+                                                />
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    Link to your full sponsors page
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Full Directory options - Expandable mode */}
+                                {directoryConfig.wixMode === 'full' && (
+                                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-sm font-medium">Show More Mode</Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Hide extra sponsors behind a "Show More" button
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={directoryConfig.viewMode === 'expandable'}
+                                                onCheckedChange={(checked) => setDirectoryConfig({
+                                                    ...directoryConfig,
+                                                    viewMode: checked ? 'expandable' : 'scroll'
+                                                })}
+                                            />
+                                        </div>
+                                        {directoryConfig.viewMode === 'expandable' && (
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-normal">Initially Show</Label>
+                                                <Select
+                                                    value={directoryConfig.maxInitial.toString()}
+                                                    onValueChange={(value) => setDirectoryConfig({ ...directoryConfig, maxInitial: parseInt(value) })}
+                                                >
+                                                    <SelectTrigger className="h-8">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="3">3 sponsors</SelectItem>
+                                                        <SelectItem value="6">6 sponsors</SelectItem>
+                                                        <SelectItem value="9">9 sponsors</SelectItem>
+                                                        <SelectItem value="12">12 sponsors</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Title & Subtitle */}
                                 <div className="space-y-4">
@@ -986,18 +1207,46 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                                 </Button>
                             </div>
 
-                            <Alert>
-                                <Info className="h-4 w-4" />
-                                <AlertTitle>Best Practices</AlertTitle>
-                                <AlertDescription>
-                                    <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                                        <li>Create a dedicated "Our Sponsors" or "Partners" page</li>
-                                        <li>Set a minimum height of 600px for the iframe</li>
-                                        <li>Use the full page width for best results</li>
-                                        <li>Add your sponsor signup URL to drive new advertisers</li>
-                                    </ul>
-                                </AlertDescription>
-                            </Alert>
+                            {directoryConfig.wixMode === 'custom-element' && (
+                                <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/30">
+                                    <Sparkles className="h-4 w-4 text-blue-500" />
+                                    <AlertTitle className="text-blue-700 dark:text-blue-400">Recommended for Wix</AlertTitle>
+                                    <AlertDescription className="text-blue-600 dark:text-blue-300">
+                                        Custom Elements provide the best Wix integration with no iframe height issues.
+                                        Requires Wix Dev Mode to be enabled.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {directoryConfig.wixMode === 'widget' && (
+                                <Alert>
+                                    <Info className="h-4 w-4" />
+                                    <AlertTitle>Compact Widget</AlertTitle>
+                                    <AlertDescription>
+                                        <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                                            <li>Fixed 350px height - no scrolling issues in Wix</li>
+                                            <li>Shows a preview of sponsors with "View All" link</li>
+                                            <li>Perfect for sidebars, footers, or homepage sections</li>
+                                            <li>Set a "View All URL" to link to your full sponsors page</li>
+                                        </ul>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {directoryConfig.wixMode === 'full' && (
+                                <Alert>
+                                    <Info className="h-4 w-4" />
+                                    <AlertTitle>Best Practices</AlertTitle>
+                                    <AlertDescription>
+                                        <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                                            <li>Create a dedicated "Our Sponsors" or "Partners" page</li>
+                                            <li>Enable "Show More Mode" to avoid long scrolling iframes</li>
+                                            <li>Use the full page width for best results</li>
+                                            <li>Add your sponsor signup URL to drive new advertisers</li>
+                                        </ul>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
 
                             <Accordion type="single" collapsible className="w-full">
                                 <AccordionItem value="wix">
@@ -1007,14 +1256,47 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                                             Wix Installation Instructions
                                         </span>
                                     </AccordionTrigger>
-                                    <AccordionContent className="space-y-2 text-sm text-muted-foreground">
-                                        <ol className="list-decimal list-inside space-y-1">
-                                            <li>Create a new page (e.g., "Our Sponsors")</li>
-                                            <li>Add an <strong>Embed HTML</strong> element</li>
-                                            <li>Paste the embed code above</li>
-                                            <li>Stretch the element to full page width</li>
-                                            <li>Set the height to at least 600px</li>
-                                        </ol>
+                                    <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                                        {directoryConfig.wixMode === 'custom-element' && (
+                                            <div className="space-y-2">
+                                                <p className="font-medium text-foreground">For Custom Element (Recommended):</p>
+                                                <ol className="list-decimal list-inside space-y-1">
+                                                    <li>In Wix Editor, enable <strong>Dev Mode</strong> (top menu)</li>
+                                                    <li>Click <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>Custom Element</strong></li>
+                                                    <li>Click the element and select <strong>Choose Source</strong></li>
+                                                    <li>Select <strong>Server URL</strong> and paste: <code className="bg-muted px-1 rounded">{baseUrl}/api/ads/wix-custom-element</code></li>
+                                                    <li>Set the <strong>Tag Name</strong> to: <code className="bg-muted px-1 rounded">community-sponsors-directory</code></li>
+                                                    <li>Add attributes in the element settings for customization</li>
+                                                </ol>
+                                            </div>
+                                        )}
+                                        {directoryConfig.wixMode === 'widget' && (
+                                            <div className="space-y-2">
+                                                <p className="font-medium text-foreground">For Compact Widget:</p>
+                                                <ol className="list-decimal list-inside space-y-1">
+                                                    <li>In Wix Editor, click <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>Embed HTML</strong></li>
+                                                    <li>Click <strong>Enter Code</strong> and paste the code above</li>
+                                                    <li>Resize the element (recommended: full width, 350px height)</li>
+                                                    <li>Works great in sidebars, footers, or homepage sections</li>
+                                                </ol>
+                                            </div>
+                                        )}
+                                        {directoryConfig.wixMode === 'full' && (
+                                            <div className="space-y-2">
+                                                <p className="font-medium text-foreground">For Full Directory:</p>
+                                                <ol className="list-decimal list-inside space-y-1">
+                                                    <li>Create a new page (e.g., "Our Sponsors")</li>
+                                                    <li>Click <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>Embed HTML</strong></li>
+                                                    <li>Click <strong>Enter Code</strong> and paste the code above</li>
+                                                    <li>Stretch the element to full page width</li>
+                                                    <li>Set height to 600-800px (with "Show More" enabled, content expands)</li>
+                                                </ol>
+                                                <p className="mt-2 text-xs italic">
+                                                    Tip: If you have many sponsors, enable "Show More Mode" above
+                                                    to keep the initial height manageable.
+                                                </p>
+                                            </div>
+                                        )}
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
