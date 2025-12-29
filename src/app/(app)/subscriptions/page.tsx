@@ -7,15 +7,26 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Loader2, AlertCircle, Eye, Megaphone } from 'lucide-react';
+import { MoreHorizontal, Loader2, AlertCircle, Eye, Megaphone, Trash2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
+import { collection, onSnapshot, query, Unsubscribe, where, getDocs, doc, getDoc, collectionGroup, writeBatch, deleteDoc } from 'firebase/firestore';
 import { normalizeAdStatus } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
 import { useRouter } from 'next/navigation';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface EnrichedSubscription {
     id: string;
@@ -62,6 +73,7 @@ const adStatusTextMap: { [key: string]: string } = {
 export default function SubscriptionsPage() {
   const { user, firestore } = useFirebase();
   const router = useRouter();
+  const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +82,8 @@ export default function SubscriptionsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<EnrichedSubscription | null>(null);
   const [isCommentsDialogOpen, setIsCommentsDialogOpen] = useState(false);
+  const [deleteConfirmCustomer, setDeleteConfirmCustomer] = useState<EnrichedSubscription | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
 
   useEffect(() => {
@@ -244,6 +258,65 @@ export default function SubscriptionsPage() {
     router.push(`/subscriptions/${sub.id}?customerId=${sub.customerId}`);
   };
 
+  const handleDeleteCustomer = async (sub: EnrichedSubscription) => {
+    if (!firestore) return;
+
+    setIsDeleting(true);
+    try {
+      const batch = writeBatch(firestore);
+
+      // Delete all advertisements for this user
+      const adsSnapshot = await getDocs(collection(firestore, 'users', sub.customerId, 'advertisements'));
+      for (const adDoc of adsSnapshot.docs) {
+        batch.delete(adDoc.ref);
+        // Also check for associated live_ads
+        const adData = adDoc.data();
+        if (adData.pushedToAdServerId) {
+          try {
+            await deleteDoc(doc(firestore, 'live_ads', adData.pushedToAdServerId));
+          } catch (e) {
+            console.warn('Failed to delete live_ad:', e);
+          }
+        }
+      }
+
+      // Delete all subscriptions for this customer
+      const subsSnapshot = await getDocs(collection(firestore, 'customers', sub.customerId, 'subscriptions'));
+      for (const subDoc of subsSnapshot.docs) {
+        batch.delete(subDoc.ref);
+      }
+
+      // Delete the customer document
+      batch.delete(doc(firestore, 'customers', sub.customerId));
+
+      // Delete the user document
+      batch.delete(doc(firestore, 'users', sub.customerId));
+
+      // Delete admin role if exists
+      batch.delete(doc(firestore, 'roles_admin', sub.customerId));
+
+      await batch.commit();
+
+      // Remove deleted customer's subscriptions from local state
+      setSubscriptions(prev => prev.filter(s => s.customerId !== sub.customerId));
+
+      toast({
+        title: 'Customer Deleted',
+        description: `${sub.customerEmail || 'Customer'} and all related data has been permanently deleted.`,
+      });
+      setDeleteConfirmCustomer(null);
+    } catch (err: any) {
+      console.error("Error deleting customer:", err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete customer. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
         <div className="flex items-center justify-center h-64">
@@ -373,6 +446,21 @@ export default function SubscriptionsPage() {
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem>Cancel Subscription</DropdownMenuItem>
+                                {isAdmin && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteConfirmCustomer(sub);
+                                            }}
+                                            className="text-red-600 focus:text-red-600"
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete Customer
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -394,6 +482,35 @@ export default function SubscriptionsPage() {
             onOpenChange={setIsCommentsDialogOpen}
         />
     )}
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={!!deleteConfirmCustomer} onOpenChange={(open) => !open && setDeleteConfirmCustomer(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to permanently delete {deleteConfirmCustomer?.customerEmail || 'this customer'}?
+                    This will also delete all their advertisements, subscriptions, and related data.
+                    This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => deleteConfirmCustomer && handleDeleteCustomer(deleteConfirmCustomer)}
+                    disabled={isDeleting}
+                >
+                    {isDeleting ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    Delete Customer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
