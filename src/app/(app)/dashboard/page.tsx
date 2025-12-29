@@ -61,6 +61,7 @@ import RevenueTrendsChart from '@/components/dashboard/revenue-trends-chart';
 import RevenueForecast from '@/components/dashboard/revenue-forecast';
 import RevenueBreakdown from '@/components/dashboard/revenue-breakdown';
 import AdNetworkStats from '@/components/dashboard/ad-network-stats';
+import RecentActivity from '@/components/dashboard/recent-activity';
 
 interface DashboardStats {
   totalAds: number;
@@ -700,6 +701,9 @@ export default function DashboardPage() {
 
           {/* Ad Network Performance */}
           <AdNetworkStats />
+
+          {/* Recent Activity Feed */}
+          <RecentActivity />
         </TabsContent>
       </Tabs>
     </div>
