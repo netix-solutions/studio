@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
       }
 
       potentialAds.push(ad);
-    });
+    }
 
     if (potentialAds.length === 0) {
       return NextResponse.json(
@@ -146,6 +146,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out ads whose customers don't have active subscriptions
+    const db = getAdminFirestore();
     const eligibleAds: LiveAd[] = [];
     for (const ad of potentialAds) {
       // If ad has a customerId, verify their subscription is active
