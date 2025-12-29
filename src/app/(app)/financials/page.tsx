@@ -20,6 +20,7 @@ import {
   calculateRevenueMetrics,
   generateMonthlyRevenueTrend,
   getUpcomingRenewals,
+  getMonthlyRevenueProjection,
   getRevenueByBillingPeriod,
   getRevenueByPlan,
   calculateChurnMetrics,
@@ -27,6 +28,7 @@ import {
   formatPercentage,
   type SubscriptionWithRevenue,
   type MonthlyRevenueData,
+  type MonthlyRevenueProjection,
   type RenewalForecast,
   type RevenueByPeriod,
   type RevenueByPlan,
@@ -46,6 +48,7 @@ export default function FinancialsPage() {
   const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics | null>(null);
   const [revenueTrends, setRevenueTrends] = useState<MonthlyRevenueData[]>([]);
   const [renewals, setRenewals] = useState<RenewalForecast[]>([]);
+  const [projections, setProjections] = useState<MonthlyRevenueProjection[]>([]);
   const [revenueByPeriod, setRevenueByPeriod] = useState<RevenueByPeriod[]>([]);
   const [revenueByPlan, setRevenueByPlan] = useState<RevenueByPlan[]>([]);
   const [churnMetrics, setChurnMetrics] = useState<{ churnRate: number; netRetention: number }>({ churnRate: 0, netRetention: 100 });
@@ -82,6 +85,7 @@ export default function FinancialsPage() {
         const metrics = calculateRevenueMetrics(allSubscriptions);
         const trends = generateMonthlyRevenueTrend(allSubscriptions, 12);
         const upcomingRenewals = getUpcomingRenewals(allSubscriptions, 90);
+        const monthlyProjections = getMonthlyRevenueProjection(allSubscriptions, 6);
         const byPeriod = getRevenueByBillingPeriod(allSubscriptions);
         const byPlan = getRevenueByPlan(allSubscriptions);
         const churn = calculateChurnMetrics(allSubscriptions, 1);
@@ -90,6 +94,7 @@ export default function FinancialsPage() {
         setRevenueMetrics(metrics);
         setRevenueTrends(trends);
         setRenewals(upcomingRenewals);
+        setProjections(monthlyProjections);
         setRevenueByPeriod(byPeriod);
         setRevenueByPlan(byPlan);
         setChurnMetrics({ churnRate: churn.churnRate, netRetention: churn.netRetention });
@@ -122,9 +127,9 @@ export default function FinancialsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Financials</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Financial Overview</h1>
           <p className="text-muted-foreground">
-            Revenue metrics and subscription analytics
+            Ad revenue metrics and billing analytics
           </p>
         </div>
       </div>
@@ -209,7 +214,7 @@ export default function FinancialsPage() {
 
       {/* Forecast and Breakdown Side by Side */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <RevenueForecast renewals={renewals} loading={loading} />
+        <RevenueForecast renewals={renewals} projections={projections} loading={loading} />
         <RevenueBreakdown
           byPeriod={revenueByPeriod}
           byPlan={revenueByPlan}
@@ -217,34 +222,40 @@ export default function FinancialsPage() {
         />
       </div>
 
-      {/* Contracted Revenue Summary */}
+      {/* Revenue Summary */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5 text-blue-500" />
-            Contract Value Summary
+            Revenue Summary
           </CardTitle>
-          <CardDescription>Remaining value in current contract periods</CardDescription>
+          <CardDescription>Key billing metrics and committed revenue</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-muted/50 rounded-lg text-center">
-              <p className="text-2xl font-bold">{formatCurrency(revenueMetrics?.contractedRevenue || 0)}</p>
-              <p className="text-xs text-muted-foreground">Remaining Contract Value</p>
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg text-center border border-green-200 dark:border-green-900">
+              <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                {formatCurrency(revenueMetrics?.contractedRevenue || 0)}
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-500 font-medium">Committed Revenue</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Pre-paid balance remaining</p>
             </div>
-            <div className="p-4 bg-muted/50 rounded-lg text-center">
-              <p className="text-2xl font-bold">{renewals.length}</p>
-              <p className="text-xs text-muted-foreground">Upcoming Renewals (90 days)</p>
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center border border-blue-200 dark:border-blue-900">
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{renewals.length}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-500 font-medium">Upcoming Bills</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Next 90 days</p>
             </div>
-            <div className="p-4 bg-muted/50 rounded-lg text-center">
-              <p className="text-2xl font-bold">
+            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg text-center border border-purple-200 dark:border-purple-900">
+              <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
                 {formatCurrency(renewals.reduce((sum, r) => sum + r.amount, 0))}
               </p>
-              <p className="text-xs text-muted-foreground">Renewal Revenue (90 days)</p>
+              <p className="text-xs text-purple-600 dark:text-purple-500 font-medium">Expected Renewals</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Next 90 days</p>
             </div>
-            <div className="p-4 bg-muted/50 rounded-lg text-center">
-              <p className="text-2xl font-bold">{totalCustomers}</p>
-              <p className="text-xs text-muted-foreground">Total Customers</p>
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center border border-amber-200 dark:border-amber-900">
+              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{totalCustomers}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">Total Advertisers</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Active accounts</p>
             </div>
           </div>
         </CardContent>

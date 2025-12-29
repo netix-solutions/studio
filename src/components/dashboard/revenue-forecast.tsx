@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
 } from '@/components/ui/chart';
 import {
   BarChart,
@@ -15,43 +14,47 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-  Cell,
+  Legend,
 } from 'recharts';
-import { Calendar, ArrowRight, AlertTriangle, Clock } from 'lucide-react';
-import { format, differenceInDays, addMonths } from 'date-fns';
+import { Calendar, ArrowRight, AlertTriangle, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import { differenceInDays } from 'date-fns';
 import Link from 'next/link';
-import { RenewalForecast, formatCurrency, groupRenewalsByMonth } from '@/lib/revenue';
+import {
+  RenewalForecast,
+  MonthlyRevenueProjection,
+  formatCurrency,
+} from '@/lib/revenue';
 
 interface RevenueForecastProps {
   renewals: RenewalForecast[];
+  projections: MonthlyRevenueProjection[];
   loading?: boolean;
 }
 
 const chartConfig = {
-  amount: {
-    label: 'Revenue',
+  recurringRevenue: {
+    label: 'Monthly Ad Revenue',
+    color: 'hsl(142, 76%, 36%)', // Green for stable recurring
+  },
+  renewalRevenue: {
+    label: 'Contract Renewals',
     color: 'hsl(var(--chart-2))',
   },
 };
 
-export default function RevenueForecast({ renewals, loading }: RevenueForecastProps) {
-  // Group renewals by month for chart
-  const groupedByMonth = groupRenewalsByMonth(renewals);
+export default function RevenueForecast({ renewals, projections, loading }: RevenueForecastProps) {
   const now = new Date();
 
-  // Generate chart data for next 6 months
-  const chartData = [];
-  for (let i = 0; i < 6; i++) {
-    const monthDate = addMonths(now, i);
-    const key = format(monthDate, 'MMM yyyy');
-    const data = groupedByMonth.get(key) || { count: 0, amount: 0 };
-    chartData.push({
-      month: format(monthDate, 'MMM'),
-      fullMonth: key,
-      amount: data.amount,
-      count: data.count,
-    });
-  }
+  // Prepare chart data from projections
+  const chartData = projections.map((p, index) => ({
+    month: p.month,
+    fullMonth: `${p.month} ${p.monthDate.getFullYear()}`,
+    recurringRevenue: Math.round(p.recurringRevenue),
+    renewalRevenue: Math.round(p.renewalRevenue),
+    totalExpectedRevenue: Math.round(p.totalExpectedRevenue),
+    monthlySubscriptions: p.monthlySubscriptions,
+    renewalsCount: p.renewalsCount,
+  }));
 
   // Get upcoming renewals (next 30 days) for the list
   const urgentRenewals = renewals.filter(r => {
@@ -59,9 +62,12 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
     return days >= 0 && days <= 30;
   }).slice(0, 5);
 
-  // Total upcoming revenue
-  const totalUpcoming = renewals.reduce((sum, r) => sum + r.amount, 0);
+  // Calculate totals
+  const totalRecurring = projections.reduce((sum, p) => sum + p.recurringRevenue, 0);
+  const totalRenewals = projections.reduce((sum, p) => sum + p.renewalRevenue, 0);
+  const totalExpected = totalRecurring + totalRenewals;
   const next30DaysTotal = urgentRenewals.reduce((sum, r) => sum + r.amount, 0);
+  const monthlyAdRevenue = projections[0]?.recurringRevenue || 0;
 
   return (
     <Card>
@@ -70,13 +76,13 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-500" />
-              Revenue Forecast
+              Expected Revenue
             </CardTitle>
-            <CardDescription>Upcoming renewals and projected revenue</CardDescription>
+            <CardDescription>Projected income for the next 6 months</CardDescription>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Next 90 days</p>
-            <p className="text-xl font-bold">{formatCurrency(totalUpcoming)}</p>
+            <p className="text-sm text-muted-foreground">6-month total</p>
+            <p className="text-xl font-bold">{formatCurrency(totalExpected)}</p>
           </div>
         </div>
       </CardHeader>
@@ -87,9 +93,31 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
           </div>
         ) : (
           <>
-            {/* Monthly Forecast Chart */}
+            {/* Monthly Revenue Summary */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-1">
+                  <RefreshCw className="h-4 w-4" />
+                  <span className="text-xs font-medium">Monthly Ad Revenue</span>
+                </div>
+                <p className="text-lg font-bold text-green-800 dark:text-green-300">
+                  {formatCurrency(monthlyAdRevenue)}/mo
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-1">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-xs font-medium">Upcoming Renewals</span>
+                </div>
+                <p className="text-lg font-bold text-blue-800 dark:text-blue-300">
+                  {formatCurrency(totalRenewals)}
+                </p>
+              </div>
+            </div>
+
+            {/* Monthly Revenue Chart */}
             <div>
-              <p className="text-sm font-medium mb-3">Monthly Renewal Revenue</p>
+              <p className="text-sm font-medium mb-3">Monthly Revenue Breakdown</p>
               <ChartContainer config={chartConfig} className="h-[180px] w-full">
                 <ResponsiveContainer>
                   <BarChart data={chartData}>
@@ -104,7 +132,7 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
                       tickLine={false}
                       axisLine={false}
                       tickMargin={8}
-                      tickFormatter={(value) => `$${value}`}
+                      tickFormatter={(value) => `$${value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}`}
                     />
                     <ChartTooltip
                       content={({ active, payload }) => {
@@ -112,23 +140,44 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
                         const data = payload[0].payload;
                         return (
                           <div className="rounded-lg border bg-background p-3 shadow-md">
-                            <p className="font-medium mb-1">{data.fullMonth}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {data.count} renewal{data.count !== 1 ? 's' : ''}
-                            </p>
-                            <p className="font-medium text-lg">{formatCurrency(data.amount)}</p>
+                            <p className="font-medium mb-2">{data.fullMonth}</p>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between gap-4">
+                                <span className="text-green-600">Monthly Ads:</span>
+                                <span className="font-medium">{formatCurrency(data.recurringRevenue)}</span>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-blue-600">Renewals ({data.renewalsCount}):</span>
+                                <span className="font-medium">{formatCurrency(data.renewalRevenue)}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 pt-1 border-t">
+                                <span className="font-medium">Total:</span>
+                                <span className="font-bold">{formatCurrency(data.totalExpectedRevenue)}</span>
+                              </div>
+                            </div>
                           </div>
                         );
                       }}
                     />
-                    <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={index === 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'}
-                        />
-                      ))}
-                    </Bar>
+                    <Legend
+                      formatter={(value) => {
+                        if (value === 'recurringRevenue') return 'Monthly Ads';
+                        if (value === 'renewalRevenue') return 'Renewals';
+                        return value;
+                      }}
+                    />
+                    <Bar
+                      dataKey="recurringRevenue"
+                      stackId="a"
+                      fill="var(--color-recurringRevenue)"
+                      radius={[0, 0, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="renewalRevenue"
+                      stackId="a"
+                      fill="var(--color-renewalRevenue)"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -137,7 +186,7 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
             {/* Upcoming Renewals List */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium">Upcoming Renewals</p>
+                <p className="text-sm font-medium">Next Billing Dates</p>
                 <Badge variant="outline" className="text-xs">
                   {formatCurrency(next30DaysTotal)} next 30 days
                 </Badge>
@@ -186,7 +235,7 @@ export default function RevenueForecast({ renewals, loading }: RevenueForecastPr
               {renewals.length > 5 && (
                 <Button variant="ghost" size="sm" className="w-full mt-3" asChild>
                   <Link href="/subscriptions">
-                    View all {renewals.length} renewals
+                    View all {renewals.length} upcoming bills
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
