@@ -481,5 +481,214 @@ export const defaultTemplates: EmailTemplate[] = [
             { key: '{{businessName}}', description: "The business name of the lead." },
             { key: '{{pricingLink}}', description: "The link to the pricing page." },
         ]
+    },
+    {
+        id: 'complete_directory_listing',
+        name: 'Complete Your Directory Listing',
+        description: 'Encourage customers to fill out their business directory information.',
+        subject: 'Get {{businessName}} listed in our Business Directory!',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
+        html: `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Did you know that as a Community-Websites.com advertiser, <strong>{{businessName}}</strong> qualifies for a <strong>FREE listing</strong> in our Business Directory?</p>
+
+<!-- Feature Highlight Box -->
+<div style="margin: 24px 0; padding: 24px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; border: 1px solid #93c5fd;">
+    <p style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: #1e40af;">What is the Business Directory?</p>
+    <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #1e40af;">Our Business Directory is a dedicated section where local residents can discover and connect with trusted businesses in their community. It's like having a 24/7 online storefront that helps customers find you!</p>
+</div>
+
+<!-- Benefits Section -->
+<p style="margin: 0 0 16px 0; font-size: 17px; font-weight: 600; color: #18181b;">Your directory listing includes:</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 24px 0;">
+    <tr>
+        <td style="padding: 12px 16px; background-color: #f0fdf4; border-radius: 8px; margin-bottom: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="32" valign="top" style="font-size: 20px;">📍</td>
+                    <td style="padding-left: 8px;">
+                        <p style="margin: 0; font-size: 15px; color: #166534;"><strong>Business Profile</strong> - Your name, description, and what makes you unique</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 8px;"></td></tr>
+    <tr>
+        <td style="padding: 12px 16px; background-color: #fef3c7; border-radius: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="32" valign="top" style="font-size: 20px;">📞</td>
+                    <td style="padding-left: 8px;">
+                        <p style="margin: 0; font-size: 15px; color: #92400e;"><strong>Contact Information</strong> - Phone, email, website, and address</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 8px;"></td></tr>
+    <tr>
+        <td style="padding: 12px 16px; background-color: #eff6ff; border-radius: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="32" valign="top" style="font-size: 20px;">🔗</td>
+                    <td style="padding-left: 8px;">
+                        <p style="margin: 0; font-size: 15px; color: #1e40af;"><strong>Social Links</strong> - Connect your Facebook, Instagram, Google Business & more</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 8px;"></td></tr>
+    <tr>
+        <td style="padding: 12px 16px; background-color: #fce7f3; border-radius: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="32" valign="top" style="font-size: 20px;">🖼️</td>
+                    <td style="padding-left: 8px;">
+                        <p style="margin: 0; font-size: 15px; color: #9d174d;"><strong>Your Branding</strong> - Upload your logo and banner image</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{accountLink}}" target="_blank" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(30, 58, 95, 0.3);">
+                Complete Your Directory Listing →
+            </a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #64748b; text-align: center;">It only takes a few minutes to fill out!</p>
+
+<div style="margin: 24px 0; padding: 16px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #1e3a5f;">
+    <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.6;">
+        <strong style="color: #1e3a5f;">Need help?</strong> Our team is available <strong>24/7</strong> to assist you. Call or text us at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 600;">813-544-8383</a>.
+    </p>
+</div>
+
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to encourage customers to complete their business directory listing.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The customer's full name." },
+            { key: '{{businessName}}', description: "The customer's business name." },
+            { key: '{{accountLink}}', description: "A link to the customer's account page." },
+        ]
+    },
+    {
+        id: 'ad_setup_reminder',
+        name: 'Complete Your Ad Setup',
+        description: 'Remind customers to complete their advertisement setup so their ad can go live.',
+        subject: 'Action Required: Complete your ad setup for {{businessName}}',
+        version: TEMPLATE_VERSION,
+        isSystemTemplate: true,
+        html: `
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Hi {{contactName}},</p>
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">We noticed that <strong>{{businessName}}</strong>'s advertisement setup hasn't been completed yet. We're excited to get your ad live and start driving customers your way!</p>
+
+<!-- Urgency Banner -->
+<div style="margin: 24px 0; padding: 20px 24px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; border: 2px solid #f59e0b; text-align: center;">
+    <p style="margin: 0 0 8px 0; font-size: 24px;">⏰</p>
+    <p style="margin: 0 0 4px 0; font-size: 18px; font-weight: 700; color: #92400e;">Your Ad is Almost Ready!</p>
+    <p style="margin: 0; font-size: 15px; color: #a16207;">Just a few quick steps to complete your setup</p>
+</div>
+
+<!-- Steps Section -->
+<p style="margin: 0 0 16px 0; font-size: 17px; font-weight: 600; color: #18181b;">Here's what you need to do:</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 24px 0;">
+    <tr>
+        <td style="padding: 16px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #1e3a5f;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="40" valign="top">
+                        <div style="width: 32px; height: 32px; background-color: #1e3a5f; border-radius: 50%; text-align: center; line-height: 32px; color: #ffffff; font-weight: 700; font-size: 16px;">1</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">Log in to your account</p>
+                        <p style="margin: 0; font-size: 14px; color: #64748b;">Access your dashboard at Community-Websites.com</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 12px;"></td></tr>
+    <tr>
+        <td style="padding: 16px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #22c55e;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="40" valign="top">
+                        <div style="width: 32px; height: 32px; background-color: #22c55e; border-radius: 50%; text-align: center; line-height: 32px; color: #ffffff; font-weight: 700; font-size: 16px;">2</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">Fill out the Advertisement Details form</p>
+                        <p style="margin: 0; font-size: 14px; color: #64748b;">Provide your business info, ad text, and upload any logos/images</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr><td style="height: 12px;"></td></tr>
+    <tr>
+        <td style="padding: 16px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="40" valign="top">
+                        <div style="width: 32px; height: 32px; background-color: #3b82f6; border-radius: 50%; text-align: center; line-height: 32px; color: #ffffff; font-weight: 700; font-size: 16px;">3</div>
+                    </td>
+                    <td style="padding-left: 12px;">
+                        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #18181b;">We'll create your ad</p>
+                        <p style="margin: 0; font-size: 14px; color: #64748b;">Our design team will craft a professional ad and send it to you for approval</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{accountLink}}" target="_blank" style="display: inline-block; padding: 18px 48px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 18px; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);">
+                Complete My Ad Setup →
+            </a>
+        </td>
+    </tr>
+</table>
+
+<!-- What happens next -->
+<div style="margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #166534;">What happens next?</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #166534;">Once you submit your details, our design team will create a custom ad for {{businessName}}. We'll email you a proof to approve before it goes live - it's that easy!</p>
+</div>
+
+<p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #3f3f46;">Questions or need assistance? We're here for you <strong>24/7</strong>! Call or text us anytime at <a href="tel:813-544-8383" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">813-544-8383</a>.</p>
+
+<div style="margin: 24px 0 0 0; padding-top: 24px; border-top: 1px solid #e4e4e7;">
+    <p style="margin: 0; font-size: 16px; color: #3f3f46;">Best regards,</p>
+    <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #18181b;">The Community-Websites.com Team</p>
+</div>
+        `.trim(),
+        triggerName: 'none',
+        triggerDescription: 'This email is not sent automatically. Use this to remind customers to complete their advertisement setup.',
+        placeholders: [
+            { key: '{{contactName}}', description: "The customer's full name." },
+            { key: '{{businessName}}', description: "The customer's business name." },
+            { key: '{{accountLink}}', description: "A link to the customer's account page." },
+        ]
     }
 ];
