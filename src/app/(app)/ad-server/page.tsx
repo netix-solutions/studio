@@ -47,6 +47,11 @@ import {
     CheckCircle,
     Users,
     Import,
+    LayoutGrid,
+    Clock,
+    XCircle,
+    Star,
+    Check,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -86,6 +91,9 @@ import {
     type AdPlacement,
     type Advertisement,
     type CommunityWebsiteId,
+    type DirectoryListing,
+    type DirectoryStatus,
+    type BusinessCategory,
     AD_PLACEMENTS,
     AD_PLACEMENT_LABELS,
     AD_PLACEMENT_DIMENSIONS,
@@ -96,7 +104,14 @@ import {
     COMMUNITY_WEBSITE_LIST,
     COMMUNITY_WEBSITE_CONFIG,
     calculateCTR,
+    DIRECTORY_STATUSES,
+    DIRECTORY_STATUS_LABELS,
+    DIRECTORY_STATUS_COLORS,
+    BUSINESS_CATEGORY_LABELS,
+    BUSINESS_CATEGORY_ICONS,
 } from '@/lib/types';
+import { getAuth } from 'firebase/auth';
+import { DirectoryCardPreview } from '@/components/directory/DirectoryCardPreview';
 
 type FormData = {
     name: string;
@@ -148,6 +163,20 @@ export default function AdServerPage() {
 
     // Embed code dialog state
     const [selectedEmbedWebsite, setSelectedEmbedWebsite] = useState<CommunityWebsiteId | null>(null);
+
+    // Directory management states
+    const [showDirectoryDialog, setShowDirectoryDialog] = useState(false);
+    const [directoryListings, setDirectoryListings] = useState<Array<{
+        liveAdId: string;
+        liveAd: Partial<LiveAd>;
+        directoryListing: DirectoryListing | null;
+    }>>([]);
+    const [loadingDirectory, setLoadingDirectory] = useState(false);
+    const [directoryStats, setDirectoryStats] = useState({
+        total: 0, pending: 0, approved: 0, hidden: 0, rejected: 0, featured: 0
+    });
+    const [directoryStatusFilter, setDirectoryStatusFilter] = useState<string>('all');
+    const [moderatingAd, setModeratingAd] = useState<string | null>(null);
 
     const { firestore, storage, user } = useFirebase();
     const { toast } = useToast();
@@ -567,6 +596,82 @@ export default function AdServerPage() {
         }
     };
 
+    // Directory management functions
+    const fetchDirectoryListings = async () => {
+        try {
+            setLoadingDirectory(true);
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) throw new Error('Not authenticated');
+
+            const statusParam = directoryStatusFilter !== 'all' ? `?status=${directoryStatusFilter}` : '';
+            const response = await fetch(`/api/admin/directory${statusParam}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch directory listings');
+
+            const result = await response.json();
+            setDirectoryListings(result.data.listings);
+            setDirectoryStats(result.data.stats);
+        } catch (err) {
+            console.error('Error fetching directory listings:', err);
+            toast({
+                title: 'Error',
+                description: 'Failed to fetch directory listings.',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoadingDirectory(false);
+        }
+    };
+
+    const handleOpenDirectory = async () => {
+        setShowDirectoryDialog(true);
+        await fetchDirectoryListings();
+    };
+
+    const handleDirectoryAction = async (liveAdId: string, action: 'approve' | 'reject' | 'hide' | 'feature' | 'unfeature', rejectionReason?: string) => {
+        try {
+            setModeratingAd(liveAdId);
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) throw new Error('Not authenticated');
+
+            const response = await fetch('/api/admin/directory', {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    liveAdId,
+                    action,
+                    rejectionReason,
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to update directory listing');
+
+            const result = await response.json();
+            toast({
+                title: 'Success',
+                description: result.data.message,
+            });
+
+            await fetchDirectoryListings();
+        } catch (err) {
+            console.error('Error updating directory listing:', err);
+            toast({
+                title: 'Error',
+                description: 'Failed to update directory listing.',
+                variant: 'destructive',
+            });
+        } finally {
+            setModeratingAd(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -581,6 +686,13 @@ export default function AdServerPage() {
                     <Button variant="outline" onClick={() => setShowEmbedDialog(true)} className="flex-1 sm:flex-none">
                         <Code className="mr-2 h-4 w-4" />
                         Get Embed Code
+                    </Button>
+                    <Button variant="outline" onClick={handleOpenDirectory}>
+                        <LayoutGrid className="mr-2 h-4 w-4" />
+                        Directory
+                        {directoryStats.pending > 0 && (
+                            <Badge variant="destructive" className="ml-2">{directoryStats.pending}</Badge>
+                        )}
                     </Button>
                     <Button variant="outline" onClick={handleOpenImport}>
                         <Users className="mr-2 h-4 w-4" />
@@ -1945,6 +2057,256 @@ Response:
 
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Directory Management Dialog */}
+            <Dialog open={showDirectoryDialog} onOpenChange={setShowDirectoryDialog}>
+                <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <LayoutGrid className="h-5 w-5" />
+                            Directory Listings Management
+                        </DialogTitle>
+                        <DialogDescription>
+                            Review and manage advertiser directory listings. Approve, reject, or feature listings.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Directory Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-2 py-4">
+                        <Card
+                            className={cn("cursor-pointer transition-all hover:shadow-md p-2", directoryStatusFilter === 'all' && "ring-2 ring-primary")}
+                            onClick={() => { setDirectoryStatusFilter('all'); fetchDirectoryListings(); }}
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl font-bold">{directoryStats.total}</div>
+                                <div className="text-xs text-muted-foreground">Total</div>
+                            </div>
+                        </Card>
+                        <Card
+                            className={cn("cursor-pointer transition-all hover:shadow-md p-2 border-amber-200", directoryStatusFilter === 'pending' && "ring-2 ring-amber-500")}
+                            onClick={() => { setDirectoryStatusFilter('pending'); fetchDirectoryListings(); }}
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-amber-600">{directoryStats.pending}</div>
+                                <div className="text-xs text-muted-foreground">Pending</div>
+                            </div>
+                        </Card>
+                        <Card
+                            className={cn("cursor-pointer transition-all hover:shadow-md p-2 border-green-200", directoryStatusFilter === 'approved' && "ring-2 ring-green-500")}
+                            onClick={() => { setDirectoryStatusFilter('approved'); fetchDirectoryListings(); }}
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-green-600">{directoryStats.approved}</div>
+                                <div className="text-xs text-muted-foreground">Approved</div>
+                            </div>
+                        </Card>
+                        <Card
+                            className={cn("cursor-pointer transition-all hover:shadow-md p-2 border-slate-200", directoryStatusFilter === 'hidden' && "ring-2 ring-slate-500")}
+                            onClick={() => { setDirectoryStatusFilter('hidden'); fetchDirectoryListings(); }}
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-slate-600">{directoryStats.hidden}</div>
+                                <div className="text-xs text-muted-foreground">Hidden</div>
+                            </div>
+                        </Card>
+                        <Card
+                            className={cn("cursor-pointer transition-all hover:shadow-md p-2 border-red-200", directoryStatusFilter === 'rejected' && "ring-2 ring-red-500")}
+                            onClick={() => { setDirectoryStatusFilter('rejected'); fetchDirectoryListings(); }}
+                        >
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-red-600">{directoryStats.rejected}</div>
+                                <div className="text-xs text-muted-foreground">Rejected</div>
+                            </div>
+                        </Card>
+                        <Card className="p-2 border-amber-300 bg-amber-50">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-amber-600">{directoryStats.featured}</div>
+                                <div className="text-xs text-muted-foreground">Featured</div>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Listings Table */}
+                    <div className="py-4">
+                        {loadingDirectory ? (
+                            <div className="flex items-center justify-center h-40">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        ) : directoryListings.length === 0 ? (
+                            <div className="text-center py-8">
+                                <LayoutGrid className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                <h3 className="text-lg font-medium mb-2">No Directory Listings</h3>
+                                <p className="text-muted-foreground">
+                                    {directoryStatusFilter !== 'all'
+                                        ? `No listings with status "${directoryStatusFilter}".`
+                                        : 'No advertisers have set up their directory listings yet.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {directoryListings.length} listing{directoryListings.length !== 1 ? 's' : ''}
+                                </p>
+                                <div className="grid gap-4">
+                                    {directoryListings.map((item) => {
+                                        const listing = item.directoryListing;
+                                        const status = listing?.directoryStatus || 'pending';
+                                        const statusColors = DIRECTORY_STATUS_COLORS[status as DirectoryStatus] || { bg: 'bg-gray-100', text: 'text-gray-600' };
+
+                                        return (
+                                            <Card key={item.liveAdId} className="overflow-hidden">
+                                                <div className="flex flex-col md:flex-row">
+                                                    {/* Preview Card */}
+                                                    <div className="w-full md:w-64 flex-shrink-0 p-4 bg-muted/30">
+                                                        <DirectoryCardPreview
+                                                            listing={listing || { businessName: item.liveAd.customerName || 'Business', showContactInfo: true, showSocialLinks: true }}
+                                                            adImageUrl={item.liveAd.imageUrl}
+                                                            className="shadow-sm"
+                                                        />
+                                                    </div>
+
+                                                    {/* Details & Actions */}
+                                                    <div className="flex-1 p-4">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h4 className="font-semibold text-lg">{listing?.businessName || item.liveAd.customerName || 'Unknown Business'}</h4>
+                                                                    {listing?.isFeatured && (
+                                                                        <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">
+                                                                            <Star className="h-3 w-3 mr-1 fill-current" />
+                                                                            Featured
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                {listing?.tagline && (
+                                                                    <p className="text-sm text-muted-foreground italic">{listing.tagline}</p>
+                                                                )}
+                                                            </div>
+                                                            <Badge className={`${statusColors.bg} ${statusColors.text}`}>
+                                                                {status === 'approved' && <Check className="h-3 w-3 mr-1" />}
+                                                                {status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                                                                {status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
+                                                                {DIRECTORY_STATUS_LABELS[status as DirectoryStatus] || status}
+                                                            </Badge>
+                                                        </div>
+
+                                                        {listing?.description && (
+                                                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{listing.description}</p>
+                                                        )}
+
+                                                        <div className="flex flex-wrap gap-2 mb-4 text-xs">
+                                                            {listing?.category && (
+                                                                <Badge variant="secondary">
+                                                                    {BUSINESS_CATEGORY_ICONS[listing.category as BusinessCategory]} {BUSINESS_CATEGORY_LABELS[listing.category as BusinessCategory]}
+                                                                </Badge>
+                                                            )}
+                                                            {listing?.phone && <Badge variant="outline">📞 {listing.phone}</Badge>}
+                                                            {listing?.email && <Badge variant="outline">✉️ {listing.email}</Badge>}
+                                                            {listing?.websiteUrl && <Badge variant="outline">🌐 Website</Badge>}
+                                                        </div>
+
+                                                        {/* Actions */}
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {status === 'pending' && (
+                                                                <>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={() => handleDirectoryAction(item.liveAdId, 'approve')}
+                                                                        disabled={moderatingAd === item.liveAdId}
+                                                                    >
+                                                                        {moderatingAd === item.liveAdId ? (
+                                                                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                                                        ) : (
+                                                                            <Check className="h-4 w-4 mr-1" />
+                                                                        )}
+                                                                        Approve
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="destructive"
+                                                                        onClick={() => {
+                                                                            const reason = prompt('Enter rejection reason:');
+                                                                            if (reason) handleDirectoryAction(item.liveAdId, 'reject', reason);
+                                                                        }}
+                                                                        disabled={moderatingAd === item.liveAdId}
+                                                                    >
+                                                                        <XCircle className="h-4 w-4 mr-1" />
+                                                                        Reject
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                            {status === 'approved' && (
+                                                                <>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        onClick={() => handleDirectoryAction(item.liveAdId, 'hide')}
+                                                                        disabled={moderatingAd === item.liveAdId}
+                                                                    >
+                                                                        <Eye className="h-4 w-4 mr-1" />
+                                                                        Hide
+                                                                    </Button>
+                                                                    {listing?.isFeatured ? (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => handleDirectoryAction(item.liveAdId, 'unfeature')}
+                                                                            disabled={moderatingAd === item.liveAdId}
+                                                                        >
+                                                                            <Star className="h-4 w-4 mr-1" />
+                                                                            Unfeature
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                                                                            onClick={() => handleDirectoryAction(item.liveAdId, 'feature')}
+                                                                            disabled={moderatingAd === item.liveAdId}
+                                                                        >
+                                                                            <Star className="h-4 w-4 mr-1" />
+                                                                            Feature
+                                                                        </Button>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                            {(status === 'hidden' || status === 'rejected') && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => handleDirectoryAction(item.liveAdId, 'approve')}
+                                                                    disabled={moderatingAd === item.liveAdId}
+                                                                >
+                                                                    <Check className="h-4 w-4 mr-1" />
+                                                                    Approve
+                                                                </Button>
+                                                            )}
+                                                        </div>
+
+                                                        {listing?.directoryRejectionReason && status === 'rejected' && (
+                                                            <Alert variant="destructive" className="mt-3">
+                                                                <AlertCircle className="h-4 w-4" />
+                                                                <AlertDescription>
+                                                                    Rejection reason: {listing.directoryRejectionReason}
+                                                                </AlertDescription>
+                                                            </Alert>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowDirectoryDialog(false)}>
                             Close
                         </Button>
                     </DialogFooter>

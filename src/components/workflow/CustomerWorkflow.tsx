@@ -9,7 +9,9 @@ import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle, Clock, LayoutGrid, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { WorkflowProgress, WorkflowStatusBanner } from './WorkflowProgress';
 import { BusinessInfoStep, type BusinessInfoFormData } from './steps/BusinessInfoStep';
 import { DesignStep } from './steps/DesignStep';
@@ -555,6 +557,29 @@ export function CustomerWorkflow({
                             clicks={advertisement?.clicks}
                             isAdmin={isAdmin}
                         />
+
+                        {/* Directory Listing Card for customers */}
+                        {advertisement && !isAdmin && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <LayoutGrid className="h-5 w-5" />
+                                        Customize Your Directory Listing
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Personalize how your business appears in the sponsor directory with your tagline, description, contact info, and social links.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Link href="/directory-listing">
+                                        <Button variant="outline" className="w-full sm:w-auto">
+                                            Edit Directory Listing
+                                            <ArrowRight className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    </Link>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Ad Management Card for customers */}
                         {advertisement && !isAdmin && (

@@ -51,8 +51,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
     type CommunityWebsiteId,
+    type BusinessCategory,
     COMMUNITY_WEBSITE_LIST,
     COMMUNITY_WEBSITE_CONFIG,
+    BUSINESS_CATEGORIES,
+    BUSINESS_CATEGORY_LABELS,
+    BUSINESS_CATEGORY_ICONS,
 } from '@/lib/types';
 
 type ThemeOption = 'auto' | 'light' | 'dark';
@@ -78,6 +82,9 @@ interface DirectoryConfig {
     ctaUrl: string;
     ctaText: string;
     branding: boolean;
+    category: BusinessCategory | '';
+    showContact: boolean;
+    showSocial: boolean;
 }
 
 export default function EmbedCodesPage() {
@@ -106,6 +113,9 @@ export default function EmbedCodesPage() {
         ctaUrl: '',
         ctaText: 'Become a Sponsor',
         branding: true,
+        category: '',
+        showContact: true,
+        showSocial: true,
     });
 
     // Get base URL
@@ -188,6 +198,9 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
         if (directoryConfig.ctaUrl) params.set('ctaUrl', directoryConfig.ctaUrl);
         if (directoryConfig.ctaText !== 'Become a Sponsor') params.set('ctaText', directoryConfig.ctaText);
         if (!directoryConfig.branding) params.set('branding', 'false');
+        if (directoryConfig.category) params.set('category', directoryConfig.category);
+        if (!directoryConfig.showContact) params.set('showContact', 'false');
+        if (!directoryConfig.showSocial) params.set('showSocial', 'false');
 
         const directoryUrl = `${baseUrl}/api/ads/wix-directory?${params.toString()}`;
 
@@ -750,8 +763,70 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                                     )}
                                 </div>
 
+                                {/* Category Filter */}
+                                <div className="space-y-2 pt-2 border-t">
+                                    <Label className="flex items-center gap-2">
+                                        <Grid3X3 className="h-4 w-4" />
+                                        Category Filter
+                                    </Label>
+                                    <Select
+                                        value={directoryConfig.category || 'all'}
+                                        onValueChange={(value) => setDirectoryConfig({
+                                            ...directoryConfig,
+                                            category: value === 'all' ? '' : value as BusinessCategory,
+                                        })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Categories" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Categories</SelectItem>
+                                            {Object.entries(BUSINESS_CATEGORY_LABELS).map(([value, label]) => (
+                                                <SelectItem key={value} value={value}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{BUSINESS_CATEGORY_ICONS[value as BusinessCategory]}</span>
+                                                        {label}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Show only sponsors from a specific category
+                                    </p>
+                                </div>
+
+                                {/* Display Options */}
+                                <div className="space-y-4 pt-2 border-t">
+                                    <Label>Display Options</Label>
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-sm font-normal">Show Contact Info</Label>
+                                            <p className="text-xs text-muted-foreground">
+                                                Display phone and email on cards
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={directoryConfig.showContact}
+                                            onCheckedChange={(checked) => setDirectoryConfig({ ...directoryConfig, showContact: checked })}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-sm font-normal">Show Social Links</Label>
+                                            <p className="text-xs text-muted-foreground">
+                                                Display social media icons
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={directoryConfig.showSocial}
+                                            onCheckedChange={(checked) => setDirectoryConfig({ ...directoryConfig, showSocial: checked })}
+                                        />
+                                    </div>
+                                </div>
+
                                 {/* Branding Toggle */}
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between pt-2 border-t">
                                     <div className="space-y-0.5">
                                         <Label>Show Branding</Label>
                                         <p className="text-xs text-muted-foreground">
