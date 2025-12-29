@@ -48,6 +48,7 @@ import Link from 'next/link';
 // Workflow Components
 import { CustomerWorkflow } from '@/components/workflow/CustomerWorkflow';
 import { WorkflowProgress } from '@/components/workflow/WorkflowProgress';
+import { SubscriptionPitch } from '@/components/dashboard/subscription-pitch';
 import { cn } from '@/lib/utils';
 import {
     type Advertisement,
@@ -363,42 +364,11 @@ export default function AccountPage() {
         );
     }
 
-    // No subscription
+    // No subscription - show compelling sales pitch
     if (!activeSubscription) {
         return (
-            <div className="container max-w-4xl py-8 space-y-8">
-                <div className="text-center py-8">
-                    <div className="inline-flex p-4 rounded-full bg-primary/10 mb-4">
-                        <Megaphone className="h-10 w-10 text-primary" />
-                    </div>
-                    <h1 className="text-3xl font-bold mb-2">Welcome to Community Websites!</h1>
-                    <p className="text-muted-foreground text-lg max-w-md mx-auto">
-                        Get started with advertising your business on our community websites.
-                    </p>
-                </div>
-
-                <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>No Active Subscription</AlertTitle>
-                    <AlertDescription>
-                        You don't have an active subscription yet. Choose a plan to start advertising.
-                    </AlertDescription>
-                </Alert>
-
-                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-2xl">Ready to Get Started?</CardTitle>
-                        <CardDescription className="text-base">
-                            Choose a plan to start advertising on our community websites and reach thousands of local customers.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex justify-center">
-                        <Button size="lg" onClick={() => router.push('/pricing')}>
-                            View Plans & Pricing
-                            <ArrowRight className="ml-2 h-5 w-5" />
-                        </Button>
-                    </CardContent>
-                </Card>
+            <div className="container max-w-4xl py-8">
+                <SubscriptionPitch />
             </div>
         );
     }
