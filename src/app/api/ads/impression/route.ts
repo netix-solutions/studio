@@ -8,6 +8,10 @@ const TRACKING_PIXEL = Buffer.from(
   'base64'
 );
 
+// Set to true to log individual impression events to ad_events collection
+// Disabled by default to reduce database writes - batch impressions are preferred
+const LOG_IMPRESSION_EVENTS = process.env.LOG_IMPRESSION_EVENTS === 'true';
+
 // CORS headers for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,17 +39,20 @@ export async function GET(request: NextRequest) {
         impressions: FieldValue.increment(1),
       }).catch((err) => console.error('Failed to increment impressions:', err));
 
-      // Log the impression event
-      const referrer = request.headers.get('referer') || '';
-      const userAgent = request.headers.get('user-agent') || '';
+      // Log the impression event only if enabled (disabled by default to save writes)
+      // Note: The new batch-impressions endpoint is preferred for efficiency
+      if (LOG_IMPRESSION_EVENTS) {
+        const referrer = request.headers.get('referer') || '';
+        const userAgent = request.headers.get('user-agent') || '';
 
-      db.collection('ad_events').add({
-        adId,
-        type: 'impression',
-        referrer,
-        userAgent,
-        timestamp: FieldValue.serverTimestamp(),
-      }).catch((err) => console.error('Failed to log impression event:', err));
+        db.collection('ad_events').add({
+          adId,
+          type: 'impression',
+          referrer,
+          userAgent,
+          timestamp: FieldValue.serverTimestamp(),
+        }).catch((err) => console.error('Failed to log impression event:', err));
+      }
     }
 
     // Return a 1x1 transparent GIF
