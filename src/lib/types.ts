@@ -109,6 +109,28 @@ export const LEAD_PRIORITY_COLORS: Record<LeadPriority, { bg: string; text: stri
 };
 
 /**
+ * Lead status - active vs inactive tracking
+ * Active leads are being actively pursued
+ * Inactive leads are no longer worth pursuing
+ */
+export const LEAD_STATUSES = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+} as const;
+
+export type LeadStatus = typeof LEAD_STATUSES[keyof typeof LEAD_STATUSES];
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+};
+
+export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; text: string; border: string }> = {
+  active: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  inactive: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' },
+};
+
+/**
  * Enhanced Lead interface with all tracking fields
  */
 export interface Lead {
@@ -128,6 +150,7 @@ export interface Lead {
   // Pipeline & Status
   stage: LeadStage;
   priority: LeadPriority;
+  status: LeadStatus; // active or inactive - whether lead is worth pursuing
 
   // Scoring (0-100)
   score: number;

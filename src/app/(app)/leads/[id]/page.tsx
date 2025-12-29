@@ -54,7 +54,9 @@ import {
   LeadStage,
   LeadPriority,
   LeadSource,
+  LeadStatus,
   LEAD_STAGES,
+  LEAD_STATUSES,
   LEAD_STAGE_LABELS,
   LEAD_STAGE_COLORS,
   LEAD_PRIORITIES,
@@ -62,9 +64,12 @@ import {
   LEAD_PRIORITY_COLORS,
   LEAD_SOURCES,
   LEAD_SOURCE_LABELS,
+  LEAD_STATUS_LABELS,
+  LEAD_STATUS_COLORS,
   ACTIVITY_TYPES,
   getTimeSinceLastContact,
 } from '@/lib/types';
+import { Power, PowerOff } from 'lucide-react';
 
 
 export default function LeadDetailPage() {
@@ -83,6 +88,7 @@ export default function LeadDetailPage() {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Fetch lead data
   useEffect(() => {
@@ -113,6 +119,7 @@ export default function LeadDetailPage() {
           stage: leadData.stage || LEAD_STAGES.NEW,
           priority: leadData.priority || LEAD_PRIORITIES.MEDIUM,
           source: leadData.source || LEAD_SOURCES.WEBSITE,
+          status: leadData.status || LEAD_STATUSES.ACTIVE,
           score: leadData.score || 0,
           createdAt: leadData.createdAt,
           updatedAt: leadData.updatedAt,
@@ -203,6 +210,45 @@ export default function LeadDetailPage() {
     }
   };
 
+  // Handle toggling lead status (active/inactive)
+  const handleToggleStatus = async () => {
+    if (!firestore || !lead || !user) return;
+
+    const currentStatus = lead.status || LEAD_STATUSES.ACTIVE;
+    const newStatus: LeadStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+    setIsUpdatingStatus(true);
+    try {
+      const leadRef = doc(firestore, 'leads', lead.id);
+      await updateDoc(leadRef, {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+
+      await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
+        leadId: lead.id,
+        type: ACTIVITY_TYPES.STAGE_CHANGE,
+        title: `Status changed from ${LEAD_STATUS_LABELS[currentStatus]} to ${LEAD_STATUS_LABELS[newStatus]}`,
+        metadata: { fromStatus: currentStatus, toStatus: newStatus },
+        createdBy: user.uid,
+        createdByName: user.displayName || user.email || 'Unknown',
+        createdAt: serverTimestamp(),
+      });
+
+      setLead(prev => prev ? { ...prev, status: newStatus } : null);
+
+      toast({
+        title: 'Status Updated',
+        description: `Lead marked as ${LEAD_STATUS_LABELS[newStatus]}`,
+      });
+    } catch (err) {
+      console.error("Error updating lead status:", err);
+      toast({ title: 'Error', description: 'Failed to update lead status.', variant: 'destructive' });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   // Handle marking as spam and deleting
   const handleDeleteSpamLead = async () => {
     if (!firestore || !lead) return;
@@ -259,6 +305,7 @@ export default function LeadDetailPage() {
 
   const stageColors = LEAD_STAGE_COLORS[lead.stage as LeadStage] || LEAD_STAGE_COLORS.new;
   const priorityColors = LEAD_PRIORITY_COLORS[lead.priority as LeadPriority] || LEAD_PRIORITY_COLORS.medium;
+  const statusColors = LEAD_STATUS_COLORS[lead.status as LeadStatus] || LEAD_STATUS_COLORS.active;
 
   return (
     <div className="space-y-6">
@@ -277,6 +324,9 @@ export default function LeadDetailPage() {
                 <CardTitle className="text-xl md:text-2xl">{lead.businessName}</CardTitle>
                 <Badge className={cn(stageColors.bg, stageColors.text, stageColors.border)}>
                   {LEAD_STAGE_LABELS[lead.stage as LeadStage] || lead.stage}
+                </Badge>
+                <Badge className={cn(statusColors.bg, statusColors.text, "border", statusColors.border)}>
+                  {LEAD_STATUS_LABELS[lead.status as LeadStatus] || 'Active'}
                 </Badge>
               </div>
               <CardDescription>
@@ -479,6 +529,26 @@ export default function LeadDetailPage() {
                   <Phone className="mr-2 h-4 w-4" />
                   Call Lead
                 </a>
+              </Button>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full",
+                  lead.status === 'active'
+                    ? "text-gray-600 border-gray-200 hover:bg-gray-50"
+                    : "text-green-600 border-green-200 hover:bg-green-50"
+                )}
+                onClick={handleToggleStatus}
+                disabled={isUpdatingStatus}
+              >
+                {isUpdatingStatus ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : lead.status === 'active' ? (
+                  <PowerOff className="mr-2 h-4 w-4" />
+                ) : (
+                  <Power className="mr-2 h-4 w-4" />
+                )}
+                {lead.status === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
               </Button>
               <Button
                 variant="outline"
