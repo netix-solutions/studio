@@ -262,10 +262,10 @@ export default function ManualEntryPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight">
           {fromLeadId ? 'Convert Lead to Customer' : 'Manual Customer Entry'}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm md:text-base">
           {fromLeadId
             ? 'Create a subscription for this lead to start the ad workflow.'
             : 'Add customers who purchased advertisements through other channels (cash, check, invoice, etc.)'}
