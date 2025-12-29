@@ -264,6 +264,14 @@ export default function AdvertisementDetailPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Computed value for checking if there are pending proof changes
+    const hasProofChanges = (() => {
+        if (adProofFile) return true;
+        if (!advertisement || !user) return false;
+        const originalUrl = advertisement.adProofDestinationUrl || user.adWebsiteUrl || '';
+        return adProofUrlInput !== originalUrl;
+    })();
+
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
             setLoading(false);
@@ -372,16 +380,14 @@ export default function AdvertisementDetailPage() {
             return;
         }
 
-        const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
-        const originalAdProofUrl = advertisement.adProofUrl;
-        const originalAdDestinationUrl = advertisement.adProofDestinationUrl || user.adWebsiteUrl || '';
-
-        const hasUrlChanged = adProofUrlInput !== originalAdDestinationUrl;
-
-        if (!adProofFile && !hasUrlChanged) {
-            toast({ title: 'No Changes', description: 'Please upload a new file or modify the destination URL to save.' });
+        // Safety check - button should be disabled when no changes
+        if (!hasProofChanges) {
+            toast({ title: 'No Changes', description: 'Select a file or modify the destination URL to save.' });
             return;
         }
+
+        const adDocRef = doc(firestore, 'users', advertisement.userId, 'advertisements', advertisement.id);
+        const originalAdProofUrl = advertisement.adProofUrl;
 
         setIsSavingProof(true);
 
@@ -1062,6 +1068,21 @@ export default function AdvertisementDetailPage() {
                                                 accept="image/*"
                                                 onChange={(e) => setAdProofFile(e.target.files?.[0] || null)}
                                             />
+                                            {adProofFile && (
+                                                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-md">
+                                                    <CheckCircle className="h-4 w-4" />
+                                                    <span>Selected: {adProofFile.name}</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-auto p-1 ml-auto text-green-700 hover:text-red-600 hover:bg-red-50"
+                                                        onClick={() => setAdProofFile(null)}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="ad-proof-url">Ad Destination URL</Label>
@@ -1073,11 +1094,22 @@ export default function AdvertisementDetailPage() {
                                                 onChange={(e) => setAdProofUrlInput(e.target.value)}
                                             />
                                         </div>
-                                        <div className="flex gap-3">
-                                            <Button onClick={handleSaveProof} disabled={isSavingProof}>
-                                                {isSavingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                                {isSavingProof ? 'Saving...' : 'Save Proof'}
-                                            </Button>
+                                        <div className="flex gap-3 items-center">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span>
+                                                        <Button onClick={handleSaveProof} disabled={isSavingProof || !hasProofChanges}>
+                                                            {isSavingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                                            {isSavingProof ? 'Saving...' : 'Save Proof'}
+                                                        </Button>
+                                                    </span>
+                                                </TooltipTrigger>
+                                                {!hasProofChanges && !isSavingProof && (
+                                                    <TooltipContent>
+                                                        <p>Select a file or modify the URL to save changes</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
                                             {advertisement.adProofUrl && (
                                                 <Button onClick={handleRequestApproval} disabled={isRequestingApproval}>
                                                     {isRequestingApproval ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
