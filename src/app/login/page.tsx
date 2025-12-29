@@ -292,6 +292,16 @@ export default function LoginPage() {
                 </p>
               </div>
 
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-amber-800">
+                  <strong>Existing advertiser?</strong> If you've purchased an ad with us before, you already have an account. Enter the email address you used when purchasing your ad and click{' '}
+                  <Link href="/forgot-password" className="text-amber-700 underline hover:text-amber-900 font-medium">
+                    Forgot password?
+                  </Link>{' '}
+                  to set up your login credentials.
+                </p>
+              </div>
+
               <Tabs defaultValue="password">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="password">Password</TabsTrigger>
