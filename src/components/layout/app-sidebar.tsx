@@ -9,6 +9,10 @@ import {
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+  SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Ticket,
@@ -28,6 +32,8 @@ import {
   Code,
   LayoutGrid,
   FolderOpen,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -68,11 +74,13 @@ const userMenuItems: NavItem[] = [
 
 export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const { state, toggleSidebar } = useSidebar();
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+  const isCollapsed = state === 'collapsed';
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-border/50 pb-5 pt-1">
         <Link
           href={isAdmin ? '/leads' : '/account'}
@@ -83,7 +91,7 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
             alt="Community-Websites.com Logo"
             width={44}
             height={44}
-            className="rounded-xl"
+            className="rounded-xl shrink-0"
             style={{ height: '44px', width: 'auto' }}
           />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
@@ -102,41 +110,41 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
           <div className="space-y-1">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Button
+                <SidebarMenuButton
                   asChild
-                  variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
                   size="lg"
                 >
                   <Link href={item.href}>
-                    <item.icon className="mr-3 h-5 w-5" />
-                    {item.label}
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                   </Link>
-                </Button>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </div>
 
           {isAdmin && (
             <div className="mt-6">
-              <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
                 <Settings className="h-4 w-4" />
                 Settings
               </div>
               <div className="space-y-1">
                 {adminSettingsItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <Button
+                    <SidebarMenuButton
                       asChild
-                      variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                      className="w-full justify-start"
+                      isActive={pathname.startsWith(item.href)}
+                      tooltip={item.label}
                       size="lg"
                     >
                       <Link href={item.href}>
-                        <item.icon className="mr-3 h-5 w-5" />
-                        {item.label}
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                       </Link>
-                    </Button>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </div>
@@ -144,6 +152,26 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
           )}
         </SidebarMenu>
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-border/50">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleSidebar}
+          className="w-full justify-center group-data-[collapsible=icon]:px-0"
+        >
+          {isCollapsed ? (
+            <ChevronsRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronsLeft className="h-4 w-4 mr-2" />
+              <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
+            </>
+          )}
+        </Button>
+      </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }

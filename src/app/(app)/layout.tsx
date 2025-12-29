@@ -121,16 +121,12 @@ export default function ProtectedLayout({
         <FirebaseErrorListener />
         {/* Command palette for quick navigation */}
         <CommandPalette isAdmin={isAdmin} />
-        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-            <div className="hidden border-r bg-muted/40 md:block">
-                <AppSidebar isAdmin={isAdmin} />
-            </div>
-            <div className="flex flex-col">
-                <Header isAdmin={isAdmin} />
-                <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
-                    {children}
-                </main>
-            </div>
+        <AppSidebar isAdmin={isAdmin} />
+        <div className="flex flex-1 flex-col w-full">
+            <Header isAdmin={isAdmin} />
+            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
+                {children}
+            </main>
         </div>
     </SidebarProvider>
   );
