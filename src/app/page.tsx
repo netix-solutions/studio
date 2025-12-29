@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, Clock, Award, Building2, Utensils, Briefcase, Home, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon, Palette, Sparkles, MousePointerClick, Monitor } from 'lucide-react';
+import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, Clock, Award, Building2, Utensils, Briefcase, Home, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon, Palette, Sparkles, MousePointerClick, Monitor, BookOpen, Globe, Search, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -350,6 +350,109 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Directory Listing Feature - Bonus Section */}
+      <section className="py-16 md:py-24 bg-gradient-to-br from-brand-primary via-brand-secondary to-brand-primary overflow-hidden">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="text-white">
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-full px-4 py-2 md:px-5 md:py-2.5 text-xs md:text-sm border border-white/20 mb-6">
+                <span className="font-bold text-success">BONUS</span>
+                <span className="text-white/80">Included with Every Ad</span>
+              </div>
+
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline mb-5 md:mb-6">
+                Free Business Directory Listing
+              </h2>
+
+              <p className="text-base md:text-lg text-white/85 mb-6 md:mb-8 leading-relaxed">
+                While your ad is live, your business is automatically featured in our community sponsor directory. Get discovered by local residents searching for businesses like yours.
+              </p>
+
+              <div className="space-y-4 md:space-y-5">
+                <div className="flex items-start gap-4 md:gap-5">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white text-sm md:text-base">Your Own Business Profile</div>
+                    <div className="text-xs md:text-sm text-white/70">Showcase your business with logo, description, contact info, and social links</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 md:gap-5">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Search className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white text-sm md:text-base">Get Found by Local Customers</div>
+                    <div className="text-xs md:text-sm text-white/70">Appear when residents browse our sponsor directory for local services</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 md:gap-5">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Globe className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white text-sm md:text-base">Multiple Touchpoints</div>
+                    <div className="text-xs md:text-sm text-white/70">Your ad AND directory listing work together to maximize visibility</div>
+                  </div>
+                </div>
+              </div>
+
+              <Button size="lg" asChild className="mt-8 md:mt-10 h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg bg-white text-brand-primary hover:bg-white/90">
+                <Link href="#get-started">
+                  Get Your Listing <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -inset-4 md:-inset-6 bg-white/10 rounded-3xl -z-10" />
+              <Card className="bg-white rounded-2xl shadow-2xl overflow-hidden border-0">
+                <CardContent className="p-0">
+                  {/* Mock Directory Card Preview */}
+                  <div className="p-5 md:p-6 border-b border-gray-100">
+                    <div className="flex items-center gap-2 text-brand-secondary text-xs md:text-sm font-semibold mb-4">
+                      <MapPin className="h-4 w-4" />
+                      Community Sponsor Directory
+                    </div>
+                    <div className="text-center text-gray-400 text-xs uppercase tracking-wider mb-3">Example Listing</div>
+                  </div>
+                  <div className="p-5 md:p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-8 w-8 md:h-10 md:w-10 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-brand-primary text-base md:text-lg mb-1">Your Business Name</div>
+                        <div className="text-gray-600 text-xs md:text-sm mb-2">Your tagline or specialty goes here</div>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="inline-flex items-center gap-1 bg-brand-primary/10 text-brand-primary text-xs px-2 py-1 rounded-full">
+                            <Phone className="h-3 w-3" />
+                            Phone
+                          </span>
+                          <span className="inline-flex items-center gap-1 bg-brand-primary/10 text-brand-primary text-xs px-2 py-1 rounded-full">
+                            <Globe className="h-3 w-3" />
+                            Website
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-gray-600 text-sm leading-relaxed line-clamp-3">
+                      A brief description of your business, services, and what makes you stand out in the local community. Residents can learn about you at a glance.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="absolute -bottom-3 -right-3 md:-bottom-4 md:-right-4 bg-success text-white px-4 py-2 rounded-full text-xs md:text-sm font-bold shadow-lg">
+                FREE with your ad!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works - Compact */}
       <section className="py-14 md:py-20 bg-brand-primary text-white">
         <div className="container mx-auto px-4 md:px-6">
@@ -389,7 +492,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-5 max-w-6xl mx-auto">
             {[
               { icon: PenTool, label: 'Free Design' },
               { icon: TrendingUp, label: 'Clickable Ads' },
@@ -397,6 +500,7 @@ export default function LandingPage() {
               { icon: Shield, label: 'No Contracts' },
               { icon: Users, label: 'Local Reach' },
               { icon: Clock, label: '48hr Launch' },
+              { icon: BookOpen, label: 'Directory Listing' },
             ].map((item, i) => (
               <div key={i} className="text-center p-4 md:p-5 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md hover:border-brand-primary/20 transition-all duration-200">
                 <item.icon className="h-6 w-6 md:h-7 md:w-7 text-brand-primary mx-auto mb-2.5" />
@@ -545,6 +649,7 @@ export default function LandingPage() {
               { q: 'Do I need to design my own ad?', a: 'No! You can let our professional team design it for you at no extra cost, or use our easy online designer to create it yourself—whichever you prefer.' },
               { q: 'How quickly will my ad go live?', a: 'Most ads go live within 48 hours of approval. We\'ll send you a preview to approve first.' },
               { q: 'Can I update my ad later?', a: 'Yes! Update your ad anytime at no extra charge. Design it yourself using our online tool, or just email us your changes.' },
+              { q: 'What is the directory listing?', a: 'While your ad is live, you get a free business profile in our community sponsor directory. Add your logo, description, contact info, and social links so local residents can find and learn about your business.' },
               { q: 'Can I cancel anytime?', a: 'Absolutely. No contracts, no cancellation fees. Cancel anytime through your portal.' },
             ].map((item, i) => (
               <AccordionItem key={i} value={`item-${i}`} className="bg-gray-50 rounded-xl px-5 md:px-6 border border-gray-100">
