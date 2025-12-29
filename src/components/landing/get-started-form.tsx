@@ -31,6 +31,11 @@ import {
   calculateLeadScore,
   type LeadSource,
 } from '@/lib/types';
+import {
+  trackLeadFormSubmission,
+  setLeadProperties,
+  type AnalyticsLeadSource,
+} from '@/lib/analytics';
 
 const formSchema = z.object({
   businessName: z
@@ -168,6 +173,30 @@ export function GetStartedForm() {
 
       // Create the lead document
       const leadDocRef = await addDoc(collection(firestore, 'leads'), leadData);
+
+      // Track lead submission in Google Analytics
+      trackLeadFormSubmission({
+        businessName: values.businessName,
+        email: values.email,
+        phone: values.phone,
+        siteCoverage: values.siteCoverage,
+        source: utmParams.source as AnalyticsLeadSource,
+        leadScore: leadData.score,
+        utm: {
+          source: utmParams.utmSource,
+          medium: utmParams.utmMedium,
+          campaign: utmParams.utmCampaign,
+          term: utmParams.utmTerm,
+          content: utmParams.utmContent,
+        },
+      });
+
+      // Set user properties for future tracking
+      setLeadProperties({
+        source: utmParams.source as AnalyticsLeadSource,
+        score: leadData.score,
+        siteCoverage: values.siteCoverage,
+      });
 
       // Send auto-response email with pricing link
       try {
