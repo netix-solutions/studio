@@ -25,6 +25,7 @@ import { Loader2, ArrowLeft, Phone, Shield, CheckCircle, Lock, User as UserIcon 
 import Link from 'next/link';
 import Image from 'next/image';
 import { createCheckout } from '@/lib/stripe';
+import { trackSignUp, trackCheckoutError } from '@/lib/analytics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,12 +75,28 @@ function RegisterPageContent() {
     if (!isUserLoading && user && firestore) {
         // Check if there is a pending purchase
         const selectedPriceId = sessionStorage.getItem('selectedPriceId');
+
+        // Track successful registration
+        trackSignUp({
+          method: 'email',
+          userId: user.uid,
+          hasPendingPurchase: !!selectedPriceId,
+        });
+
         if (selectedPriceId && user.uid && user.email) {
             // Clear the stored price ID and initiate checkout
             sessionStorage.removeItem('selectedPriceId');
             createCheckout(firestore, user.uid, user.email, selectedPriceId, window.location.origin + '/account')
                 .catch(error => {
                     console.error("Stripe checkout error after registration:", error);
+
+                    // Track checkout error
+                    trackCheckoutError({
+                      errorMessage: error.message || 'Could not redirect to checkout.',
+                      planId: selectedPriceId,
+                      step: 'initiation',
+                    });
+
                     toast({
                         title: 'Error starting purchase',
                         description: error.message || 'Could not redirect to checkout. Please log in and try again from the pricing page.',

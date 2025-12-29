@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { trackPurchase, setCustomerType } from '@/lib/analytics';
 
 // Subscription Manager Component
 import { SubscriptionManager } from '@/components/account/subscription-manager';
@@ -352,6 +353,54 @@ export default function AccountPage() {
             adsUnsubscribe();
         };
     }, [firestore, user, userLoading, refreshKey]);
+
+    // Track successful purchase/subscription when a new subscription is detected
+    useEffect(() => {
+        if (!activeSubscription || !user) return;
+
+        // Check if we've already tracked this subscription
+        const trackedSubId = sessionStorage.getItem('tracked_subscription_id');
+        if (trackedSubId === activeSubscription.id) return;
+
+        // Check if this is a new subscription (created in the last 5 minutes)
+        const createdAt = activeSubscription.created?.seconds
+            ? activeSubscription.created.seconds * 1000
+            : null;
+        const isNewSubscription = createdAt && (Date.now() - createdAt < 5 * 60 * 1000);
+
+        if (isNewSubscription) {
+            // Get plan details
+            const planName = activeSubscription.items?.[0]?.price?.product?.name
+                || activeSubscription.planName
+                || 'Subscription';
+            const unitAmount = activeSubscription.items?.[0]?.price?.unit_amount
+                || (activeSubscription.amount ? activeSubscription.amount * 100 : 0);
+            const interval = activeSubscription.items?.[0]?.price?.recurring?.interval
+                || 'month';
+
+            // Track the purchase
+            trackPurchase({
+                transactionId: activeSubscription.id,
+                plan: {
+                    id: activeSubscription.items?.[0]?.price?.id || activeSubscription.id,
+                    name: planName,
+                    price: unitAmount / 100,
+                    billingCycle: interval === 'year' ? 'yearly' : 'monthly',
+                },
+                userId: user.uid,
+            });
+
+            // Set user properties for future segmentation
+            setCustomerType({
+                planName: planName,
+                billingCycle: interval === 'year' ? 'yearly' : 'monthly',
+                isNewCustomer: true,
+            });
+
+            // Mark as tracked to prevent duplicate events
+            sessionStorage.setItem('tracked_subscription_id', activeSubscription.id);
+        }
+    }, [activeSubscription, user]);
 
     // Handle billing portal redirect
     const handleBillingPortal = async () => {

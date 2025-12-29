@@ -37,6 +37,13 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  trackViewPricingPage,
+  trackSelectPlan,
+  trackBillingCycleChange,
+  trackBeginCheckout,
+  trackCheckoutError,
+} from '@/lib/analytics';
 
 interface Price {
   id: string;
@@ -521,6 +528,19 @@ function PricingPageContent() {
           // Select the most expensive plan by default (last in sorted array)
           const mostExpensivePlan = fetchedPlans[fetchedPlans.length - 1];
           setSelectedPlanId(mostExpensivePlan?.id || null);
+
+          // Track pricing page view with available plans
+          if (fetchedPlans.length > 0) {
+            trackViewPricingPage({
+              plans: fetchedPlans.map(p => ({
+                id: p.id,
+                name: p.name,
+                price: (p.prices.find(pr => pr.interval === 'month')?.unit_amount || 0) / 100,
+              })),
+              fromLeadForm: !!businessName,
+              businessName: businessName || undefined,
+            });
+          }
         })
         .catch(error => {
           console.error("Error fetching plans and prices:", error);
@@ -534,7 +554,7 @@ function PricingPageContent() {
           setLoading(false);
         });
     }
-  }, [firestore, toast]);
+  }, [firestore, toast, businessName]);
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
 
@@ -547,6 +567,38 @@ function PricingPageContent() {
     }
     return max;
   }, 0);
+
+  // Track plan selection
+  const handlePlanSelect = (planId: string) => {
+    const plan = plans.find(p => p.id === planId);
+    if (plan) {
+      const price = billingCycle === 'yearly'
+        ? plan.prices.find(p => p.interval === 'year')
+        : plan.prices.find(p => p.interval === 'month');
+
+      trackSelectPlan({
+        plan: {
+          id: plan.id,
+          name: plan.name,
+          price: (price?.unit_amount || 0) / 100,
+          billingCycle: billingCycle,
+        },
+      });
+    }
+    setSelectedPlanId(planId);
+  };
+
+  // Track billing cycle change
+  const handleBillingCycleChange = (newCycle: 'monthly' | 'yearly') => {
+    if (newCycle !== billingCycle) {
+      trackBillingCycleChange({
+        from: billingCycle,
+        to: newCycle,
+        planId: selectedPlanId || undefined,
+      });
+    }
+    setBillingCycle(newCycle);
+  };
 
   const handlePurchase = async () => {
     if (!selectedPlan || !firestore) {
@@ -565,6 +617,18 @@ function PricingPageContent() {
 
     setIsPurchasing(price.id);
 
+    // Track checkout initiation
+    trackBeginCheckout({
+      plan: {
+        id: selectedPlan.id,
+        name: selectedPlan.name,
+        price: price.unit_amount / 100,
+        billingCycle: billingCycle,
+      },
+      userId: user?.uid,
+      isLoggedIn: !!user,
+    });
+
     if (!user) {
       sessionStorage.setItem('selectedPriceId', price.id);
       const registerUrl = email ? `/register?email=${encodeURIComponent(email)}` : '/register';
@@ -576,6 +640,14 @@ function PricingPageContent() {
       await createCheckout(firestore, user.uid, user.email, price.id, window.location.origin + '/account');
     } catch (error: any) {
       console.error('Stripe checkout error:', error);
+
+      // Track checkout error
+      trackCheckoutError({
+        errorMessage: error.message || 'Could not redirect to checkout.',
+        planId: selectedPlan.id,
+        step: 'initiation',
+      });
+
       toast({ title: 'Error Starting Checkout', description: error.message || 'Could not redirect to checkout.', variant: 'destructive' });
       setIsPurchasing(null);
     }
@@ -704,7 +776,7 @@ function PricingPageContent() {
                   </p>
                   <BillingToggle
                     value={billingCycle}
-                    onChange={setBillingCycle}
+                    onChange={handleBillingCycleChange}
                     savings={maxSavings}
                   />
                 </div>
@@ -715,7 +787,7 @@ function PricingPageContent() {
                     <PricingCard
                       key={plan.id}
                       plan={plan}
-                      onSelect={() => setSelectedPlanId(plan.id)}
+                      onSelect={() => handlePlanSelect(plan.id)}
                       isSelected={selectedPlanId === plan.id}
                       isFeatured={plan.metadata?.isFeatured === 'true'}
                       billingCycle={billingCycle}

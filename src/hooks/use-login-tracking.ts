@@ -12,6 +12,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { ACTIVITY_TYPES } from '@/lib/types';
+import { trackLogin } from '@/lib/analytics';
 
 /**
  * Hook to track user logins.
@@ -39,8 +40,14 @@ export function useLoginTracking() {
       return;
     }
 
-    const trackLogin = async () => {
+    const trackLoginActivity = async () => {
       try {
+        // Track login in Google Analytics
+        trackLogin({
+          method: 'email',
+          userId: user.uid,
+        });
+
         // Find the lead associated with this user
         const leadsRef = collection(firestore, 'leads');
 
@@ -107,6 +114,6 @@ export function useLoginTracking() {
       }
     };
 
-    trackLogin();
+    trackLoginActivity();
   }, [user, firestore]);
 }
