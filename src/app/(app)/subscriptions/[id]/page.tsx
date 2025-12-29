@@ -1,15 +1,16 @@
 
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc, limit } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, ExternalLink, Plus } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, Globe, Briefcase, FileText, Calendar, DollarSign, ExternalLink, Plus, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CommentsDialog } from '@/components/subscriptions/comments-dialog';
+import { EditSubscriptionDialog } from '@/components/subscriptions/edit-subscription-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +22,8 @@ import {
     AD_STATUS_COLORS,
     type AdStatus,
     type UserDetails,
+    type BillingPeriod,
+    type PaymentMethod,
 } from '@/lib/types';
 
 interface SubscriptionDetails {
@@ -33,6 +36,13 @@ interface SubscriptionDetails {
     endDate: string;
     adStatus: string;
     adId?: string;
+    // Additional fields for editing
+    isManualEntry?: boolean;
+    billingPeriod?: BillingPeriod;
+    paymentMethod?: PaymentMethod;
+    paymentNotes?: string;
+    created?: { seconds: number };
+    current_period_end?: { seconds: number };
 }
 
 // Using centralized UserDetails type from @/lib/types
@@ -76,6 +86,8 @@ export default function SubscriptionDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
 
     useEffect(() => {
@@ -116,13 +128,20 @@ export default function SubscriptionDetailPage() {
                 const subDetails: SubscriptionDetails = {
                     id: subscriptionId,
                     customerId: customerId,
-                    plan: subData.items?.[0]?.price?.product?.name || 'N/A',
+                    plan: subData.items?.[0]?.price?.product?.name || subData.planName || 'N/A',
                     status: subData.status,
-                    amount: subData.items?.[0]?.price?.unit_amount / 100 || 0,
+                    amount: subData.items?.[0]?.price?.unit_amount / 100 || subData.amount || 0,
                     startDate: format(startDate, 'PPP'),
                     endDate: format(endDate, 'PPP'),
                     adStatus: adData?.status || 'Not Started',
                     adId: adDoc?.id,
+                    // Additional fields for editing
+                    isManualEntry: subData.isManualEntry,
+                    billingPeriod: subData.billingPeriod,
+                    paymentMethod: subData.paymentMethod,
+                    paymentNotes: subData.paymentNotes,
+                    created: subData.created,
+                    current_period_end: subData.current_period_end,
                 };
 
                 setUser({ id: userDocSnap.id, ...userData });
@@ -183,7 +202,7 @@ export default function SubscriptionDetailPage() {
 
         fetchDetails();
 
-    }, [firestore, subscriptionId, customerId]);
+    }, [firestore, subscriptionId, customerId, refreshKey]);
 
 
     if (loading) {
@@ -218,9 +237,19 @@ export default function SubscriptionDetailPage() {
         <div className="grid gap-6 md:grid-cols-3">
             <div className="md:col-span-2 space-y-6 order-2 md:order-1">
                  <Card>
-                    <CardHeader>
-                        <CardTitle className="text-2xl">Subscription: {subscription.plan}</CardTitle>
-                        <CardDescription>Details for subscription ID: {subscription.id}</CardDescription>
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                        <div className="space-y-1.5">
+                            <CardTitle className="text-2xl">Subscription: {subscription.plan}</CardTitle>
+                            <CardDescription>Details for subscription ID: {subscription.id}</CardDescription>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditDialogOpen(true)}
+                        >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Edit
+                        </Button>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
@@ -371,6 +400,13 @@ export default function SubscriptionDetailPage() {
                 isOpen={isManualEmailDialogOpen}
                 onOpenChange={setIsManualEmailDialogOpen}
                 advertisement={advertisement ?? undefined}
+            />
+
+            <EditSubscriptionDialog
+                subscription={subscription}
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                onUpdate={() => setRefreshKey(prev => prev + 1)}
             />
 
         </div>
