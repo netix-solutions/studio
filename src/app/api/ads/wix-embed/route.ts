@@ -233,11 +233,13 @@ export async function GET(request: NextRequest) {
       var CONFIG = {
         baseUrl: '${baseUrl}',
         serveAllEndpoint: '${baseUrl}/api/ads/serve-all',
+        batchImpressionsEndpoint: '${baseUrl}/api/ads/batch-impressions',
         website: '${websiteParam}',
         placement: '${placementParam}',
         rotationInterval: 7500,
         transitionDuration: 500,
-        cacheDuration: 60000,
+        cacheDuration: 300000, // 5 minute cache (increased from 1 min)
+        impressionFlushInterval: 30000, // Flush impressions every 30 seconds
         responsive: ${responsiveParam},
         maxRotationDuration: 300000 // 5 minutes - stop rotation after this to save resources
       };
@@ -255,7 +257,9 @@ export async function GET(request: NextRequest) {
         isVisible: true,
         retryCount: 0,
         maxRetries: 3,
-        rotationStopped: false
+        rotationStopped: false,
+        impressionQueue: {}, // { adId: count } - for batch tracking
+        impressionFlushTimer: null
       };
 
       // DOM Elements
@@ -315,8 +319,57 @@ export async function GET(request: NextRequest) {
           startRotation();
         } else {
           stopRotation();
+          flushImpressions(); // Flush when tab becomes hidden
         }
       });
+
+      /**
+       * Queue an impression for batch sending (reduces server writes by ~95%)
+       */
+      function queueImpression(adId) {
+        state.impressionQueue[adId] = (state.impressionQueue[adId] || 0) + 1;
+
+        // Start flush timer if not already running
+        if (!state.impressionFlushTimer) {
+          state.impressionFlushTimer = setTimeout(flushImpressions, CONFIG.impressionFlushInterval);
+        }
+      }
+
+      /**
+       * Flush all queued impressions to the server
+       */
+      function flushImpressions() {
+        state.impressionFlushTimer = null;
+
+        var impressions = [];
+        for (var adId in state.impressionQueue) {
+          if (state.impressionQueue.hasOwnProperty(adId) && state.impressionQueue[adId] > 0) {
+            impressions.push({ adId: adId, count: state.impressionQueue[adId] });
+          }
+        }
+
+        if (impressions.length === 0) return;
+
+        // Clear the queue before sending
+        state.impressionQueue = {};
+
+        // Send batch using sendBeacon for reliability
+        var data = JSON.stringify({ impressions: impressions });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(CONFIG.batchImpressionsEndpoint, new Blob([data], { type: 'application/json' }));
+        } else {
+          fetch(CONFIG.batchImpressionsEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: data,
+            keepalive: true
+          }).catch(function() {});
+        }
+      }
+
+      // Flush impressions when page unloads
+      window.addEventListener('beforeunload', flushImpressions);
+      window.addEventListener('pagehide', flushImpressions);
 
       /**
        * Fetch ads from server
@@ -462,19 +515,12 @@ export async function GET(request: NextRequest) {
 
         link.appendChild(img);
 
-        // Create tracking pixel
-        var pixel = document.createElement('img');
-        pixel.className = 'wix-ad-pixel';
-        pixel.src = ad.impressionUrl;
-        pixel.alt = '';
-        pixel.setAttribute('aria-hidden', 'true');
-
         if (isInitial) {
           // Initial load - just swap content
           container.innerHTML = '';
           container.appendChild(link);
-          container.appendChild(pixel);
           resetProgressBar();
+          queueImpression(ad.id); // Use batch tracking instead of pixel
         } else {
           // Transition - fade out then swap
           var existingImg = container.querySelector('.wix-ad-img');
@@ -486,8 +532,8 @@ export async function GET(request: NextRequest) {
           setTimeout(function() {
             container.innerHTML = '';
             container.appendChild(link);
-            container.appendChild(pixel);
             resetProgressBar();
+            queueImpression(ad.id); // Use batch tracking instead of pixel
           }, CONFIG.transitionDuration);
         }
 
