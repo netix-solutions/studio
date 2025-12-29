@@ -218,34 +218,18 @@ export async function GET(request: NextRequest) {
     }
 
     .wc-logo {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #fff;
+      width: 76px;
+      height: 75px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
 
     .wc-logo img {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-    }
-
-    .wc-logo-placeholder {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 20px;
+      width: 76px;
+      height: 75px;
+      object-fit: cover;
     }
 
     .wc-site-name {
@@ -253,15 +237,20 @@ export async function GET(request: NextRequest) {
     }
 
     .wc-site-name-main {
-      font-size: 1.75rem;
-      font-weight: 700;
-      line-height: 1.2;
+      font-size: 27px;
+      font-weight: 800;
+      line-height: normal;
+      letter-spacing: -0.05em;
+      text-shadow: rgba(0, 0, 0, 0.4) 0px 4px 5px;
+      color: #FFFFFF;
     }
 
     .wc-site-name-sub {
-      font-size: 1.25rem;
-      font-weight: 600;
-      opacity: 0.9;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      text-shadow: rgba(0, 0, 0, 0.4) 0px 4px 5px;
+      color: #DBDBDB;
     }
 
     .wc-header-actions {
@@ -269,26 +258,6 @@ export async function GET(request: NextRequest) {
       flex-direction: column;
       gap: 8px;
       align-items: flex-end;
-    }
-
-    .wc-signin-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: transparent;
-      border: 2px solid rgba(255,255,255,0.3);
-      color: white;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .wc-signin-btn:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.5);
     }
 
     .wc-advertise-btn {
@@ -810,7 +779,7 @@ export async function GET(request: NextRequest) {
     <div class="wc-header-top">
       <a href="${wesleyChapelBaseUrl}" class="wc-logo-container" target="_top">
         <div class="wc-logo">
-          <div class="wc-logo-placeholder">WC</div>
+          <img src="${baseUrl}/WESLEYCHAPEL.png" alt="Wesley Chapel Community" />
         </div>
         <div class="wc-site-name">
           <div class="wc-site-name-main">Wesley Chapel</div>
@@ -818,15 +787,11 @@ export async function GET(request: NextRequest) {
         </div>
       </a>
       <div class="wc-header-actions">
-        <a href="${wesleyChapelBaseUrl}/sign-in" class="wc-signin-btn" target="_top">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M20 21a8 8 0 1 0-16 0"/>
+        <a href="https://community-websites.com" class="wc-advertise-btn" target="_blank" rel="noopener">
+          <span>Advertise With Us</span>
+          <svg width="16" height="16" viewBox="0 0 60 60" fill="currentColor">
+            <path d="M46.5 28.9L20.6 3c-.6-.6-1.6-.6-2.2 0l-4.8 4.8c-.6.6-.6 1.6 0 2.2l19.8 20-19.9 19.9c-.6.6-.6 1.6 0 2.2l4.8 4.8c.6.6 1.6.6 2.2 0l21-21 4.8-4.8c.8-.6.8-1.6.2-2.2z"/>
           </svg>
-          Sign In
-        </a>
-        <a href="${wesleyChapelBaseUrl}/advertise" class="wc-advertise-btn" target="_top">
-          Advertise With Us &gt;
         </a>
       </div>
     </div>
@@ -836,10 +801,10 @@ export async function GET(request: NextRequest) {
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}" target="_top">Home</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/news" target="_top">News</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/pictures" target="_top">Pictures</a></li>
-          <li class="wc-nav-item active"><a href="${wesleyChapelBaseUrl}/sponsors" target="_top">View Our Sponsors</a></li>
+          <li class="wc-nav-item active"><a href="${wesleyChapelBaseUrl}/our-sponsors" target="_top">View Our Sponsors</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/neighborhoods" target="_top">Neighborhoods</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/about" target="_top">About</a></li>
-          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/contact" target="_top">Contact</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/contact-us" target="_top">Contact</a></li>
         </ul>
       </div>
     </nav>
