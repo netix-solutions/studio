@@ -6,7 +6,35 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+    SheetFooter,
+} from '@/components/ui/sheet';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase } from '@/firebase';
 import { getAuth } from 'firebase/auth';
 import {
@@ -22,6 +50,12 @@ import {
     EyeOff,
     RefreshCw,
     FolderOpen,
+    Pencil,
+    Trash2,
+    Plus,
+    Save,
+    User,
+    Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +70,7 @@ import {
     BUSINESS_CATEGORY_ICONS,
 } from '@/lib/types';
 import { DirectoryCardPreview } from '@/components/directory/DirectoryCardPreview';
+import { DirectoryListingForm } from '@/components/directory/DirectoryListingForm';
 
 interface DirectoryListingItem {
     liveAdId: string;
@@ -71,17 +106,30 @@ export default function DirectoryPage() {
     const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
     const [moderatingAd, setModeratingAd] = useState<string | null>(null);
 
+    // Edit sheet state
+    const [editSheetOpen, setEditSheetOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<DirectoryListingItem | null>(null);
+    const [editedListing, setEditedListing] = useState<Partial<DirectoryListing>>({});
+    const [isSaving, setIsSaving] = useState(false);
+    const [moderationNotes, setModerationNotes] = useState('');
+    const [newStatus, setNewStatus] = useState<DirectoryStatus | ''>('');
+
+    // Delete confirmation
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletingItem, setDeletingItem] = useState<DirectoryListingItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const { firestore, user } = useFirebase();
     const { toast } = useToast();
 
     // Update URL when filter changes
-    const updateStatusFilter = (newStatus: string) => {
-        setStatusFilter(newStatus);
+    const updateStatusFilter = (newStatusFilter: string) => {
+        setStatusFilter(newStatusFilter);
         const params = new URLSearchParams(searchParams.toString());
-        if (newStatus === 'all') {
+        if (newStatusFilter === 'all') {
             params.delete('status');
         } else {
-            params.set('status', newStatus);
+            params.set('status', newStatusFilter);
         }
         router.replace(`/directory${params.toString() ? `?${params.toString()}` : ''}`);
     };
@@ -169,6 +217,152 @@ export default function DirectoryPage() {
         fetchDirectoryListings();
     };
 
+    // Open edit sheet for a listing
+    const openEditSheet = (item: DirectoryListingItem) => {
+        setEditingItem(item);
+        setEditedListing(item.directoryListing || {
+            businessName: item.liveAd.customerName || '',
+            showContactInfo: true,
+            showSocialLinks: true,
+            showAddress: false,
+        });
+        setModerationNotes(item.directoryListing?.moderationNotes || '');
+        setNewStatus(item.directoryListing?.directoryStatus || 'pending');
+        setEditSheetOpen(true);
+    };
+
+    // Save edited listing
+    const handleSaveListing = async () => {
+        if (!editingItem) return;
+
+        try {
+            setIsSaving(true);
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
+
+            // Prepare the update payload
+            const payload: Record<string, any> = {
+                liveAdId: editingItem.liveAdId,
+                action: 'update',
+                directoryListing: {
+                    ...editedListing,
+                    moderationNotes,
+                },
+            };
+
+            // If status changed, set it directly
+            if (newStatus && newStatus !== editingItem.directoryListing?.directoryStatus) {
+                payload.directoryListing.directoryStatus = newStatus;
+            }
+
+            const response = await fetch('/api/admin/directory', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error('Failed to update listing');
+
+            toast({
+                description: 'Directory listing updated successfully.',
+            });
+
+            setEditSheetOpen(false);
+            setEditingItem(null);
+            await fetchDirectoryListings();
+        } catch (err) {
+            console.error('Error saving listing:', err);
+            toast({
+                variant: 'destructive',
+                description: 'Failed to save listing changes.',
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Delete listing (reset to empty)
+    const handleDeleteListing = async () => {
+        if (!deletingItem) return;
+
+        try {
+            setIsDeleting(true);
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
+
+            // Reset the directory listing by setting it to minimal values
+            const response = await fetch('/api/admin/directory', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    liveAdId: deletingItem.liveAdId,
+                    action: 'update',
+                    directoryListing: {
+                        businessName: deletingItem.liveAd.customerName || 'Business',
+                        directoryStatus: 'pending',
+                        showContactInfo: true,
+                        showSocialLinks: true,
+                        showAddress: false,
+                        // Clear all other fields
+                        tagline: '',
+                        description: '',
+                        phone: '',
+                        email: '',
+                        websiteUrl: '',
+                        address: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                        facebookUrl: '',
+                        instagramUrl: '',
+                        linkedinUrl: '',
+                        twitterUrl: '',
+                        youtubeUrl: '',
+                        tiktokUrl: '',
+                        yelpUrl: '',
+                        googleBusinessUrl: '',
+                        logoUrl: '',
+                        bannerImageUrl: '',
+                        cardBackgroundColor: '',
+                        cardTextColor: '',
+                        category: undefined,
+                        tags: [],
+                        specialOffers: [],
+                        serviceAreas: [],
+                        languages: [],
+                        isFeatured: false,
+                        moderationNotes: 'Listing reset by admin',
+                    },
+                    showInDirectory: false,
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to reset listing');
+
+            toast({
+                description: 'Directory listing has been reset.',
+            });
+
+            setDeleteDialogOpen(false);
+            setDeletingItem(null);
+            await fetchDirectoryListings();
+        } catch (err) {
+            console.error('Error resetting listing:', err);
+            toast({
+                variant: 'destructive',
+                description: 'Failed to reset listing.',
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const filteredListings = directoryListings.filter((item) => {
         if (!searchQuery.trim()) return true;
         const listing = item.directoryListing;
@@ -186,7 +380,7 @@ export default function DirectoryPage() {
                         Directory Management
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Review and manage advertiser directory listings. Approve, reject, or feature listings.
+                        Complete control over all advertiser directory listings. Edit, approve, reject, or feature any listing.
                     </p>
                 </div>
                 <Button variant="outline" onClick={fetchDirectoryListings} disabled={loading}>
@@ -370,6 +564,12 @@ export default function DirectoryPage() {
                                                             {listing.tagline}
                                                         </p>
                                                     )}
+                                                    {item.liveAd.customerName && listing?.businessName !== item.liveAd.customerName && (
+                                                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                                            <User className="h-3 w-3" />
+                                                            Customer: {item.liveAd.customerName}
+                                                        </p>
+                                                    )}
                                                 </div>
                                                 <Badge className={`${statusColors.bg} ${statusColors.text}`}>
                                                     {status === 'approved' && (
@@ -423,6 +623,16 @@ export default function DirectoryPage() {
 
                                             {/* Actions */}
                                             <div className="flex flex-wrap gap-2">
+                                                {/* Edit Button - Always visible */}
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => openEditSheet(item)}
+                                                >
+                                                    <Pencil className="h-4 w-4 mr-1" />
+                                                    Edit
+                                                </Button>
+
                                                 {status === 'pending' && (
                                                     <>
                                                         <Button
@@ -531,6 +741,20 @@ export default function DirectoryPage() {
                                                         Approve
                                                     </Button>
                                                 )}
+
+                                                {/* Reset/Delete Button */}
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => {
+                                                        setDeletingItem(item);
+                                                        setDeleteDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                    Reset
+                                                </Button>
                                             </div>
 
                                             {listing?.directoryRejectionReason &&
@@ -543,6 +767,13 @@ export default function DirectoryPage() {
                                                         </AlertDescription>
                                                     </Alert>
                                                 )}
+
+                                            {listing?.moderationNotes && (
+                                                <div className="mt-4 p-3 bg-muted rounded-lg">
+                                                    <p className="text-xs font-medium text-muted-foreground mb-1">Admin Notes:</p>
+                                                    <p className="text-sm">{listing.moderationNotes}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </Card>
@@ -551,6 +782,244 @@ export default function DirectoryPage() {
                     </div>
                 </div>
             )}
+
+            {/* Edit Sheet */}
+            <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
+                <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+                    <SheetHeader className="mb-6">
+                        <SheetTitle className="flex items-center gap-2">
+                            <Pencil className="h-5 w-5" />
+                            Edit Directory Listing
+                        </SheetTitle>
+                        <SheetDescription>
+                            {editingItem?.liveAd.customerName && (
+                                <span className="flex items-center gap-1">
+                                    <User className="h-3 w-3" />
+                                    Customer: {editingItem.liveAd.customerName}
+                                </span>
+                            )}
+                        </SheetDescription>
+                    </SheetHeader>
+
+                    {editingItem && (
+                        <Tabs defaultValue="listing" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-6">
+                                <TabsTrigger value="listing">Listing Details</TabsTrigger>
+                                <TabsTrigger value="admin" className="flex items-center gap-1">
+                                    <Settings2 className="h-4 w-4" />
+                                    Admin Controls
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="listing" className="mt-0">
+                                <DirectoryListingForm
+                                    listing={editedListing}
+                                    onChange={setEditedListing}
+                                    showAdvancedOptions={true}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="admin" className="mt-0 space-y-6">
+                                {/* Status Control */}
+                                <Card>
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-lg">Listing Status</CardTitle>
+                                        <CardDescription>
+                                            Change the visibility and approval status
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>Directory Status</Label>
+                                            <Select
+                                                value={newStatus}
+                                                onValueChange={(value) => setNewStatus(value as DirectoryStatus)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="pending">
+                                                        <span className="flex items-center gap-2">
+                                                            <Clock className="h-4 w-4 text-amber-500" />
+                                                            Pending Review
+                                                        </span>
+                                                    </SelectItem>
+                                                    <SelectItem value="approved">
+                                                        <span className="flex items-center gap-2">
+                                                            <Check className="h-4 w-4 text-green-500" />
+                                                            Approved
+                                                        </span>
+                                                    </SelectItem>
+                                                    <SelectItem value="hidden">
+                                                        <span className="flex items-center gap-2">
+                                                            <EyeOff className="h-4 w-4 text-slate-500" />
+                                                            Hidden
+                                                        </span>
+                                                    </SelectItem>
+                                                    <SelectItem value="rejected">
+                                                        <span className="flex items-center gap-2">
+                                                            <XCircle className="h-4 w-4 text-red-500" />
+                                                            Rejected
+                                                        </span>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {newStatus === 'rejected' && (
+                                            <div className="space-y-2">
+                                                <Label>Rejection Reason</Label>
+                                                <Input
+                                                    value={editedListing.directoryRejectionReason || ''}
+                                                    onChange={(e) => setEditedListing({
+                                                        ...editedListing,
+                                                        directoryRejectionReason: e.target.value,
+                                                    })}
+                                                    placeholder="Explain why the listing was rejected"
+                                                />
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Featured Control */}
+                                <Card>
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Star className="h-5 w-5 text-amber-500" />
+                                            Featured Status
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium">Feature this listing</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Featured listings appear at the top of the directory
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant={editedListing.isFeatured ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => setEditedListing({
+                                                    ...editedListing,
+                                                    isFeatured: !editedListing.isFeatured,
+                                                })}
+                                                className={editedListing.isFeatured ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                                            >
+                                                <Star className={cn('h-4 w-4 mr-1', editedListing.isFeatured && 'fill-current')} />
+                                                {editedListing.isFeatured ? 'Featured' : 'Not Featured'}
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Moderation Notes */}
+                                <Card>
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-lg">Admin Notes</CardTitle>
+                                        <CardDescription>
+                                            Internal notes visible only to administrators
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Textarea
+                                            value={moderationNotes}
+                                            onChange={(e) => setModerationNotes(e.target.value)}
+                                            placeholder="Add notes about this listing (not visible to customer)"
+                                            rows={4}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                {/* Listing Info */}
+                                <Card className="bg-muted/50">
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-lg">Listing Information</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Live Ad ID:</span>
+                                            <span className="font-mono">{editingItem.liveAdId}</span>
+                                        </div>
+                                        {editingItem.liveAd.customerId && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Customer ID:</span>
+                                                <span className="font-mono">{editingItem.liveAd.customerId}</span>
+                                            </div>
+                                        )}
+                                        {editingItem.directoryListing?.directoryApprovedBy && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Approved By:</span>
+                                                <span>{editingItem.directoryListing.directoryApprovedBy}</span>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+                    )}
+
+                    <SheetFooter className="mt-6 pt-6 border-t">
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditSheetOpen(false)}
+                            disabled={isSaving}
+                        >
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveListing} disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Save Changes
+                                </>
+                            )}
+                        </Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Reset Directory Listing?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear all listing data for{' '}
+                            <strong>
+                                {deletingItem?.directoryListing?.businessName ||
+                                    deletingItem?.liveAd.customerName}
+                            </strong>{' '}
+                            and hide it from the directory. The listing will be set back to pending status.
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteListing}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Resetting...
+                                </>
+                            ) : (
+                                'Reset Listing'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
