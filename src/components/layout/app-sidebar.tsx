@@ -34,6 +34,7 @@ import {
   FolderOpen,
   ChevronsLeft,
   ChevronsRight,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -47,6 +48,7 @@ interface NavItem {
 // Core admin navigation - essential features for managing the ad business
 const adminMenuItems: NavItem[] = [
   { href: '/dashboard', label: 'Home', icon: Home },
+  { href: '/financials', label: 'Financials', icon: DollarSign },
   { href: '/leads', label: 'Leads', icon: Handshake },
   { href: '/subscriptions', label: 'Customers', icon: Ticket },
   { href: '/advertisements', label: 'Advertisements', icon: Megaphone },

@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase } from '@/firebase';
-import { collection, getDocs, query, where, collectionGroup, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, collectionGroup } from 'firebase/firestore';
 import {
   Loader2,
   ArrowRight,
@@ -14,25 +13,16 @@ import {
   CheckCircle2,
   Clock,
   Users,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
   Play,
   FileEdit,
   Eye,
   Handshake,
-  Calendar,
   ArrowUpRight,
   BarChart3,
   Zap,
-  Wallet,
-  PiggyBank,
-  Receipt,
-  Target,
-  Percent,
 } from 'lucide-react';
 import Link from 'next/link';
-import { format, formatDistanceToNow, subDays } from 'date-fns';
+import { formatDistanceToNow, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   AD_STATUS_LABELS,
@@ -40,26 +30,6 @@ import {
   shouldAutoApprove,
   type AdStatus,
 } from '@/lib/types';
-import {
-  transformSubscription,
-  calculateRevenueMetrics,
-  generateMonthlyRevenueTrend,
-  getUpcomingRenewals,
-  getRevenueByBillingPeriod,
-  getRevenueByPlan,
-  calculateChurnMetrics,
-  formatCurrency,
-  formatPercentage,
-  type SubscriptionWithRevenue,
-  type MonthlyRevenueData,
-  type RenewalForecast,
-  type RevenueByPeriod,
-  type RevenueByPlan,
-  type RevenueMetrics,
-} from '@/lib/revenue';
-import RevenueTrendsChart from '@/components/dashboard/revenue-trends-chart';
-import RevenueForecast from '@/components/dashboard/revenue-forecast';
-import RevenueBreakdown from '@/components/dashboard/revenue-breakdown';
 import AdNetworkStats from '@/components/dashboard/ad-network-stats';
 
 interface DashboardStats {
@@ -107,15 +77,6 @@ export default function DashboardPage() {
   });
   const [pendingAds, setPendingAds] = useState<PendingAd[]>([]);
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
-
-  // Financial data
-  const [subscriptions, setSubscriptions] = useState<SubscriptionWithRevenue[]>([]);
-  const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics | null>(null);
-  const [revenueTrends, setRevenueTrends] = useState<MonthlyRevenueData[]>([]);
-  const [renewals, setRenewals] = useState<RenewalForecast[]>([]);
-  const [revenueByPeriod, setRevenueByPeriod] = useState<RevenueByPeriod[]>([]);
-  const [revenueByPlan, setRevenueByPlan] = useState<RevenueByPlan[]>([]);
-  const [churnMetrics, setChurnMetrics] = useState<{ churnRate: number; netRetention: number }>({ churnRate: 0, netRetention: 100 });
 
   useEffect(() => {
     if (!firestore) return;
@@ -176,44 +137,9 @@ export default function DashboardPage() {
           return aTime - bTime; // Oldest first (needs attention sooner)
         });
 
-        // Fetch customers and subscriptions
+        // Fetch customers
         const customersSnapshot = await getDocs(collection(firestore, 'customers'));
         const totalCustomers = customersSnapshot.size;
-
-        const allSubscriptions: SubscriptionWithRevenue[] = [];
-
-        for (const customerDoc of customersSnapshot.docs) {
-          const customerData = customerDoc.data();
-          const subsSnapshot = await getDocs(
-            collection(firestore, 'customers', customerDoc.id, 'subscriptions')
-          );
-
-          subsSnapshot.docs.forEach(subDoc => {
-            const subData = { ...subDoc.data(), id: subDoc.id };
-            const transformed = transformSubscription(
-              subData,
-              customerDoc.id,
-              customerData.email
-            );
-            allSubscriptions.push(transformed);
-          });
-        }
-
-        // Calculate revenue metrics
-        const metrics = calculateRevenueMetrics(allSubscriptions);
-        const trends = generateMonthlyRevenueTrend(allSubscriptions, 12);
-        const upcomingRenewals = getUpcomingRenewals(allSubscriptions, 90);
-        const byPeriod = getRevenueByBillingPeriod(allSubscriptions);
-        const byPlan = getRevenueByPlan(allSubscriptions);
-        const churn = calculateChurnMetrics(allSubscriptions, 1);
-
-        setSubscriptions(allSubscriptions);
-        setRevenueMetrics(metrics);
-        setRevenueTrends(trends);
-        setRenewals(upcomingRenewals);
-        setRevenueByPeriod(byPeriod);
-        setRevenueByPlan(byPlan);
-        setChurnMetrics({ churnRate: churn.churnRate, netRetention: churn.netRetention });
 
         // Fetch leads
         const leadsSnapshot = await getDocs(collection(firestore, 'leads'));
@@ -293,415 +219,268 @@ export default function DashboardPage() {
     return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
   };
 
-  // Calculate MRR change from trends
-  const currentMrr = revenueTrends[revenueTrends.length - 1]?.mrr || 0;
-  const previousMrr = revenueTrends[revenueTrends.length - 2]?.mrr || 0;
-  const mrrChange = currentMrr - previousMrr;
-  const mrrChangePercent = previousMrr > 0 ? (mrrChange / previousMrr) * 100 : 0;
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Financial overview and operations status
+            Operations overview and workflow status
           </p>
         </div>
       </div>
 
-      {/* Financial Overview Cards */}
+      {/* Operational Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Recurring Revenue</CardTitle>
-            <Wallet className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium">Action Required</CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(revenueMetrics?.mrr || 0)}</div>
-            <div className="flex items-center gap-1 text-xs">
-              {mrrChange >= 0 ? (
-                <>
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">
-                    +{formatCurrency(mrrChange)} ({formatPercentage(mrrChangePercent)})
-                  </span>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="h-3 w-3 text-red-600" />
-                  <span className="text-red-600">
-                    {formatCurrency(mrrChange)} ({formatPercentage(mrrChangePercent)})
-                  </span>
-                </>
-              )}
-              <span className="text-muted-foreground ml-1">vs last month</span>
-            </div>
+            <div className="text-2xl font-bold text-amber-600">{stats.actionRequired}</div>
+            <p className="text-xs text-muted-foreground">
+              Ads needing attention
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-green-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Live Ads</CardTitle>
+            <Play className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.liveAds}</div>
+            <p className="text-xs text-muted-foreground">
+              Currently running
+            </p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Annual Recurring Revenue</CardTitle>
-            <PiggyBank className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Customers</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(revenueMetrics?.arr || 0)}</div>
+            <div className="text-2xl font-bold">{stats.totalCustomers}</div>
             <p className="text-xs text-muted-foreground">
-              {revenueMetrics?.activeSubscriptions || 0} active subscriptions
+              Active accounts
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Revenue Per User</CardTitle>
-            <Target className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium">New Leads</CardTitle>
+            <Handshake className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(revenueMetrics?.averageRevenuePerUser || 0)}</div>
+            <div className="text-2xl font-bold">{stats.newLeads}</div>
             <p className="text-xs text-muted-foreground">
-              Per month per customer
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-amber-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Revenue Retention</CardTitle>
-            <Percent className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className={cn(
-              "text-2xl font-bold",
-              churnMetrics.netRetention >= 100 ? "text-green-600" : "text-amber-600"
-            )}>
-              {formatPercentage(churnMetrics.netRetention, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {churnMetrics.churnRate > 0 ? `${formatPercentage(churnMetrics.churnRate)} churn` : 'No churn'}
+              +{stats.newLeadsThisWeek} this week
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs for Financial vs Operational View */}
-      <Tabs defaultValue="financial" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="financial" className="gap-2">
-            <DollarSign className="h-4 w-4" />
-            Financial
-          </TabsTrigger>
-          <TabsTrigger value="operations" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Operations
-          </TabsTrigger>
-        </TabsList>
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Ads Needing Action - Takes 2 columns */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-500" />
+                  Ads Requiring Action
+                </CardTitle>
+                <CardDescription>
+                  Review, design, or process these ads
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/pipeline">
+                  View Pipeline
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {pendingAds.length > 0 ? (
+              <div className="space-y-3">
+                {pendingAds.map((ad) => {
+                  const colors = AD_PIPELINE_STAGE_COLORS[ad.status];
+                  return (
+                    <Link
+                      key={ad.id}
+                      href={`/advertisements/${ad.id}?userId=${ad.userId}`}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            'w-10 h-10 rounded-lg flex items-center justify-center',
+                            colors.bg
+                          )}
+                        >
+                          {ad.status === 'in_review' && (
+                            <Eye className={cn('h-5 w-5', colors.text)} />
+                          )}
+                          {ad.status === 'design_pending' && (
+                            <FileEdit className={cn('h-5 w-5', colors.text)} />
+                          )}
+                          {ad.status === 'customer_approval' && (
+                            <Clock className={cn('h-5 w-5', colors.text)} />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium group-hover:text-primary transition-colors">{ad.businessName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {ad.contactName}
+                            {ad.createdAt && (
+                              <span className="ml-2">
+                                · {formatDistanceToNow(ad.createdAt.toDate(), { addSuffix: true })}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(colors.bg, colors.text, 'border', colors.border)}
+                        >
+                          {AD_STATUS_LABELS[ad.status]}
+                        </Badge>
+                        {ad.shouldAutoApprove && (
+                          <Badge className="bg-green-100 text-green-700 border-green-200">
+                            Auto-Approve Ready
+                          </Badge>
+                        )}
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mb-3" />
+                <p className="font-medium">All caught up!</p>
+                <p className="text-sm text-muted-foreground">
+                  No ads need your attention right now
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Financial Tab */}
-        <TabsContent value="financial" className="space-y-6">
-          {/* Revenue Trends Chart - Full Width */}
-          <RevenueTrendsChart data={revenueTrends} loading={loading} />
-
-          {/* Forecast and Breakdown Side by Side */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <RevenueForecast renewals={renewals} loading={loading} />
-            <RevenueBreakdown
-              byPeriod={revenueByPeriod}
-              byPlan={revenueByPlan}
-              loading={loading}
-            />
-          </div>
-
-          {/* Contracted Revenue Summary */}
+        {/* Right Sidebar - Leads & Stats */}
+        <div className="space-y-6">
+          {/* Leads Overview */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-blue-500" />
-                Contract Value Summary
-              </CardTitle>
-              <CardDescription>Remaining value in current contract periods</CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Handshake className="h-4 w-4 text-blue-500" />
+                  Leads
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/leads">
+                    View All
+                    <ArrowRight className="ml-1 h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                  <p className="text-2xl font-bold text-blue-700">{stats.newLeads}</p>
+                  <p className="text-xs text-blue-600">New leads</p>
+                </div>
+                <div className="p-3 rounded-lg bg-green-50 border border-green-100">
+                  <p className="text-2xl font-bold text-green-700">+{stats.newLeadsThisWeek}</p>
+                  <p className="text-xs text-green-600">This week</p>
+                </div>
+              </div>
+
+              {recentLeads.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent</p>
+                  {recentLeads.slice(0, 3).map((lead) => (
+                    <Link
+                      key={lead.id}
+                      href={`/leads?id=${lead.id}`}
+                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors text-sm"
+                    >
+                      <div className="truncate flex-1">
+                        <p className="font-medium truncate">{lead.businessName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{lead.contactName}</p>
+                      </div>
+                      {getLeadStageBadge(lead.stage)}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Ad Pipeline Status */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <BarChart3 className="h-4 w-4 text-purple-500" />
+                  Pipeline Status
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/advertisements">
+                    All Ads
+                    <ArrowRight className="ml-1 h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <p className="text-2xl font-bold">{formatCurrency(revenueMetrics?.contractedRevenue || 0)}</p>
-                  <p className="text-xs text-muted-foreground">Remaining Contract Value</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-sm">In Review</span>
+                  </div>
+                  <span className="font-medium">{stats.actionRequired}</span>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <p className="text-2xl font-bold">{renewals.length}</p>
-                  <p className="text-xs text-muted-foreground">Upcoming Renewals (90 days)</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-sm">Awaiting Approval</span>
+                  </div>
+                  <span className="font-medium">{stats.pendingApproval}</span>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(renewals.reduce((sum, r) => sum + r.amount, 0))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Renewal Revenue (90 days)</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-sm">Live</span>
+                  </div>
+                  <span className="font-medium">{stats.liveAds}</span>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <p className="text-2xl font-bold">{stats.totalCustomers}</p>
-                  <p className="text-xs text-muted-foreground">Total Customers</p>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Total Ads</span>
+                  <span className="font-medium">{stats.totalAds}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      </div>
 
-        {/* Operations Tab */}
-        <TabsContent value="operations" className="space-y-6">
-          {/* Operational Metrics */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-l-4 border-l-amber-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Action Required</CardTitle>
-                <AlertCircle className="h-4 w-4 text-amber-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-amber-600">{stats.actionRequired}</div>
-                <p className="text-xs text-muted-foreground">
-                  Ads needing attention
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-green-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Live Ads</CardTitle>
-                <Play className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{stats.liveAds}</div>
-                <p className="text-xs text-muted-foreground">
-                  Currently running
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Customers</CardTitle>
-                <Users className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active accounts
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-purple-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Leads</CardTitle>
-                <Handshake className="h-4 w-4 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.newLeads}</div>
-                <p className="text-xs text-muted-foreground">
-                  +{stats.newLeadsThisWeek} this week
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Ads Needing Action - Takes 2 columns */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-amber-500" />
-                      Ads Requiring Action
-                    </CardTitle>
-                    <CardDescription>
-                      Review, design, or process these ads
-                    </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/pipeline">
-                      View Pipeline
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {pendingAds.length > 0 ? (
-                  <div className="space-y-3">
-                    {pendingAds.map((ad) => {
-                      const colors = AD_PIPELINE_STAGE_COLORS[ad.status];
-                      return (
-                        <Link
-                          key={ad.id}
-                          href={`/advertisements/${ad.id}?userId=${ad.userId}`}
-                          className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                'w-10 h-10 rounded-lg flex items-center justify-center',
-                                colors.bg
-                              )}
-                            >
-                              {ad.status === 'in_review' && (
-                                <Eye className={cn('h-5 w-5', colors.text)} />
-                              )}
-                              {ad.status === 'design_pending' && (
-                                <FileEdit className={cn('h-5 w-5', colors.text)} />
-                              )}
-                              {ad.status === 'customer_approval' && (
-                                <Clock className={cn('h-5 w-5', colors.text)} />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium group-hover:text-primary transition-colors">{ad.businessName}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {ad.contactName}
-                                {ad.createdAt && (
-                                  <span className="ml-2">
-                                    · {formatDistanceToNow(ad.createdAt.toDate(), { addSuffix: true })}
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant="outline"
-                              className={cn(colors.bg, colors.text, 'border', colors.border)}
-                            >
-                              {AD_STATUS_LABELS[ad.status]}
-                            </Badge>
-                            {ad.shouldAutoApprove && (
-                              <Badge className="bg-green-100 text-green-700 border-green-200">
-                                Auto-Approve Ready
-                              </Badge>
-                            )}
-                            <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CheckCircle2 className="h-12 w-12 text-green-500 mb-3" />
-                    <p className="font-medium">All caught up!</p>
-                    <p className="text-sm text-muted-foreground">
-                      No ads need your attention right now
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Right Sidebar - Leads & Stats */}
-            <div className="space-y-6">
-              {/* Leads Overview */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Handshake className="h-4 w-4 text-blue-500" />
-                      Leads
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/leads">
-                        View All
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-                      <p className="text-2xl font-bold text-blue-700">{stats.newLeads}</p>
-                      <p className="text-xs text-blue-600">New leads</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-green-50 border border-green-100">
-                      <p className="text-2xl font-bold text-green-700">+{stats.newLeadsThisWeek}</p>
-                      <p className="text-xs text-green-600">This week</p>
-                    </div>
-                  </div>
-
-                  {recentLeads.length > 0 && (
-                    <div className="space-y-2 pt-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent</p>
-                      {recentLeads.slice(0, 3).map((lead) => (
-                        <Link
-                          key={lead.id}
-                          href={`/leads?id=${lead.id}`}
-                          className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors text-sm"
-                        >
-                          <div className="truncate flex-1">
-                            <p className="font-medium truncate">{lead.businessName}</p>
-                            <p className="text-xs text-muted-foreground truncate">{lead.contactName}</p>
-                          </div>
-                          {getLeadStageBadge(lead.stage)}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Ad Pipeline Status */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <BarChart3 className="h-4 w-4 text-purple-500" />
-                      Pipeline Status
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/advertisements">
-                        All Ads
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-sm">In Review</span>
-                      </div>
-                      <span className="font-medium">{stats.actionRequired}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span className="text-sm">Awaiting Approval</span>
-                      </div>
-                      <span className="font-medium">{stats.pendingApproval}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-sm">Live</span>
-                      </div>
-                      <span className="font-medium">{stats.liveAds}</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-sm text-muted-foreground">Total Ads</span>
-                      <span className="font-medium">{stats.totalAds}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Ad Network Performance */}
-          <AdNetworkStats />
-        </TabsContent>
-      </Tabs>
+      {/* Ad Network Performance */}
+      <AdNetworkStats />
     </div>
   );
 }
