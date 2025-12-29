@@ -218,21 +218,18 @@ export async function GET(request: NextRequest) {
     }
 
     .wc-logo {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: #fff;
+      width: 76px;
+      height: 75px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
 
     .wc-logo img {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
+      width: 76px;
+      height: 75px;
+      object-fit: cover;
     }
 
     .wc-site-name {
@@ -240,15 +237,20 @@ export async function GET(request: NextRequest) {
     }
 
     .wc-site-name-main {
-      font-size: 1.75rem;
-      font-weight: 700;
-      line-height: 1.2;
+      font-size: 27px;
+      font-weight: 800;
+      line-height: normal;
+      letter-spacing: -0.05em;
+      text-shadow: rgba(0, 0, 0, 0.4) 0px 4px 5px;
+      color: #FFFFFF;
     }
 
     .wc-site-name-sub {
-      font-size: 1.25rem;
-      font-weight: 600;
-      opacity: 0.9;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      text-shadow: rgba(0, 0, 0, 0.4) 0px 4px 5px;
+      color: #DBDBDB;
     }
 
     .wc-header-actions {
@@ -785,8 +787,11 @@ export async function GET(request: NextRequest) {
         </div>
       </a>
       <div class="wc-header-actions">
-        <a href="${wesleyChapelBaseUrl}/advertise" class="wc-advertise-btn" target="_top">
-          Advertise With Us &gt;
+        <a href="https://community-websites.com" class="wc-advertise-btn" target="_blank" rel="noopener">
+          <span>Advertise With Us</span>
+          <svg width="16" height="16" viewBox="0 0 60 60" fill="currentColor">
+            <path d="M46.5 28.9L20.6 3c-.6-.6-1.6-.6-2.2 0l-4.8 4.8c-.6.6-.6 1.6 0 2.2l19.8 20-19.9 19.9c-.6.6-.6 1.6 0 2.2l4.8 4.8c.6.6 1.6.6 2.2 0l21-21 4.8-4.8c.8-.6.8-1.6.2-2.2z"/>
+          </svg>
         </a>
       </div>
     </div>
@@ -796,10 +801,10 @@ export async function GET(request: NextRequest) {
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}" target="_top">Home</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/news" target="_top">News</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/pictures" target="_top">Pictures</a></li>
-          <li class="wc-nav-item active"><a href="${wesleyChapelBaseUrl}/sponsors" target="_top">View Our Sponsors</a></li>
+          <li class="wc-nav-item active"><a href="${wesleyChapelBaseUrl}/our-sponsors" target="_top">View Our Sponsors</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/neighborhoods" target="_top">Neighborhoods</a></li>
           <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/about" target="_top">About</a></li>
-          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/contact" target="_top">Contact</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/contact-us" target="_top">Contact</a></li>
         </ul>
       </div>
     </nav>
