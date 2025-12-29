@@ -13,3 +13,5 @@ env:
     secret: EMAIL_ACTION_TOKEN_SECRET
   - variable: GOOGLE_SERVICE_ACCOUNT_KEY
     secret: FIREBASE_SERVICE_ACCOUNT_KEY
+  - variable: STRIPE_SECRET_KEY
+    secret: stripe-secret-key
