@@ -102,28 +102,43 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
               </>
             )}
 
-            {/* Customer: show navigation pills directly in header */}
+            {/* Customer: show site branding and navigation pills directly in header */}
             {!isAdmin && (
-              <nav className="flex items-center gap-1">
-                {customerNavItems.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                        isActive
-                          ? "bg-brand-primary text-white shadow-sm"
-                          : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
+              <>
+                {/* Site Branding */}
+                <div className="flex items-center gap-2 mr-4 pr-4 border-r border-gray-200">
+                  <img
+                    src="/logo.png"
+                    alt="Community Websites"
+                    className="h-8 w-8 object-contain"
+                  />
+                  <span className="hidden sm:block font-semibold text-gray-800 font-headline whitespace-nowrap">
+                    Community-Websites.com
+                  </span>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex items-center gap-1">
+                  {customerNavItems.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                          isActive
+                            ? "bg-brand-primary text-white shadow-sm"
+                            : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </>
             )}
 
             <div className="ml-auto">
