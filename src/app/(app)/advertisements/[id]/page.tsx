@@ -54,11 +54,32 @@ import {
     calculateAutoApprovalDeadline,
     shouldAutoApprove,
     normalizeAdStatus,
+    COMMUNITY_WEBSITE_LIST,
+    LIVE_AD_STATUSES,
+    LIVE_AD_STATUS_LABELS,
     type AdStatus,
     type Advertisement,
     type AdDesignPreferences,
     type AdPlacement,
+    type CommunityWebsiteId,
+    type LiveAdStatus,
 } from '@/lib/types';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface UserDetails {
     id: string;
@@ -263,6 +284,16 @@ export default function AdvertisementDetailPage() {
     const [isMovingToHolding, setIsMovingToHolding] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Push to Ad Server dialog state
+    const [showPushToAdServerDialog, setShowPushToAdServerDialog] = useState(false);
+    const [pushToAdServerForm, setPushToAdServerForm] = useState({
+        targetWebsites: [] as CommunityWebsiteId[],
+        weight: 50,
+        status: 'active' as LiveAdStatus,
+        startDate: '',
+        endDate: '',
+    });
 
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
@@ -691,6 +722,18 @@ export default function AdvertisementDetailPage() {
         }
     };
 
+    const handleOpenPushToAdServerDialog = () => {
+        // Reset form to defaults when opening dialog
+        setPushToAdServerForm({
+            targetWebsites: [],
+            weight: 50,
+            status: 'active',
+            startDate: '',
+            endDate: '',
+        });
+        setShowPushToAdServerDialog(true);
+    };
+
     const handlePushToAdServer = async () => {
         if (!firestore || !user || !advertisement?.adProofUrl || !advertisement?.adProofDestinationUrl) {
             toast({ title: 'Error', description: 'Ad proof and destination URL are required.', variant: 'destructive' });
@@ -703,7 +746,7 @@ export default function AdvertisementDetailPage() {
             const placement: AdPlacement = 'inline';
             const dimensions = AD_PLACEMENT_DIMENSIONS[placement];
 
-            // Create a new live ad document
+            // Create a new live ad document with form values
             const liveAdData = {
                 name: `${user.businessName || 'Advertisement'} - ${advertisement.id.slice(0, 6)}`,
                 description: `Customer advertisement for ${user.businessName}`,
@@ -713,11 +756,11 @@ export default function AdvertisementDetailPage() {
                 placement,
                 width: dimensions.width,
                 height: dimensions.height,
-                weight: 50, // Default weight
-                status: 'active',
-                targetWebsites: [], // Empty array means show on all websites
-                startDate: null,
-                endDate: null,
+                weight: pushToAdServerForm.weight,
+                status: pushToAdServerForm.status,
+                targetWebsites: pushToAdServerForm.targetWebsites,
+                startDate: pushToAdServerForm.startDate ? new Date(pushToAdServerForm.startDate) : null,
+                endDate: pushToAdServerForm.endDate ? new Date(pushToAdServerForm.endDate) : null,
                 // Link back to source
                 sourceAdvertisementId: advertisement.id,
                 customerId: advertisement.userId,
@@ -741,9 +784,16 @@ export default function AdvertisementDetailPage() {
             });
 
             setPushedToAdServer(true);
+            setShowPushToAdServerDialog(false);
+
+            // Build description message
+            const websiteNames = pushToAdServerForm.targetWebsites.length > 0
+                ? pushToAdServerForm.targetWebsites.map(id => COMMUNITY_WEBSITE_LIST.find(w => w.id === id)?.shortName || id).join(', ')
+                : 'all websites';
+
             toast({
                 title: 'Pushed to Ad Server!',
-                description: `The ad is now live on the ad server. You can manage it from the Ad Server page.`,
+                description: `The ad is now ${pushToAdServerForm.status} on ${websiteNames}. You can manage it from the Ad Server page.`,
             });
         } catch (error: any) {
             console.error("Error pushing to ad server:", error);
@@ -1221,15 +1271,10 @@ export default function AdvertisementDetailPage() {
                                 <div className="flex gap-3 flex-wrap">
                                     {!pushedToAdServer && (
                                         <Button
-                                            onClick={handlePushToAdServer}
-                                            disabled={isPushingToAdServer}
+                                            onClick={handleOpenPushToAdServerDialog}
                                             className="bg-indigo-600 hover:bg-indigo-700"
                                         >
-                                            {isPushingToAdServer ? (
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Radio className="mr-2 h-4 w-4" />
-                                            )}
+                                            <Radio className="mr-2 h-4 w-4" />
                                             Push to Ad Server
                                         </Button>
                                     )}
@@ -1546,6 +1591,152 @@ export default function AdvertisementDetailPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Push to Ad Server Dialog */}
+            <Dialog open={showPushToAdServerDialog} onOpenChange={setShowPushToAdServerDialog}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Push to Ad Server</DialogTitle>
+                        <DialogDescription>
+                            Configure which sites to display this ad on and other settings.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-6 py-4">
+                        {/* Target Websites Selection */}
+                        <div className="space-y-3">
+                            <Label className="text-sm font-medium">Target Websites</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Select which websites to show this ad on. Leave empty to show on all websites.
+                            </p>
+                            <div className="grid gap-3 pt-1">
+                                {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                    <div key={website.id} className="flex items-center space-x-3">
+                                        <Checkbox
+                                            id={`push-website-${website.id}`}
+                                            checked={pushToAdServerForm.targetWebsites.includes(website.id)}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    setPushToAdServerForm({
+                                                        ...pushToAdServerForm,
+                                                        targetWebsites: [...pushToAdServerForm.targetWebsites, website.id],
+                                                    });
+                                                } else {
+                                                    setPushToAdServerForm({
+                                                        ...pushToAdServerForm,
+                                                        targetWebsites: pushToAdServerForm.targetWebsites.filter(id => id !== website.id),
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                        <Label
+                                            htmlFor={`push-website-${website.id}`}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Badge className={cn(website.color.bg, website.color.text, website.color.border, "text-xs")}>
+                                                {website.shortName}
+                                            </Badge>
+                                            {website.domain && (
+                                                <span className="text-xs text-muted-foreground">{website.domain}</span>
+                                            )}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Weight */}
+                        <div className="space-y-2">
+                            <Label htmlFor="push-weight">Weight (1-100)</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Higher weight means the ad is more likely to be shown.
+                            </p>
+                            <Input
+                                id="push-weight"
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={pushToAdServerForm.weight}
+                                onChange={(e) => setPushToAdServerForm({
+                                    ...pushToAdServerForm,
+                                    weight: parseInt(e.target.value) || 50,
+                                })}
+                            />
+                        </div>
+
+                        {/* Status */}
+                        <div className="space-y-2">
+                            <Label htmlFor="push-status">Status</Label>
+                            <Select
+                                value={pushToAdServerForm.status}
+                                onValueChange={(value: LiveAdStatus) => setPushToAdServerForm({
+                                    ...pushToAdServerForm,
+                                    status: value,
+                                })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active">Active - Show immediately</SelectItem>
+                                    <SelectItem value="scheduled">Scheduled - Use start/end dates</SelectItem>
+                                    <SelectItem value="paused">Paused - Don&apos;t show yet</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Start/End Dates */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="push-start-date">Start Date (Optional)</Label>
+                                <Input
+                                    id="push-start-date"
+                                    type="date"
+                                    value={pushToAdServerForm.startDate}
+                                    onChange={(e) => setPushToAdServerForm({
+                                        ...pushToAdServerForm,
+                                        startDate: e.target.value,
+                                    })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="push-end-date">End Date (Optional)</Label>
+                                <Input
+                                    id="push-end-date"
+                                    type="date"
+                                    value={pushToAdServerForm.endDate}
+                                    onChange={(e) => setPushToAdServerForm({
+                                        ...pushToAdServerForm,
+                                        endDate: e.target.value,
+                                    })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowPushToAdServerDialog(false)}
+                            disabled={isPushingToAdServer}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handlePushToAdServer}
+                            disabled={isPushingToAdServer}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                        >
+                            {isPushingToAdServer ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Radio className="mr-2 h-4 w-4" />
+                            )}
+                            {isPushingToAdServer ? 'Pushing...' : 'Push to Ad Server'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete Confirmation Dialog */}
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
