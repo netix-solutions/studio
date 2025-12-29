@@ -43,7 +43,6 @@ const activityIcons: Record<string, any> = {
   email_received: Mail,
   call: PhoneCall,
   meeting: Users,
-  stage_change: TrendingUp,
   priority_change: Target,
   score_change: TrendingUp,
   conversion: CheckCircle2,

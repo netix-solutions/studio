@@ -61,7 +61,6 @@ interface RecentLead {
   contactName: string;
   email: string;
   createdAt: any;
-  stage: string;
 }
 
 export default function DashboardPage() {
@@ -151,9 +150,8 @@ export default function DashboardPage() {
 
         leadsSnapshot.docs.forEach(doc => {
           const data = doc.data();
-          if (data.stage === 'new') {
-            newLeads++;
-          }
+          // Count all leads as "new leads" since we no longer track stages
+          newLeads++;
 
           const createdAt = data.createdAt?.toDate?.() || null;
           if (createdAt && createdAt >= sevenDaysAgo) {
@@ -167,7 +165,6 @@ export default function DashboardPage() {
             contactName: data.contactName || data.name || 'Unknown',
             email: data.email || '',
             createdAt: data.createdAt,
-            stage: data.stage || 'new',
           });
         });
 
@@ -207,18 +204,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
-  const getLeadStageBadge = (stage: string) => {
-    const stageConfig: Record<string, { label: string; className: string }> = {
-      new: { label: 'New', className: 'bg-blue-100 text-blue-700 border-blue-200' },
-      contacted: { label: 'Contacted', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-      qualified: { label: 'Qualified', className: 'bg-purple-100 text-purple-700 border-purple-200' },
-      converted: { label: 'Converted', className: 'bg-green-100 text-green-700 border-green-200' },
-      lost: { label: 'Lost', className: 'bg-slate-100 text-slate-700 border-slate-200' },
-    };
-    const config = stageConfig[stage] || stageConfig.new;
-    return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
-  };
 
   return (
     <div className="space-y-6">
@@ -275,7 +260,7 @@ export default function DashboardPage() {
 
         <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Leads</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
             <Handshake className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
@@ -402,7 +387,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                   <p className="text-2xl font-bold text-blue-700">{stats.newLeads}</p>
-                  <p className="text-xs text-blue-600">New leads</p>
+                  <p className="text-xs text-blue-600">Total leads</p>
                 </div>
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100">
                   <p className="text-2xl font-bold text-green-700">+{stats.newLeadsThisWeek}</p>
@@ -423,7 +408,6 @@ export default function DashboardPage() {
                         <p className="font-medium truncate">{lead.businessName}</p>
                         <p className="text-xs text-muted-foreground truncate">{lead.contactName}</p>
                       </div>
-                      {getLeadStageBadge(lead.stage)}
                     </Link>
                   ))}
                 </div>

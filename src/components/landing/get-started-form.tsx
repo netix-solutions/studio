@@ -25,7 +25,6 @@ import { sendEmail } from '@/lib/firebase/email';
 import { wrapEmailContent, replaceEmailPlaceholders, generateEmailUrls } from '@/lib/email-utils';
 import { defaultTemplates } from '@/lib/email-templates';
 import {
-  LEAD_STAGES,
   LEAD_STATUSES,
   LEAD_SOURCES,
   LEAD_PRIORITIES,
@@ -141,8 +140,7 @@ export function GetStartedForm() {
         ...values,
         contactName: contactName,
 
-        // Pipeline status - new leads start in 'new' stage
-        stage: LEAD_STAGES.NEW,
+        // Pipeline status
         priority: LEAD_PRIORITIES.MEDIUM,
         status: LEAD_STATUSES.ACTIVE, // New leads are active by default
 
@@ -161,7 +159,6 @@ export function GetStartedForm() {
           businessName: values.businessName,
           siteCoverage: values.siteCoverage,
           source: utmParams.source,
-          stage: LEAD_STAGES.NEW,
         }),
 
         // Timestamps

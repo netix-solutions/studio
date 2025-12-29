@@ -30,8 +30,6 @@ import {
   Target,
   Tag,
   User,
-  CheckCircle2,
-  XCircle,
   Trash2,
 } from 'lucide-react';
 import {
@@ -51,14 +49,10 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Lead,
-  LeadStage,
   LeadPriority,
   LeadSource,
   LeadStatus,
-  LEAD_STAGES,
   LEAD_STATUSES,
-  LEAD_STAGE_LABELS,
-  LEAD_STAGE_COLORS,
   LEAD_PRIORITIES,
   LEAD_PRIORITY_LABELS,
   LEAD_PRIORITY_COLORS,
@@ -116,7 +110,6 @@ export default function LeadDetailPage() {
           email: leadData.email || '',
           phone: leadData.phone || '',
           siteCoverage: leadData.siteCoverage || [],
-          stage: leadData.stage || LEAD_STAGES.NEW,
           priority: leadData.priority || LEAD_PRIORITIES.MEDIUM,
           source: leadData.source || LEAD_SOURCES.WEBSITE,
           status: leadData.status || LEAD_STATUSES.ACTIVE,
@@ -176,40 +169,6 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Handle marking as won/lost
-  const handleMarkAsWonLost = async (newStage: 'won' | 'lost') => {
-    if (!firestore || !lead || !user) return;
-
-    try {
-      const leadRef = doc(firestore, 'leads', lead.id);
-      await updateDoc(leadRef, {
-        stage: newStage,
-        updatedAt: serverTimestamp(),
-        ...(newStage === 'won' ? { convertedAt: serverTimestamp() } : {}),
-      });
-
-      await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
-        leadId: lead.id,
-        type: newStage === 'won' ? ACTIVITY_TYPES.CONVERSION : ACTIVITY_TYPES.STAGE_CHANGE,
-        title: newStage === 'won' ? 'Lead converted to customer!' : 'Lead marked as lost',
-        metadata: { fromStage: lead.stage, toStage: newStage },
-        createdBy: user.uid,
-        createdByName: user.displayName || user.email || 'Unknown',
-        createdAt: serverTimestamp(),
-      });
-
-      setLead(prev => prev ? { ...prev, stage: newStage } : null);
-
-      toast({
-        title: newStage === 'won' ? 'Congratulations!' : 'Lead Marked as Lost',
-        description: newStage === 'won' ? 'Lead has been converted to a customer.' : 'Lead has been marked as lost.',
-      });
-    } catch (err) {
-      console.error("Error updating lead:", err);
-      toast({ title: 'Error', description: 'Failed to update lead.', variant: 'destructive' });
-    }
-  };
-
   // Handle toggling lead status (active/inactive)
   const handleToggleStatus = async () => {
     if (!firestore || !lead || !user) return;
@@ -227,7 +186,7 @@ export default function LeadDetailPage() {
 
       await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
         leadId: lead.id,
-        type: ACTIVITY_TYPES.STAGE_CHANGE,
+        type: ACTIVITY_TYPES.NOTE,
         title: `Status changed from ${LEAD_STATUS_LABELS[currentStatus]} to ${LEAD_STATUS_LABELS[newStatus]}`,
         metadata: { fromStatus: currentStatus, toStatus: newStatus },
         createdBy: user.uid,
@@ -303,7 +262,6 @@ export default function LeadDetailPage() {
     );
   }
 
-  const stageColors = LEAD_STAGE_COLORS[lead.stage as LeadStage] || LEAD_STAGE_COLORS.new;
   const priorityColors = LEAD_PRIORITY_COLORS[lead.priority as LeadPriority] || LEAD_PRIORITY_COLORS.medium;
   const statusColors = LEAD_STATUS_COLORS[lead.status as LeadStatus] || LEAD_STATUS_COLORS.active;
 
@@ -322,9 +280,6 @@ export default function LeadDetailPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <CardTitle className="text-xl md:text-2xl">{lead.businessName}</CardTitle>
-                <Badge className={cn(stageColors.bg, stageColors.text, stageColors.border)}>
-                  {LEAD_STAGE_LABELS[lead.stage as LeadStage] || lead.stage}
-                </Badge>
                 <Badge className={cn(statusColors.bg, statusColors.text, "border", statusColors.border)}>
                   {LEAD_STATUS_LABELS[lead.status as LeadStatus] || 'Active'}
                 </Badge>
@@ -333,57 +288,6 @@ export default function LeadDetailPage() {
                 {lead.contactName} &bull; Created {lead.createdAt ? format(lead.createdAt.toDate(), 'PPP') : 'N/A'}
               </CardDescription>
             </div>
-
-            {lead.stage !== 'won' && lead.stage !== 'lost' && (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="default"
-                  className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
-                  onClick={() => handleMarkAsWonLost('won')}
-                >
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Mark as Won
-                </Button>
-                <Button
-                  variant="outline"
-                  className="text-red-600 border-red-200 hover:bg-red-50 flex-1 sm:flex-none"
-                  onClick={() => handleMarkAsWonLost('lost')}
-                >
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Mark as Lost
-                </Button>
-              </div>
-            )}
-
-            {/* Show Create Customer button for Won leads */}
-            {lead.stage === 'won' && !lead.convertedToCustomerId && (
-              <div className="flex flex-col gap-2">
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">Lead Won!</AlertTitle>
-                  <AlertDescription className="text-green-700">
-                    Create a customer subscription to start the ad workflow.
-                  </AlertDescription>
-                </Alert>
-                <Button
-                  variant="default"
-                  className="bg-primary hover:bg-primary/90"
-                  onClick={() => {
-                    const params = new URLSearchParams({
-                      email: lead.email || '',
-                      name: lead.contactName || '',
-                      businessName: lead.businessName || '',
-                      phone: lead.phone || '',
-                      leadId: lead.id,
-                    });
-                    router.push(`/manual-entry?${params.toString()}`);
-                  }}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Create Customer Subscription
-                </Button>
-              </div>
-            )}
           </div>
         </CardHeader>
         <CardContent>

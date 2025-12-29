@@ -7,51 +7,6 @@
 // ============================================================================
 
 /**
- * Lead pipeline stages - represents the sales funnel
- */
-export const LEAD_STAGES = {
-  NEW: 'new',
-  CONTACTED: 'contacted',
-  QUALIFIED: 'qualified',
-  PROPOSAL_SENT: 'proposal_sent',
-  NEGOTIATION: 'negotiation',
-  WON: 'won',
-  LOST: 'lost',
-} as const;
-
-export type LeadStage = typeof LEAD_STAGES[keyof typeof LEAD_STAGES];
-
-export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
-  new: 'New Lead',
-  contacted: 'Contacted',
-  qualified: 'Qualified',
-  proposal_sent: 'Proposal Sent',
-  negotiation: 'Negotiation',
-  won: 'Won',
-  lost: 'Lost',
-};
-
-export const LEAD_STAGE_ORDER: LeadStage[] = [
-  'new',
-  'contacted',
-  'qualified',
-  'proposal_sent',
-  'negotiation',
-  'won',
-  'lost',
-];
-
-export const LEAD_STAGE_COLORS: Record<LeadStage, { bg: string; text: string; border: string }> = {
-  new: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
-  contacted: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
-  qualified: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
-  proposal_sent: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
-  negotiation: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
-  won: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
-  lost: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
-};
-
-/**
  * Lead source options for tracking marketing attribution
  */
 export const LEAD_SOURCES = {
@@ -148,7 +103,6 @@ export interface Lead {
   siteCoverage: string[];
 
   // Pipeline & Status
-  stage: LeadStage;
   priority: LeadPriority;
   status: LeadStatus; // active or inactive - whether lead is worth pursuing
 
@@ -201,7 +155,6 @@ export const ACTIVITY_TYPES = {
   EMAIL_RECEIVED: 'email_received',
   CALL: 'call',
   MEETING: 'meeting',
-  STAGE_CHANGE: 'stage_change',
   PRIORITY_CHANGE: 'priority_change',
   SCORE_CHANGE: 'score_change',
   CONVERSION: 'conversion',
@@ -220,7 +173,6 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   email_received: 'Email Received',
   call: 'Phone Call',
   meeting: 'Meeting',
-  stage_change: 'Stage Changed',
   priority_change: 'Priority Changed',
   score_change: 'Score Updated',
   conversion: 'Converted to Customer',
@@ -245,8 +197,6 @@ export interface Activity {
 
   // Metadata for specific activity types
   metadata?: {
-    fromStage?: LeadStage;
-    toStage?: LeadStage;
     fromPriority?: LeadPriority;
     toPriority?: LeadPriority;
     oldScore?: number;
@@ -800,16 +750,6 @@ export function calculateLeadScore(lead: Partial<Lead>): number {
   const siteCoverageScore = (lead.siteCoverage?.length || 0) * 10;
   score += Math.min(siteCoverageScore, 20);
 
-  // Engagement scoring based on stage
-  const stageScores: Partial<Record<LeadStage, number>> = {
-    new: 0,
-    contacted: 10,
-    qualified: 20,
-    proposal_sent: 25,
-    negotiation: 30,
-  };
-  score += stageScores[lead.stage as LeadStage] || 0;
-
   // Cap at 100
   return Math.min(Math.max(score, 0), 100);
 }
@@ -831,19 +771,6 @@ export function getTimeSinceLastContact(lastContactedAt: any): string {
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
   return `${Math.floor(diffDays / 365)} years ago`;
-}
-
-/**
- * Get stage progression percentage for funnel visualization
- */
-export function getStageProgressPercentage(stage: LeadStage): number {
-  const stageIndex = LEAD_STAGE_ORDER.indexOf(stage);
-  if (stageIndex === -1) return 0;
-  // Exclude 'lost' from calculation as it's an end state
-  const activeStages: LeadStage[] = LEAD_STAGE_ORDER.filter((s): s is Exclude<LeadStage, 'lost'> => s !== 'lost');
-  const activeIndex = activeStages.indexOf(stage as any);
-  if (activeIndex === -1) return 0;
-  return Math.round((activeIndex / (activeStages.length - 1)) * 100);
 }
 
 // ============================================================================

@@ -446,63 +446,6 @@ async function checkLeadData(
     const leadData = leadDoc.data();
     const leadId = leadDoc.id;
 
-    // Check if lead marked as "won" has a conversion
-    if (leadData.stage === 'won' && !leadData.convertedToCustomerId) {
-      issues.push({
-        id: generateIssueId(),
-        category: ISSUE_CATEGORIES.LEAD_DATA,
-        severity: ISSUE_SEVERITY.WARNING,
-        title: 'Won lead without conversion tracking',
-        description: `Lead ${leadId} (${leadData.businessName || leadData.email}) is marked as "won" but has no convertedToCustomerId`,
-        affectedEntityId: leadId,
-        affectedEntityType: 'lead',
-        suggestedFix: 'Link this lead to the customer ID they converted to',
-        canAutoFix: false,
-        metadata: { email: leadData.email, businessName: leadData.businessName },
-      });
-
-      // Check if email matches a customer
-      if (leadData.email && customerEmails.has(leadData.email.toLowerCase())) {
-        issues.push({
-          id: generateIssueId(),
-          category: ISSUE_CATEGORIES.LEAD_DATA,
-          severity: ISSUE_SEVERITY.INFO,
-          title: 'Won lead may match existing customer',
-          description: `Lead ${leadId} email "${leadData.email}" matches an existing customer. Consider linking them.`,
-          affectedEntityId: leadId,
-          affectedEntityType: 'lead',
-          suggestedFix: 'Verify and link this lead to the matching customer',
-          canAutoFix: false,
-          metadata: { email: leadData.email },
-        });
-      }
-    }
-
-    // Check for leads still marked as "new" that are old
-    if (leadData.stage === 'new' && leadData.createdAt) {
-      const createdDate = leadData.createdAt.seconds
-        ? new Date(leadData.createdAt.seconds * 1000)
-        : new Date(leadData.createdAt);
-
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      if (createdDate < thirtyDaysAgo) {
-        issues.push({
-          id: generateIssueId(),
-          category: ISSUE_CATEGORIES.LEAD_DATA,
-          severity: ISSUE_SEVERITY.INFO,
-          title: 'Stale lead still marked as new',
-          description: `Lead ${leadId} (${leadData.businessName || leadData.email}) has been "new" since ${createdDate.toLocaleDateString()}`,
-          affectedEntityId: leadId,
-          affectedEntityType: 'lead',
-          suggestedFix: 'Contact this lead or update their stage',
-          canAutoFix: false,
-          metadata: { createdAt: createdDate.toISOString(), email: leadData.email },
-        });
-      }
-    }
-
     // Check for missing required fields
     if (!leadData.email && !leadData.phone) {
       issues.push({
