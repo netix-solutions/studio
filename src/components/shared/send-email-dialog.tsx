@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,11 +24,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Eye, ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/firebase/email';
 import { generateEmailUrls, wrapEmailContent, replaceEmailPlaceholders, type EmailWrapperOptions } from '@/lib/email-utils';
 import type { EmailTemplate } from '@/lib/email-templates';
+import { EmailPreview } from '@/components/emails/email-preview';
 
 /** Special template ID for ad proof approval - handled via API */
 const AD_PROOF_APPROVAL_ID = '__ad_proof_approval__';
@@ -86,6 +87,7 @@ export function SendEmailDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [manualTemplates, setManualTemplates] = useState<EmailTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Check if ad proof approval email can be sent
   const canSendAdProofApproval = advertisement?.adProofUrl && advertisement?.adProofDestinationUrl;
@@ -96,6 +98,48 @@ export function SendEmailDialog({
       templateId: '',
     },
   });
+
+  const selectedTemplateId = form.watch('templateId');
+
+  // Compute preview content when template is selected
+  const previewData = useMemo(() => {
+    if (!selectedTemplateId || selectedTemplateId === AD_PROOF_APPROVAL_ID) {
+      return null;
+    }
+
+    const selectedTemplate = manualTemplates.find(t => t.id === selectedTemplateId);
+    if (!selectedTemplate) {
+      return null;
+    }
+
+    // Generate URLs for placeholders based on recipient type
+    const urls = generateEmailUrls(
+      recipientType === 'lead' ? recipient.id : undefined,
+      recipientType === 'customer' ? recipient.id : undefined
+    );
+
+    // Replace placeholders in subject and content
+    const subject = replaceEmailPlaceholders(selectedTemplate.subject, {
+      contactName: recipient.contactName,
+      businessName: recipient.businessName || '',
+    });
+
+    const html = replaceEmailPlaceholders(selectedTemplate.html, {
+      contactName: recipient.contactName,
+      businessName: recipient.businessName || '',
+      pricingLink: urls.pricingLink,
+      accountLink: urls.accountLink,
+    });
+
+    return {
+      subject,
+      html,
+      wrapperOptions: {
+        headerButton: recipientType === 'lead' ? 'get-started' : 'my-account',
+        pricingLink: urls.pricingLink,
+      } as EmailWrapperOptions,
+    };
+  }, [selectedTemplateId, manualTemplates, recipient, recipientType]);
 
   useEffect(() => {
     if (firestore && isOpen) {
@@ -214,61 +258,129 @@ export function SendEmailDialog({
     }
   }
 
+  // Reset preview when dialog closes or template changes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowPreview(false);
+    }
+  }, [isOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Send Manual Email</DialogTitle>
-          <DialogDescription>
-            Send a follow-up email to {recipient.contactName} ({recipient.email}).
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-                 <FormField
-                    control={form.control}
-                    name="templateId"
-                    render={({ field }) => (
+      <DialogContent className={showPreview ? "sm:max-w-4xl max-h-[90vh] overflow-hidden" : "sm:max-w-xl"}>
+        {showPreview && previewData ? (
+          <>
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPreview(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <DialogTitle>Email Preview</DialogTitle>
+                  <DialogDescription>
+                    Preview of email to {recipient.contactName} ({recipient.email})
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden -mx-6 -mb-6">
+              <EmailPreview
+                content={previewData.html}
+                subject={previewData.subject}
+                wrapperOptions={previewData.wrapperOptions}
+                showToolbar={true}
+                showSubject={true}
+                maxHeight="calc(90vh - 180px)"
+                className="rounded-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+              <Button type="button" variant="outline" onClick={() => setShowPreview(false)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Edit
+              </Button>
+              <Button
+                type="button"
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Email
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Send Manual Email</DialogTitle>
+              <DialogDescription>
+                Send a follow-up email to {recipient.contactName} ({recipient.email}).
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                <FormField
+                  control={form.control}
+                  name="templateId"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Email Template</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingTemplates}>
+                      <FormLabel>Email Template</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingTemplates}>
                         <FormControl>
-                            <SelectTrigger>
+                          <SelectTrigger>
                             <SelectValue placeholder={loadingTemplates ? "Loading templates..." : "Select a manual email template"} />
-                            </SelectTrigger>
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {!loadingTemplates && manualTemplates.length === 0 && !canSendAdProofApproval && (
-                                <SelectItem value="none" disabled>No manual templates found</SelectItem>
-                            )}
-                            {canSendAdProofApproval && (
-                                <SelectItem value={AD_PROOF_APPROVAL_ID} className="font-medium">
-                                    <span className="flex items-center gap-2">
-                                        <Send className="h-4 w-4" />
-                                        Ad Proof for Your Approval
-                                    </span>
-                                </SelectItem>
-                            )}
-                            {manualTemplates.map(template => (
-                                <SelectItem key={template.id} value={template.id}>
-                                    {template.name}
-                                </SelectItem>
-                            ))}
+                          {!loadingTemplates && manualTemplates.length === 0 && !canSendAdProofApproval && (
+                            <SelectItem value="none" disabled>No manual templates found</SelectItem>
+                          )}
+                          {canSendAdProofApproval && (
+                            <SelectItem value={AD_PROOF_APPROVAL_ID} className="font-medium">
+                              <span className="flex items-center gap-2">
+                                <Send className="h-4 w-4" />
+                                Ad Proof for Your Approval
+                              </span>
+                            </SelectItem>
+                          )}
+                          {manualTemplates.map(template => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
-                        </Select>
-                        <FormMessage />
+                      </Select>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <DialogFooter className="pt-4">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="submit" disabled={isSubmitting || loadingTemplates}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Send Email
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                  {previewData && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setShowPreview(true)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview
                     </Button>
+                  )}
+                  <Button type="submit" disabled={isSubmitting || loadingTemplates}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Send Email
+                  </Button>
                 </DialogFooter>
-          </form>
-        </Form>
+              </form>
+            </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
