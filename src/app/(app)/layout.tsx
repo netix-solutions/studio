@@ -16,7 +16,7 @@ import { usePageVisitTracking } from '@/hooks/use-page-visit-tracking';
 import { useLoginTracking } from '@/hooks/use-login-tracking';
 
 // Admin routes - includes main pages and legacy routes for backwards compatibility
-const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard', '/users', '/automated-emails', '/import', '/legal', '/pipeline', '/ad-server', '/customer-workflow', '/manual-entry', '/discounts', '/reconciliation', '/admin-notifications'];
+const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard', '/users', '/automated-emails', '/import', '/legal', '/pipeline', '/ad-server', '/directory', '/customer-workflow', '/manual-entry', '/discounts', '/reconciliation', '/admin-notifications'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/leads';
 
