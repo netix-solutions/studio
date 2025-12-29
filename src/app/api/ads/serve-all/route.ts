@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { type LiveAd, type AdPlacement, type CommunityWebsiteId, COMMUNITY_WEBSITES } from '@/lib/types';
 
+// Valid subscription statuses that allow ads to be served
+const VALID_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
+
+/**
+ * Check if a customer has an active subscription
+ * Returns true if the customer has at least one active/trialing subscription
+ */
+async function hasActiveSubscription(db: FirebaseFirestore.Firestore, customerId: string): Promise<boolean> {
+  if (!customerId) return false;
+
+  try {
+    const subscriptionsRef = db.collection('customers').doc(customerId).collection('subscriptions');
+    const snapshot = await subscriptionsRef.where('status', 'in', VALID_SUBSCRIPTION_STATUSES).limit(1).get();
+    return !snapshot.empty;
+  } catch (error) {
+    console.error(`Error checking subscription for customer ${customerId}:`, error);
+    // If we can't verify, err on the side of caution and don't serve
+    return false;
+  }
+}
+
 // Valid website IDs for validation
 const VALID_WEBSITE_IDS = Object.values(COMMUNITY_WEBSITES) as string[];
 
@@ -56,7 +77,7 @@ export async function GET(request: NextRequest) {
     const targetWebsiteId = website || (site && VALID_WEBSITE_IDS.includes(site) ? site as CommunityWebsiteId : null);
 
     // Filter ads based on schedule and website targeting
-    const eligibleAds: LiveAd[] = [];
+    const potentialAds: LiveAd[] = [];
 
     snapshot.forEach((doc) => {
       const ad = { id: doc.id, ...doc.data() } as LiveAd;
@@ -84,8 +105,30 @@ export async function GET(request: NextRequest) {
         if (!ad.targetSites.includes(site)) return;
       }
 
-      eligibleAds.push(ad);
+      potentialAds.push(ad);
     });
+
+    if (potentialAds.length === 0) {
+      return NextResponse.json(
+        { error: 'No eligible ads available', ads: [] },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // Filter out ads whose customers don't have active subscriptions
+    const eligibleAds: LiveAd[] = [];
+    for (const ad of potentialAds) {
+      // If ad has a customerId, verify their subscription is active
+      if (ad.customerId) {
+        const hasSubscription = await hasActiveSubscription(db, ad.customerId);
+        if (!hasSubscription) {
+          // Log for monitoring - this ad should probably be deactivated
+          console.warn(`Ad ${ad.id} served by customer ${ad.customerId} has no active subscription - skipping`);
+          continue;
+        }
+      }
+      eligibleAds.push(ad);
+    }
 
     if (eligibleAds.length === 0) {
       return NextResponse.json(
