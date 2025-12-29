@@ -44,6 +44,8 @@ import {
     RefreshCw,
     User,
     Wallet,
+    AlertTriangle,
+    Rocket,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -568,6 +570,35 @@ export default function AccountPage() {
                     </Badge>
                 </div>
             </div>
+
+            {/* Step 1 Setup Alert - Very Noticeable */}
+            {status === 'info_needed' && (
+                <Alert className="border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex items-start gap-3 flex-1">
+                            <div className="p-2 rounded-full bg-amber-100 shrink-0">
+                                <AlertTriangle className="h-6 w-6 text-amber-600" />
+                            </div>
+                            <div className="space-y-1">
+                                <AlertTitle className="text-lg font-semibold text-amber-900">
+                                    Complete Your Setup to Get Started!
+                                </AlertTitle>
+                                <AlertDescription className="text-amber-800">
+                                    Your ad subscription is active, but you need to complete a few quick steps before your advertisement can go live on community websites.
+                                </AlertDescription>
+                            </div>
+                        </div>
+                        <Button
+                            size="lg"
+                            onClick={() => setShowWorkflow(true)}
+                            className="bg-amber-600 hover:bg-amber-700 text-white shadow-md shrink-0"
+                        >
+                            <Rocket className="h-5 w-5 mr-2" />
+                            Start Setup Now
+                        </Button>
+                    </div>
+                </Alert>
+            )}
 
             {/* Tabbed Navigation */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
