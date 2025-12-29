@@ -46,25 +46,32 @@ import {
     LeadStage,
     LeadSource,
     LeadPriority,
+    LeadStatus,
     LEAD_STAGES,
+    LEAD_STATUSES,
     LEAD_STAGE_LABELS,
     LEAD_STAGE_COLORS,
     LEAD_STAGE_ORDER,
     LEAD_PRIORITY_LABELS,
     LEAD_PRIORITY_COLORS,
     LEAD_SOURCE_LABELS,
+    LEAD_STATUS_LABELS,
+    LEAD_STATUS_COLORS,
     ACTIVITY_TYPES,
 } from '@/lib/types';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LeadsPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState<LeadStatus>('active');
     const [selectedStage, setSelectedStage] = useState<string>('all');
     const [selectedSource, setSelectedSource] = useState<string>('all');
     const [selectedPriority, setSelectedPriority] = useState<string>('all');
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [isBulkUpdating, setIsBulkUpdating] = useState(false);
     const [deleteConfirmLead, setDeleteConfirmLead] = useState<Lead | null>(null);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -91,6 +98,7 @@ export default function LeadsPage() {
                 priority: doc.data().priority || 'medium',
                 source: doc.data().source || 'website',
                 score: doc.data().score || 0,
+                status: doc.data().status || LEAD_STATUSES.ACTIVE, // Default to active
             } as Lead));
             setLeads(leadsData);
             setLoading(false);
@@ -107,6 +115,12 @@ export default function LeadsPage() {
     // Filter leads
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
+            // Status filter (active/inactive tabs)
+            const leadStatus = lead.status || LEAD_STATUSES.ACTIVE;
+            if (leadStatus !== selectedStatus) {
+                return false;
+            }
+
             // Search filter
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
@@ -135,7 +149,18 @@ export default function LeadsPage() {
 
             return true;
         });
-    }, [leads, searchQuery, selectedStage, selectedSource, selectedPriority]);
+    }, [leads, searchQuery, selectedStatus, selectedStage, selectedSource, selectedPriority]);
+
+    // Count leads by status for badges
+    const statusCounts = useMemo(() => {
+        const counts = { active: 0, inactive: 0 };
+        leads.forEach(lead => {
+            const status = lead.status || LEAD_STATUSES.ACTIVE;
+            if (status === 'active') counts.active++;
+            else if (status === 'inactive') counts.inactive++;
+        });
+        return counts;
+    }, [leads]);
 
     const handleRowClick = (leadId: string) => {
         router.push(`/leads/${leadId}`);
@@ -206,6 +231,57 @@ export default function LeadsPage() {
             });
         } finally {
             setIsBulkUpdating(false);
+        }
+    };
+
+    const handleBulkStatusUpdate = async (newStatus: LeadStatus) => {
+        if (!firestore || !user || selectedLeads.size === 0) return;
+
+        setIsUpdatingStatus(true);
+        try {
+            const batch = writeBatch(firestore);
+            const selectedLeadsList = leads.filter(l => selectedLeads.has(l.id));
+
+            for (const lead of selectedLeadsList) {
+                const leadRef = doc(firestore, 'leads', lead.id);
+                batch.update(leadRef, {
+                    status: newStatus,
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
+            await batch.commit();
+
+            // Log activities
+            for (const lead of selectedLeadsList) {
+                const currentStatus = lead.status || LEAD_STATUSES.ACTIVE;
+                if (currentStatus !== newStatus) {
+                    await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
+                        leadId: lead.id,
+                        type: ACTIVITY_TYPES.STAGE_CHANGE,
+                        title: `Status changed from ${LEAD_STATUS_LABELS[currentStatus]} to ${LEAD_STATUS_LABELS[newStatus]}`,
+                        metadata: { fromStatus: currentStatus, toStatus: newStatus },
+                        createdBy: user.uid,
+                        createdByName: user.displayName || user.email || 'Unknown',
+                        createdAt: serverTimestamp(),
+                    });
+                }
+            }
+
+            setSelectedLeads(new Set());
+            toast({
+                title: 'Leads Updated',
+                description: `${selectedLeadsList.length} leads marked as ${LEAD_STATUS_LABELS[newStatus]}`,
+            });
+        } catch (err) {
+            console.error("Error updating leads:", err);
+            toast({
+                title: 'Error',
+                description: 'Failed to update lead status',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdatingStatus(false);
         }
     };
 
@@ -308,6 +384,27 @@ export default function LeadsPage() {
                 </div>
             </div>
 
+            {/* Active/Inactive Tabs */}
+            <Tabs value={selectedStatus} onValueChange={(value) => {
+                setSelectedStatus(value as LeadStatus);
+                setSelectedLeads(new Set()); // Clear selection when switching tabs
+            }}>
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                    <TabsTrigger value="active" className="flex items-center gap-2">
+                        Active
+                        <Badge variant="secondary" className="ml-1 bg-green-100 text-green-700">
+                            {statusCounts.active}
+                        </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="inactive" className="flex items-center gap-2">
+                        Inactive
+                        <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-600">
+                            {statusCounts.inactive}
+                        </Badge>
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
+
             {/* Filters */}
             <Card>
                 <CardContent className="pt-6">
@@ -398,6 +495,17 @@ export default function LeadsPage() {
                                     ))}
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleBulkStatusUpdate(selectedStatus === 'active' ? 'inactive' : 'active')}
+                                disabled={isUpdatingStatus}
+                            >
+                                {isUpdatingStatus ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : null}
+                                {selectedStatus === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
+                            </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -542,6 +650,16 @@ export default function LeadsPage() {
                                                                 </DropdownMenuItem>
                                                             ))}
                                                             <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const newStatus = (lead.status || 'active') === 'active' ? 'inactive' : 'active';
+                                                                    setSelectedLeads(new Set([lead.id]));
+                                                                    handleBulkStatusUpdate(newStatus as LeadStatus);
+                                                                }}
+                                                            >
+                                                                {(lead.status || 'active') === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
+                                                            </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 className="text-red-600 focus:text-red-600"
                                                                 onClick={(e) => {

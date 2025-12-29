@@ -26,6 +26,7 @@ import { wrapEmailContent, replaceEmailPlaceholders, generateEmailUrls } from '@
 import { defaultTemplates } from '@/lib/email-templates';
 import {
   LEAD_STAGES,
+  LEAD_STATUSES,
   LEAD_SOURCES,
   LEAD_PRIORITIES,
   calculateLeadScore,
@@ -143,6 +144,7 @@ export function GetStartedForm() {
         // Pipeline status - new leads start in 'new' stage
         stage: LEAD_STAGES.NEW,
         priority: LEAD_PRIORITIES.MEDIUM,
+        status: LEAD_STATUSES.ACTIVE, // New leads are active by default
 
         // Source tracking from UTM parameters
         source: utmParams.source,
