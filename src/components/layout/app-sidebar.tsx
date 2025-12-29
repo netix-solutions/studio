@@ -85,90 +85,84 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/50 pb-5 pt-1">
+      <SidebarHeader className="border-b border-border/50 py-3">
         <Link
           href={isAdmin ? '/leads' : '/account'}
-          className="flex items-center gap-3.5 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors px-2"
+          className="flex items-center gap-3 font-semibold text-lg text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors px-1"
         >
           <Image
             src="/logo.png"
             alt="Community-Websites.com Logo"
-            width={44}
-            height={44}
-            className="rounded-xl shrink-0"
-            style={{ height: '44px', width: 'auto' }}
+            width={36}
+            height={36}
+            className="rounded-lg shrink-0"
+            style={{ height: '36px', width: 'auto' }}
           />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-headline text-base font-bold tracking-tight text-brand-primary leading-tight">
+            <span className="font-headline text-sm font-bold tracking-tight text-brand-primary leading-tight">
               Community-Websites
             </span>
-            <span className="text-xs text-muted-foreground font-medium mt-0.5">
+            <span className="text-[11px] text-muted-foreground font-medium">
               {isAdmin ? 'Admin Panel' : 'Customer Portal'}
             </span>
           </div>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="p-2">
-        <SidebarMenu>
-          <div className="space-y-1">
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                  size="lg"
-                >
-                  <Link href={item.href}>
-                    <item.icon className="h-5 w-5 shrink-0" />
-                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </div>
+      <SidebarContent className="px-2 py-1">
+        <SidebarMenu className="gap-0.5">
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={item.label}
+              >
+                <Link href={item.href}>
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
 
           {isAdmin && (
-            <div className="mt-6">
-              <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
-                <Settings className="h-4 w-4" />
+            <>
+              <div className="mt-4 mb-1 flex items-center gap-2 px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
+                <Settings className="h-3 w-3" />
                 Settings
               </div>
-              <div className="space-y-1">
-                {adminSettingsItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith(item.href)}
-                      tooltip={item.label}
-                      size="lg"
-                    >
-                      <Link href={item.href}>
-                        <item.icon className="h-5 w-5 shrink-0" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-            </div>
+              {adminSettingsItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.href)}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </>
           )}
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/50">
+      <SidebarFooter className="border-t border-border/50 py-2">
         <Button
           variant="ghost"
           size="sm"
           onClick={toggleSidebar}
-          className="w-full justify-center group-data-[collapsible=icon]:px-0"
+          className="w-full h-7 justify-center text-xs group-data-[collapsible=icon]:px-0"
         >
           {isCollapsed ? (
-            <ChevronsRight className="h-4 w-4" />
+            <ChevronsRight className="h-3.5 w-3.5" />
           ) : (
             <>
-              <ChevronsLeft className="h-4 w-4 mr-2" />
+              <ChevronsLeft className="h-3.5 w-3.5 mr-1.5" />
               <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
             </>
           )}
