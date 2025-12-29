@@ -18,6 +18,13 @@
     },
     {
       "collectionGroup": "advertisements",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "advertisements",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "parentAdId", "order": "ASCENDING" },

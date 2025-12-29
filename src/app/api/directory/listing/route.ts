@@ -105,20 +105,30 @@ export async function GET(request: NextRequest) {
 
     if (liveAdsSnapshot.empty) {
       // No live ads yet - check if they have any advertisements in progress
-      const adsSnapshot = await db
-        .collectionGroup('advertisements')
-        .where('userId', '==', userId)
-        .get();
+      // Note: collectionGroup queries require a composite index on userId
+      // If the index doesn't exist, we'll return a default listing
+      let activeAd: Advertisement | undefined;
 
-      const advertisements = adsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Advertisement[];
+      try {
+        const adsSnapshot = await db
+          .collectionGroup('advertisements')
+          .where('userId', '==', userId)
+          .get();
 
-      // Find the most relevant ad (prefer live, then approved, then in progress)
-      const activeAd = advertisements.find(ad =>
-        ['live', 'approved', 'customer_approval', 'in_review'].includes(ad.status)
-      );
+        const advertisements = adsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Advertisement[];
+
+        // Find the most relevant ad (prefer live, then approved, then in progress)
+        activeAd = advertisements.find(ad =>
+          ['live', 'approved', 'customer_approval', 'in_review'].includes(ad.status)
+        );
+      } catch (indexError: any) {
+        // Collection group query may fail if index doesn't exist
+        // Log the error but continue with default listing
+        console.warn('Collection group query failed (index may be missing):', indexError.message);
+      }
 
       return NextResponse.json({
         success: true,
