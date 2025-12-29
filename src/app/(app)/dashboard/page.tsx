@@ -31,6 +31,7 @@ import {
   type AdStatus,
 } from '@/lib/types';
 import AdNetworkStats from '@/components/dashboard/ad-network-stats';
+import RecentActivity from '@/components/dashboard/recent-activity';
 
 interface DashboardStats {
   totalAds: number;
@@ -479,8 +480,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Ad Network Performance */}
-      <AdNetworkStats />
+          {/* Ad Network Performance */}
+          <AdNetworkStats />
+
+          {/* Recent Activity Feed */}
+          <RecentActivity />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
