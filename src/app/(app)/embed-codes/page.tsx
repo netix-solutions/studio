@@ -46,6 +46,10 @@ import {
     Settings2,
     Zap,
     Globe,
+    Mail,
+    Image,
+    Link2,
+    AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -87,6 +91,17 @@ interface DirectoryConfig {
     showSocial: boolean;
 }
 
+type EmailModeOption = 'dynamic' | 'static';
+
+interface EmailConfig {
+    website: CommunityWebsiteId | '';
+    mode: EmailModeOption;
+    selectedAdId: string;
+    fallbackUrl: string;
+    altText: string;
+    maxWidth: string;
+}
+
 export default function EmbedCodesPage() {
     const { toast } = useToast();
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -116,6 +131,16 @@ export default function EmbedCodesPage() {
         category: '',
         showContact: true,
         showSocial: true,
+    });
+
+    // Email Embed Configuration
+    const [emailConfig, setEmailConfig] = useState<EmailConfig>({
+        website: '',
+        mode: 'dynamic',
+        selectedAdId: '',
+        fallbackUrl: '',
+        altText: 'Community Sponsor',
+        maxWidth: '600',
     });
 
     // Get base URL
@@ -238,6 +263,52 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
         return `${baseUrl}/api/ads/wix-directory?${params.toString()}`;
     }, [directoryConfig, baseUrl]);
 
+    // Generate Email embed URLs
+    const emailImageUrl = useMemo(() => {
+        const params = new URLSearchParams();
+        if (emailConfig.mode === 'static' && emailConfig.selectedAdId) {
+            params.set('id', emailConfig.selectedAdId);
+            params.set('mode', 'static');
+        } else {
+            if (emailConfig.website) params.set('website', emailConfig.website);
+            params.set('mode', 'dynamic');
+        }
+        return `${baseUrl}/api/ads/email-image?${params.toString()}`;
+    }, [emailConfig, baseUrl]);
+
+    const emailClickUrl = useMemo(() => {
+        const params = new URLSearchParams();
+        if (emailConfig.mode === 'static' && emailConfig.selectedAdId) {
+            params.set('id', emailConfig.selectedAdId);
+        } else {
+            if (emailConfig.website) params.set('website', emailConfig.website);
+        }
+        if (emailConfig.fallbackUrl) params.set('fallback', emailConfig.fallbackUrl);
+        return `${baseUrl}/api/ads/email-click?${params.toString()}`;
+    }, [emailConfig, baseUrl]);
+
+    // Generate Email embed code
+    const emailEmbedCode = useMemo(() => {
+        const altText = emailConfig.altText || 'Community Sponsor';
+        const maxWidth = emailConfig.maxWidth || '600';
+
+        return `<a href="${emailClickUrl}" target="_blank" rel="noopener" style="display: block; text-decoration: none;">
+  <img
+    src="${emailImageUrl}"
+    alt="${altText}"
+    style="max-width: ${maxWidth}px; width: 100%; height: auto; border: 0; display: block; margin: 0 auto;"
+  />
+</a>`;
+    }, [emailImageUrl, emailClickUrl, emailConfig.altText, emailConfig.maxWidth]);
+
+    // Simple image-only code for email
+    const emailImageOnlyCode = useMemo(() => {
+        const altText = emailConfig.altText || 'Community Sponsor';
+        const maxWidth = emailConfig.maxWidth || '600';
+
+        return `<img src="${emailImageUrl}" alt="${altText}" style="max-width: ${maxWidth}px; width: 100%; height: auto; border: 0; display: block; margin: 0 auto;" />`;
+    }, [emailImageUrl, emailConfig.altText, emailConfig.maxWidth]);
+
     const copyToClipboard = (code: string, label: string) => {
         navigator.clipboard.writeText(code);
         setCopiedCode(label);
@@ -279,7 +350,7 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
 
             {/* Main Content */}
             <Tabs defaultValue="rotator" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+                <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
                     <TabsTrigger value="rotator" className="flex items-center gap-2">
                         <RefreshCw className="h-4 w-4" />
                         Ad Rotator
@@ -287,6 +358,10 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                     <TabsTrigger value="directory" className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
                         Sponsor Directory
+                    </TabsTrigger>
+                    <TabsTrigger value="email" className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email Embed
                     </TabsTrigger>
                 </TabsList>
 
@@ -940,6 +1015,382 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
                                             <li>Stretch the element to full page width</li>
                                             <li>Set the height to at least 600px</li>
                                         </ol>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Email Embed Tab */}
+                <TabsContent value="email" className="space-y-6">
+                    {/* Info Alert */}
+                    <Alert>
+                        <Mail className="h-4 w-4" />
+                        <AlertTitle>Email-Safe Ad Embeds</AlertTitle>
+                        <AlertDescription>
+                            Generate simple HTML code that works in Wix emails and other email platforms.
+                            No JavaScript required - just paste the code directly into your email template.
+                        </AlertDescription>
+                    </Alert>
+
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Configuration Panel */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Settings2 className="h-5 w-5" />
+                                    Email Embed Configuration
+                                </CardTitle>
+                                <CardDescription>
+                                    Configure how ads appear in your emails
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Mode Selection */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4" />
+                                        Display Mode
+                                    </Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button
+                                            variant={emailConfig.mode === 'dynamic' ? 'default' : 'outline'}
+                                            className="h-auto py-3 flex-col gap-1"
+                                            onClick={() => setEmailConfig({ ...emailConfig, mode: 'dynamic', selectedAdId: '' })}
+                                        >
+                                            <RefreshCw className="h-5 w-5" />
+                                            <span className="font-medium">Dynamic</span>
+                                            <span className="text-xs opacity-70">Rotating ads</span>
+                                        </Button>
+                                        <Button
+                                            variant={emailConfig.mode === 'static' ? 'default' : 'outline'}
+                                            className="h-auto py-3 flex-col gap-1"
+                                            onClick={() => setEmailConfig({ ...emailConfig, mode: 'static' })}
+                                        >
+                                            <Image className="h-5 w-5" />
+                                            <span className="font-medium">Static</span>
+                                            <span className="text-xs opacity-70">Specific ad</span>
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {emailConfig.mode === 'dynamic'
+                                            ? 'Each email open may show a different ad from your active ads'
+                                            : 'Shows the same specific ad every time'}
+                                    </p>
+                                </div>
+
+                                {/* Target Website (for dynamic mode) */}
+                                {emailConfig.mode === 'dynamic' && (
+                                    <div className="space-y-2">
+                                        <Label className="flex items-center gap-2">
+                                            <Globe className="h-4 w-4" />
+                                            Target Website
+                                        </Label>
+                                        <Select
+                                            value={emailConfig.website || 'all'}
+                                            onValueChange={(value) => setEmailConfig({
+                                                ...emailConfig,
+                                                website: value === 'all' ? '' : value as CommunityWebsiteId,
+                                            })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a website..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Websites</SelectItem>
+                                                {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                                    <SelectItem key={website.id} value={website.id}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge className={cn(website.color.bg, website.color.text, "text-xs")}>
+                                                                {website.shortName}
+                                                            </Badge>
+                                                            {website.name}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">
+                                            Only show ads targeted to this specific website
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Static Ad ID (for static mode) */}
+                                {emailConfig.mode === 'static' && (
+                                    <div className="space-y-2">
+                                        <Label className="flex items-center gap-2">
+                                            <Link2 className="h-4 w-4" />
+                                            Ad ID
+                                        </Label>
+                                        <Input
+                                            value={emailConfig.selectedAdId}
+                                            onChange={(e) => setEmailConfig({ ...emailConfig, selectedAdId: e.target.value })}
+                                            placeholder="Enter the ad ID from Ad Server"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Find the ad ID in the Ad Server page. Click on an ad to see its ID.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Display Options */}
+                                <div className="space-y-4 pt-2 border-t">
+                                    <Label>Display Options</Label>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-normal">Alt Text</Label>
+                                        <Input
+                                            value={emailConfig.altText}
+                                            onChange={(e) => setEmailConfig({ ...emailConfig, altText: e.target.value })}
+                                            placeholder="Community Sponsor"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Displayed when image can't load or for accessibility
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-normal">Max Width (px)</Label>
+                                        <Select
+                                            value={emailConfig.maxWidth}
+                                            onValueChange={(value) => setEmailConfig({ ...emailConfig, maxWidth: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="300">300px - Small</SelectItem>
+                                                <SelectItem value="400">400px - Medium</SelectItem>
+                                                <SelectItem value="500">500px - Large</SelectItem>
+                                                <SelectItem value="600">600px - Full Width</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">
+                                            Maximum width of the ad image in the email
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Fallback URL */}
+                                <div className="space-y-2 pt-2 border-t">
+                                    <Label className="flex items-center gap-2">
+                                        <ExternalLink className="h-4 w-4" />
+                                        Fallback URL (Optional)
+                                    </Label>
+                                    <Input
+                                        type="url"
+                                        value={emailConfig.fallbackUrl}
+                                        onChange={(e) => setEmailConfig({ ...emailConfig, fallbackUrl: e.target.value })}
+                                        placeholder="https://your-website.com/sponsors"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Where to redirect if no ads are available
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Preview Panel */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Eye className="h-5 w-5" />
+                                    Live Preview
+                                </CardTitle>
+                                <CardDescription>
+                                    How the ad will appear in emails
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-muted/50 rounded-lg p-6 min-h-[200px] flex flex-col items-center justify-center gap-4">
+                                    <div
+                                        className="bg-white rounded-lg shadow-sm overflow-hidden"
+                                        style={{ maxWidth: `${emailConfig.maxWidth}px`, width: '100%' }}
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            key={previewKey}
+                                            src={emailImageUrl}
+                                            alt={emailConfig.altText || 'Community Sponsor'}
+                                            className="w-full h-auto"
+                                            style={{ aspectRatio: '3/1', objectFit: 'cover' }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={refreshPreview}>
+                                            <RefreshCw className="h-4 w-4 mr-2" />
+                                            Refresh Preview
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {emailConfig.mode === 'dynamic' && (
+                                    <Alert className="mt-4">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <AlertDescription className="text-sm">
+                                            <strong>Dynamic Mode:</strong> Each time the preview refreshes or an email is opened,
+                                            a different ad may be shown based on weight and availability.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Embed Code Output */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Code className="h-5 w-5" />
+                                Email Embed Code
+                            </CardTitle>
+                            <CardDescription>
+                                Copy this code and paste it into your Wix email template or other email builder
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Main Embed Code */}
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    <Link2 className="h-4 w-4" />
+                                    Clickable Ad (Recommended)
+                                </Label>
+                                <div className="relative">
+                                    <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+                                        <code>{emailEmbedCode}</code>
+                                    </pre>
+                                    <Button
+                                        size="sm"
+                                        className="absolute top-2 right-2"
+                                        onClick={() => copyToClipboard(emailEmbedCode, 'Email Clickable')}
+                                    >
+                                        {copiedCode === 'Email Clickable' ? (
+                                            <Check className="h-4 w-4 mr-2" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 mr-2" />
+                                        )}
+                                        {copiedCode === 'Email Clickable' ? 'Copied!' : 'Copy Code'}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Includes click tracking - users who click will be redirected to the advertiser's website
+                                </p>
+                            </div>
+
+                            {/* Image Only Code */}
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    <Image className="h-4 w-4" />
+                                    Image Only (No Link)
+                                </Label>
+                                <div className="relative">
+                                    <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+                                        <code>{emailImageOnlyCode}</code>
+                                    </pre>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="absolute top-2 right-2"
+                                        onClick={() => copyToClipboard(emailImageOnlyCode, 'Email Image')}
+                                    >
+                                        {copiedCode === 'Email Image' ? (
+                                            <Check className="h-4 w-4 mr-2" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 mr-2" />
+                                        )}
+                                        {copiedCode === 'Email Image' ? 'Copied!' : 'Copy Code'}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Just the image - use if you need to add your own link or don't want click tracking
+                                </p>
+                            </div>
+
+                            {/* Direct URLs */}
+                            <div className="space-y-4 pt-4 border-t">
+                                <Label>Direct URLs (For Advanced Use)</Label>
+                                <div className="grid gap-3">
+                                    <div className="space-y-1">
+                                        <Label className="text-sm font-normal text-muted-foreground">Image URL</Label>
+                                        <div className="flex gap-2">
+                                            <Input value={emailImageUrl} readOnly className="font-mono text-xs" />
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => copyToClipboard(emailImageUrl, 'Image URL')}
+                                            >
+                                                {copiedCode === 'Image URL' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-sm font-normal text-muted-foreground">Click URL</Label>
+                                        <div className="flex gap-2">
+                                            <Input value={emailClickUrl} readOnly className="font-mono text-xs" />
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => copyToClipboard(emailClickUrl, 'Click URL')}
+                                            >
+                                                {copiedCode === 'Click URL' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Instructions */}
+                            <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="wix-email">
+                                    <AccordionTrigger className="text-sm">
+                                        <span className="flex items-center gap-2">
+                                            <Info className="h-4 w-4" />
+                                            Wix Email Instructions
+                                        </span>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+                                        <ol className="list-decimal list-inside space-y-1">
+                                            <li>Open your Wix email campaign or automation</li>
+                                            <li>Add an <strong>HTML</strong> or <strong>Custom Code</strong> element</li>
+                                            <li>Paste the embed code above</li>
+                                            <li>Preview to verify the ad appears correctly</li>
+                                            <li>Send a test email to yourself first!</li>
+                                        </ol>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="other-email">
+                                    <AccordionTrigger className="text-sm">
+                                        <span className="flex items-center gap-2">
+                                            <Info className="h-4 w-4" />
+                                            Other Email Platforms
+                                        </span>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+                                        <p>This code works with any email platform that supports HTML:</p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                            <li><strong>Mailchimp:</strong> Use a Code block or HTML content block</li>
+                                            <li><strong>Constant Contact:</strong> Use the HTML block feature</li>
+                                            <li><strong>SendGrid:</strong> Paste directly into your HTML template</li>
+                                            <li><strong>Other platforms:</strong> Look for "HTML" or "Custom Code" option</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="tracking">
+                                    <AccordionTrigger className="text-sm">
+                                        <span className="flex items-center gap-2">
+                                            <Info className="h-4 w-4" />
+                                            How Tracking Works
+                                        </span>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+                                        <ul className="list-disc list-inside space-y-1">
+                                            <li><strong>Impressions:</strong> Counted each time the email image loads</li>
+                                            <li><strong>Clicks:</strong> Counted when someone clicks the ad and is redirected</li>
+                                            <li>Stats are visible in the Ad Server dashboard</li>
+                                            <li>Email clicks are tagged as "email_click" in events</li>
+                                        </ul>
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
