@@ -8,7 +8,6 @@ import {
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
   isDirectoryListingVisible,
-  isBusinessOpen,
   getActiveOffers,
 } from '@/lib/types';
 
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest) {
     const websiteParam = request.nextUrl.searchParams.get('website') || '';
     const categoryParam = request.nextUrl.searchParams.get('category') || '';
     const searchParam = request.nextUrl.searchParams.get('search') || '';
-    const openNowParam = request.nextUrl.searchParams.get('openNow') === 'true';
     const hasOffersParam = request.nextUrl.searchParams.get('hasOffers') === 'true';
     const featuredOnlyParam = request.nextUrl.searchParams.get('featured') === 'true';
     const sortParam = request.nextUrl.searchParams.get('sort') || 'featured';
@@ -66,22 +64,15 @@ export async function GET(request: NextRequest) {
       youtubeUrl?: string;
       tiktokUrl?: string;
       appointmentUrl?: string;
-      businessHours?: any;
       specialOffers?: any[];
-      amenities?: string[];
       yearEstablished?: number;
       serviceAreas?: string[];
       languages?: string[];
       showContactInfo: boolean;
       showSocialLinks: boolean;
       showAddress: boolean;
-      showBusinessHours: boolean;
       showSpecialOffers: boolean;
-      showAmenities: boolean;
       isFeatured: boolean;
-      isOpen?: boolean;
-      opensAt?: string;
-      closesAt?: string;
       hasActiveOffers: boolean;
       targetUrl: string;
     }> = [];
@@ -132,15 +123,6 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Check business hours for "Open Now" filter
-      const businessStatus = listing.businessHours
-        ? isBusinessOpen(listing.businessHours)
-        : { isOpen: false };
-
-      if (openNowParam && !businessStatus.isOpen) {
-        return;
-      }
-
       // Check for active offers
       const activeOffers = getActiveOffers(listing as DirectoryListing);
       const hasActiveOffers = activeOffers.length > 0;
@@ -187,22 +169,15 @@ export async function GET(request: NextRequest) {
         youtubeUrl: listing.youtubeUrl,
         tiktokUrl: listing.tiktokUrl,
         appointmentUrl: listing.appointmentUrl,
-        businessHours: listing.businessHours,
         specialOffers: hasActiveOffers ? activeOffers : undefined,
-        amenities: listing.amenities,
         yearEstablished: listing.yearEstablished,
         serviceAreas: listing.serviceAreas,
         languages: listing.languages,
         showContactInfo: listing.showContactInfo ?? true,
         showSocialLinks: listing.showSocialLinks ?? true,
         showAddress: listing.showAddress ?? false,
-        showBusinessHours: listing.showBusinessHours ?? true,
         showSpecialOffers: listing.showSpecialOffers ?? true,
-        showAmenities: listing.showAmenities ?? true,
         isFeatured: !!listing.isFeatured,
-        isOpen: businessStatus.isOpen,
-        opensAt: businessStatus.opensAt,
-        closesAt: businessStatus.closesAt,
         hasActiveOffers,
         targetUrl: ad.targetUrl,
       });

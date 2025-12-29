@@ -43,7 +43,6 @@ import type { DirectoryCardVariant } from './DirectoryCard';
 export type SortOption = 'featured' | 'alphabetical' | 'newest' | 'rating';
 export type FilterOptions = {
   categories: BusinessCategory[];
-  openNow: boolean;
   hasOffers: boolean;
   featured: boolean;
   serviceArea: string;
@@ -84,7 +83,6 @@ export function DirectoryFilters({
 
   const activeFilterCount =
     filters.categories.length +
-    (filters.openNow ? 1 : 0) +
     (filters.hasOffers ? 1 : 0) +
     (filters.featured ? 1 : 0) +
     (filters.serviceArea ? 1 : 0);
@@ -92,7 +90,6 @@ export function DirectoryFilters({
   const clearFilters = () => {
     onFiltersChange({
       categories: [],
-      openNow: false,
       hasOffers: false,
       featured: false,
       serviceArea: '',
@@ -148,13 +145,6 @@ export function DirectoryFilters({
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Quick Filters</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={filters.openNow}
-                onCheckedChange={(checked) => onFiltersChange({ ...filters, openNow: checked })}
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                Open Now
-              </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={filters.hasOffers}
                 onCheckedChange={(checked) => onFiltersChange({ ...filters, hasOffers: checked })}
@@ -302,13 +292,6 @@ export function DirectoryFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Quick Filter Pills */}
         <div className="flex flex-wrap gap-2">
-          <FilterPill
-            active={filters.openNow}
-            onClick={() => onFiltersChange({ ...filters, openNow: !filters.openNow })}
-            icon={<Clock className="w-3.5 h-3.5" />}
-          >
-            Open Now
-          </FilterPill>
           <FilterPill
             active={filters.hasOffers}
             onClick={() => onFiltersChange({ ...filters, hasOffers: !filters.hasOffers })}

@@ -49,22 +49,15 @@ interface DirectoryListingPublic {
   youtubeUrl?: string;
   tiktokUrl?: string;
   appointmentUrl?: string;
-  businessHours?: any;
   specialOffers?: any[];
-  amenities?: string[];
   yearEstablished?: number;
   serviceAreas?: string[];
   languages?: string[];
   showContactInfo: boolean;
   showSocialLinks: boolean;
   showAddress: boolean;
-  showBusinessHours: boolean;
   showSpecialOffers: boolean;
-  showAmenities: boolean;
   isFeatured: boolean;
-  isOpen?: boolean;
-  opensAt?: string;
-  closesAt?: string;
   hasActiveOffers: boolean;
   targetUrl: string;
 }
@@ -87,7 +80,6 @@ export default function SponsorsPage() {
     categories: searchParams.get('category')
       ? [searchParams.get('category') as BusinessCategory]
       : [],
-    openNow: false,
     hasOffers: false,
     featured: false,
     serviceArea: '',
@@ -101,7 +93,6 @@ export default function SponsorsPage() {
       const params = new URLSearchParams();
       if (searchQuery) params.set('search', searchQuery);
       if (filters.categories.length === 1) params.set('category', filters.categories[0]);
-      if (filters.openNow) params.set('openNow', 'true');
       if (filters.hasOffers) params.set('hasOffers', 'true');
       if (filters.featured) params.set('featured', 'true');
       params.set('sort', sortBy);
@@ -123,7 +114,7 @@ export default function SponsorsPage() {
 
   useEffect(() => {
     fetchListings();
-  }, [sortBy, filters.openNow, filters.hasOffers, filters.featured]);
+  }, [sortBy, filters.hasOffers, filters.featured]);
 
   // Debounced search
   useEffect(() => {
@@ -233,7 +224,6 @@ export default function SponsorsPage() {
                   setSearchQuery('');
                   setFilters({
                     categories: [],
-                    openNow: false,
                     hasOffers: false,
                     featured: false,
                     serviceArea: '',
@@ -281,18 +271,14 @@ export default function SponsorsPage() {
                   youtubeUrl: listing.youtubeUrl,
                   tiktokUrl: listing.tiktokUrl,
                   appointmentUrl: listing.appointmentUrl,
-                  businessHours: listing.businessHours,
                   specialOffers: listing.specialOffers,
-                  amenities: listing.amenities,
                   yearEstablished: listing.yearEstablished,
                   serviceAreas: listing.serviceAreas,
                   languages: listing.languages,
                   showContactInfo: listing.showContactInfo,
                   showSocialLinks: listing.showSocialLinks,
                   showAddress: listing.showAddress,
-                  showBusinessHours: listing.showBusinessHours,
                   showSpecialOffers: listing.showSpecialOffers,
-                  showAmenities: listing.showAmenities,
                   isFeatured: listing.isFeatured,
                 }}
                 adImageUrl={listing.imageUrl}
