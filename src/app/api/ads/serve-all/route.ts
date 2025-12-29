@@ -34,16 +34,23 @@ interface CacheEntry {
 const adsCache = new Map<string, CacheEntry>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// CORS headers for cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Cache-Control': 'public, max-age=60', // Allow browser caching for 1 minute
-};
+/**
+ * Get dynamic CORS headers based on request origin.
+ * When credentials are included in requests, browsers require a specific origin instead of wildcard '*'.
+ */
+function getCorsHeaders(request: NextRequest) {
+  const origin = request.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
+    'Cache-Control': 'public, max-age=60', // Allow browser caching for 1 minute
+  };
+}
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 200, headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 200, headers: getCorsHeaders(request) });
 }
 
 /**
@@ -82,6 +89,8 @@ async function fetchAdsWithCache(placement: AdPlacement | null): Promise<LiveAd[
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request);
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const placement = searchParams.get('placement') as AdPlacement | null;

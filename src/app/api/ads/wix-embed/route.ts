@@ -362,7 +362,9 @@ export async function GET(request: NextRequest) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: data,
-            keepalive: true
+            keepalive: true,
+            credentials: 'omit', // Prevent CORS credentials conflict
+            mode: 'cors'
           }).catch(function() {});
         }
       }
@@ -387,7 +389,10 @@ export async function GET(request: NextRequest) {
           url += '&website=' + encodeURIComponent(CONFIG.website);
         }
 
-        fetch(url)
+        fetch(url, {
+            credentials: 'omit', // Prevent CORS credentials conflict in Wix iframe
+            mode: 'cors'
+          })
           .then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.json();
