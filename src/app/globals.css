@@ -102,6 +102,13 @@
   }
 }
 
+/* reCAPTCHA badge - hide and prevent blocking form inputs */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Mobile-first utilities */
 @layer utilities {
   /* Safe area insets for iOS devices */

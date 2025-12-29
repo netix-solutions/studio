@@ -281,7 +281,7 @@ export default function LoginPage() {
             Back to homepage
           </Link>
 
-          <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
+          <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden relative z-10">
             <CardContent className="p-5 md:p-8">
               <div className="text-center mb-6 md:mb-7">
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900 font-headline">
@@ -437,7 +437,7 @@ export default function LoginPage() {
               </div>
             </CardContent>
           </Card>
-          <div ref={recaptchaContainerRef} className="mt-4"></div>
+          <div ref={recaptchaContainerRef} className={`mt-4 ${codeSent ? 'pointer-events-none' : ''}`}></div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 text-xs md:text-sm text-gray-500">
             <div className="flex items-center gap-1.5">
