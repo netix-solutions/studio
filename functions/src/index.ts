@@ -171,7 +171,6 @@ export const onSubscriptionDeleted = functions.firestore
   .onDelete(async (snap, context) => {
     const customerId = context.params.customerId;
     const subscriptionId = context.params.subscriptionId;
-    const deletedData = snap.data();
 
     console.log(`Subscription ${subscriptionId} deleted for customer ${customerId}`);
 
