@@ -37,10 +37,18 @@ service cloud.firestore {
       allow read, list, update: if isSignedIn();
       allow delete: if isAdmin();
 
-      // Lead activities subcollection - admin only
+      // Lead activities subcollection
+      // Admins have full access; converted customers can create tracking activities
       match /activities/{activityId} {
         allow read, list: if isAdmin();
-        allow create: if isAdmin();
+        // Allow admins to create any activity, or allow the converted customer
+        // to create page_visit/login tracking activities on their own lead
+        allow create: if isAdmin() || (
+          isSignedIn() &&
+          get(/databases/$(database)/documents/leads/$(leadId)).data.convertedToCustomerId == request.auth.uid &&
+          request.resource.data.type in ['page_visit', 'login'] &&
+          request.resource.data.createdBy == request.auth.uid
+        );
         allow update, delete: if false; // Activities are immutable
       }
     }
