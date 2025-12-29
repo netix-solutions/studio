@@ -6,10 +6,8 @@ import {
     doc,
     onSnapshot,
     collection,
-    getDocs,
     query,
     addDoc,
-    updateDoc,
     serverTimestamp,
     orderBy,
 } from 'firebase/firestore';
@@ -22,8 +20,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import {
     Loader2,
     AlertCircle,
@@ -31,25 +29,36 @@ import {
     Calendar,
     CheckCircle,
     ExternalLink,
-    User,
-    Mail,
-    Phone,
-    Building2,
-    Globe,
+    Megaphone,
+    Paintbrush,
+    LayoutGrid,
+    Eye,
+    MousePointer,
+    Target,
+    TrendingUp,
+    ArrowRight,
+    Settings,
+    Sparkles,
+    Clock,
+    RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 // Workflow Components
 import { CustomerWorkflow } from '@/components/workflow/CustomerWorkflow';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn, formatPhoneNumber, fixUrl } from '@/lib/utils';
-import Image from 'next/image';
-import Link from 'next/link';
+import { WorkflowProgress } from '@/components/workflow/WorkflowProgress';
+import { cn } from '@/lib/utils';
 import {
     type Advertisement,
     type UserProfile,
+    type AdStatus,
     normalizeAdStatus,
     AD_STATUS_LABELS,
+    AD_STATUS_CUSTOMER_LABELS,
+    getWorkflowStepNumber,
+    isWorkflowComplete,
+    calculateCTR,
 } from '@/lib/types';
 
 interface Subscription {
@@ -62,9 +71,113 @@ interface Subscription {
     items?: Array<{ price: { product: { name: string }; unit_amount: number } }>;
 }
 
+// Stat Card Component
+function StatCard({
+    title,
+    value,
+    icon,
+    description,
+    highlight = false,
+}: {
+    title: string;
+    value: string;
+    icon: React.ReactNode;
+    description: string;
+    highlight?: boolean;
+}) {
+    return (
+        <Card className={cn(highlight && 'ring-2 ring-primary ring-offset-2')}>
+            <CardContent className="pt-5 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-muted-foreground text-sm">{title}</span>
+                    <span className="text-muted-foreground">{icon}</span>
+                </div>
+                <div className="flex items-end gap-2">
+                    <span className="text-2xl font-bold">{value}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{description}</p>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Action Card Component
+function ActionCard({
+    title,
+    description,
+    icon,
+    buttonText,
+    href,
+    onClick,
+    disabled = false,
+    variant = 'default',
+    badge,
+}: {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    buttonText: string;
+    href?: string;
+    onClick?: () => void;
+    disabled?: boolean;
+    variant?: 'default' | 'primary' | 'outline';
+    badge?: { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' };
+}) {
+    const cardContent = (
+        <Card className={cn(
+            'h-full transition-all hover:shadow-md',
+            variant === 'primary' && 'border-primary/50 bg-primary/5',
+            disabled && 'opacity-60'
+        )}>
+            <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                    <div className={cn(
+                        'p-2.5 rounded-lg inline-flex',
+                        variant === 'primary' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                    )}>
+                        {icon}
+                    </div>
+                    {badge && (
+                        <Badge variant={badge.variant}>{badge.text}</Badge>
+                    )}
+                </div>
+                <CardTitle className="text-lg mt-3">{title}</CardTitle>
+                <CardDescription className="text-sm">{description}</CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-0">
+                <Button
+                    className="w-full"
+                    variant={variant === 'primary' ? 'default' : 'outline'}
+                    disabled={disabled}
+                    onClick={onClick}
+                >
+                    {buttonText}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+
+    if (href && !disabled) {
+        return <Link href={href} className="block h-full">{cardContent}</Link>;
+    }
+
+    return cardContent;
+}
+
+function formatNumber(num: number): string {
+    if (num >= 1000000) {
+        return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+        return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+}
+
 export default function AccountPage() {
     const { user, isUserLoading: userLoading } = useUser();
-    const { firestore, storage } = useFirebase();
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const router = useRouter();
 
@@ -76,6 +189,7 @@ export default function AccountPage() {
     const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null);
     const [billingLoading, setBillingLoading] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [showWorkflow, setShowWorkflow] = useState(false);
 
     const handleRefresh = useCallback(() => {
         setRefreshKey(k => k + 1);
@@ -130,7 +244,7 @@ export default function AccountPage() {
             }
         );
 
-        // Subscribe to advertisements - get all for history and pending change request detection
+        // Subscribe to advertisements
         const adsUnsubscribe = onSnapshot(
             query(
                 collection(firestore, 'users', user.uid, 'advertisements'),
@@ -138,14 +252,11 @@ export default function AccountPage() {
             ),
             async (snapshot) => {
                 if (!snapshot.empty) {
-                    // Store all advertisements for history
                     const allAds = snapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data()
                     } as Advertisement));
                     setAllAdvertisements(allAds);
-
-                    // Set the most recent advertisement as the current one
                     setAdvertisement(allAds[0]);
                 } else {
                     setAllAdvertisements([]);
@@ -215,15 +326,24 @@ export default function AccountPage() {
     // Loading state
     if (loading || userLoading) {
         return (
-            <div className="space-y-6">
+            <div className="container max-w-6xl py-8 space-y-8">
                 <div className="flex items-center justify-between">
                     <div>
                         <Skeleton className="h-8 w-48 mb-2" />
                         <Skeleton className="h-4 w-72" />
                     </div>
+                    <Skeleton className="h-10 w-40" />
                 </div>
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-64 w-full" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Skeleton className="h-28" />
+                    <Skeleton className="h-28" />
+                    <Skeleton className="h-28" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Skeleton className="h-52" />
+                    <Skeleton className="h-52" />
+                    <Skeleton className="h-52" />
+                </div>
             </div>
         );
     }
@@ -231,23 +351,30 @@ export default function AccountPage() {
     // Not logged in
     if (!user) {
         return (
-            <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Please log in</AlertTitle>
-                <AlertDescription>
-                    You need to be logged in to view your account.
-                </AlertDescription>
-            </Alert>
+            <div className="container max-w-4xl py-8">
+                <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Please log in</AlertTitle>
+                    <AlertDescription>
+                        You need to be logged in to view your account.
+                    </AlertDescription>
+                </Alert>
+            </div>
         );
     }
 
     // No subscription
     if (!activeSubscription) {
         return (
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Welcome!</h1>
-                    <p className="text-muted-foreground">Get started with community advertising.</p>
+            <div className="container max-w-4xl py-8 space-y-8">
+                <div className="text-center py-8">
+                    <div className="inline-flex p-4 rounded-full bg-primary/10 mb-4">
+                        <Megaphone className="h-10 w-10 text-primary" />
+                    </div>
+                    <h1 className="text-3xl font-bold mb-2">Welcome to Community Websites!</h1>
+                    <p className="text-muted-foreground text-lg max-w-md mx-auto">
+                        Get started with advertising your business on our community websites.
+                    </p>
                 </div>
 
                 <Alert>
@@ -258,17 +385,17 @@ export default function AccountPage() {
                     </AlertDescription>
                 </Alert>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Ready to Get Started?</CardTitle>
-                        <CardDescription>
-                            Choose a plan to start advertising on our community websites.
+                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-2xl">Ready to Get Started?</CardTitle>
+                        <CardDescription className="text-base">
+                            Choose a plan to start advertising on our community websites and reach thousands of local customers.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <Button onClick={() => router.push('/pricing')}>
+                    <CardContent className="flex justify-center">
+                        <Button size="lg" onClick={() => router.push('/pricing')}>
                             View Plans & Pricing
-                            <ExternalLink className="ml-2 h-4 w-4" />
+                            <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -292,114 +419,109 @@ export default function AccountPage() {
     };
 
     const subDetails = getSubscriptionDetails();
+    const status: AdStatus = advertisement?.status
+        ? normalizeAdStatus(advertisement.status)
+        : 'info_needed';
+    const isLive = status === 'live';
+    const isPaused = status === 'paused';
+    const isInProgress = !isWorkflowComplete(status);
+    const workflowStep = getWorkflowStepNumber(status);
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    // Calculate ad stats
+    const impressions = advertisement?.impressions || 0;
+    const clicks = advertisement?.clicks || 0;
+    const ctr = calculateCTR(impressions, clicks);
+
+    // Determine what action cards to show
+    const getActionCards = () => {
+        const cards = [];
+
+        // If workflow is not complete, show the build ad card
+        if (isInProgress) {
+            cards.push({
+                key: 'build',
+                title: 'Build Your Advertisement',
+                description: status === 'info_needed'
+                    ? 'Start by telling us about your business and designing your ad.'
+                    : status === 'design_pending'
+                    ? 'Continue designing your advertisement or request custom design.'
+                    : status === 'in_review'
+                    ? 'Our team is working on your ad. We\'ll notify you when it\'s ready.'
+                    : status === 'customer_approval'
+                    ? 'Your ad proof is ready! Review and approve it to go live.'
+                    : status === 'approved'
+                    ? 'Your ad is approved and will be published soon!'
+                    : 'Continue setting up your advertisement.',
+                icon: <Paintbrush className="h-5 w-5" />,
+                buttonText: status === 'in_review' || status === 'approved' ? 'View Status' : 'Continue Setup',
+                onClick: () => setShowWorkflow(true),
+                variant: 'primary' as const,
+                badge: { text: AD_STATUS_CUSTOMER_LABELS[status], variant: 'secondary' as const },
+            });
+        }
+
+        // If ad is live or paused, show request change card
+        if (isLive || isPaused) {
+            cards.push({
+                key: 'change',
+                title: 'Request Ad Change',
+                description: 'Want to update your advertisement? Request a design change and our team will help you.',
+                icon: <RefreshCw className="h-5 w-5" />,
+                buttonText: 'Request Change',
+                onClick: () => setShowWorkflow(true),
+                variant: 'default' as const,
+            });
+        }
+
+        // If ad is live, show edit directory listing card
+        if (isLive) {
+            cards.push({
+                key: 'directory',
+                title: 'Edit Directory Listing',
+                description: 'Customize how your business appears in the sponsor directory with your description, hours, and social links.',
+                icon: <LayoutGrid className="h-5 w-5" />,
+                buttonText: 'Edit Listing',
+                href: '/directory-listing',
+                variant: 'default' as const,
+            });
+        }
+
+        // Always show manage subscription card
+        cards.push({
+            key: 'subscription',
+            title: 'Manage Subscription',
+            description: `${subDetails?.planName} - ${subDetails?.price}/month. Renews ${subDetails?.periodEnd}.`,
+            icon: <CreditCard className="h-5 w-5" />,
+            buttonText: 'Billing & Subscription',
+            onClick: handleBillingPortal,
+            disabled: billingLoading,
+            variant: 'outline' as const,
+        });
+
+        return cards;
+    };
+
+    const actionCards = getActionCards();
+
+    // If user clicked to view workflow, show the workflow component
+    if (showWorkflow) {
+        return (
+            <div className="container max-w-4xl py-8 space-y-6">
+                {/* Back Button */}
+                <Button variant="ghost" onClick={() => setShowWorkflow(false)} className="gap-2">
+                    <ArrowRight className="h-4 w-4 rotate-180" />
+                    Back to Dashboard
+                </Button>
+
                 <div>
-                    <h1 className="text-2xl font-bold">My Account</h1>
+                    <h1 className="text-2xl font-bold">Your Advertisement</h1>
                     <p className="text-muted-foreground">
-                        Manage your advertisement and subscription.
+                        {isLive || isPaused
+                            ? 'Manage your live advertisement or request changes.'
+                            : 'Complete the steps below to get your ad live.'}
                     </p>
                 </div>
-                <Button variant="outline" onClick={handleBillingPortal} disabled={billingLoading}>
-                    {billingLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <CreditCard className="mr-2 h-4 w-4" />
-                    )}
-                    Billing & Subscription
-                </Button>
-            </div>
 
-            {/* Subscription Summary Card */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                                {subDetails?.planName}
-                            </CardTitle>
-                            <CardDescription className="mt-1">
-                                Active subscription
-                            </CardDescription>
-                        </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            {activeSubscription.status}
-                        </Badge>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-wrap gap-6 text-sm">
-                        <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{subDetails?.price}/month</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>Renews {subDetails?.periodEnd}</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Account Info Summary */}
-            {userProfile && (userProfile.businessName || userProfile.contactName) && (
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Business Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 text-sm md:grid-cols-2">
-                            {userProfile.businessName && (
-                                <div className="flex items-center gap-2">
-                                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                                    <span>{userProfile.businessName}</span>
-                                </div>
-                            )}
-                            {userProfile.contactName && (
-                                <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                    <span>{userProfile.contactName}</span>
-                                </div>
-                            )}
-                            {userProfile.email && (
-                                <div className="flex items-center gap-2">
-                                    <Mail className="h-4 w-4 text-muted-foreground" />
-                                    <span>{userProfile.email}</span>
-                                </div>
-                            )}
-                            {(userProfile.cellPhone || userProfile.phone) && (
-                                <div className="flex items-center gap-2">
-                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                    <span>{userProfile.cellPhone || userProfile.phone}</span>
-                                </div>
-                            )}
-                            {userProfile.adWebsiteUrl && (
-                                <div className="flex items-center gap-2 md:col-span-2">
-                                    <Globe className="h-4 w-4 text-muted-foreground" />
-                                    <a
-                                        href={userProfile.adWebsiteUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:underline"
-                                    >
-                                        {userProfile.adWebsiteUrl}
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            <Separator />
-
-            {/* Ad Workflow Section */}
-            <div>
-                <h2 className="text-xl font-semibold mb-4">Your Advertisement</h2>
                 {userProfile && (
                     <CustomerWorkflow
                         userId={user.uid}
@@ -412,6 +534,161 @@ export default function AccountPage() {
                     />
                 )}
             </div>
+        );
+    }
+
+    return (
+        <div className="container max-w-6xl py-8 space-y-8">
+            {/* Welcome Header */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">
+                        {userProfile?.businessName
+                            ? `Welcome, ${userProfile.businessName}!`
+                            : userProfile?.contactName
+                            ? `Welcome, ${userProfile.contactName}!`
+                            : 'Welcome!'}
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        {isLive
+                            ? 'Your advertisement is live on our community websites.'
+                            : isPaused
+                            ? 'Your advertisement is currently paused.'
+                            : 'Complete your setup to start advertising.'}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Badge
+                        variant={isLive ? 'default' : isPaused ? 'secondary' : 'outline'}
+                        className={cn(
+                            'px-3 py-1',
+                            isLive && 'bg-green-100 text-green-700 hover:bg-green-100',
+                            isPaused && 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                        )}
+                    >
+                        {isLive && <CheckCircle className="h-3.5 w-3.5 mr-1.5" />}
+                        {isPaused && <Clock className="h-3.5 w-3.5 mr-1.5" />}
+                        {isInProgress && <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+                        {AD_STATUS_CUSTOMER_LABELS[status]}
+                    </Badge>
+                </div>
+            </div>
+
+            {/* Stats Section (only if ad is live or paused) */}
+            {(isLive || isPaused) && (
+                <div className="space-y-3">
+                    <h2 className="text-lg font-semibold">Ad Performance</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <StatCard
+                            title="Impressions"
+                            value={formatNumber(impressions)}
+                            icon={<Eye className="w-4 h-4" />}
+                            description="Times your ad was shown"
+                        />
+                        <StatCard
+                            title="Clicks"
+                            value={formatNumber(clicks)}
+                            icon={<MousePointer className="w-4 h-4" />}
+                            description="Visits to your website"
+                        />
+                        <StatCard
+                            title="Click Rate"
+                            value={`${ctr}%`}
+                            icon={<Target className="w-4 h-4" />}
+                            description="Percentage of viewers who clicked"
+                            highlight={ctr > 2}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Progress Section (if workflow is in progress) */}
+            {isInProgress && (
+                <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-primary" />
+                                Setup Progress
+                            </CardTitle>
+                            <span className="text-sm text-muted-foreground">
+                                Step {workflowStep} of 6
+                            </span>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Progress value={(workflowStep / 6) * 100} className="h-2 mb-3" />
+                        <p className="text-sm text-muted-foreground">
+                            {AD_STATUS_CUSTOMER_LABELS[status]}
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Action Cards */}
+            <div className="space-y-3">
+                <h2 className="text-lg font-semibold">Quick Actions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {actionCards.map((card) => (
+                        <ActionCard
+                            key={card.key}
+                            title={card.title}
+                            description={card.description}
+                            icon={card.icon}
+                            buttonText={card.buttonText}
+                            href={card.href}
+                            onClick={card.onClick}
+                            disabled={card.disabled}
+                            variant={card.variant}
+                            badge={card.badge}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* Ad Preview (if ad is live or has proof) */}
+            {advertisement?.adProofUrl && (isLive || isPaused) && (
+                <div className="space-y-3">
+                    <h2 className="text-lg font-semibold">Your Advertisement</h2>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="flex flex-col md:flex-row gap-6 items-center">
+                                <div className="w-full md:w-auto">
+                                    <img
+                                        src={advertisement.adProofUrl}
+                                        alt="Your advertisement"
+                                        className="rounded-lg border shadow-sm max-w-full md:max-w-md"
+                                    />
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Links to</p>
+                                        <a
+                                            href={advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline flex items-center gap-1"
+                                        >
+                                            {advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
+                                            <ExternalLink className="h-3.5 w-3.5" />
+                                        </a>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)}>
+                                            Request Change
+                                        </Button>
+                                        <Link href="/directory-listing">
+                                            <Button variant="outline" size="sm">
+                                                Edit Directory
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }
