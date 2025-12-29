@@ -1266,9 +1266,11 @@ export function createDefaultDirectoryListing(
 
 /**
  * Check if a directory listing is visible (approved and active ad)
+ * Note: showInDirectory === false explicitly hides the listing,
+ * but undefined or true allows it to be visible (for backwards compatibility)
  */
 export function isDirectoryListingVisible(ad: LiveAd): boolean {
-  if (!ad.showInDirectory) return false;
+  if (ad.showInDirectory === false) return false;
   if (ad.status !== 'active') return false;
   if (!ad.directoryListing) return false;
   if (ad.directoryListing.directoryStatus !== 'approved') return false;
