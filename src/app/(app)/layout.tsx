@@ -20,6 +20,12 @@ const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/leads';
 
+// Helper to check if pathname matches an admin route (exact match or starts with route + '/')
+// This prevents /directory-listing from matching /directory
+const isAdminRoute = (pathname: string, route: string) => {
+  return pathname === route || pathname.startsWith(route + '/');
+};
+
 export default function ProtectedLayout({
   children,
 }: {
@@ -75,7 +81,7 @@ export default function ProtectedLayout({
         setIsRoleLoading(false);
 
         // --- Role-based routing ---
-        const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route) && route !== '/subscriptions'); // allow non-admins to see their own subs
+        const isAccessingAdminRoute = ADMIN_ROUTES.some(route => isAdminRoute(pathname, route) && route !== '/subscriptions'); // allow non-admins to see their own subs
 
         if (!userIsAdmin && isAccessingAdminRoute) {
           // If a non-admin tries to access an admin page, redirect them.
@@ -106,7 +112,7 @@ export default function ProtectedLayout({
   }
 
   // Final check to prevent flashing admin content to non-admins
-  const isAccessingAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route) && route !== '/subscriptions');
+  const isAccessingAdminRoute = ADMIN_ROUTES.some(route => isAdminRoute(pathname, route) && route !== '/subscriptions');
   if (!isAdmin && isAccessingAdminRoute) {
       return (
         <div className="flex h-screen items-center justify-center bg-background">
@@ -115,6 +121,21 @@ export default function ProtectedLayout({
       );
   }
 
+  // For customers, render without sidebar (navigation is in header)
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <FirebaseErrorListener />
+        <CommandPalette isAdmin={isAdmin} />
+        <Header isAdmin={isAdmin} />
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  // For admins, render with sidebar
   return (
     <SidebarProvider>
         {/* The error listener is now scoped to the protected layout */}

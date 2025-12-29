@@ -16,11 +16,11 @@ import {
   Handshake,
   Ticket,
   User,
-  ShoppingBag,
   ArrowRight,
   Radio,
   UserPlus,
   FolderOpen,
+  LayoutGrid,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -49,8 +49,8 @@ const ADMIN_COMMANDS: CommandItem[] = [
 ];
 
 const USER_COMMANDS: CommandItem[] = [
-  { id: 'account', label: 'My Account', icon: User, href: '/account', keywords: ['profile', 'settings'], group: 'main' },
-  { id: 'pricing', label: 'Change Plan', icon: ShoppingBag, href: '/pricing', keywords: ['upgrade', 'subscription', 'billing'], group: 'main' },
+  { id: 'account', label: 'My Account', icon: User, href: '/account', keywords: ['profile', 'settings', 'dashboard'], group: 'main' },
+  { id: 'directory-listing', label: 'Directory Listing', icon: LayoutGrid, href: '/directory-listing', keywords: ['directory', 'listing', 'business', 'profile'], group: 'main' },
 ];
 
 interface CommandPaletteProps {
