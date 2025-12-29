@@ -22,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Loader2,
     AlertCircle,
@@ -41,9 +42,14 @@ import {
     Sparkles,
     Clock,
     RefreshCw,
+    User,
+    Wallet,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+
+// Subscription Manager Component
+import { SubscriptionManager } from '@/components/account/subscription-manager';
 
 // Workflow Components
 import { CustomerWorkflow } from '@/components/workflow/CustomerWorkflow';
@@ -64,12 +70,30 @@ import {
 
 interface Subscription {
     id: string;
-    status: string;
+    status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired';
     planName?: string;
     price?: string;
     periodEnd?: string;
+    created?: { seconds: number };
+    current_period_start?: { seconds: number };
     current_period_end?: { seconds: number };
-    items?: Array<{ price: { product: { name: string }; unit_amount: number } }>;
+    cancel_at_period_end?: boolean;
+    canceled_at?: { seconds: number };
+    trial_end?: { seconds: number };
+    items?: Array<{
+        price: {
+            id: string;
+            product: { name: string; description?: string };
+            unit_amount: number;
+            recurring?: { interval: 'month' | 'year'; interval_count?: number };
+        };
+    }>;
+    // Manual subscription fields
+    isManualEntry?: boolean;
+    amount?: number;
+    billingPeriod?: 'monthly' | 'quarterly' | 'yearly' | 'one_time' | 'custom';
+    startDate?: { seconds: number };
+    endDate?: { seconds: number };
 }
 
 // Stat Card Component
@@ -191,6 +215,7 @@ export default function AccountPage() {
     const [billingLoading, setBillingLoading] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const [showWorkflow, setShowWorkflow] = useState(false);
+    const [activeTab, setActiveTab] = useState('overview');
 
     const handleRefresh = useCallback(() => {
         setRefreshKey(k => k + 1);
@@ -508,7 +533,7 @@ export default function AccountPage() {
     }
 
     return (
-        <div className="container max-w-6xl py-8 space-y-8">
+        <div className="container max-w-6xl py-8 space-y-6">
             {/* Welcome Header */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -544,121 +569,239 @@ export default function AccountPage() {
                 </div>
             </div>
 
-            {/* Stats Section (only if ad is live or paused) */}
-            {(isLive || isPaused) && (
-                <div className="space-y-3">
-                    <h2 className="text-lg font-semibold">Ad Performance</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <StatCard
-                            title="Impressions"
-                            value={formatNumber(impressions)}
-                            icon={<Eye className="w-4 h-4" />}
-                            description="Times your ad was shown"
-                        />
-                        <StatCard
-                            title="Clicks"
-                            value={formatNumber(clicks)}
-                            icon={<MousePointer className="w-4 h-4" />}
-                            description="Visits to your website"
-                        />
-                        <StatCard
-                            title="Click Rate"
-                            value={`${ctr}%`}
-                            icon={<Target className="w-4 h-4" />}
-                            description="Percentage of viewers who clicked"
-                            highlight={ctr > 2}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* Tabbed Navigation */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+                    <TabsTrigger value="overview" className="gap-2">
+                        <Megaphone className="h-4 w-4" />
+                        <span className="hidden sm:inline">Overview</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="subscription" className="gap-2">
+                        <Wallet className="h-4 w-4" />
+                        <span className="hidden sm:inline">Subscription</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="settings" className="gap-2">
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">Settings</span>
+                    </TabsTrigger>
+                </TabsList>
 
-            {/* Progress Section (if workflow is in progress) */}
-            {isInProgress && (
-                <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-                    <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Sparkles className="h-5 w-5 text-primary" />
-                                Setup Progress
-                            </CardTitle>
-                            <span className="text-sm text-muted-foreground">
-                                Step {workflowStep} of 6
-                            </span>
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="space-y-6">
+                    {/* Stats Section (only if ad is live or paused) */}
+                    {(isLive || isPaused) && (
+                        <div className="space-y-3">
+                            <h2 className="text-lg font-semibold">Ad Performance</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <StatCard
+                                    title="Impressions"
+                                    value={formatNumber(impressions)}
+                                    icon={<Eye className="w-4 h-4" />}
+                                    description="Times your ad was shown"
+                                />
+                                <StatCard
+                                    title="Clicks"
+                                    value={formatNumber(clicks)}
+                                    icon={<MousePointer className="w-4 h-4" />}
+                                    description="Visits to your website"
+                                />
+                                <StatCard
+                                    title="Click Rate"
+                                    value={`${ctr}%`}
+                                    icon={<Target className="w-4 h-4" />}
+                                    description="Percentage of viewers who clicked"
+                                    highlight={ctr > 2}
+                                />
+                            </div>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <Progress value={(workflowStep / 6) * 100} className="h-2 mb-3" />
-                        <p className="text-sm text-muted-foreground">
-                            {AD_STATUS_CUSTOMER_LABELS[status]}
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
+                    )}
 
-            {/* Action Cards */}
-            <div className="space-y-3">
-                <h2 className="text-lg font-semibold">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {actionCards.map((card) => (
-                        <ActionCard
-                            key={card.key}
-                            title={card.title}
-                            description={card.description}
-                            icon={card.icon}
-                            buttonText={card.buttonText}
-                            href={card.href}
-                            onClick={card.onClick}
-                            disabled={card.disabled}
-                            variant={card.variant}
-                            badge={card.badge}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Ad Preview (if ad is live or has proof) */}
-            {advertisement?.adProofUrl && (isLive || isPaused) && (
-                <div className="space-y-3">
-                    <h2 className="text-lg font-semibold">Your Advertisement</h2>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col md:flex-row gap-6 items-center">
-                                <div className="w-full md:w-auto">
-                                    <img
-                                        src={advertisement.adProofUrl}
-                                        alt="Your advertisement"
-                                        className="rounded-lg border shadow-sm max-w-full md:max-w-md"
-                                    />
+                    {/* Progress Section (if workflow is in progress) */}
+                    {isInProgress && (
+                        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardHeader className="pb-2">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Sparkles className="h-5 w-5 text-primary" />
+                                        Setup Progress
+                                    </CardTitle>
+                                    <span className="text-sm text-muted-foreground">
+                                        Step {workflowStep} of 6
+                                    </span>
                                 </div>
-                                <div className="flex-1 space-y-3">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Links to</p>
-                                        <a
-                                            href={advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-primary hover:underline flex items-center gap-1"
-                                        >
-                                            {advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
-                                            <ExternalLink className="h-3.5 w-3.5" />
-                                        </a>
+                            </CardHeader>
+                            <CardContent>
+                                <Progress value={(workflowStep / 6) * 100} className="h-2 mb-3" />
+                                <p className="text-sm text-muted-foreground">
+                                    {AD_STATUS_CUSTOMER_LABELS[status]}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Action Cards */}
+                    <div className="space-y-3">
+                        <h2 className="text-lg font-semibold">Quick Actions</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {actionCards.map((card) => (
+                                <ActionCard
+                                    key={card.key}
+                                    title={card.title}
+                                    description={card.description}
+                                    icon={card.icon}
+                                    buttonText={card.buttonText}
+                                    href={card.href}
+                                    onClick={card.onClick}
+                                    disabled={card.disabled}
+                                    variant={card.variant}
+                                    badge={card.badge}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Ad Preview (if ad is live or has proof) */}
+                    {advertisement?.adProofUrl && (isLive || isPaused) && (
+                        <div className="space-y-3">
+                            <h2 className="text-lg font-semibold">Your Advertisement</h2>
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <div className="flex flex-col md:flex-row gap-6 items-center">
+                                        <div className="w-full md:w-auto">
+                                            <img
+                                                src={advertisement.adProofUrl}
+                                                alt="Your advertisement"
+                                                className="rounded-lg border shadow-sm max-w-full md:max-w-md"
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Links to</p>
+                                                <a
+                                                    href={advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary hover:underline flex items-center gap-1"
+                                                >
+                                                    {advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                </a>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)}>
+                                                    Request Change
+                                                </Button>
+                                                <Link href="/directory-listing">
+                                                    <Button variant="outline" size="sm">
+                                                        Edit Directory
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)}>
-                                            Request Change
-                                        </Button>
-                                        <Link href="/directory-listing">
-                                            <Button variant="outline" size="sm">
-                                                Edit Directory
-                                            </Button>
-                                        </Link>
-                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* Subscription Tab */}
+                <TabsContent value="subscription" className="space-y-6">
+                    {activeSubscription && (
+                        <SubscriptionManager
+                            subscription={activeSubscription}
+                            adsCount={allAdvertisements.filter(ad =>
+                                ad.status === 'live' || ad.status === 'paused'
+                            ).length}
+                            onManageBilling={handleBillingPortal}
+                            onChangePlan={() => router.push('/pricing')}
+                            isLoading={billingLoading}
+                        />
+                    )}
+                </TabsContent>
+
+                {/* Settings Tab */}
+                <TabsContent value="settings" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <User className="h-5 w-5" />
+                                Account Information
+                            </CardTitle>
+                            <CardDescription>
+                                Manage your account details and preferences
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Email</p>
+                                    <p className="font-medium">{user?.email || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Business Name</p>
+                                    <p className="font-medium">{userProfile?.businessName || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Contact Name</p>
+                                    <p className="font-medium">{userProfile?.contactName || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Phone</p>
+                                    <p className="font-medium">{userProfile?.phone || '-'}</p>
                                 </div>
                             </div>
                         </CardContent>
+                        <CardFooter className="flex justify-between border-t pt-6">
+                            <p className="text-sm text-muted-foreground">
+                                Update your business information in the ad workflow.
+                            </p>
+                            <Button variant="outline" onClick={() => setShowWorkflow(true)}>
+                                Edit Profile
+                            </Button>
+                        </CardFooter>
                     </Card>
-                </div>
-            )}
+
+                    {/* Subscription Summary in Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CreditCard className="h-5 w-5" />
+                                Billing Summary
+                            </CardTitle>
+                            <CardDescription>
+                                Quick overview of your subscription
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Current Plan</p>
+                                    <p className="font-medium">{subDetails?.planName || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Monthly Cost</p>
+                                    <p className="font-medium">{subDetails?.price || '-'}/month</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">Next Billing Date</p>
+                                    <p className="font-medium">{subDetails?.periodEnd || '-'}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="border-t pt-6">
+                            <Button
+                                onClick={() => setActiveTab('subscription')}
+                                variant="outline"
+                                className="w-full"
+                            >
+                                <Wallet className="h-4 w-4 mr-2" />
+                                Manage Subscription
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

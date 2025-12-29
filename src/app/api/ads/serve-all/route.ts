@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
       }
 
       potentialAds.push(ad);
-    });
+    }
 
     if (potentialAds.length === 0) {
       return NextResponse.json(
