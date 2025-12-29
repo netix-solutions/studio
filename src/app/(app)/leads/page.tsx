@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirebase, useUser } from '@/firebase';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, serverTimestamp, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
-import { Loader2, AlertCircle, MoreHorizontal, Search, Filter, ChevronDown, Mail, Trash2, Users, TrendingUp } from 'lucide-react';
+import { Loader2, AlertCircle, MoreHorizontal, Search, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,10 +15,8 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-    DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import {
     AlertDialog,
@@ -40,23 +38,14 @@ import {
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import {
     Lead,
-    LeadStage,
     LeadSource,
-    LeadPriority,
     LeadStatus,
-    LEAD_STAGES,
     LEAD_STATUSES,
-    LEAD_STAGE_LABELS,
-    LEAD_STAGE_COLORS,
-    LEAD_STAGE_ORDER,
     LEAD_PRIORITY_LABELS,
-    LEAD_PRIORITY_COLORS,
     LEAD_SOURCE_LABELS,
     LEAD_STATUS_LABELS,
-    LEAD_STATUS_COLORS,
     ACTIVITY_TYPES,
 } from '@/lib/types';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -67,12 +56,10 @@ export default function LeadsPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<LeadStatus>('active');
-    const [selectedStage, setSelectedStage] = useState<string>('all');
     const [selectedSource, setSelectedSource] = useState<string>('all');
     const [selectedPriority, setSelectedPriority] = useState<string>('all');
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-    const [isBulkUpdating, setIsBulkUpdating] = useState(false);
     const [deleteConfirmLead, setDeleteConfirmLead] = useState<Lead | null>(null);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -94,7 +81,6 @@ export default function LeadsPage() {
             const leadsData: Lead[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                stage: doc.data().stage || LEAD_STAGES.NEW,
                 priority: doc.data().priority || 'medium',
                 source: doc.data().source || 'website',
                 score: doc.data().score || 0,
@@ -132,11 +118,6 @@ export default function LeadsPage() {
                 if (!matchesSearch) return false;
             }
 
-            // Stage filter
-            if (selectedStage !== 'all' && lead.stage !== selectedStage) {
-                return false;
-            }
-
             // Source filter
             if (selectedSource !== 'all' && lead.source !== selectedSource) {
                 return false;
@@ -149,7 +130,7 @@ export default function LeadsPage() {
 
             return true;
         });
-    }, [leads, searchQuery, selectedStatus, selectedStage, selectedSource, selectedPriority]);
+    }, [leads, searchQuery, selectedStatus, selectedSource, selectedPriority]);
 
     // Count leads by status for badges
     const statusCounts = useMemo(() => {
@@ -184,56 +165,6 @@ export default function LeadsPage() {
         setSelectedLeads(newSelected);
     };
 
-    const handleBulkStageUpdate = async (newStage: LeadStage) => {
-        if (!firestore || !user || selectedLeads.size === 0) return;
-
-        setIsBulkUpdating(true);
-        try {
-            const batch = writeBatch(firestore);
-            const selectedLeadsList = leads.filter(l => selectedLeads.has(l.id));
-
-            for (const lead of selectedLeadsList) {
-                const leadRef = doc(firestore, 'leads', lead.id);
-                batch.update(leadRef, {
-                    stage: newStage,
-                    updatedAt: serverTimestamp(),
-                });
-            }
-
-            await batch.commit();
-
-            // Log activities
-            for (const lead of selectedLeadsList) {
-                if (lead.stage !== newStage) {
-                    await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
-                        leadId: lead.id,
-                        type: ACTIVITY_TYPES.STAGE_CHANGE,
-                        title: `Stage changed from ${LEAD_STAGE_LABELS[lead.stage as LeadStage]} to ${LEAD_STAGE_LABELS[newStage]}`,
-                        metadata: { fromStage: lead.stage, toStage: newStage },
-                        createdBy: user.uid,
-                        createdByName: user.displayName || user.email || 'Unknown',
-                        createdAt: serverTimestamp(),
-                    });
-                }
-            }
-
-            setSelectedLeads(new Set());
-            toast({
-                title: 'Leads Updated',
-                description: `${selectedLeadsList.length} leads moved to ${LEAD_STAGE_LABELS[newStage]}`,
-            });
-        } catch (err) {
-            console.error("Error updating leads:", err);
-            toast({
-                title: 'Error',
-                description: 'Failed to update leads',
-                variant: 'destructive',
-            });
-        } finally {
-            setIsBulkUpdating(false);
-        }
-    };
-
     const handleBulkStatusUpdate = async (newStatus: LeadStatus) => {
         if (!firestore || !user || selectedLeads.size === 0) return;
 
@@ -258,7 +189,7 @@ export default function LeadsPage() {
                 if (currentStatus !== newStatus) {
                     await addDoc(collection(firestore, 'leads', lead.id, 'activities'), {
                         leadId: lead.id,
-                        type: ACTIVITY_TYPES.STAGE_CHANGE,
+                        type: ACTIVITY_TYPES.NOTE,
                         title: `Status changed from ${LEAD_STATUS_LABELS[currentStatus]} to ${LEAD_STATUS_LABELS[newStatus]}`,
                         metadata: { fromStatus: currentStatus, toStatus: newStatus },
                         createdBy: user.uid,
@@ -345,22 +276,16 @@ export default function LeadsPage() {
     // Calculate stats
     const stats = useMemo(() => {
         const total = filteredLeads.length;
-        const byStage: Record<string, number> = {};
-        for (const lead of filteredLeads) {
-            const stage = lead.stage || 'new';
-            byStage[stage] = (byStage[stage] || 0) + 1;
-        }
-        return { total, byStage };
+        return { total };
     }, [filteredLeads]);
 
     const clearFilters = () => {
         setSearchQuery('');
-        setSelectedStage('all');
         setSelectedSource('all');
         setSelectedPriority('all');
     };
 
-    const hasActiveFilters = searchQuery || selectedStage !== 'all' || selectedSource !== 'all' || selectedPriority !== 'all';
+    const hasActiveFilters = searchQuery || selectedSource !== 'all' || selectedPriority !== 'all';
 
     return (
         <div className="space-y-4">
@@ -376,11 +301,6 @@ export default function LeadsPage() {
                     <Badge variant="outline" className="text-base md:text-lg px-2 md:px-3 py-1">
                         {stats.total} leads
                     </Badge>
-                    {stats.byStage['new'] > 0 && (
-                        <Badge className="bg-blue-100 text-blue-700">
-                            {stats.byStage['new']} new
-                        </Badge>
-                    )}
                 </div>
             </div>
 
@@ -419,21 +339,7 @@ export default function LeadsPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 md:flex md:gap-4">
-                            <Select value={selectedStage} onValueChange={setSelectedStage}>
-                                <SelectTrigger className="w-full md:w-[160px]">
-                                    <SelectValue placeholder="Stage" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Stages</SelectItem>
-                                    {LEAD_STAGE_ORDER.map((stage) => (
-                                        <SelectItem key={stage} value={stage}>
-                                            {LEAD_STAGE_LABELS[stage]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
+                        <div className="grid grid-cols-2 gap-2 md:flex md:gap-4">
                             <Select value={selectedSource} onValueChange={setSelectedSource}>
                                 <SelectTrigger className="w-full md:w-[160px]">
                                     <SelectValue placeholder="Source" />
@@ -472,29 +378,6 @@ export default function LeadsPage() {
                             <span className="text-sm font-medium">
                                 {selectedLeads.size} selected
                             </span>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" disabled={isBulkUpdating}>
-                                        {isBulkUpdating ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <TrendingUp className="mr-2 h-4 w-4" />
-                                        )}
-                                        Move to Stage
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    {LEAD_STAGE_ORDER.map((stage) => (
-                                        <DropdownMenuItem
-                                            key={stage}
-                                            onClick={() => handleBulkStageUpdate(stage)}
-                                        >
-                                            {LEAD_STAGE_LABELS[stage]}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -560,7 +443,6 @@ export default function LeadsPage() {
                                         </TableHead>
                                         <TableHead>Contact</TableHead>
                                         <TableHead>Business</TableHead>
-                                        <TableHead>Stage</TableHead>
                                         <TableHead className="hidden md:table-cell">Source</TableHead>
                                         <TableHead className="hidden lg:table-cell">Score</TableHead>
                                         <TableHead className="hidden sm:table-cell">Date</TableHead>
@@ -568,11 +450,7 @@ export default function LeadsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredLeads.length > 0 ? filteredLeads.map((lead) => {
-                                        const stageColors = LEAD_STAGE_COLORS[lead.stage as LeadStage] || LEAD_STAGE_COLORS.new;
-                                        const priorityColors = LEAD_PRIORITY_COLORS[lead.priority as LeadPriority] || LEAD_PRIORITY_COLORS.medium;
-
-                                        return (
+                                    {filteredLeads.length > 0 ? filteredLeads.map((lead) => (
                                             <TableRow
                                                 key={lead.id}
                                                 className="cursor-pointer"
@@ -589,11 +467,6 @@ export default function LeadsPage() {
                                                 </TableCell>
                                                 <TableCell onClick={() => handleRowClick(lead.id)}>
                                                     {lead.businessName}
-                                                </TableCell>
-                                                <TableCell onClick={() => handleRowClick(lead.id)}>
-                                                    <Badge className={cn(stageColors.bg, stageColors.text, "border", stageColors.border)}>
-                                                        {LEAD_STAGE_LABELS[lead.stage as LeadStage] || lead.stage}
-                                                    </Badge>
                                                 </TableCell>
                                                 <TableCell onClick={() => handleRowClick(lead.id)} className="hidden md:table-cell">
                                                     <span className="text-sm">
@@ -637,19 +510,6 @@ export default function LeadsPage() {
                                                                 View Details
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuLabel>Move to Stage</DropdownMenuLabel>
-                                                            {LEAD_STAGE_ORDER.filter(s => s !== lead.stage).slice(0, 4).map((stage) => (
-                                                                <DropdownMenuItem
-                                                                    key={stage}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleBulkStageUpdate(stage);
-                                                                    }}
-                                                                >
-                                                                    {LEAD_STAGE_LABELS[stage]}
-                                                                </DropdownMenuItem>
-                                                            ))}
-                                                            <DropdownMenuSeparator />
                                                             <DropdownMenuItem
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -674,10 +534,9 @@ export default function LeadsPage() {
                                                     </DropdownMenu>
                                                 </TableCell>
                                             </TableRow>
-                                        );
-                                    }) : (
+                                    )) : (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center h-24">
+                                            <TableCell colSpan={7} className="text-center h-24">
                                                 {hasActiveFilters ? 'No leads match your filters.' : 'No leads found.'}
                                             </TableCell>
                                         </TableRow>

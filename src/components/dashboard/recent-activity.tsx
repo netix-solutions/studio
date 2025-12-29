@@ -48,7 +48,6 @@ type EventType =
   | 'email_received'
   | 'call'
   | 'meeting'
-  | 'stage_change'
   | 'priority_change'
   | 'score_change'
   | 'conversion'
@@ -68,7 +67,6 @@ const eventConfig: Record<EventType, { icon: any; bgColor: string; textColor: st
   email_received: { icon: Mail, bgColor: 'bg-green-100', textColor: 'text-green-600', label: 'Email Received' },
   call: { icon: PhoneCall, bgColor: 'bg-amber-100', textColor: 'text-amber-600', label: 'Call' },
   meeting: { icon: Users, bgColor: 'bg-purple-100', textColor: 'text-purple-600', label: 'Meeting' },
-  stage_change: { icon: TrendingUp, bgColor: 'bg-indigo-100', textColor: 'text-indigo-600', label: 'Stage Changed' },
   priority_change: { icon: Target, bgColor: 'bg-orange-100', textColor: 'text-orange-600', label: 'Priority Changed' },
   score_change: { icon: TrendingUp, bgColor: 'bg-cyan-100', textColor: 'text-cyan-600', label: 'Score Updated' },
   conversion: { icon: CheckCircle2, bgColor: 'bg-green-100', textColor: 'text-green-600', label: 'Converted' },
@@ -110,8 +108,6 @@ interface LeadActivity {
   title: string;
   description?: string;
   metadata?: {
-    fromStage?: string;
-    toStage?: string;
     pageUrl?: string;
     pageTitle?: string;
     [key: string]: any;
@@ -220,8 +216,6 @@ export function RecentActivity({ className }: { className?: string }) {
       if (activity.type === 'page_visit' && activity.metadata?.pageTitle) {
         title = `Visited: ${activity.metadata.pageTitle}`;
         description = activity.metadata.pageUrl;
-      } else if (activity.type === 'stage_change' && activity.metadata?.fromStage && activity.metadata?.toStage) {
-        title = `Stage: ${activity.metadata.fromStage} → ${activity.metadata.toStage}`;
       }
 
       items.push({

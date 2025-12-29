@@ -65,7 +65,6 @@ export const registerWithEmail = async (auth: Auth, email: string, password: str
             batch.update(leadDocRef, {
                 convertedToCustomerId: user.uid,
                 convertedAt: serverTimestamp(),
-                stage: 'won',
                 updatedAt: serverTimestamp(),
             });
         } else {
@@ -367,7 +366,6 @@ export const mergePhoneUserWithExistingAccount = async (
                     batch.update(leadDocRef, {
                         convertedToCustomerId: user.uid,
                         convertedAt: serverTimestamp(),
-                        stage: 'won',
                         updatedAt: serverTimestamp(),
                     });
 
