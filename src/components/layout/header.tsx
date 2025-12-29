@@ -11,12 +11,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, LayoutDashboard } from 'lucide-react';
+import { LogOut, LayoutDashboard, User, LayoutGrid } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { signOutUser } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 import { SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
+// Customer navigation items
+const customerNavItems = [
+  { href: '/account', label: 'My Account', icon: User },
+  { href: '/directory-listing', label: 'Directory Listing', icon: LayoutGrid },
+];
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -24,6 +31,7 @@ const pathToTitle: { [key: string]: string } = {
   '/subscriptions': 'All Customers',
   '/users': 'User Management',
   '/pricing': 'Change Plan',
+  '/directory-listing': 'Directory Listing',
   '/advertisements': 'Advertisements',
   '/automated-emails': 'Automated Emails',
   '/leads': 'Leads',
@@ -80,16 +88,42 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
   return (
     <header className="sticky top-4 z-30 w-full px-4 md:px-6">
         <div className="flex h-16 items-center gap-4 rounded-xl border border-white/60 bg-white/80 px-5 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-blur-xl backdrop-saturate-150 md:px-6">
-            <SidebarTrigger className="text-gray-700" />
-            <h1 className="text-lg font-semibold md:text-xl font-headline text-gray-800">{pageTitle}</h1>
-
+            {/* Admin: show sidebar trigger and page title */}
             {isAdmin && (
-                 <Button asChild variant="ghost" size="sm" className="ml-4 hidden sm:flex text-gray-600 hover:text-gray-900 hover:bg-gray-100/80">
+              <>
+                <SidebarTrigger className="text-gray-700" />
+                <h1 className="text-lg font-semibold md:text-xl font-headline text-gray-800">{pageTitle}</h1>
+                <Button asChild variant="ghost" size="sm" className="ml-4 hidden sm:flex text-gray-600 hover:text-gray-900 hover:bg-gray-100/80">
                     <Link href="/dashboard">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Admin Panel
                     </Link>
                 </Button>
+              </>
+            )}
+
+            {/* Customer: show navigation pills directly in header */}
+            {!isAdmin && (
+              <nav className="flex items-center gap-1">
+                {customerNavItems.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                        isActive
+                          ? "bg-brand-primary text-white shadow-sm"
+                          : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span className="hidden sm:inline">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
             )}
 
             <div className="ml-auto">

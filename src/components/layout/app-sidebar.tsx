@@ -17,7 +17,6 @@ import {
 import {
   Ticket,
   User,
-  ShoppingBag,
   Megaphone,
   Handshake,
   Radio,
@@ -69,11 +68,10 @@ const adminSettingsItems: NavItem[] = [
   { href: '/admin-notifications', label: 'Notifications', icon: Bell },
 ];
 
-// User navigation (non-admin)
+// User navigation (non-admin) - Note: customers now use header navigation, not sidebar
 const userMenuItems: NavItem[] = [
   { href: '/account', label: 'My Account', icon: User },
   { href: '/directory-listing', label: 'Directory Listing', icon: LayoutGrid },
-  { href: '/pricing', label: 'Change Plan', icon: ShoppingBag },
 ];
 
 export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
