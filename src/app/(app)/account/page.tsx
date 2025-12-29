@@ -105,24 +105,39 @@ function StatCard({
     icon,
     description,
     highlight = false,
+    trend,
 }: {
     title: string;
     value: string;
     icon: React.ReactNode;
     description: string;
     highlight?: boolean;
+    trend?: 'up' | 'down' | 'neutral';
 }) {
     return (
-        <Card className={cn(highlight && 'ring-2 ring-primary ring-offset-2')}>
-            <CardContent className="pt-5 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted-foreground text-sm">{title}</span>
-                    <span className="text-muted-foreground">{icon}</span>
+        <Card className={cn(
+            'relative overflow-hidden transition-all hover:shadow-lg',
+            highlight && 'ring-2 ring-primary ring-offset-2'
+        )}>
+            <CardContent className="pt-6 pb-5">
+                <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-bold tracking-tight">{value}</span>
+                            {trend === 'up' && (
+                                <TrendingUp className="h-4 w-4 text-green-500" />
+                            )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                    <div className={cn(
+                        'p-3 rounded-xl',
+                        highlight ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                    )}>
+                        {icon}
+                    </div>
                 </div>
-                <div className="flex items-end gap-2">
-                    <span className="text-2xl font-bold">{value}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{description}</p>
             </CardContent>
         </Card>
     );
@@ -152,34 +167,39 @@ function ActionCard({
 }) {
     const cardContent = (
         <Card className={cn(
-            'h-full transition-all hover:shadow-md',
-            variant === 'primary' && 'border-primary/50 bg-primary/5',
-            disabled && 'opacity-60'
+            'group h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1',
+            variant === 'primary' && 'border-primary/30 bg-gradient-to-br from-primary/5 via-primary/5 to-transparent',
+            disabled && 'opacity-60 hover:translate-y-0 hover:shadow-none'
         )}>
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                     <div className={cn(
-                        'p-2.5 rounded-lg inline-flex',
-                        variant === 'primary' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                        'p-3 rounded-xl inline-flex transition-colors',
+                        variant === 'primary'
+                            ? 'bg-primary/10 text-primary group-hover:bg-primary/20'
+                            : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
                     )}>
                         {icon}
                     </div>
                     {badge && (
-                        <Badge variant={badge.variant}>{badge.text}</Badge>
+                        <Badge variant={badge.variant} className="font-medium">{badge.text}</Badge>
                     )}
                 </div>
-                <CardTitle className="text-lg mt-3">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
+                <CardTitle className="text-lg mt-4">{title}</CardTitle>
+                <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
             </CardHeader>
-            <CardFooter className="pt-0">
+            <CardFooter className="pt-0 mt-auto">
                 <Button
-                    className="w-full"
+                    className={cn(
+                        'w-full transition-all',
+                        variant === 'primary' && 'shadow-md hover:shadow-lg'
+                    )}
                     variant={variant === 'primary' ? 'default' : 'outline'}
                     disabled={disabled}
                     onClick={onClick}
                 >
                     {buttonText}
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
             </CardFooter>
         </Card>
@@ -354,23 +374,26 @@ export default function AccountPage() {
     // Loading state
     if (loading || userLoading) {
         return (
-            <div className="container max-w-6xl py-8 space-y-8">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <Skeleton className="h-8 w-48 mb-2" />
-                        <Skeleton className="h-4 w-72" />
+            <div className="min-h-[80vh] flex flex-col">
+                <div className="flex-1 flex flex-col items-center justify-center px-4">
+                    <div className="w-full max-w-4xl mx-auto space-y-8">
+                        {/* Header skeleton */}
+                        <div className="text-center space-y-3">
+                            <Skeleton className="h-10 w-64 mx-auto" />
+                            <Skeleton className="h-5 w-80 mx-auto" />
+                        </div>
+                        {/* Stats skeleton */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <Skeleton className="h-32 rounded-xl" />
+                            <Skeleton className="h-32 rounded-xl" />
+                            <Skeleton className="h-32 rounded-xl" />
+                        </div>
+                        {/* Cards skeleton */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Skeleton className="h-56 rounded-xl" />
+                            <Skeleton className="h-56 rounded-xl" />
+                        </div>
                     </div>
-                    <Skeleton className="h-10 w-40" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Skeleton className="h-28" />
-                    <Skeleton className="h-28" />
-                    <Skeleton className="h-28" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Skeleton className="h-52" />
-                    <Skeleton className="h-52" />
-                    <Skeleton className="h-52" />
                 </div>
             </div>
         );
@@ -379,14 +402,16 @@ export default function AccountPage() {
     // Not logged in
     if (!user) {
         return (
-            <div className="container max-w-4xl py-8">
-                <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Please log in</AlertTitle>
-                    <AlertDescription>
-                        You need to be logged in to view your account.
-                    </AlertDescription>
-                </Alert>
+            <div className="min-h-[80vh] flex items-center justify-center px-4">
+                <div className="w-full max-w-md mx-auto">
+                    <Alert className="border-2">
+                        <AlertCircle className="h-5 w-5" />
+                        <AlertTitle className="text-lg">Please log in</AlertTitle>
+                        <AlertDescription className="mt-2">
+                            You need to be logged in to view your account.
+                        </AlertDescription>
+                    </Alert>
+                </div>
             </div>
         );
     }
@@ -394,8 +419,10 @@ export default function AccountPage() {
     // No subscription - show compelling sales pitch
     if (!activeSubscription) {
         return (
-            <div className="container max-w-4xl py-8">
-                <SubscriptionPitch />
+            <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
+                <div className="w-full max-w-4xl mx-auto">
+                    <SubscriptionPitch />
+                </div>
             </div>
         );
     }
@@ -503,336 +530,359 @@ export default function AccountPage() {
     // If user clicked to view workflow, show the workflow component
     if (showWorkflow) {
         return (
-            <div className="container max-w-4xl py-8 space-y-6">
-                {/* Back Button */}
-                <Button variant="ghost" onClick={() => setShowWorkflow(false)} className="gap-2">
-                    <ArrowRight className="h-4 w-4 rotate-180" />
-                    Back to Dashboard
-                </Button>
+            <div className="min-h-[80vh] px-4 py-8">
+                <div className="w-full max-w-4xl mx-auto space-y-6">
+                    {/* Back Button */}
+                    <Button variant="ghost" onClick={() => setShowWorkflow(false)} className="gap-2 -ml-2">
+                        <ArrowRight className="h-4 w-4 rotate-180" />
+                        Back to Dashboard
+                    </Button>
 
-                <div>
-                    <h1 className="text-2xl font-bold">Your Advertisement</h1>
-                    <p className="text-muted-foreground">
-                        {isLive || isPaused
-                            ? 'Manage your live advertisement or request changes.'
-                            : 'Complete the steps below to get your ad live.'}
-                    </p>
+                    <div className="text-center pb-2">
+                        <h1 className="text-2xl md:text-3xl font-bold">Your Advertisement</h1>
+                        <p className="text-muted-foreground mt-2">
+                            {isLive || isPaused
+                                ? 'Manage your live advertisement or request changes.'
+                                : 'Complete the steps below to get your ad live.'}
+                        </p>
+                    </div>
+
+                    {userProfile && (
+                        <CustomerWorkflow
+                            userId={user.uid}
+                            userProfile={userProfile}
+                            advertisement={advertisement}
+                            allAdvertisements={allAdvertisements}
+                            subscriptionId={activeSubscription.id}
+                            isAdmin={false}
+                            onRefresh={handleRefresh}
+                        />
+                    )}
                 </div>
-
-                {userProfile && (
-                    <CustomerWorkflow
-                        userId={user.uid}
-                        userProfile={userProfile}
-                        advertisement={advertisement}
-                        allAdvertisements={allAdvertisements}
-                        subscriptionId={activeSubscription.id}
-                        isAdmin={false}
-                        onRefresh={handleRefresh}
-                    />
-                )}
             </div>
         );
     }
 
     return (
-        <div className="container max-w-6xl py-8 space-y-6">
-            {/* Welcome Header */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">
-                        {userProfile?.businessName
-                            ? `Welcome, ${userProfile.businessName}!`
-                            : userProfile?.contactName
-                            ? `Welcome, ${userProfile.contactName}!`
-                            : 'Welcome!'}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {isLive
-                            ? 'Your advertisement is live on our community websites.'
-                            : isPaused
-                            ? 'Your advertisement is currently paused.'
-                            : 'Complete your setup to start advertising.'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Badge
-                        variant={isLive ? 'default' : isPaused ? 'secondary' : 'outline'}
-                        className={cn(
-                            'px-3 py-1',
-                            isLive && 'bg-green-100 text-green-700 hover:bg-green-100',
-                            isPaused && 'bg-amber-100 text-amber-700 hover:bg-amber-100'
-                        )}
-                    >
-                        {isLive && <CheckCircle className="h-3.5 w-3.5 mr-1.5" />}
-                        {isPaused && <Clock className="h-3.5 w-3.5 mr-1.5" />}
-                        {isInProgress && <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
-                        {AD_STATUS_CUSTOMER_LABELS[status]}
-                    </Badge>
-                </div>
-            </div>
-
-            {/* Step 1 Setup Alert - Very Noticeable */}
-            {status === 'info_needed' && (
-                <Alert className="border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div className="flex items-start gap-3 flex-1">
-                            <div className="p-2 rounded-full bg-amber-100 shrink-0">
-                                <AlertTriangle className="h-6 w-6 text-amber-600" />
-                            </div>
-                            <div className="space-y-1">
-                                <AlertTitle className="text-lg font-semibold text-amber-900">
-                                    Complete Your Setup to Get Started!
-                                </AlertTitle>
-                                <AlertDescription className="text-amber-800">
-                                    Your ad subscription is active, but you need to complete a few quick steps before your advertisement can go live on community websites.
-                                </AlertDescription>
-                            </div>
+        <div className="min-h-[80vh] px-4 py-8">
+            <div className="w-full max-w-5xl mx-auto space-y-8">
+                {/* Welcome Header - Hero Section */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border p-6 md:p-8">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="space-y-2">
+                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
+                                {userProfile?.businessName
+                                    ? `Welcome back, ${userProfile.businessName}!`
+                                    : userProfile?.contactName
+                                    ? `Welcome back, ${userProfile.contactName}!`
+                                    : 'Welcome to your dashboard!'}
+                            </h1>
+                            <p className="text-muted-foreground text-base md:text-lg max-w-xl">
+                                {isLive
+                                    ? 'Your advertisement is live and reaching customers on our community websites.'
+                                    : isPaused
+                                    ? 'Your advertisement is currently paused. Resume it anytime to start reaching customers again.'
+                                    : 'Complete your setup to start advertising to thousands of local customers.'}
+                            </p>
                         </div>
-                        <Button
-                            size="lg"
-                            onClick={() => setShowWorkflow(true)}
-                            className="bg-amber-600 hover:bg-amber-700 text-white shadow-md shrink-0"
+                        <Badge
+                            variant={isLive ? 'default' : isPaused ? 'secondary' : 'outline'}
+                            className={cn(
+                                'px-4 py-2 text-sm font-medium shrink-0 self-start md:self-center',
+                                isLive && 'bg-green-100 text-green-700 hover:bg-green-100 border-green-200',
+                                isPaused && 'bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200'
+                            )}
                         >
-                            <Rocket className="h-5 w-5 mr-2" />
-                            Start Setup Now
-                        </Button>
+                            {isLive && <CheckCircle className="h-4 w-4 mr-2" />}
+                            {isPaused && <Clock className="h-4 w-4 mr-2" />}
+                            {isInProgress && <Sparkles className="h-4 w-4 mr-2" />}
+                            {AD_STATUS_CUSTOMER_LABELS[status]}
+                        </Badge>
                     </div>
-                </Alert>
-            )}
+                </div>
 
-            {/* Tabbed Navigation */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-                    <TabsTrigger value="overview" className="gap-2">
-                        <Megaphone className="h-4 w-4" />
-                        <span className="hidden sm:inline">Overview</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="subscription" className="gap-2">
-                        <Wallet className="h-4 w-4" />
-                        <span className="hidden sm:inline">Subscription</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="settings" className="gap-2">
-                        <Settings className="h-4 w-4" />
-                        <span className="hidden sm:inline">Settings</span>
-                    </TabsTrigger>
-                </TabsList>
+                {/* Step 1 Setup Alert - Very Noticeable */}
+                {status === 'info_needed' && (
+                    <Alert className="border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg rounded-xl">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <div className="flex items-start gap-3 flex-1">
+                                <div className="p-2.5 rounded-full bg-amber-100 shrink-0">
+                                    <AlertTriangle className="h-6 w-6 text-amber-600" />
+                                </div>
+                                <div className="space-y-1">
+                                    <AlertTitle className="text-lg font-semibold text-amber-900">
+                                        Complete Your Setup to Get Started!
+                                    </AlertTitle>
+                                    <AlertDescription className="text-amber-800">
+                                        Your ad subscription is active, but you need to complete a few quick steps before your advertisement can go live on community websites.
+                                    </AlertDescription>
+                                </div>
+                            </div>
+                            <Button
+                                size="lg"
+                                onClick={() => setShowWorkflow(true)}
+                                className="bg-amber-600 hover:bg-amber-700 text-white shadow-md shrink-0"
+                            >
+                                <Rocket className="h-5 w-5 mr-2" />
+                                Start Setup Now
+                            </Button>
+                        </div>
+                    </Alert>
+                )}
 
-                {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-6">
-                    {/* Stats Section (only if ad is live or paused) */}
-                    {(isLive || isPaused) && (
-                        <div className="space-y-3">
-                            <h2 className="text-lg font-semibold">Ad Performance</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <StatCard
-                                    title="Impressions"
-                                    value={formatNumber(impressions)}
-                                    icon={<Eye className="w-4 h-4" />}
-                                    description="Times your ad was shown"
-                                />
-                                <StatCard
-                                    title="Clicks"
-                                    value={formatNumber(clicks)}
-                                    icon={<MousePointer className="w-4 h-4" />}
-                                    description="Visits to your website"
-                                />
-                                <StatCard
-                                    title="Click Rate"
-                                    value={`${ctr}%`}
-                                    icon={<Target className="w-4 h-4" />}
-                                    description="Percentage of viewers who clicked"
-                                    highlight={ctr > 2}
-                                />
+                {/* Tabbed Navigation */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+                    <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto bg-muted/80 p-1 rounded-xl">
+                        <TabsTrigger value="overview" className="gap-2 rounded-lg data-[state=active]:shadow-md">
+                            <Megaphone className="h-4 w-4" />
+                            <span className="hidden sm:inline">Overview</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="subscription" className="gap-2 rounded-lg data-[state=active]:shadow-md">
+                            <Wallet className="h-4 w-4" />
+                            <span className="hidden sm:inline">Subscription</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="settings" className="gap-2 rounded-lg data-[state=active]:shadow-md">
+                            <Settings className="h-4 w-4" />
+                            <span className="hidden sm:inline">Settings</span>
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* Overview Tab */}
+                    <TabsContent value="overview" className="space-y-8">
+                        {/* Stats Section (only if ad is live or paused) */}
+                        {(isLive || isPaused) && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <TrendingUp className="h-5 w-5 text-primary" />
+                                    <h2 className="text-xl font-semibold">Ad Performance</h2>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <StatCard
+                                        title="Impressions"
+                                        value={formatNumber(impressions)}
+                                        icon={<Eye className="w-5 h-5" />}
+                                        description="Times your ad was shown"
+                                    />
+                                    <StatCard
+                                        title="Clicks"
+                                        value={formatNumber(clicks)}
+                                        icon={<MousePointer className="w-5 h-5" />}
+                                        description="Visits to your website"
+                                        trend={clicks > 0 ? 'up' : 'neutral'}
+                                    />
+                                    <StatCard
+                                        title="Click Rate"
+                                        value={`${ctr}%`}
+                                        icon={<Target className="w-5 h-5" />}
+                                        description="Percentage of viewers who clicked"
+                                        highlight={ctr > 2}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Progress Section (if workflow is in progress) */}
+                        {isInProgress && (
+                            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-primary/5 to-transparent overflow-hidden">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-xl flex items-center gap-2">
+                                            <Sparkles className="h-5 w-5 text-primary" />
+                                            Setup Progress
+                                        </CardTitle>
+                                        <Badge variant="outline" className="font-medium">
+                                            Step {workflowStep} of 6
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <Progress value={(workflowStep / 6) * 100} className="h-3" />
+                                    <p className="text-sm text-muted-foreground">
+                                        {AD_STATUS_CUSTOMER_LABELS[status]}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Action Cards */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <ArrowRight className="h-5 w-5 text-primary" />
+                                <h2 className="text-xl font-semibold">Quick Actions</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {actionCards.map((card) => (
+                                    <ActionCard
+                                        key={card.key}
+                                        title={card.title}
+                                        description={card.description}
+                                        icon={card.icon}
+                                        buttonText={card.buttonText}
+                                        href={card.href}
+                                        onClick={card.onClick}
+                                        disabled={card.disabled}
+                                        variant={card.variant}
+                                        badge={card.badge}
+                                    />
+                                ))}
                             </div>
                         </div>
-                    )}
 
-                    {/* Progress Section (if workflow is in progress) */}
-                    {isInProgress && (
-                        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-                            <CardHeader className="pb-2">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <Sparkles className="h-5 w-5 text-primary" />
-                                        Setup Progress
-                                    </CardTitle>
-                                    <span className="text-sm text-muted-foreground">
-                                        Step {workflowStep} of 6
-                                    </span>
+                        {/* Ad Preview (if ad is live or has proof) */}
+                        {advertisement?.adProofUrl && (isLive || isPaused) && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Megaphone className="h-5 w-5 text-primary" />
+                                    <h2 className="text-xl font-semibold">Your Advertisement</h2>
                                 </div>
-                            </CardHeader>
-                            <CardContent>
-                                <Progress value={(workflowStep / 6) * 100} className="h-2 mb-3" />
-                                <p className="text-sm text-muted-foreground">
-                                    {AD_STATUS_CUSTOMER_LABELS[status]}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Action Cards */}
-                    <div className="space-y-3">
-                        <h2 className="text-lg font-semibold">Quick Actions</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {actionCards.map((card) => (
-                                <ActionCard
-                                    key={card.key}
-                                    title={card.title}
-                                    description={card.description}
-                                    icon={card.icon}
-                                    buttonText={card.buttonText}
-                                    href={card.href}
-                                    onClick={card.onClick}
-                                    disabled={card.disabled}
-                                    variant={card.variant}
-                                    badge={card.badge}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Ad Preview (if ad is live or has proof) */}
-                    {advertisement?.adProofUrl && (isLive || isPaused) && (
-                        <div className="space-y-3">
-                            <h2 className="text-lg font-semibold">Your Advertisement</h2>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="flex flex-col md:flex-row gap-6 items-center">
-                                        <div className="w-full md:w-auto">
-                                            <img
-                                                src={advertisement.adProofUrl}
-                                                alt="Your advertisement"
-                                                className="rounded-lg border shadow-sm max-w-full md:max-w-md"
-                                            />
-                                        </div>
-                                        <div className="flex-1 space-y-3">
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Links to</p>
-                                                <a
-                                                    href={advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-primary hover:underline flex items-center gap-1"
-                                                >
-                                                    {advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
-                                                    <ExternalLink className="h-3.5 w-3.5" />
-                                                </a>
+                                <Card className="overflow-hidden">
+                                    <CardContent className="p-0">
+                                        <div className="flex flex-col md:flex-row">
+                                            <div className="md:w-1/2 bg-muted/30 p-6 flex items-center justify-center">
+                                                <img
+                                                    src={advertisement.adProofUrl}
+                                                    alt="Your advertisement"
+                                                    className="rounded-lg border shadow-md max-w-full max-h-80 object-contain"
+                                                />
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)}>
-                                                    Request Change
-                                                </Button>
-                                                <Link href="/directory-listing">
-                                                    <Button variant="outline" size="sm">
-                                                        Edit Directory
+                                            <div className="md:w-1/2 p-6 flex flex-col justify-center space-y-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground mb-1">Links to</p>
+                                                    <a
+                                                        href={advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-primary hover:underline flex items-center gap-1.5 font-medium"
+                                                    >
+                                                        {advertisement.adProofDestinationUrl || advertisement.adWebsiteUrl}
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </a>
+                                                </div>
+                                                <div className="flex flex-wrap gap-3 pt-2">
+                                                    <Button variant="outline" onClick={() => setShowWorkflow(true)}>
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Request Change
                                                     </Button>
-                                                </Link>
+                                                    <Link href="/directory-listing">
+                                                        <Button variant="outline">
+                                                            <LayoutGrid className="h-4 w-4 mr-2" />
+                                                            Edit Directory
+                                                        </Button>
+                                                    </Link>
+                                                </div>
                                             </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    {/* Subscription Tab */}
+                    <TabsContent value="subscription" className="space-y-6">
+                        {activeSubscription && (
+                            <SubscriptionManager
+                                subscription={activeSubscription}
+                                adsCount={allAdvertisements.filter(ad =>
+                                    ad.status === 'live' || ad.status === 'paused'
+                                ).length}
+                                onManageBilling={handleBillingPortal}
+                                onChangePlan={() => router.push('/pricing')}
+                                isLoading={billingLoading}
+                            />
+                        )}
+                    </TabsContent>
+
+                    {/* Settings Tab */}
+                    <TabsContent value="settings" className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <Card className="overflow-hidden">
+                                <CardHeader className="bg-muted/30">
+                                    <CardTitle className="flex items-center gap-2">
+                                        <div className="p-2 rounded-lg bg-primary/10">
+                                            <User className="h-5 w-5 text-primary" />
+                                        </div>
+                                        Account Information
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Manage your account details and preferences
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="pt-6 space-y-4">
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</p>
+                                            <p className="font-medium">{user?.email || '-'}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Business Name</p>
+                                            <p className="font-medium">{userProfile?.businessName || '-'}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Contact Name</p>
+                                            <p className="font-medium">{userProfile?.contactName || '-'}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Phone</p>
+                                            <p className="font-medium">{userProfile?.phone || '-'}</p>
                                         </div>
                                     </div>
                                 </CardContent>
+                                <CardFooter className="flex flex-col sm:flex-row gap-3 justify-between border-t pt-6 bg-muted/20">
+                                    <p className="text-sm text-muted-foreground">
+                                        Update your business information in the ad workflow.
+                                    </p>
+                                    <Button variant="outline" onClick={() => setShowWorkflow(true)}>
+                                        Edit Profile
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+
+                            {/* Subscription Summary in Settings */}
+                            <Card className="overflow-hidden">
+                                <CardHeader className="bg-muted/30">
+                                    <CardTitle className="flex items-center gap-2">
+                                        <div className="p-2 rounded-lg bg-primary/10">
+                                            <CreditCard className="h-5 w-5 text-primary" />
+                                        </div>
+                                        Billing Summary
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Quick overview of your subscription
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="pt-6 space-y-4">
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Plan</p>
+                                            <p className="font-medium">{subDetails?.planName || '-'}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Monthly Cost</p>
+                                            <p className="font-medium text-lg">{subDetails?.price || '-'}/month</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Next Billing Date</p>
+                                            <p className="font-medium">{subDetails?.periodEnd || '-'}</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="border-t pt-6 bg-muted/20">
+                                    <Button
+                                        onClick={() => setActiveTab('subscription')}
+                                        variant="outline"
+                                        className="w-full"
+                                    >
+                                        <Wallet className="h-4 w-4 mr-2" />
+                                        Manage Subscription
+                                    </Button>
+                                </CardFooter>
                             </Card>
                         </div>
-                    )}
-                </TabsContent>
-
-                {/* Subscription Tab */}
-                <TabsContent value="subscription" className="space-y-6">
-                    {activeSubscription && (
-                        <SubscriptionManager
-                            subscription={activeSubscription}
-                            adsCount={allAdvertisements.filter(ad =>
-                                ad.status === 'live' || ad.status === 'paused'
-                            ).length}
-                            onManageBilling={handleBillingPortal}
-                            onChangePlan={() => router.push('/pricing')}
-                            isLoading={billingLoading}
-                        />
-                    )}
-                </TabsContent>
-
-                {/* Settings Tab */}
-                <TabsContent value="settings" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <User className="h-5 w-5" />
-                                Account Information
-                            </CardTitle>
-                            <CardDescription>
-                                Manage your account details and preferences
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Email</p>
-                                    <p className="font-medium">{user?.email || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Business Name</p>
-                                    <p className="font-medium">{userProfile?.businessName || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Contact Name</p>
-                                    <p className="font-medium">{userProfile?.contactName || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Phone</p>
-                                    <p className="font-medium">{userProfile?.phone || '-'}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-between border-t pt-6">
-                            <p className="text-sm text-muted-foreground">
-                                Update your business information in the ad workflow.
-                            </p>
-                            <Button variant="outline" onClick={() => setShowWorkflow(true)}>
-                                Edit Profile
-                            </Button>
-                        </CardFooter>
-                    </Card>
-
-                    {/* Subscription Summary in Settings */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CreditCard className="h-5 w-5" />
-                                Billing Summary
-                            </CardTitle>
-                            <CardDescription>
-                                Quick overview of your subscription
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Current Plan</p>
-                                    <p className="font-medium">{subDetails?.planName || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Monthly Cost</p>
-                                    <p className="font-medium">{subDetails?.price || '-'}/month</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Next Billing Date</p>
-                                    <p className="font-medium">{subDetails?.periodEnd || '-'}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="border-t pt-6">
-                            <Button
-                                onClick={() => setActiveTab('subscription')}
-                                variant="outline"
-                                className="w-full"
-                            >
-                                <Wallet className="h-4 w-4 mr-2" />
-                                Manage Subscription
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     );
 }
