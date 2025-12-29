@@ -1065,6 +1065,166 @@ export const DIRECTORY_STATUS_COLORS: Record<DirectoryStatus, { bg: string; text
 };
 
 /**
+ * Business hours for a single day
+ */
+export interface DayHours {
+  isOpen: boolean;
+  openTime?: string; // Format: "HH:MM" (24-hour)
+  closeTime?: string; // Format: "HH:MM" (24-hour)
+  is24Hours?: boolean;
+}
+
+/**
+ * Weekly business hours schedule
+ */
+export interface BusinessHours {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+  timezone?: string; // e.g., "America/New_York"
+  holidayNote?: string; // e.g., "Hours may vary on holidays"
+}
+
+/**
+ * Special offer/promotion for a business
+ */
+export interface SpecialOffer {
+  id: string;
+  title: string; // e.g., "20% Off First Visit"
+  description?: string;
+  code?: string; // Promo code if applicable
+  validFrom?: any; // Firestore Timestamp
+  validUntil?: any; // Firestore Timestamp
+  isActive: boolean;
+  termsAndConditions?: string;
+}
+
+/**
+ * Payment methods accepted by a business
+ */
+export const PAYMENT_METHODS_ACCEPTED = {
+  CASH: 'cash',
+  CREDIT_CARD: 'credit_card',
+  DEBIT_CARD: 'debit_card',
+  APPLE_PAY: 'apple_pay',
+  GOOGLE_PAY: 'google_pay',
+  PAYPAL: 'paypal',
+  VENMO: 'venmo',
+  ZELLE: 'zelle',
+  CHECK: 'check',
+  INVOICE: 'invoice',
+  FINANCING: 'financing',
+} as const;
+
+export type PaymentMethodAccepted = typeof PAYMENT_METHODS_ACCEPTED[keyof typeof PAYMENT_METHODS_ACCEPTED];
+
+export const PAYMENT_METHOD_ACCEPTED_LABELS: Record<PaymentMethodAccepted, string> = {
+  cash: 'Cash',
+  credit_card: 'Credit Card',
+  debit_card: 'Debit Card',
+  apple_pay: 'Apple Pay',
+  google_pay: 'Google Pay',
+  paypal: 'PayPal',
+  venmo: 'Venmo',
+  zelle: 'Zelle',
+  check: 'Check',
+  invoice: 'Invoice',
+  financing: 'Financing Available',
+};
+
+export const PAYMENT_METHOD_ACCEPTED_ICONS: Record<PaymentMethodAccepted, string> = {
+  cash: '💵',
+  credit_card: '💳',
+  debit_card: '💳',
+  apple_pay: '',
+  google_pay: '',
+  paypal: '',
+  venmo: '',
+  zelle: '',
+  check: '📝',
+  invoice: '📄',
+  financing: '💰',
+};
+
+/**
+ * Business amenities/features
+ */
+export const BUSINESS_AMENITIES = {
+  WIFI: 'wifi',
+  PARKING: 'parking',
+  WHEELCHAIR_ACCESSIBLE: 'wheelchair_accessible',
+  PET_FRIENDLY: 'pet_friendly',
+  OUTDOOR_SEATING: 'outdoor_seating',
+  DELIVERY: 'delivery',
+  PICKUP: 'pickup',
+  CURBSIDE: 'curbside',
+  APPOINTMENT_REQUIRED: 'appointment_required',
+  WALK_INS_WELCOME: 'walk_ins_welcome',
+  FAMILY_FRIENDLY: 'family_friendly',
+  SENIOR_DISCOUNT: 'senior_discount',
+  MILITARY_DISCOUNT: 'military_discount',
+  VETERAN_OWNED: 'veteran_owned',
+  WOMEN_OWNED: 'women_owned',
+  MINORITY_OWNED: 'minority_owned',
+  LOCALLY_OWNED: 'locally_owned',
+  ECO_FRIENDLY: 'eco_friendly',
+  CERTIFIED_ORGANIC: 'certified_organic',
+  LICENSED_INSURED: 'licensed_insured',
+} as const;
+
+export type BusinessAmenity = typeof BUSINESS_AMENITIES[keyof typeof BUSINESS_AMENITIES];
+
+export const BUSINESS_AMENITY_LABELS: Record<BusinessAmenity, string> = {
+  wifi: 'Free WiFi',
+  parking: 'Free Parking',
+  wheelchair_accessible: 'Wheelchair Accessible',
+  pet_friendly: 'Pet Friendly',
+  outdoor_seating: 'Outdoor Seating',
+  delivery: 'Delivery Available',
+  pickup: 'Pickup Available',
+  curbside: 'Curbside Service',
+  appointment_required: 'Appointment Required',
+  walk_ins_welcome: 'Walk-ins Welcome',
+  family_friendly: 'Family Friendly',
+  senior_discount: 'Senior Discount',
+  military_discount: 'Military Discount',
+  veteran_owned: 'Veteran Owned',
+  women_owned: 'Women Owned',
+  minority_owned: 'Minority Owned',
+  locally_owned: 'Locally Owned',
+  eco_friendly: 'Eco-Friendly',
+  certified_organic: 'Certified Organic',
+  licensed_insured: 'Licensed & Insured',
+};
+
+export const BUSINESS_AMENITY_ICONS: Record<BusinessAmenity, string> = {
+  wifi: '📶',
+  parking: '🅿️',
+  wheelchair_accessible: '♿',
+  pet_friendly: '🐾',
+  outdoor_seating: '🪑',
+  delivery: '🚚',
+  pickup: '📦',
+  curbside: '🚗',
+  appointment_required: '📅',
+  walk_ins_welcome: '🚶',
+  family_friendly: '👨‍👩‍👧‍👦',
+  senior_discount: '👴',
+  military_discount: '🎖️',
+  veteran_owned: '🇺🇸',
+  women_owned: '👩‍💼',
+  minority_owned: '🌍',
+  locally_owned: '🏘️',
+  eco_friendly: '🌱',
+  certified_organic: '🌿',
+  licensed_insured: '✅',
+};
+
+/**
  * Directory listing customization - stored on LiveAd
  */
 export interface DirectoryListing {
@@ -1082,15 +1242,30 @@ export interface DirectoryListing {
   state?: string;
   zipCode?: string;
 
+  // Additional contact options
+  secondaryPhone?: string; // Alternative phone number
+  appointmentUrl?: string; // Online booking/scheduling link
+  menuUrl?: string; // Menu or catalog link
+
+  // Business details
+  yearEstablished?: number;
+  serviceAreas?: string[]; // e.g., ["Wesley Chapel", "Tampa", "Pasco County"]
+  languages?: string[]; // e.g., ["English", "Spanish"]
+
   // Social media links
   facebookUrl?: string;
   instagramUrl?: string;
   linkedinUrl?: string;
   twitterUrl?: string;
   youtubeUrl?: string;
+  tiktokUrl?: string;
+  yelpUrl?: string;
+  googleBusinessUrl?: string;
 
   // Visual customization
   logoUrl?: string; // Square logo for directory card
+  bannerImageUrl?: string; // Wide banner image for expanded view
+  galleryImages?: string[]; // Additional images (max 6)
   cardBackgroundColor?: string;
   cardTextColor?: string;
 
@@ -1099,10 +1274,23 @@ export interface DirectoryListing {
   subcategory?: string;
   tags?: string[]; // Custom tags for search
 
+  // Business hours
+  businessHours?: BusinessHours;
+
+  // Special offers/promotions
+  specialOffers?: SpecialOffer[];
+
+  // Payment & amenities
+  paymentMethodsAccepted?: PaymentMethodAccepted[];
+  amenities?: BusinessAmenity[];
+
   // Display preferences
   showContactInfo: boolean;
   showSocialLinks: boolean;
   showAddress: boolean;
+  showBusinessHours?: boolean;
+  showSpecialOffers?: boolean;
+  showAmenities?: boolean;
 
   // Moderation
   directoryStatus: DirectoryStatus;
@@ -1114,6 +1302,12 @@ export interface DirectoryListing {
   // Feature flags
   isFeatured?: boolean; // Featured listings appear first
   featuredUntil?: any; // When featured status expires
+  isPremium?: boolean; // Premium listing with enhanced features
+
+  // Analytics (populated by system)
+  viewCount?: number; // Profile views
+  clickCount?: number; // Click-throughs
+  lastViewedAt?: any;
 
   // Timestamps
   directoryListingCreatedAt?: any;
@@ -1216,6 +1410,221 @@ export function selectAdByWeight(ads: LiveAd[]): LiveAd | null {
   }
 
   return ads[ads.length - 1];
+}
+
+// ============================================================================
+// BUSINESS HOURS UTILITIES
+// ============================================================================
+
+const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+type DayOfWeek = typeof DAYS_OF_WEEK[number];
+
+/**
+ * Create default business hours (closed all days)
+ */
+export function createDefaultBusinessHours(): BusinessHours {
+  return {
+    monday: { isOpen: false },
+    tuesday: { isOpen: false },
+    wednesday: { isOpen: false },
+    thursday: { isOpen: false },
+    friday: { isOpen: false },
+    saturday: { isOpen: false },
+    sunday: { isOpen: false },
+    timezone: 'America/New_York',
+  };
+}
+
+/**
+ * Create standard business hours (Mon-Fri 9-5)
+ */
+export function createStandardBusinessHours(): BusinessHours {
+  return {
+    monday: { isOpen: true, openTime: '09:00', closeTime: '17:00' },
+    tuesday: { isOpen: true, openTime: '09:00', closeTime: '17:00' },
+    wednesday: { isOpen: true, openTime: '09:00', closeTime: '17:00' },
+    thursday: { isOpen: true, openTime: '09:00', closeTime: '17:00' },
+    friday: { isOpen: true, openTime: '09:00', closeTime: '17:00' },
+    saturday: { isOpen: false },
+    sunday: { isOpen: false },
+    timezone: 'America/New_York',
+  };
+}
+
+/**
+ * Check if a business is currently open based on its hours
+ */
+export function isBusinessOpen(hours: BusinessHours | undefined): { isOpen: boolean; opensAt?: string; closesAt?: string } {
+  if (!hours) return { isOpen: false };
+
+  const now = new Date();
+  const dayIndex = now.getDay();
+  const dayKey = DAYS_OF_WEEK[dayIndex];
+  const dayHours = hours[dayKey];
+
+  if (!dayHours || !dayHours.isOpen) {
+    // Find next open day
+    for (let i = 1; i <= 7; i++) {
+      const nextDayIndex = (dayIndex + i) % 7;
+      const nextDayKey = DAYS_OF_WEEK[nextDayIndex];
+      const nextDayHours = hours[nextDayKey];
+      if (nextDayHours?.isOpen && nextDayHours.openTime) {
+        const dayName = nextDayKey.charAt(0).toUpperCase() + nextDayKey.slice(1);
+        return { isOpen: false, opensAt: `${dayName} at ${formatTime(nextDayHours.openTime)}` };
+      }
+    }
+    return { isOpen: false };
+  }
+
+  if (dayHours.is24Hours) {
+    return { isOpen: true };
+  }
+
+  if (!dayHours.openTime || !dayHours.closeTime) {
+    return { isOpen: false };
+  }
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [openHour, openMin] = dayHours.openTime.split(':').map(Number);
+  const [closeHour, closeMin] = dayHours.closeTime.split(':').map(Number);
+  const openMinutes = openHour * 60 + openMin;
+  const closeMinutes = closeHour * 60 + closeMin;
+
+  if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+    return { isOpen: true, closesAt: formatTime(dayHours.closeTime) };
+  } else if (currentMinutes < openMinutes) {
+    return { isOpen: false, opensAt: `Today at ${formatTime(dayHours.openTime)}` };
+  } else {
+    // Already closed today, find next open
+    for (let i = 1; i <= 7; i++) {
+      const nextDayIndex = (dayIndex + i) % 7;
+      const nextDayKey = DAYS_OF_WEEK[nextDayIndex];
+      const nextDayHours = hours[nextDayKey];
+      if (nextDayHours?.isOpen && nextDayHours.openTime) {
+        const dayName = i === 1 ? 'Tomorrow' : nextDayKey.charAt(0).toUpperCase() + nextDayKey.slice(1);
+        return { isOpen: false, opensAt: `${dayName} at ${formatTime(nextDayHours.openTime)}` };
+      }
+    }
+    return { isOpen: false };
+  }
+}
+
+/**
+ * Format 24-hour time to 12-hour format
+ */
+export function formatTime(time24: string): string {
+  if (!time24) return '';
+  const [hour, minute] = time24.split(':').map(Number);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+}
+
+/**
+ * Format business hours for display
+ */
+export function formatBusinessHours(hours: BusinessHours): string[] {
+  const result: string[] = [];
+  const dayNames = {
+    monday: 'Mon',
+    tuesday: 'Tue',
+    wednesday: 'Wed',
+    thursday: 'Thu',
+    friday: 'Fri',
+    saturday: 'Sat',
+    sunday: 'Sun',
+  };
+
+  for (const day of ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const) {
+    const dayHours = hours[day];
+    if (!dayHours.isOpen) {
+      result.push(`${dayNames[day]}: Closed`);
+    } else if (dayHours.is24Hours) {
+      result.push(`${dayNames[day]}: Open 24 Hours`);
+    } else if (dayHours.openTime && dayHours.closeTime) {
+      result.push(`${dayNames[day]}: ${formatTime(dayHours.openTime)} - ${formatTime(dayHours.closeTime)}`);
+    } else {
+      result.push(`${dayNames[day]}: Closed`);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get condensed business hours (groups consecutive days with same hours)
+ */
+export function getCondensedHours(hours: BusinessHours): string[] {
+  const result: string[] = [];
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  let i = 0;
+  while (i < 7) {
+    const currentDay = hours[days[i]];
+    let j = i;
+
+    // Find consecutive days with same hours
+    while (j < 7) {
+      const nextDay = hours[days[j]];
+      if (
+        currentDay.isOpen === nextDay.isOpen &&
+        currentDay.openTime === nextDay.openTime &&
+        currentDay.closeTime === nextDay.closeTime &&
+        currentDay.is24Hours === nextDay.is24Hours
+      ) {
+        j++;
+      } else {
+        break;
+      }
+    }
+
+    // Format the range
+    const startName = dayNames[i];
+    const endName = dayNames[j - 1];
+    const dayRange = i === j - 1 ? startName : `${startName}-${endName}`;
+
+    if (!currentDay.isOpen) {
+      result.push(`${dayRange}: Closed`);
+    } else if (currentDay.is24Hours) {
+      result.push(`${dayRange}: Open 24 Hours`);
+    } else if (currentDay.openTime && currentDay.closeTime) {
+      result.push(`${dayRange}: ${formatTime(currentDay.openTime)} - ${formatTime(currentDay.closeTime)}`);
+    }
+
+    i = j;
+  }
+
+  return result;
+}
+
+/**
+ * Check if a special offer is currently valid
+ */
+export function isOfferValid(offer: SpecialOffer): boolean {
+  if (!offer.isActive) return false;
+
+  const now = new Date();
+
+  if (offer.validFrom) {
+    const from = offer.validFrom?.toDate ? offer.validFrom.toDate() : new Date(offer.validFrom);
+    if (now < from) return false;
+  }
+
+  if (offer.validUntil) {
+    const until = offer.validUntil?.toDate ? offer.validUntil.toDate() : new Date(offer.validUntil);
+    if (now > until) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Get active special offers for a listing
+ */
+export function getActiveOffers(listing: DirectoryListing): SpecialOffer[] {
+  if (!listing.specialOffers) return [];
+  return listing.specialOffers.filter(isOfferValid);
 }
 
 // ============================================================================

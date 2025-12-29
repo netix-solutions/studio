@@ -37,14 +37,24 @@ import {
   Save,
   Loader2,
   Image as ImageIcon,
+  Calendar,
+  Link2,
+  Languages,
+  Award,
 } from 'lucide-react';
 import {
   type DirectoryListing,
   type BusinessCategory,
+  type BusinessHours,
+  type SpecialOffer,
+  type BusinessAmenity,
   BUSINESS_CATEGORIES,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
 } from '@/lib/types';
+import { BusinessHoursEditor } from './BusinessHoursEditor';
+import { SpecialOffersEditor } from './SpecialOffersEditor';
+import { AmenitiesSelector } from './AmenitiesSelector';
 
 interface DirectoryListingFormProps {
   listing: Partial<DirectoryListing>;
@@ -52,6 +62,7 @@ interface DirectoryListingFormProps {
   onSave?: () => void;
   isSaving?: boolean;
   disabled?: boolean;
+  showAdvancedOptions?: boolean;
 }
 
 export function DirectoryListingForm({
@@ -60,10 +71,13 @@ export function DirectoryListingForm({
   onSave,
   isSaving = false,
   disabled = false,
+  showAdvancedOptions = true,
 }: DirectoryListingFormProps) {
   const [socialOpen, setSocialOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [customizationOpen, setCustomizationOpen] = useState(false);
+  const [additionalContactOpen, setAdditionalContactOpen] = useState(false);
+  const [businessDetailsOpen, setBusinessDetailsOpen] = useState(false);
 
   const updateField = <K extends keyof DirectoryListing>(
     field: K,
@@ -135,27 +149,43 @@ export function DirectoryListingForm({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="category">Business Category</Label>
-            <Select
-              value={listing.category || ''}
-              onValueChange={(value) => updateField('category', value as BusinessCategory)}
-              disabled={disabled}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categoryOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className="flex items-center gap-2">
-                      <span>{option.icon}</span>
-                      <span>{option.label}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category">Business Category</Label>
+              <Select
+                value={listing.category || ''}
+                onValueChange={(value) => updateField('category', value as BusinessCategory)}
+                disabled={disabled}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className="flex items-center gap-2">
+                        <span>{option.icon}</span>
+                        <span>{option.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="yearEstablished">Year Established</Label>
+              <Input
+                id="yearEstablished"
+                type="number"
+                value={listing.yearEstablished || ''}
+                onChange={(e) => updateField('yearEstablished', parseInt(e.target.value) || undefined)}
+                placeholder="e.g., 2015"
+                min={1800}
+                max={new Date().getFullYear()}
+                disabled={disabled}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -254,6 +284,207 @@ export function DirectoryListingForm({
           </div>
         </CardContent>
       </Card>
+
+      {/* Additional Contact Options (Collapsible) */}
+      {showAdvancedOptions && (
+        <Collapsible open={additionalContactOpen} onOpenChange={setAdditionalContactOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Link2 className="w-5 h-5" />
+                      Additional Links
+                    </CardTitle>
+                    <CardDescription>
+                      Booking, menu, and secondary contact
+                    </CardDescription>
+                  </div>
+                  {additionalContactOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="secondaryPhone">Secondary Phone</Label>
+                    <Input
+                      id="secondaryPhone"
+                      value={listing.secondaryPhone || ''}
+                      onChange={(e) => updateField('secondaryPhone', e.target.value)}
+                      placeholder="Alternative phone number"
+                      disabled={disabled}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="appointmentUrl">Booking/Appointment URL</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="appointmentUrl"
+                        value={listing.appointmentUrl || ''}
+                        onChange={(e) => updateField('appointmentUrl', e.target.value)}
+                        placeholder="https://booking.example.com"
+                        className="pl-10"
+                        disabled={disabled}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="menuUrl">Menu/Catalog URL</Label>
+                  <Input
+                    id="menuUrl"
+                    value={listing.menuUrl || ''}
+                    onChange={(e) => updateField('menuUrl', e.target.value)}
+                    placeholder="https://example.com/menu"
+                    disabled={disabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Link to your menu, service catalog, or price list
+                  </p>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="yelpUrl">Yelp</Label>
+                    <Input
+                      id="yelpUrl"
+                      value={listing.yelpUrl || ''}
+                      onChange={(e) => updateField('yelpUrl', e.target.value)}
+                      placeholder="https://yelp.com/biz/yourbusiness"
+                      disabled={disabled}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="googleBusinessUrl">Google Business</Label>
+                    <Input
+                      id="googleBusinessUrl"
+                      value={listing.googleBusinessUrl || ''}
+                      onChange={(e) => updateField('googleBusinessUrl', e.target.value)}
+                      placeholder="Google Business Profile URL"
+                      disabled={disabled}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+      {/* Business Hours */}
+      {showAdvancedOptions && (
+        <BusinessHoursEditor
+          hours={listing.businessHours}
+          onChange={(hours) => {
+            updateField('businessHours', hours);
+            if (!listing.showBusinessHours) {
+              updateField('showBusinessHours', true);
+            }
+          }}
+          disabled={disabled}
+        />
+      )}
+
+      {/* Special Offers */}
+      {showAdvancedOptions && (
+        <SpecialOffersEditor
+          offers={listing.specialOffers || []}
+          onChange={(offers) => {
+            updateField('specialOffers', offers);
+            if (!listing.showSpecialOffers && offers.length > 0) {
+              updateField('showSpecialOffers', true);
+            }
+          }}
+          disabled={disabled}
+        />
+      )}
+
+      {/* Amenities */}
+      {showAdvancedOptions && (
+        <AmenitiesSelector
+          amenities={(listing.amenities || []) as BusinessAmenity[]}
+          onChange={(amenities) => updateField('amenities', amenities)}
+          showOnCard={listing.showAmenities ?? true}
+          onShowOnCardChange={(show) => updateField('showAmenities', show)}
+          disabled={disabled}
+        />
+      )}
+
+      {/* Business Details (Collapsible) */}
+      {showAdvancedOptions && (
+        <Collapsible open={businessDetailsOpen} onOpenChange={setBusinessDetailsOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Award className="w-5 h-5" />
+                      Business Details
+                    </CardTitle>
+                    <CardDescription>
+                      Service areas, languages, and more
+                    </CardDescription>
+                  </div>
+                  {businessDetailsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="serviceAreas">Service Areas</Label>
+                  <Input
+                    id="serviceAreas"
+                    value={(listing.serviceAreas || []).join(', ')}
+                    onChange={(e) => updateField('serviceAreas', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                    placeholder="e.g., Wesley Chapel, Tampa, Pasco County"
+                    disabled={disabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Separate areas with commas
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="languages" className="flex items-center gap-2">
+                    <Languages className="w-4 h-4" />
+                    Languages Spoken
+                  </Label>
+                  <Input
+                    id="languages"
+                    value={(listing.languages || []).join(', ')}
+                    onChange={(e) => updateField('languages', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                    placeholder="e.g., English, Spanish, French"
+                    disabled={disabled}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Search Tags</Label>
+                  <Input
+                    id="tags"
+                    value={(listing.tags || []).join(', ')}
+                    onChange={(e) => updateField('tags', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                    placeholder="e.g., plumber, emergency, 24 hour"
+                    disabled={disabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Keywords to help people find your business
+                  </p>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
 
       {/* Address (Collapsible) */}
       <Collapsible open={addressOpen} onOpenChange={setAddressOpen}>
@@ -369,74 +600,89 @@ export function DirectoryListingForm({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="facebookUrl" className="flex items-center gap-2">
-                  <Facebook className="w-4 h-4 text-blue-600" />
-                  Facebook
-                </Label>
-                <Input
-                  id="facebookUrl"
-                  value={listing.facebookUrl || ''}
-                  onChange={(e) => updateField('facebookUrl', e.target.value)}
-                  placeholder="https://facebook.com/yourbusiness"
-                  disabled={disabled}
-                />
-              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="facebookUrl" className="flex items-center gap-2">
+                    <Facebook className="w-4 h-4 text-blue-600" />
+                    Facebook
+                  </Label>
+                  <Input
+                    id="facebookUrl"
+                    value={listing.facebookUrl || ''}
+                    onChange={(e) => updateField('facebookUrl', e.target.value)}
+                    placeholder="https://facebook.com/yourbusiness"
+                    disabled={disabled}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="instagramUrl" className="flex items-center gap-2">
-                  <Instagram className="w-4 h-4 text-pink-600" />
-                  Instagram
-                </Label>
-                <Input
-                  id="instagramUrl"
-                  value={listing.instagramUrl || ''}
-                  onChange={(e) => updateField('instagramUrl', e.target.value)}
-                  placeholder="https://instagram.com/yourbusiness"
-                  disabled={disabled}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="instagramUrl" className="flex items-center gap-2">
+                    <Instagram className="w-4 h-4 text-pink-600" />
+                    Instagram
+                  </Label>
+                  <Input
+                    id="instagramUrl"
+                    value={listing.instagramUrl || ''}
+                    onChange={(e) => updateField('instagramUrl', e.target.value)}
+                    placeholder="https://instagram.com/yourbusiness"
+                    disabled={disabled}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="linkedinUrl" className="flex items-center gap-2">
-                  <Linkedin className="w-4 h-4 text-blue-700" />
-                  LinkedIn
-                </Label>
-                <Input
-                  id="linkedinUrl"
-                  value={listing.linkedinUrl || ''}
-                  onChange={(e) => updateField('linkedinUrl', e.target.value)}
-                  placeholder="https://linkedin.com/company/yourbusiness"
-                  disabled={disabled}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="linkedinUrl" className="flex items-center gap-2">
+                    <Linkedin className="w-4 h-4 text-blue-700" />
+                    LinkedIn
+                  </Label>
+                  <Input
+                    id="linkedinUrl"
+                    value={listing.linkedinUrl || ''}
+                    onChange={(e) => updateField('linkedinUrl', e.target.value)}
+                    placeholder="https://linkedin.com/company/yourbusiness"
+                    disabled={disabled}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="twitterUrl" className="flex items-center gap-2">
-                  <Twitter className="w-4 h-4" />
-                  X (Twitter)
-                </Label>
-                <Input
-                  id="twitterUrl"
-                  value={listing.twitterUrl || ''}
-                  onChange={(e) => updateField('twitterUrl', e.target.value)}
-                  placeholder="https://x.com/yourbusiness"
-                  disabled={disabled}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="twitterUrl" className="flex items-center gap-2">
+                    <Twitter className="w-4 h-4" />
+                    X (Twitter)
+                  </Label>
+                  <Input
+                    id="twitterUrl"
+                    value={listing.twitterUrl || ''}
+                    onChange={(e) => updateField('twitterUrl', e.target.value)}
+                    placeholder="https://x.com/yourbusiness"
+                    disabled={disabled}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="youtubeUrl" className="flex items-center gap-2">
-                  <Youtube className="w-4 h-4 text-red-600" />
-                  YouTube
-                </Label>
-                <Input
-                  id="youtubeUrl"
-                  value={listing.youtubeUrl || ''}
-                  onChange={(e) => updateField('youtubeUrl', e.target.value)}
-                  placeholder="https://youtube.com/@yourbusiness"
-                  disabled={disabled}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="youtubeUrl" className="flex items-center gap-2">
+                    <Youtube className="w-4 h-4 text-red-600" />
+                    YouTube
+                  </Label>
+                  <Input
+                    id="youtubeUrl"
+                    value={listing.youtubeUrl || ''}
+                    onChange={(e) => updateField('youtubeUrl', e.target.value)}
+                    placeholder="https://youtube.com/@yourbusiness"
+                    disabled={disabled}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tiktokUrl" className="flex items-center gap-2">
+                    TikTok
+                  </Label>
+                  <Input
+                    id="tiktokUrl"
+                    value={listing.tiktokUrl || ''}
+                    onChange={(e) => updateField('tiktokUrl', e.target.value)}
+                    placeholder="https://tiktok.com/@yourbusiness"
+                    disabled={disabled}
+                  />
+                </div>
               </div>
             </CardContent>
           </CollapsibleContent>
@@ -523,6 +769,22 @@ export function DirectoryListingForm({
                   </div>
                 </div>
               </div>
+
+              {showAdvancedOptions && (
+                <div className="space-y-2">
+                  <Label htmlFor="bannerImageUrl">Banner Image URL (optional)</Label>
+                  <Input
+                    id="bannerImageUrl"
+                    value={listing.bannerImageUrl || ''}
+                    onChange={(e) => updateField('bannerImageUrl', e.target.value)}
+                    placeholder="https://example.com/banner.jpg"
+                    disabled={disabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Wide image for expanded card view (e.g., 1200x400 pixels)
+                  </p>
+                </div>
+              )}
             </CardContent>
           </CollapsibleContent>
         </Card>
