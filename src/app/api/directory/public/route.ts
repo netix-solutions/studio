@@ -27,10 +27,12 @@ export async function GET(request: NextRequest) {
     const sortParam = request.nextUrl.searchParams.get('sort') || 'featured';
     const limitParam = parseInt(request.nextUrl.searchParams.get('limit') || '100');
 
-    // Query active listings with directory enabled
+    // Query active listings
+    // Note: We don't filter by showInDirectory in Firestore query because documents
+    // without this field won't match. Instead, we filter in JavaScript to include
+    // ads where showInDirectory is not explicitly false.
     const query = db.collection('live_ads')
-      .where('status', '==', 'active')
-      .where('showInDirectory', '==', true);
+      .where('status', '==', 'active');
 
     const snapshot = await query.get();
 
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
     snapshot.forEach((doc) => {
       const ad = { id: doc.id, ...doc.data() } as LiveAd;
 
-      // Check if directory listing is visible (approved)
+      // Check if directory listing is visible (approved, active, showInDirectory not false)
       if (!isDirectoryListingVisible(ad)) {
         return;
       }
