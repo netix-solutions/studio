@@ -80,9 +80,7 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
   return (
     <header className="sticky top-4 z-30 w-full px-4 md:px-6">
         <div className="flex h-16 items-center gap-4 rounded-xl border border-white/60 bg-white/80 px-5 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-blur-xl backdrop-saturate-150 md:px-6">
-            <div className="md:hidden">
-                <SidebarTrigger className="text-gray-700" />
-            </div>
+            <SidebarTrigger className="text-gray-700" />
             <h1 className="text-lg font-semibold md:text-xl font-headline text-gray-800">{pageTitle}</h1>
 
             {isAdmin && (
