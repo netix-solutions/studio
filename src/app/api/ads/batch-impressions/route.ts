@@ -2,15 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
-// CORS headers for cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+/**
+ * Get dynamic CORS headers based on request origin.
+ * When credentials are included in requests (sendBeacon, fetch with keepalive),
+ * browsers require a specific origin instead of wildcard '*'.
+ */
+function getCorsHeaders(request: NextRequest) {
+  const origin = request.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 200, headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 200, headers: getCorsHeaders(request) });
 }
 
 interface ImpressionBatch {
@@ -24,6 +32,8 @@ interface ImpressionBatch {
  * This dramatically reduces database writes compared to tracking each impression individually.
  */
 export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request);
+
   try {
     const body = await request.json();
     const impressions: ImpressionBatch[] = body.impressions;

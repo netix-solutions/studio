@@ -2,18 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
-// CORS headers for cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+/**
+ * Get dynamic CORS headers based on request origin.
+ * When credentials are included in requests, browsers require a specific origin instead of wildcard '*'.
+ */
+function getCorsHeaders(request: NextRequest) {
+  const origin = request.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 200, headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 200, headers: getCorsHeaders(request) });
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request);
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const adId = searchParams.get('id');

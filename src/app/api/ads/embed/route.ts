@@ -193,7 +193,10 @@ export async function GET(request: NextRequest) {
       url += '&website=' + encodeURIComponent(website);
     }
 
-    fetch(url)
+    fetch(url, {
+        credentials: 'omit', // Prevent CORS credentials conflict
+        mode: 'cors'
+      })
       .then(function(response) {
         return response.json();
       })
@@ -250,7 +253,9 @@ export async function GET(request: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: data,
-        keepalive: true
+        keepalive: true,
+        credentials: 'omit', // Prevent CORS credentials conflict
+        mode: 'cors'
       }).catch(function() {});
     }
   }
