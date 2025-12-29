@@ -5,12 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
   Phone,
   Mail,
   Globe,
@@ -22,24 +16,15 @@ import {
   Youtube,
   Star,
   ExternalLink,
-  Clock,
   Tag,
-  ChevronDown,
-  ChevronUp,
   Calendar,
   Check,
-  X,
 } from 'lucide-react';
 import {
   type DirectoryListing,
   type BusinessCategory,
-  type BusinessAmenity,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
-  BUSINESS_AMENITY_LABELS,
-  BUSINESS_AMENITY_ICONS,
-  isBusinessOpen,
-  getCondensedHours,
   getActiveOffers,
 } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -93,25 +78,21 @@ export function DirectoryCard({
   const hasAddress =
     listing.showAddress && (listing.address || listing.city);
 
-  const businessStatus = listing.businessHours
-    ? isBusinessOpen(listing.businessHours)
-    : null;
-
   const activeOffers = listing.specialOffers ? getActiveOffers(listing as DirectoryListing) : [];
 
   const isDark = theme === 'dark';
 
   // Render different variants
   if (variant === 'list') {
-    return <ListVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, businessStatus, activeOffers, isDark, showActions, onVisit, onView, className }} />;
+    return <ListVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, activeOffers, isDark, showActions, onVisit, onView, className }} />;
   }
 
   if (variant === 'compact') {
-    return <CompactVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, businessStatus, activeOffers, isDark, showActions, onVisit, className }} />;
+    return <CompactVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, activeOffers, isDark, showActions, onVisit, className }} />;
   }
 
   if (variant === 'expanded') {
-    return <ExpandedVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, businessStatus, activeOffers, isDark, showActions, onVisit, onView, className }} />;
+    return <ExpandedVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, activeOffers, isDark, showActions, onVisit, onView, className }} />;
   }
 
   // Default grid variant
@@ -182,28 +163,14 @@ export function DirectoryCard({
 
       {/* Content Section */}
       <CardContent className="p-4">
-        {/* Header with Open/Closed Status */}
-        <div className="flex items-start justify-between gap-2 mb-1">
+        {/* Header */}
+        <div className="mb-1">
           <h3
             className="font-semibold text-lg line-clamp-1"
             style={{ color: listing.cardTextColor || undefined }}
           >
             {listing.businessName || 'Business Name'}
           </h3>
-          {businessStatus && listing.showBusinessHours && (
-            <Badge
-              variant="outline"
-              className={cn(
-                'shrink-0 text-xs',
-                businessStatus.isOpen
-                  ? 'bg-green-100 text-green-700 border-green-200'
-                  : 'bg-red-100 text-red-700 border-red-200'
-              )}
-            >
-              <Clock className="w-3 h-3 mr-1" />
-              {businessStatus.isOpen ? 'Open' : 'Closed'}
-            </Badge>
-          )}
         </div>
 
         {/* Tagline */}
@@ -218,31 +185,6 @@ export function DirectoryCard({
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {listing.description}
           </p>
-        )}
-
-        {/* Amenities */}
-        {listing.showAmenities && listing.amenities && listing.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {listing.amenities.slice(0, 4).map((amenity) => (
-              <TooltipProvider key={amenity}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-sm px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                      {BUSINESS_AMENITY_ICONS[amenity as BusinessAmenity]}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {BUSINESS_AMENITY_LABELS[amenity as BusinessAmenity]}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
-            {listing.amenities.length > 4 && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                +{listing.amenities.length - 4}
-              </span>
-            )}
-          </div>
         )}
 
         {/* Contact Info */}
@@ -310,7 +252,6 @@ function ListVariant({
   hasSocialLinks,
   hasContactInfo,
   hasAddress,
-  businessStatus,
   activeOffers,
   isDark,
   showActions,
@@ -386,20 +327,6 @@ function ListVariant({
               </p>
             )}
           </div>
-          {businessStatus && listing.showBusinessHours && (
-            <Badge
-              variant="outline"
-              className={cn(
-                'shrink-0 text-xs',
-                businessStatus.isOpen
-                  ? 'bg-green-100 text-green-700 border-green-200'
-                  : 'bg-red-100 text-red-700 border-red-200'
-              )}
-            >
-              <Clock className="w-3 h-3 mr-1" />
-              {businessStatus.isOpen ? 'Open Now' : 'Closed'}
-            </Badge>
-          )}
         </div>
 
         {listing.description && (
@@ -466,7 +393,6 @@ function CompactVariant({
   targetUrl,
   categoryLabel,
   categoryIcon,
-  businessStatus,
   activeOffers,
   isDark,
   showActions,
@@ -511,15 +437,6 @@ function CompactVariant({
             <h3 className="font-medium text-sm truncate">
               {listing.businessName || 'Business Name'}
             </h3>
-            {businessStatus && listing.showBusinessHours && (
-              <span
-                className={cn(
-                  'w-2 h-2 rounded-full shrink-0',
-                  businessStatus.isOpen ? 'bg-green-500' : 'bg-red-500'
-                )}
-                title={businessStatus.isOpen ? 'Open' : 'Closed'}
-              />
-            )}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {categoryLabel && (
@@ -556,7 +473,6 @@ function ExpandedVariant({
   hasSocialLinks,
   hasContactInfo,
   hasAddress,
-  businessStatus,
   activeOffers,
   isDark,
   showActions,
@@ -564,10 +480,6 @@ function ExpandedVariant({
   onView,
   className,
 }: any) {
-  const condensedHours = listing.businessHours
-    ? getCondensedHours(listing.businessHours)
-    : [];
-
   return (
     <Card
       className={cn(
@@ -617,42 +529,14 @@ function ExpandedVariant({
 
       <CardContent className="p-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex-1">
-            <h2 className="font-bold text-2xl mb-1">
-              {listing.businessName || 'Business Name'}
-            </h2>
-            {listing.tagline && (
-              <p className="text-muted-foreground italic">
-                {listing.tagline}
-              </p>
-            )}
-          </div>
-          {businessStatus && listing.showBusinessHours && (
-            <div className="text-right shrink-0">
-              <Badge
-                variant="outline"
-                className={cn(
-                  'mb-1',
-                  businessStatus.isOpen
-                    ? 'bg-green-100 text-green-700 border-green-200'
-                    : 'bg-red-100 text-red-700 border-red-200'
-                )}
-              >
-                <Clock className="w-3 h-3 mr-1" />
-                {businessStatus.isOpen ? 'Open Now' : 'Closed'}
-              </Badge>
-              {businessStatus.closesAt && (
-                <p className="text-xs text-muted-foreground">
-                  Closes at {businessStatus.closesAt}
-                </p>
-              )}
-              {businessStatus.opensAt && !businessStatus.isOpen && (
-                <p className="text-xs text-muted-foreground">
-                  Opens {businessStatus.opensAt}
-                </p>
-              )}
-            </div>
+        <div className="mb-4">
+          <h2 className="font-bold text-2xl mb-1">
+            {listing.businessName || 'Business Name'}
+          </h2>
+          {listing.tagline && (
+            <p className="text-muted-foreground italic">
+              {listing.tagline}
+            </p>
           )}
         </div>
 
@@ -692,41 +576,6 @@ function ExpandedVariant({
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Amenities */}
-        {listing.showAmenities && listing.amenities && listing.amenities.length > 0 && (
-          <div className="mb-4">
-            <h4 className="font-medium text-sm text-muted-foreground mb-2">Features & Amenities</h4>
-            <div className="flex flex-wrap gap-2">
-              {listing.amenities.map((amenity: string) => (
-                <Badge key={amenity} variant="secondary">
-                  {BUSINESS_AMENITY_ICONS[amenity as BusinessAmenity]}{' '}
-                  {BUSINESS_AMENITY_LABELS[amenity as BusinessAmenity]}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Business Hours */}
-        {listing.showBusinessHours && condensedHours.length > 0 && (
-          <div className="mb-4">
-            <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Business Hours
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm">
-              {condensedHours.map((line, i) => (
-                <span key={i} className="text-muted-foreground">{line}</span>
-              ))}
-            </div>
-            {listing.businessHours?.holidayNote && (
-              <p className="text-xs text-muted-foreground mt-1 italic">
-                {listing.businessHours.holidayNote}
-              </p>
-            )}
           </div>
         )}
 

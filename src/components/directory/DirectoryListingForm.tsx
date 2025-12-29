@@ -45,16 +45,11 @@ import {
 import {
   type DirectoryListing,
   type BusinessCategory,
-  type BusinessHours,
-  type SpecialOffer,
-  type BusinessAmenity,
   BUSINESS_CATEGORIES,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
 } from '@/lib/types';
-import { BusinessHoursEditor } from './BusinessHoursEditor';
 import { SpecialOffersEditor } from './SpecialOffersEditor';
-import { AmenitiesSelector } from './AmenitiesSelector';
 
 interface DirectoryListingFormProps {
   listing: Partial<DirectoryListing>;
@@ -378,20 +373,6 @@ export function DirectoryListingForm({
         </Collapsible>
       )}
 
-      {/* Business Hours */}
-      {showAdvancedOptions && (
-        <BusinessHoursEditor
-          hours={listing.businessHours}
-          onChange={(hours) => {
-            updateField('businessHours', hours);
-            if (!listing.showBusinessHours) {
-              updateField('showBusinessHours', true);
-            }
-          }}
-          disabled={disabled}
-        />
-      )}
-
       {/* Special Offers */}
       {showAdvancedOptions && (
         <SpecialOffersEditor
@@ -402,17 +383,6 @@ export function DirectoryListingForm({
               updateField('showSpecialOffers', true);
             }
           }}
-          disabled={disabled}
-        />
-      )}
-
-      {/* Amenities */}
-      {showAdvancedOptions && (
-        <AmenitiesSelector
-          amenities={(listing.amenities || []) as BusinessAmenity[]}
-          onChange={(amenities) => updateField('amenities', amenities)}
-          showOnCard={listing.showAmenities ?? true}
-          onShowOnCardChange={(show) => updateField('showAmenities', show)}
           disabled={disabled}
         />
       )}
