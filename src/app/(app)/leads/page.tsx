@@ -41,6 +41,7 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { BulkSendEmailDialog, type BulkEmailRecipient } from '@/components/shared/bulk-send-email-dialog';
 import {
     Lead,
     LeadStage,
@@ -76,6 +77,7 @@ export default function LeadsPage() {
     const [deleteConfirmLead, setDeleteConfirmLead] = useState<Lead | null>(null);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
     const { firestore } = useFirebase();
     const { user } = useUser();
     const router = useRouter();
@@ -353,6 +355,18 @@ export default function LeadsPage() {
         return { total, byStage };
     }, [filteredLeads]);
 
+    // Prepare selected leads as email recipients
+    const bulkEmailRecipients: BulkEmailRecipient[] = useMemo(() => {
+        return leads
+            .filter(l => selectedLeads.has(l.id) && l.email)
+            .map(lead => ({
+                id: lead.id,
+                email: lead.email,
+                contactName: lead.contactName || lead.businessName || 'Unknown',
+                businessName: lead.businessName,
+            }));
+    }, [leads, selectedLeads]);
+
     const clearFilters = () => {
         setSearchQuery('');
         setSelectedStage('all');
@@ -505,6 +519,15 @@ export default function LeadsPage() {
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : null}
                                 {selectedStatus === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowBulkEmailDialog(true)}
+                                disabled={bulkEmailRecipients.length === 0}
+                            >
+                                <Mail className="mr-2 h-4 w-4" />
+                                Send Email
                             </Button>
                             <Button
                                 variant="outline"
@@ -742,6 +765,17 @@ export default function LeadsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Bulk Email Dialog */}
+            <BulkSendEmailDialog
+                recipients={bulkEmailRecipients}
+                isOpen={showBulkEmailDialog}
+                onOpenChange={setShowBulkEmailDialog}
+                recipientType="lead"
+                onComplete={() => {
+                    setSelectedLeads(new Set());
+                }}
+            />
         </div>
     );
 }
