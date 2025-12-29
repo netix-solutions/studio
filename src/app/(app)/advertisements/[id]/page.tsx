@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useFirebase, useUser as useAuthUser } from '@/firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc, deleteDoc } from 'firebase/firestore';
@@ -252,6 +252,7 @@ export default function AdvertisementDetailPage() {
 
     const [adProofFile, setAdProofFile] = useState<File | null>(null);
     const [adProofUrlInput, setAdProofUrlInput] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSavingProof, setIsSavingProof] = useState(false);
     const [isRequestingApproval, setIsRequestingApproval] = useState(false);
     const [isGoingLive, setIsGoingLive] = useState(false);
@@ -271,6 +272,22 @@ export default function AdvertisementDetailPage() {
         const originalUrl = advertisement.adProofDestinationUrl || user.adWebsiteUrl || '';
         return adProofUrlInput !== originalUrl;
     })();
+
+    // Handle file selection from input
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAdProofFile(file);
+        }
+    };
+
+    // Clear selected file and reset input
+    const clearSelectedFile = () => {
+        setAdProofFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     useEffect(() => {
         if (!firestore || typeof adId !== 'string' || !userId) {
@@ -418,7 +435,11 @@ export default function AdvertisementDetailPage() {
                 adProofDestinationUrl: adProofUrlInput
             } : null);
 
+            // Clear file state and input
             setAdProofFile(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             toast({ title: 'Success!', description: 'Advertisement proof has been saved.' });
 
         } catch (error: any) {
@@ -1062,11 +1083,13 @@ export default function AdvertisementDetailPage() {
                                     <div className="space-y-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="ad-proof-file">Ad Image File ({AD_DIMENSIONS.WIDTH}x{AD_DIMENSIONS.HEIGHT})</Label>
-                                            <Input
+                                            <input
+                                                ref={fileInputRef}
                                                 id="ad-proof-file"
                                                 type="file"
                                                 accept="image/*"
-                                                onChange={(e) => setAdProofFile(e.target.files?.[0] || null)}
+                                                onChange={handleFileChange}
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                             />
                                             {adProofFile && (
                                                 <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-md">
@@ -1077,7 +1100,7 @@ export default function AdvertisementDetailPage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         className="h-auto p-1 ml-auto text-green-700 hover:text-red-600 hover:bg-red-50"
-                                                        onClick={() => setAdProofFile(null)}
+                                                        onClick={clearSelectedFile}
                                                     >
                                                         <X className="h-3 w-3" />
                                                     </Button>
