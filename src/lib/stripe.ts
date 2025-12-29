@@ -11,6 +11,9 @@ import {
   setDoc,
 } from 'firebase/firestore';
 
+// Note: goToBillingPortal now uses our own API route instead of the Stripe extension
+// This is more reliable as the extension's createPortalLink function was not working
+
 const STRIPE_TIMEOUT_MS = 30000; // 30 second timeout for Stripe operations
 
 export const createCheckout = async (
@@ -93,51 +96,29 @@ export const goToBillingPortal = async (
   userEmail: string | null | undefined,
   returnUrl: string
 ) => {
-  // 1. Ensure the customer doc exists (doc id MUST equal Firebase UID)
-  await setDoc(
-    doc(firestore, 'customers', userId),
-    {
-      email: userEmail ?? null,
+  // Call our API route directly to create a billing portal session
+  // This bypasses the Stripe extension which may have issues
+  const response = await fetch('/api/billing-portal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
-    { merge: true }
-  );
-
-  // 2. Create a new portal link document in the /customers/{uid}/portal_links collection
-  const portalLinksRef = collection(firestore, 'customers', userId, 'portal_links');
-  const docRef = await addDoc(portalLinksRef, {
-    return_url: returnUrl,
-    createdAt: serverTimestamp(),
+    body: JSON.stringify({
+      userId,
+      returnUrl,
+    }),
   });
 
-  // 3. Wait for the Stripe extension to write the URL to the document with timeout
-  return new Promise<void>((resolve, reject) => {
-    let timeoutId: NodeJS.Timeout;
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create billing portal session');
+  }
 
-    const unsub = onSnapshot(docRef, (snap) => {
-      const data = snap.data();
-      if (data?.url) {
-        clearTimeout(timeoutId);
-        unsub();
-        window.location.assign(data.url);
-        resolve();
-      }
-      if (data?.error) {
-        clearTimeout(timeoutId);
-        unsub();
-        const errorMessage = data.error.message || 'Could not create billing portal link.';
-        reject(new Error(errorMessage));
-      }
-    }, (error) => {
-      clearTimeout(timeoutId);
-      unsub();
-      console.error("onSnapshot error:", error);
-      reject(new Error("Permission denied. Could not listen for billing portal link."));
-    });
+  const data = await response.json();
 
-    // Set timeout to prevent infinite waiting
-    timeoutId = setTimeout(() => {
-      unsub();
-      reject(new Error('Billing portal request timed out. Please try again.'));
-    }, STRIPE_TIMEOUT_MS);
-  });
+  if (data.url) {
+    window.location.assign(data.url);
+  } else {
+    throw new Error('No billing portal URL returned');
+  }
 };
