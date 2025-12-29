@@ -480,13 +480,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-          {/* Ad Network Performance */}
-          <AdNetworkStats />
+      {/* Ad Network Performance */}
+      <AdNetworkStats />
 
-          {/* Recent Activity Feed */}
-          <RecentActivity />
-        </TabsContent>
-      </Tabs>
+      {/* Recent Activity Feed */}
+      <RecentActivity />
     </div>
   );
 }
