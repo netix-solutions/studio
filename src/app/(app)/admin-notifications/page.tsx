@@ -195,11 +195,11 @@ export default function AdminNotificationsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Bell className="h-6 w-6" />
+                    <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+                        <Bell className="h-5 w-5 md:h-6 md:w-6" />
                         Admin Notifications
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground text-sm md:text-base">
                         Configure which email addresses receive alerts for different events
                     </p>
                 </div>

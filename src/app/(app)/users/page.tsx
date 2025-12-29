@@ -245,12 +245,12 @@ export default function UsersPage() {
                     )}
 
                     {!loading && !error && (
-                        <div className="rounded-md border">
+                        <div className="rounded-md border overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Email</TableHead>
+                                        <TableHead>User</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Email</TableHead>
                                         <TableHead>Role</TableHead>
                                         <TableHead><span className="sr-only">Actions</span></TableHead>
                                     </TableRow>
@@ -258,8 +258,11 @@ export default function UsersPage() {
                                 <TableBody>
                                     {users.length > 0 ? users.map((user) => (
                                         <TableRow key={user.id}>
-                                            <TableCell className="font-medium">{user.firstName || user.lastName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'N/A'}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{user.firstName || user.lastName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'N/A'}</div>
+                                                <div className="text-sm text-muted-foreground sm:hidden">{user.email}</div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
                                             <TableCell>
                                                 <Badge variant={user.role === 'admin' ? 'secondary' : 'outline'}>{user.role}</Badge>
                                             </TableCell>

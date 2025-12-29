@@ -339,8 +339,8 @@ export default function SubscriptionsPage() {
     <>
     <Card>
       <CardHeader>
-        <CardTitle>{isAdmin ? 'All Customers' : 'My Subscriptions'}</CardTitle>
-        <CardDescription>View and manage {isAdmin ? 'all customer' : 'your ad'} subscriptions.</CardDescription>
+        <CardTitle className="text-xl md:text-2xl">{isAdmin ? 'All Customers' : 'My Subscriptions'}</CardTitle>
+        <CardDescription className="text-sm md:text-base">View and manage {isAdmin ? 'all customer' : 'your ad'} subscriptions.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -364,23 +364,23 @@ export default function SubscriptionsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
             <Table>
                 <TableHeader>
                 <TableRow>
                     {isAdmin && <TableHead>Customer</TableHead>}
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Billing Status</TableHead>
-                    {isAdmin && <TableHead>Ad Status</TableHead>}
+                    <TableHead className="hidden sm:table-cell">Plan</TableHead>
+                    <TableHead className="hidden lg:table-cell">Period</TableHead>
+                    <TableHead>Status</TableHead>
+                    {isAdmin && <TableHead className="hidden md:table-cell">Ad Status</TableHead>}
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {filteredSubscriptions.length > 0 ? filteredSubscriptions.map((sub) => (
-                    <TableRow 
-                        key={sub.id} 
+                    <TableRow
+                        key={sub.id}
                         onClick={() => handleRowClick(sub)}
                         className="cursor-pointer"
                     >
@@ -388,18 +388,18 @@ export default function SubscriptionsPage() {
                         <TableCell>
                             <div className="font-medium">{sub.customerName}</div>
                             <div className="text-sm text-muted-foreground">{sub.customerEmail}</div>
-                            <div className="text-xs text-muted-foreground mt-1">ID: {sub.customerId}</div>
+                            <div className="text-xs text-muted-foreground mt-1 hidden sm:block">ID: {sub.customerId}</div>
                         </TableCell>
                     )}
-                    <TableCell>{sub.plan}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">{sub.plan}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
                         {format(new Date(sub.startDate), 'LLL d, y')} - {format(new Date(sub.endDate), 'LLL d, y')}
                     </TableCell>
                     <TableCell>
                         <Badge variant={getStatusBadgeVariant(sub.status)}>{capitalize(sub.status)}</Badge>
                     </TableCell>
                     {isAdmin && (
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell onClick={(e) => e.stopPropagation()} className="hidden md:table-cell">
                            {sub.adId ? (
                                <Badge
                                    variant={adStatusVariantMap[sub.adStatus] || 'outline'}
