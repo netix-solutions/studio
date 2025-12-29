@@ -69,6 +69,8 @@ export async function GET(request: NextRequest) {
   const showContactParam = request.nextUrl.searchParams.get('showContact') !== 'false';
   const showSocialParam = request.nextUrl.searchParams.get('showSocial') !== 'false';
   const cardStyleParam = request.nextUrl.searchParams.get('cardStyle') || 'enhanced'; // enhanced, simple, minimal
+  const maxInitialParam = parseInt(request.nextUrl.searchParams.get('maxInitial') || '0', 10); // 0 = show all
+  const viewModeParam = request.nextUrl.searchParams.get('viewMode') || 'scroll'; // scroll, paginated, expandable
 
   // Fetch ads from database
   let sponsors: Array<{
@@ -701,6 +703,59 @@ export async function GET(request: NextRequest) {
       pointer-events: none;
     }
 
+    /* Hidden sponsor cards (expandable mode) */
+    .sponsor-card.hidden {
+      display: none;
+    }
+
+    /* Show More Button */
+    .show-more-container {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .show-more-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: transparent;
+      color: #3b82f6;
+      font-size: 1rem;
+      font-weight: 600;
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .show-more-btn:hover {
+      background: #3b82f6;
+      color: white;
+    }
+
+    body.theme-dark .show-more-btn {
+      color: #60a5fa;
+      border-color: #60a5fa;
+    }
+
+    body.theme-dark .show-more-btn:hover {
+      background: #60a5fa;
+      color: #0f172a;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body.theme-auto .show-more-btn {
+        color: #60a5fa;
+        border-color: #60a5fa;
+      }
+
+      body.theme-auto .show-more-btn:hover {
+        background: #60a5fa;
+        color: #0f172a;
+      }
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .directory-container {
@@ -733,7 +788,7 @@ export async function GET(request: NextRequest) {
     </header>
 
     <main id="sponsors-container">
-      ${sponsors.length > 0 ? renderSponsorsGrid(sponsors, columnsParam, cardStyleParam) : renderEmptyState()}
+      ${sponsors.length > 0 ? renderSponsorsGrid(sponsors, columnsParam, cardStyleParam, maxInitialParam, viewModeParam) : renderEmptyState()}
     </main>
 
     ${showCtaParam ? `
@@ -755,6 +810,11 @@ export async function GET(request: NextRequest) {
     (function() {
       'use strict';
 
+      var totalSponsors = ${sponsors.length};
+      var maxInitial = ${maxInitialParam};
+      var viewMode = '${viewModeParam}';
+      var visibleCount = maxInitial > 0 ? Math.min(maxInitial, totalSponsors) : totalSponsors;
+
       /**
        * Send message to parent Wix page
        */
@@ -771,6 +831,44 @@ export async function GET(request: NextRequest) {
           // Cross-origin restriction - ignore
         }
       }
+
+      /**
+       * Notify parent of height changes
+       */
+      function notifyHeight() {
+        setTimeout(function() {
+          postToParent('resize', {
+            height: document.body.scrollHeight
+          });
+        }, 100);
+      }
+
+      /**
+       * Show more sponsors (expandable mode)
+       */
+      function showMoreSponsors() {
+        var cards = document.querySelectorAll('.sponsor-card.hidden');
+        var showMoreBtn = document.getElementById('show-more-btn');
+        var batchSize = maxInitial > 0 ? maxInitial : 6;
+
+        for (var i = 0; i < Math.min(batchSize, cards.length); i++) {
+          cards[i].classList.remove('hidden');
+          visibleCount++;
+        }
+
+        // Update or hide the button
+        var remaining = totalSponsors - visibleCount;
+        if (remaining <= 0 && showMoreBtn) {
+          showMoreBtn.style.display = 'none';
+        } else if (showMoreBtn) {
+          showMoreBtn.querySelector('.remaining-count').textContent = remaining;
+        }
+
+        notifyHeight();
+      }
+
+      // Expose to global scope for onclick
+      window.showMoreSponsors = showMoreSponsors;
 
       /**
        * Handle image loading
@@ -814,14 +912,25 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Notify parent of content height for auto-resize
-      setTimeout(function() {
-        postToParent('resize', {
-          height: document.body.scrollHeight
-        });
-      }, 500);
+      /**
+       * Handle Show More button
+       */
+      var showMoreBtn = document.getElementById('show-more-btn');
+      if (showMoreBtn) {
+        showMoreBtn.addEventListener('click', showMoreSponsors);
+      }
 
-      postToParent('ready', { version: '2.0.0', sponsorCount: ${sponsors.length} });
+      // Initial height notification
+      notifyHeight();
+
+      // Listen for resize requests from parent
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'requestHeight') {
+          notifyHeight();
+        }
+      });
+
+      postToParent('ready', { version: '2.1.0', sponsorCount: totalSponsors, visibleCount: visibleCount });
     })();
   </script>
 </body>
@@ -837,30 +946,48 @@ export async function GET(request: NextRequest) {
 /**
  * Render the sponsors grid
  */
-function renderSponsorsGrid(sponsors: any[], columns: string, cardStyle: string): string {
+function renderSponsorsGrid(sponsors: any[], columns: string, cardStyle: string, maxInitial: number, viewMode: string): string {
   const columnsClass = columns === 'auto' ? 'columns-auto' : `columns-${columns}`;
+  const useExpandable = viewMode === 'expandable' && maxInitial > 0 && sponsors.length > maxInitial;
 
   let html = `<div class="sponsors-grid ${columnsClass}">`;
 
-  for (const sponsor of sponsors) {
-    html += renderSponsorCard(sponsor, cardStyle);
+  for (let i = 0; i < sponsors.length; i++) {
+    const isHidden = useExpandable && i >= maxInitial;
+    html += renderSponsorCard(sponsors[i], cardStyle, isHidden);
   }
 
   html += '</div>';
+
+  // Add "Show More" button for expandable mode
+  if (useExpandable) {
+    const remaining = sponsors.length - maxInitial;
+    html += `
+      <div class="show-more-container">
+        <button type="button" class="show-more-btn" id="show-more-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Show More (<span class="remaining-count">${remaining}</span> more)
+        </button>
+      </div>
+    `;
+  }
+
   return html;
 }
 
 /**
  * Render a single sponsor card
  */
-function renderSponsorCard(sponsor: any, cardStyle: string): string {
+function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = false): string {
   const hasSocialLinks = sponsor.showSocialLinks && (
     sponsor.facebookUrl || sponsor.instagramUrl || sponsor.linkedinUrl || sponsor.twitterUrl || sponsor.youtubeUrl
   );
 
   return `
     <a href="${escapeHtml(sponsor.clickUrl)}"
-       class="sponsor-card"
+       class="sponsor-card${isHidden ? ' hidden' : ''}"
        target="_blank"
        rel="noopener sponsored"
        title="Visit ${escapeHtml(sponsor.businessName)}"
