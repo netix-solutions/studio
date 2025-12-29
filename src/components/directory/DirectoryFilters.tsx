@@ -27,9 +27,7 @@ import {
   LayoutList,
   X,
   Clock,
-  Tag,
   Star,
-  MapPin,
   Filter,
 } from 'lucide-react';
 import {
@@ -43,9 +41,7 @@ import type { DirectoryCardVariant } from './DirectoryCard';
 export type SortOption = 'featured' | 'alphabetical' | 'newest' | 'rating';
 export type FilterOptions = {
   categories: BusinessCategory[];
-  hasOffers: boolean;
   featured: boolean;
-  serviceArea: string;
 };
 
 interface DirectoryFiltersProps {
@@ -83,16 +79,12 @@ export function DirectoryFilters({
 
   const activeFilterCount =
     filters.categories.length +
-    (filters.hasOffers ? 1 : 0) +
-    (filters.featured ? 1 : 0) +
-    (filters.serviceArea ? 1 : 0);
+    (filters.featured ? 1 : 0);
 
   const clearFilters = () => {
     onFiltersChange({
       categories: [],
-      hasOffers: false,
       featured: false,
-      serviceArea: '',
     });
   };
 
@@ -145,13 +137,6 @@ export function DirectoryFilters({
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Quick Filters</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={filters.hasOffers}
-                onCheckedChange={(checked) => onFiltersChange({ ...filters, hasOffers: checked })}
-              >
-                <Tag className="w-4 h-4 mr-2" />
-                Has Special Offers
-              </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={filters.featured}
                 onCheckedChange={(checked) => onFiltersChange({ ...filters, featured: checked })}
@@ -292,13 +277,6 @@ export function DirectoryFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Quick Filter Pills */}
         <div className="flex flex-wrap gap-2">
-          <FilterPill
-            active={filters.hasOffers}
-            onClick={() => onFiltersChange({ ...filters, hasOffers: !filters.hasOffers })}
-            icon={<Tag className="w-3.5 h-3.5" />}
-          >
-            Special Offers
-          </FilterPill>
           <FilterPill
             active={filters.featured}
             onClick={() => onFiltersChange({ ...filters, featured: !filters.featured })}

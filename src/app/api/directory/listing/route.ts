@@ -387,11 +387,8 @@ function sanitizeDirectoryListing(data: Partial<DirectoryListing>): Partial<Dire
   if (data.logoUrl !== undefined) {
     sanitized.logoUrl = sanitizeUrl(data.logoUrl);
   }
-  if (data.cardBackgroundColor !== undefined) {
-    sanitized.cardBackgroundColor = sanitizeColor(data.cardBackgroundColor);
-  }
-  if (data.cardTextColor !== undefined) {
-    sanitized.cardTextColor = sanitizeColor(data.cardTextColor);
+  if (data.bannerImageUrl !== undefined) {
+    sanitized.bannerImageUrl = sanitizeUrl(data.bannerImageUrl);
   }
 
   // Business categorization
@@ -403,12 +400,6 @@ function sanitizeDirectoryListing(data: Partial<DirectoryListing>): Partial<Dire
   }
   if (data.subcategory !== undefined) {
     sanitized.subcategory = String(data.subcategory || '').trim().slice(0, 50);
-  }
-  if (data.tags !== undefined && Array.isArray(data.tags)) {
-    sanitized.tags = data.tags
-      .filter(t => typeof t === 'string')
-      .map(t => String(t).trim().slice(0, 30))
-      .slice(0, 10);
   }
 
   // Display preferences

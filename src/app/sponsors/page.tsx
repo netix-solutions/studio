@@ -40,8 +40,6 @@ interface DirectoryListingPublic {
   imageUrl?: string;
   logoUrl?: string;
   bannerImageUrl?: string;
-  cardBackgroundColor?: string;
-  cardTextColor?: string;
   facebookUrl?: string;
   instagramUrl?: string;
   linkedinUrl?: string;
@@ -49,16 +47,11 @@ interface DirectoryListingPublic {
   youtubeUrl?: string;
   tiktokUrl?: string;
   appointmentUrl?: string;
-  specialOffers?: any[];
   yearEstablished?: number;
-  serviceAreas?: string[];
-  languages?: string[];
   showContactInfo: boolean;
   showSocialLinks: boolean;
   showAddress: boolean;
-  showSpecialOffers: boolean;
   isFeatured: boolean;
-  hasActiveOffers: boolean;
   targetUrl: string;
 }
 
@@ -80,9 +73,7 @@ export default function SponsorsPage() {
     categories: searchParams.get('category')
       ? [searchParams.get('category') as BusinessCategory]
       : [],
-    hasOffers: false,
     featured: false,
-    serviceArea: '',
   });
 
   const fetchListings = async () => {
@@ -93,7 +84,6 @@ export default function SponsorsPage() {
       const params = new URLSearchParams();
       if (searchQuery) params.set('search', searchQuery);
       if (filters.categories.length === 1) params.set('category', filters.categories[0]);
-      if (filters.hasOffers) params.set('hasOffers', 'true');
       if (filters.featured) params.set('featured', 'true');
       params.set('sort', sortBy);
 
@@ -114,7 +104,7 @@ export default function SponsorsPage() {
 
   useEffect(() => {
     fetchListings();
-  }, [sortBy, filters.hasOffers, filters.featured]);
+  }, [sortBy, filters.featured]);
 
   // Debounced search
   useEffect(() => {
@@ -262,8 +252,6 @@ export default function SponsorsPage() {
                   state: listing.state,
                   logoUrl: listing.logoUrl,
                   bannerImageUrl: listing.bannerImageUrl,
-                  cardBackgroundColor: listing.cardBackgroundColor,
-                  cardTextColor: listing.cardTextColor,
                   facebookUrl: listing.facebookUrl,
                   instagramUrl: listing.instagramUrl,
                   linkedinUrl: listing.linkedinUrl,
@@ -271,14 +259,10 @@ export default function SponsorsPage() {
                   youtubeUrl: listing.youtubeUrl,
                   tiktokUrl: listing.tiktokUrl,
                   appointmentUrl: listing.appointmentUrl,
-                  specialOffers: listing.specialOffers,
                   yearEstablished: listing.yearEstablished,
-                  serviceAreas: listing.serviceAreas,
-                  languages: listing.languages,
                   showContactInfo: listing.showContactInfo,
                   showSocialLinks: listing.showSocialLinks,
                   showAddress: listing.showAddress,
-                  showSpecialOffers: listing.showSpecialOffers,
                   isFeatured: listing.isFeatured,
                 }}
                 adImageUrl={listing.imageUrl}

@@ -203,7 +203,7 @@ export function DirectoryAnalytics({
               ? "Excellent! You're among the top performers."
               : ctr >= 1.5
               ? "Good performance! Try our optimization tips to reach the top."
-              : "There's room for improvement. Complete your listing and add special offers."}
+              : "There's room for improvement. Complete your listing to improve visibility."}
           </p>
         </CardContent>
       </Card>
@@ -421,16 +421,6 @@ function generateOptimizationTips(
       type: 'warning',
       title: 'Add business hours',
       description: 'Let customers know when you\'re open. This helps with "Open Now" searches.',
-      priority: 'medium',
-    });
-  }
-
-  if (!listing.specialOffers || listing.specialOffers.length === 0) {
-    tips.push({
-      id: 'add-offers',
-      type: 'info',
-      title: 'Add a special offer',
-      description: 'Listings with special offers get featured with a badge and attract more attention.',
       priority: 'medium',
     });
   }
