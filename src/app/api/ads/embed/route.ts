@@ -30,10 +30,12 @@ export async function GET(request: NextRequest) {
   // Configuration
   var AD_SERVER_BASE = '${baseUrl}';
   var AD_SERVE_ALL_ENDPOINT = AD_SERVER_BASE + '/api/ads/serve-all';
+  var BATCH_IMPRESSIONS_ENDPOINT = AD_SERVER_BASE + '/api/ads/batch-impressions';
   var DEFAULT_WEBSITE = '${websiteParam}';
   var ROTATION_INTERVAL = 7500; // 7.5 seconds
   var TRANSITION_DURATION = 500; // 0.5 second transition
   var MAX_ROTATION_DURATION = 300000; // 5 minutes - stop rotation after this to save resources
+  var IMPRESSION_FLUSH_INTERVAL = 30000; // Flush impressions every 30 seconds
 
   // Display dimensions (scaled down from 600x200 to 300x100)
   var DISPLAY_WIDTH = 300;
@@ -43,7 +45,11 @@ export async function GET(request: NextRequest) {
   var adInstances = [];
   var adsCache = null;
   var adsCacheTimestamp = 0;
-  var ADS_CACHE_DURATION = 60000; // 1 minute cache
+  var ADS_CACHE_DURATION = 300000; // 5 minute cache (increased from 1 min)
+
+  // Impression batching - dramatically reduces server writes
+  var impressionQueue = {}; // { adId: count }
+  var impressionFlushTimer = null;
 
   // CommunityAds global object
   window.CommunityAds = window.CommunityAds || {};
@@ -205,12 +211,58 @@ export async function GET(request: NextRequest) {
   }
 
   /**
-   * Track an impression for an ad
+   * Queue an impression for batch sending (reduces server writes by ~95%)
    */
-  function trackImpression(impressionUrl) {
-    var pixel = new Image();
-    pixel.src = impressionUrl;
+  function queueImpression(adId) {
+    impressionQueue[adId] = (impressionQueue[adId] || 0) + 1;
+
+    // Start flush timer if not already running
+    if (!impressionFlushTimer) {
+      impressionFlushTimer = setTimeout(flushImpressions, IMPRESSION_FLUSH_INTERVAL);
+    }
   }
+
+  /**
+   * Flush all queued impressions to the server
+   */
+  function flushImpressions() {
+    impressionFlushTimer = null;
+
+    var impressions = [];
+    for (var adId in impressionQueue) {
+      if (impressionQueue.hasOwnProperty(adId) && impressionQueue[adId] > 0) {
+        impressions.push({ adId: adId, count: impressionQueue[adId] });
+      }
+    }
+
+    if (impressions.length === 0) return;
+
+    // Clear the queue before sending
+    impressionQueue = {};
+
+    // Send batch using sendBeacon for reliability (works even during page unload)
+    var data = JSON.stringify({ impressions: impressions });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(BATCH_IMPRESSIONS_ENDPOINT, new Blob([data], { type: 'application/json' }));
+    } else {
+      // Fallback for older browsers
+      fetch(BATCH_IMPRESSIONS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: data,
+        keepalive: true
+      }).catch(function() {});
+    }
+  }
+
+  // Flush impressions when page unloads
+  window.addEventListener('beforeunload', flushImpressions);
+  window.addEventListener('pagehide', flushImpressions);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      flushImpressions();
+    }
+  });
 
   /**
    * Create an ad instance with rotation
@@ -314,7 +366,7 @@ export async function GET(request: NextRequest) {
         wrapper.removeChild(wrapper.firstChild);
       }
       wrapper.appendChild(link);
-      trackImpression(ad.impressionUrl);
+      queueImpression(ad.id);
     } else {
       // Fade out existing ad
       var existingImg = wrapper.querySelector('.community-ad-img');
@@ -336,7 +388,7 @@ export async function GET(request: NextRequest) {
         img.classList.remove('fade-out');
         img.classList.add('fade-in');
 
-        trackImpression(ad.impressionUrl);
+        queueImpression(ad.id);
       }, TRANSITION_DURATION);
     }
   }
