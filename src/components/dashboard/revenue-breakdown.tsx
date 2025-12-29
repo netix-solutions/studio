@@ -51,7 +51,7 @@ export default function RevenueBreakdown({ byPeriod, byPlan, loading }: RevenueB
           <PieChartIcon className="h-5 w-5 text-purple-500" />
           Revenue Breakdown
         </CardTitle>
-        <CardDescription>MRR by billing period and plan type</CardDescription>
+        <CardDescription>Monthly revenue by billing cycle and ad type</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {loading ? (
@@ -64,7 +64,7 @@ export default function RevenueBreakdown({ byPeriod, byPlan, loading }: RevenueB
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Repeat className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">By Billing Period</p>
+                <p className="text-sm font-medium">By Billing Cycle</p>
               </div>
 
               {periodChartData.length > 0 ? (
@@ -136,7 +136,7 @@ export default function RevenueBreakdown({ byPeriod, byPlan, loading }: RevenueB
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Layers className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">By Plan</p>
+                <p className="text-sm font-medium">By Ad Type</p>
               </div>
 
               {byPlan.length > 0 ? (
@@ -175,11 +175,11 @@ export default function RevenueBreakdown({ byPeriod, byPlan, loading }: RevenueB
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <p className="text-2xl font-bold">{byPlan.length}</p>
-                  <p className="text-xs text-muted-foreground">Active Plans</p>
+                  <p className="text-xs text-muted-foreground">Active Ad Types</p>
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <p className="text-2xl font-bold">{formatCurrency(totalMrr)}</p>
-                  <p className="text-xs text-muted-foreground">Total MRR</p>
+                  <p className="text-xs text-muted-foreground">Monthly Revenue</p>
                 </div>
               </div>
             </div>

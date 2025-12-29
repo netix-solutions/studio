@@ -66,6 +66,16 @@ export interface RenewalForecast {
   amount: number;
 }
 
+export interface MonthlyRevenueProjection {
+  month: string;
+  monthDate: Date;
+  recurringRevenue: number; // Stable monthly revenue from monthly subscriptions
+  renewalRevenue: number; // Revenue from quarterly/yearly renewals due this month
+  totalExpectedRevenue: number;
+  monthlySubscriptions: number; // Count of monthly subscriptions
+  renewalsCount: number; // Count of renewals this month
+}
+
 export interface RevenueByPeriod {
   period: string;
   count: number;
@@ -427,6 +437,55 @@ export function groupRenewalsByMonth(renewals: RenewalForecast[]): Map<string, {
   });
 
   return grouped;
+}
+
+/**
+ * Calculate expected monthly revenue for the next N months
+ * Includes both stable recurring revenue (monthly subs) and renewal revenue (quarterly/yearly)
+ */
+export function getMonthlyRevenueProjection(
+  subscriptions: SubscriptionWithRevenue[],
+  months: number = 6
+): MonthlyRevenueProjection[] {
+  const now = new Date();
+  const projections: MonthlyRevenueProjection[] = [];
+
+  // Get active subscriptions
+  const active = subscriptions.filter(isActiveSubscription);
+
+  // Calculate stable monthly recurring revenue from monthly subscriptions
+  const monthlySubscriptions = active.filter(sub => sub.billingPeriod === 'monthly');
+  const stableMonthlyRevenue = monthlySubscriptions.reduce((sum, sub) => sum + sub.monthlyAmount, 0);
+
+  // Get all renewals for the projection period
+  const allRenewals = getUpcomingRenewals(subscriptions, months * 31);
+  const renewalsByMonth = groupRenewalsByMonth(allRenewals);
+
+  for (let i = 0; i < months; i++) {
+    const monthDate = addMonths(now, i);
+    const monthKey = format(monthDate, 'MMM yyyy');
+    const renewalData = renewalsByMonth.get(monthKey) || { count: 0, amount: 0 };
+
+    // For the current month, prorate the monthly revenue based on remaining days
+    let recurringRevenue = stableMonthlyRevenue;
+    if (i === 0) {
+      const daysInMonth = differenceInDays(endOfMonth(monthDate), startOfMonth(monthDate)) + 1;
+      const daysRemaining = differenceInDays(endOfMonth(monthDate), now) + 1;
+      recurringRevenue = (stableMonthlyRevenue * daysRemaining) / daysInMonth;
+    }
+
+    projections.push({
+      month: format(monthDate, 'MMM'),
+      monthDate,
+      recurringRevenue: Math.round(recurringRevenue * 100) / 100,
+      renewalRevenue: renewalData.amount,
+      totalExpectedRevenue: Math.round((recurringRevenue + renewalData.amount) * 100) / 100,
+      monthlySubscriptions: monthlySubscriptions.length,
+      renewalsCount: renewalData.count,
+    });
+  }
+
+  return projections;
 }
 
 /**

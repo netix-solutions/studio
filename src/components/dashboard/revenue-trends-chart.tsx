@@ -32,15 +32,15 @@ interface RevenueTrendsChartProps {
 
 const chartConfig = {
   mrr: {
-    label: 'MRR',
+    label: 'Monthly Revenue',
     color: 'hsl(var(--chart-1))',
   },
   newMrr: {
-    label: 'New MRR',
+    label: 'New Revenue',
     color: 'hsl(142, 76%, 36%)', // Green
   },
   churnedMrr: {
-    label: 'Churned MRR',
+    label: 'Lost Revenue',
     color: 'hsl(0, 84%, 60%)', // Red
   },
 };
@@ -121,15 +121,15 @@ export default function RevenueTrendsChart({ data, loading }: RevenueTrendsChart
                         <p className="font-medium mb-2">{payload[0]?.payload?.month}</p>
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between gap-4">
-                            <span className="text-muted-foreground">MRR:</span>
+                            <span className="text-muted-foreground">Monthly Revenue:</span>
                             <span className="font-medium">{formatCurrency(payload[0]?.payload?.mrr || 0)}</span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span className="text-green-600">+ New:</span>
+                            <span className="text-green-600">+ New Ads:</span>
                             <span className="font-medium text-green-600">{formatCurrency(payload[0]?.payload?.newMrr || 0)}</span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span className="text-red-600">- Churned:</span>
+                            <span className="text-red-600">- Cancelled:</span>
                             <span className="font-medium text-red-600">{formatCurrency(payload[0]?.payload?.churnedMrr || 0)}</span>
                           </div>
                         </div>
