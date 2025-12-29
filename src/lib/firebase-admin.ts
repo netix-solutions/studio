@@ -10,7 +10,7 @@ let adminAuth: Auth;
  * Get the appropriate credential for Firebase Admin SDK initialization.
  *
  * Priority:
- * 1. FIREBASE_SERVICE_ACCOUNT_KEY env var (JSON string) - works in all environments
+ * 1. GOOGLE_SERVICE_ACCOUNT_KEY env var (JSON string) - works in all environments
  * 2. Application Default Credentials with quota project disabled - avoids permission errors
  *
  * Using cert() with a service account key is preferred because:
@@ -24,16 +24,16 @@ let adminAuth: Auth;
  */
 function getCredential(): Credential {
   // Check for service account key in environment variable
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 
   if (serviceAccountKey) {
     try {
       // Parse the JSON service account key
       const serviceAccount = JSON.parse(serviceAccountKey);
-      console.log('Using FIREBASE_SERVICE_ACCOUNT_KEY for Firebase Admin initialization');
+      console.log('Using GOOGLE_SERVICE_ACCOUNT_KEY for Firebase Admin initialization');
       return cert(serviceAccount);
     } catch (error) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+      console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY:', error);
       // Fall through to ADC
     }
   }
