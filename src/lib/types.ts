@@ -1113,20 +1113,6 @@ export interface BusinessHours {
 }
 
 /**
- * Special offer/promotion for a business
- */
-export interface SpecialOffer {
-  id: string;
-  title: string; // e.g., "20% Off First Visit"
-  description?: string;
-  code?: string; // Promo code if applicable
-  validFrom?: any; // Firestore Timestamp
-  validUntil?: any; // Firestore Timestamp
-  isActive: boolean;
-  termsAndConditions?: string;
-}
-
-/**
  * Payment methods accepted by a business
  */
 export const PAYMENT_METHODS_ACCEPTED = {
@@ -1272,8 +1258,6 @@ export interface DirectoryListing {
 
   // Business details
   yearEstablished?: number;
-  serviceAreas?: string[]; // e.g., ["Wesley Chapel", "Tampa", "Pasco County"]
-  languages?: string[]; // e.g., ["English", "Spanish"]
 
   // Social media links
   facebookUrl?: string;
@@ -1289,19 +1273,13 @@ export interface DirectoryListing {
   logoUrl?: string; // Square logo for directory card
   bannerImageUrl?: string; // Wide banner image for expanded view
   galleryImages?: string[]; // Additional images (max 6)
-  cardBackgroundColor?: string;
-  cardTextColor?: string;
 
   // Business categorization
   category?: BusinessCategory;
   subcategory?: string;
-  tags?: string[]; // Custom tags for search
 
   // Business hours
   businessHours?: BusinessHours;
-
-  // Special offers/promotions
-  specialOffers?: SpecialOffer[];
 
   // Payment & amenities
   paymentMethodsAccepted?: PaymentMethodAccepted[];
@@ -1312,7 +1290,6 @@ export interface DirectoryListing {
   showSocialLinks: boolean;
   showAddress: boolean;
   showBusinessHours?: boolean;
-  showSpecialOffers?: boolean;
   showAmenities?: boolean;
 
   // Moderation
@@ -1433,35 +1410,6 @@ export function selectAdByWeight(ads: LiveAd[]): LiveAd | null {
   }
 
   return ads[ads.length - 1];
-}
-
-/**
- * Check if a special offer is currently valid
- */
-export function isOfferValid(offer: SpecialOffer): boolean {
-  if (!offer.isActive) return false;
-
-  const now = new Date();
-
-  if (offer.validFrom) {
-    const from = offer.validFrom?.toDate ? offer.validFrom.toDate() : new Date(offer.validFrom);
-    if (now < from) return false;
-  }
-
-  if (offer.validUntil) {
-    const until = offer.validUntil?.toDate ? offer.validUntil.toDate() : new Date(offer.validUntil);
-    if (now > until) return false;
-  }
-
-  return true;
-}
-
-/**
- * Get active special offers for a listing
- */
-export function getActiveOffers(listing: DirectoryListing): SpecialOffer[] {
-  if (!listing.specialOffers) return [];
-  return listing.specialOffers.filter(isOfferValid);
 }
 
 // ============================================================================

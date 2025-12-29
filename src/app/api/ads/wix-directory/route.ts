@@ -92,8 +92,6 @@ export async function GET(request: NextRequest) {
     twitterUrl?: string;
     youtubeUrl?: string;
     logoUrl?: string;
-    cardBackgroundColor?: string;
-    cardTextColor?: string;
     showContactInfo: boolean;
     showSocialLinks: boolean;
     isFeatured: boolean;
@@ -153,8 +151,6 @@ export async function GET(request: NextRequest) {
         twitterUrl: listing.twitterUrl,
         youtubeUrl: listing.youtubeUrl,
         logoUrl: listing.logoUrl,
-        cardBackgroundColor: listing.cardBackgroundColor,
-        cardTextColor: listing.cardTextColor,
         showContactInfo: listing.showContactInfo && showContactParam,
         showSocialLinks: listing.showSocialLinks && showSocialParam,
         isFeatured: !!listing.isFeatured,
@@ -991,8 +987,7 @@ function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = 
        target="_blank"
        rel="noopener sponsored"
        title="Visit ${escapeHtml(sponsor.businessName)}"
-       data-ad-id="${escapeHtml(sponsor.id)}"
-       ${sponsor.cardBackgroundColor ? `style="background-color: ${escapeHtml(sponsor.cardBackgroundColor)};"` : ''}>
+       data-ad-id="${escapeHtml(sponsor.id)}">
 
       ${sponsor.isFeatured ? '<span class="featured-badge">Featured</span>' : ''}
       ${sponsor.categoryLabel ? `<span class="category-badge">${escapeHtml(sponsor.categoryIcon || '')} ${escapeHtml(sponsor.categoryLabel)}</span>` : ''}
@@ -1014,7 +1009,7 @@ function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = 
         ` : ''}
       </div>
 
-      <div class="sponsor-info" ${sponsor.cardTextColor ? `style="color: ${escapeHtml(sponsor.cardTextColor)};"` : ''}>
+      <div class="sponsor-info">
         <div class="sponsor-header">
           <h3 class="sponsor-name">${escapeHtml(sponsor.businessName)}</h3>
         </div>

@@ -16,16 +16,13 @@ import {
   Youtube,
   Star,
   ExternalLink,
-  Tag,
   Calendar,
-  Check,
 } from 'lucide-react';
 import {
   type DirectoryListing,
   type BusinessCategory,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
-  getActiveOffers,
 } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -78,21 +75,19 @@ export function DirectoryCard({
   const hasAddress =
     listing.showAddress && (listing.address || listing.city);
 
-  const activeOffers = listing.specialOffers ? getActiveOffers(listing as DirectoryListing) : [];
-
   const isDark = theme === 'dark';
 
   // Render different variants
   if (variant === 'list') {
-    return <ListVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, activeOffers, isDark, showActions, onVisit, onView, className }} />;
+    return <ListVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, isDark, showActions, onVisit, onView, className }} />;
   }
 
   if (variant === 'compact') {
-    return <CompactVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, activeOffers, isDark, showActions, onVisit, className }} />;
+    return <CompactVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, isDark, showActions, onVisit, className }} />;
   }
 
   if (variant === 'expanded') {
-    return <ExpandedVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, activeOffers, isDark, showActions, onVisit, onView, className }} />;
+    return <ExpandedVariant {...{ listing, adImageUrl, targetUrl, categoryLabel, categoryIcon, hasSocialLinks, hasContactInfo, hasAddress, isDark, showActions, onVisit, onView, className }} />;
   }
 
   // Default grid variant
@@ -100,12 +95,9 @@ export function DirectoryCard({
     <Card
       className={cn(
         'overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group',
+        isDark ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-800',
         className
       )}
-      style={{
-        backgroundColor: listing.cardBackgroundColor || (isDark ? '#1e293b' : '#ffffff'),
-        color: listing.cardTextColor || (isDark ? '#f1f5f9' : '#1e293b'),
-      }}
     >
       {/* Image Section */}
       <div className="relative aspect-[3/1] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 overflow-hidden">
@@ -125,14 +117,6 @@ export function DirectoryCard({
           >
             <span className="mr-1">{categoryIcon}</span>
             {categoryLabel}
-          </Badge>
-        )}
-
-        {/* Special Offer Badge */}
-        {activeOffers.length > 0 && (
-          <Badge className="absolute bottom-3 left-3 z-10 bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md animate-pulse">
-            <Tag className="w-3 h-3 mr-1" />
-            {activeOffers.length === 1 ? 'Special Offer' : `${activeOffers.length} Offers`}
           </Badge>
         )}
 
@@ -165,10 +149,7 @@ export function DirectoryCard({
       <CardContent className="p-4">
         {/* Header */}
         <div className="mb-1">
-          <h3
-            className="font-semibold text-lg line-clamp-1"
-            style={{ color: listing.cardTextColor || undefined }}
-          >
+          <h3 className="font-semibold text-lg line-clamp-1">
             {listing.businessName || 'Business Name'}
           </h3>
         </div>
@@ -252,7 +233,6 @@ function ListVariant({
   hasSocialLinks,
   hasContactInfo,
   hasAddress,
-  activeOffers,
   isDark,
   showActions,
   onVisit,
@@ -263,12 +243,9 @@ function ListVariant({
     <Card
       className={cn(
         'overflow-hidden transition-all duration-300 hover:shadow-lg group flex flex-col sm:flex-row',
+        isDark ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-800',
         className
       )}
-      style={{
-        backgroundColor: listing.cardBackgroundColor || (isDark ? '#1e293b' : '#ffffff'),
-        color: listing.cardTextColor || (isDark ? '#f1f5f9' : '#1e293b'),
-      }}
     >
       {/* Image Section - Side */}
       <div className="relative w-full sm:w-48 md:w-64 aspect-[3/1] sm:aspect-[4/3] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 overflow-hidden shrink-0">
@@ -276,13 +253,6 @@ function ListVariant({
           <Badge className="absolute top-2 right-2 z-10 bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-md text-xs">
             <Star className="w-3 h-3 mr-1 fill-current" />
             Featured
-          </Badge>
-        )}
-
-        {activeOffers.length > 0 && (
-          <Badge className="absolute bottom-2 left-2 z-10 bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md text-xs">
-            <Tag className="w-3 h-3 mr-1" />
-            Special Offer
           </Badge>
         )}
 
@@ -393,7 +363,6 @@ function CompactVariant({
   targetUrl,
   categoryLabel,
   categoryIcon,
-  activeOffers,
   isDark,
   showActions,
   onVisit,
@@ -403,12 +372,9 @@ function CompactVariant({
     <Card
       className={cn(
         'overflow-hidden transition-all duration-300 hover:shadow-md group',
+        isDark ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-800',
         className
       )}
-      style={{
-        backgroundColor: listing.cardBackgroundColor || (isDark ? '#1e293b' : '#ffffff'),
-        color: listing.cardTextColor || (isDark ? '#f1f5f9' : '#1e293b'),
-      }}
     >
       <CardContent className="p-3 flex items-center gap-3">
         {/* Logo/Image - Small */}
@@ -442,11 +408,6 @@ function CompactVariant({
             {categoryLabel && (
               <span>{categoryIcon} {categoryLabel}</span>
             )}
-            {activeOffers.length > 0 && (
-              <Badge className="bg-green-100 text-green-700 text-[10px] px-1 py-0">
-                Offer
-              </Badge>
-            )}
           </div>
         </div>
 
@@ -473,7 +434,6 @@ function ExpandedVariant({
   hasSocialLinks,
   hasContactInfo,
   hasAddress,
-  activeOffers,
   isDark,
   showActions,
   onVisit,
@@ -484,12 +444,9 @@ function ExpandedVariant({
     <Card
       className={cn(
         'overflow-hidden transition-all duration-300 hover:shadow-xl group',
+        isDark ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-800',
         className
       )}
-      style={{
-        backgroundColor: listing.cardBackgroundColor || (isDark ? '#1e293b' : '#ffffff'),
-        color: listing.cardTextColor || (isDark ? '#f1f5f9' : '#1e293b'),
-      }}
     >
       {/* Banner Image */}
       <div className="relative aspect-[3/1] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 overflow-hidden">
@@ -545,38 +502,6 @@ function ExpandedVariant({
           <p className="text-muted-foreground mb-4">
             {listing.description}
           </p>
-        )}
-
-        {/* Special Offers */}
-        {activeOffers.length > 0 && listing.showSpecialOffers && (
-          <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
-            <h4 className="font-semibold text-green-700 dark:text-green-400 flex items-center gap-2 mb-2">
-              <Tag className="w-4 h-4" />
-              Special Offers
-            </h4>
-            <div className="space-y-2">
-              {activeOffers.map((offer: any) => (
-                <div key={offer.id} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium text-green-800 dark:text-green-300">
-                      {offer.title}
-                    </p>
-                    {offer.description && (
-                      <p className="text-sm text-green-700 dark:text-green-400">
-                        {offer.description}
-                      </p>
-                    )}
-                    {offer.code && (
-                      <Badge variant="outline" className="mt-1 font-mono">
-                        Code: {offer.code}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
 
         {/* Contact Info & Address */}
@@ -641,11 +566,6 @@ function ExpandedVariant({
                   </p>
                 </div>
               </div>
-              {listing.serviceAreas && listing.serviceAreas.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Serving: {listing.serviceAreas.join(', ')}
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -680,15 +600,10 @@ function ExpandedVariant({
           )}
         </div>
 
-        {/* Year Established & Languages */}
-        {(listing.yearEstablished || (listing.languages && listing.languages.length > 0)) && (
+        {/* Year Established */}
+        {listing.yearEstablished && (
           <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
-            {listing.yearEstablished && (
-              <span>Est. {listing.yearEstablished}</span>
-            )}
-            {listing.languages && listing.languages.length > 0 && (
-              <span>Languages: {listing.languages.join(', ')}</span>
-            )}
+            <span>Est. {listing.yearEstablished}</span>
           </div>
         )}
       </CardContent>

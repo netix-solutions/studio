@@ -31,16 +31,14 @@ import {
   Linkedin,
   Twitter,
   Youtube,
-  Palette,
   ChevronDown,
   ChevronUp,
   Save,
   Loader2,
-  Image as ImageIcon,
+  Upload,
   Calendar,
   Link2,
-  Languages,
-  Award,
+  Image as ImageIcon,
 } from 'lucide-react';
 import {
   type DirectoryListing,
@@ -49,7 +47,6 @@ import {
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
 } from '@/lib/types';
-import { SpecialOffersEditor } from './SpecialOffersEditor';
 
 interface DirectoryListingFormProps {
   listing: Partial<DirectoryListing>;
@@ -70,9 +67,8 @@ export function DirectoryListingForm({
 }: DirectoryListingFormProps) {
   const [socialOpen, setSocialOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
-  const [customizationOpen, setCustomizationOpen] = useState(false);
   const [additionalContactOpen, setAdditionalContactOpen] = useState(false);
-  const [businessDetailsOpen, setBusinessDetailsOpen] = useState(false);
+  const [imagesOpen, setImagesOpen] = useState(false);
 
   const updateField = <K extends keyof DirectoryListing>(
     field: K,
@@ -184,23 +180,59 @@ export function DirectoryListingForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="logoUrl">Logo URL</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="logoUrl"
-                  value={listing.logoUrl || ''}
-                  onChange={(e) => updateField('logoUrl', e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                  className="pl-10"
-                  disabled={disabled}
-                />
+            <Label htmlFor="logoUrl">Business Logo</Label>
+            <div className="flex items-start gap-4">
+              {listing.logoUrl && (
+                <div className="relative w-20 h-20 rounded-lg overflow-hidden border bg-slate-100 dark:bg-slate-800 shrink-0">
+                  <img
+                    src={listing.logoUrl}
+                    alt="Logo preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor="logo-upload"
+                    className="flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Logo
+                  </Label>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={disabled}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          updateField('logoUrl', reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {listing.logoUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateField('logoUrl', '')}
+                      disabled={disabled}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Square logo works best (e.g., 200x200 pixels). Max 2MB.
+                </p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Square logo works best (e.g., 200x200 pixels)
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -366,89 +398,6 @@ export function DirectoryListingForm({
                       disabled={disabled}
                     />
                   </div>
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
-
-      {/* Special Offers */}
-      {showAdvancedOptions && (
-        <SpecialOffersEditor
-          offers={listing.specialOffers || []}
-          onChange={(offers) => {
-            updateField('specialOffers', offers);
-            if (!listing.showSpecialOffers && offers.length > 0) {
-              updateField('showSpecialOffers', true);
-            }
-          }}
-          disabled={disabled}
-        />
-      )}
-
-      {/* Business Details (Collapsible) */}
-      {showAdvancedOptions && (
-        <Collapsible open={businessDetailsOpen} onOpenChange={setBusinessDetailsOpen}>
-          <Card>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Award className="w-5 h-5" />
-                      Business Details
-                    </CardTitle>
-                    <CardDescription>
-                      Service areas, languages, and more
-                    </CardDescription>
-                  </div>
-                  {businessDetailsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="serviceAreas">Service Areas</Label>
-                  <Input
-                    id="serviceAreas"
-                    value={(listing.serviceAreas || []).join(', ')}
-                    onChange={(e) => updateField('serviceAreas', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    placeholder="e.g., Wesley Chapel, Tampa, Pasco County"
-                    disabled={disabled}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Separate areas with commas
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="languages" className="flex items-center gap-2">
-                    <Languages className="w-4 h-4" />
-                    Languages Spoken
-                  </Label>
-                  <Input
-                    id="languages"
-                    value={(listing.languages || []).join(', ')}
-                    onChange={(e) => updateField('languages', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    placeholder="e.g., English, Spanish, French"
-                    disabled={disabled}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tags">Search Tags</Label>
-                  <Input
-                    id="tags"
-                    value={(listing.tags || []).join(', ')}
-                    onChange={(e) => updateField('tags', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    placeholder="e.g., plumber, emergency, 24 hour"
-                    disabled={disabled}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Keywords to help people find your business
-                  </p>
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -659,106 +608,84 @@ export function DirectoryListingForm({
         </Card>
       </Collapsible>
 
-      {/* Visual Customization (Collapsible) */}
-      <Collapsible open={customizationOpen} onOpenChange={setCustomizationOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Palette className="w-5 h-5" />
-                    Visual Customization
-                  </CardTitle>
-                  <CardDescription>
-                    Customize your card colors
-                  </CardDescription>
-                </div>
-                {customizationOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cardBackgroundColor">Card Background Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="cardBackgroundColor"
-                      type="color"
-                      value={listing.cardBackgroundColor || '#ffffff'}
-                      onChange={(e) => updateField('cardBackgroundColor', e.target.value)}
-                      className="w-14 h-10 p-1 cursor-pointer"
-                      disabled={disabled}
-                    />
-                    <Input
-                      value={listing.cardBackgroundColor || ''}
-                      onChange={(e) => updateField('cardBackgroundColor', e.target.value)}
-                      placeholder="#ffffff"
-                      className="flex-1"
-                      disabled={disabled}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateField('cardBackgroundColor', '')}
-                      disabled={disabled}
-                    >
-                      Reset
-                    </Button>
+      {/* Header Image (Collapsible) */}
+      {showAdvancedOptions && (
+        <Collapsible open={imagesOpen} onOpenChange={setImagesOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ImageIcon className="w-5 h-5" />
+                      Header Image
+                    </CardTitle>
+                    <CardDescription>
+                      Add a banner image for your listing
+                    </CardDescription>
                   </div>
+                  {imagesOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </div>
-
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cardTextColor">Card Text Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="cardTextColor"
-                      type="color"
-                      value={listing.cardTextColor || '#1e293b'}
-                      onChange={(e) => updateField('cardTextColor', e.target.value)}
-                      className="w-14 h-10 p-1 cursor-pointer"
-                      disabled={disabled}
-                    />
-                    <Input
-                      value={listing.cardTextColor || ''}
-                      onChange={(e) => updateField('cardTextColor', e.target.value)}
-                      placeholder="#1e293b"
-                      className="flex-1"
-                      disabled={disabled}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateField('cardTextColor', '')}
-                      disabled={disabled}
+                  <Label>Banner/Header Image (optional)</Label>
+                  {listing.bannerImageUrl && (
+                    <div className="relative w-full aspect-[3/1] rounded-lg overflow-hidden border bg-slate-100 dark:bg-slate-800 mb-3">
+                      <img
+                        src={listing.bannerImageUrl}
+                        alt="Banner preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Label
+                      htmlFor="banner-upload"
+                      className="flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
                     >
-                      Reset
-                    </Button>
+                      <Upload className="w-4 h-4" />
+                      Upload Header Image
+                    </Label>
+                    <input
+                      id="banner-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={disabled}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            updateField('bannerImageUrl', reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    {listing.bannerImageUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateField('bannerImageUrl', '')}
+                        disabled={disabled}
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              {showAdvancedOptions && (
-                <div className="space-y-2">
-                  <Label htmlFor="bannerImageUrl">Banner Image URL (optional)</Label>
-                  <Input
-                    id="bannerImageUrl"
-                    value={listing.bannerImageUrl || ''}
-                    onChange={(e) => updateField('bannerImageUrl', e.target.value)}
-                    placeholder="https://example.com/banner.jpg"
-                    disabled={disabled}
-                  />
                   <p className="text-xs text-muted-foreground">
-                    Wide image for expanded card view (e.g., 1200x400 pixels)
+                    Wide image for expanded card view (e.g., 1200x400 pixels). Max 2MB.
                   </p>
                 </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
 
       {/* Save Button */}
       {onSave && (

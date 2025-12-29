@@ -45,11 +45,7 @@ export function DirectoryCardPreview({
 
   return (
     <Card
-      className={`overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${className}`}
-      style={{
-        backgroundColor: listing.cardBackgroundColor || (isDark ? '#1e293b' : '#ffffff'),
-        color: listing.cardTextColor || (isDark ? '#f1f5f9' : '#1e293b'),
-      }}
+      className={`overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${className} ${isDark ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-800'}`}
     >
       {/* Image Section */}
       <div className="relative aspect-[3/1] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 overflow-hidden">
@@ -100,10 +96,7 @@ export function DirectoryCardPreview({
       {/* Content Section */}
       <CardContent className="p-4">
         {/* Business Name */}
-        <h3
-          className="font-semibold text-lg mb-1"
-          style={{ color: listing.cardTextColor || undefined }}
-        >
+        <h3 className="font-semibold text-lg mb-1">
           {listing.businessName || 'Business Name'}
         </h3>
 

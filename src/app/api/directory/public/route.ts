@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import {
   type LiveAd,
-  type DirectoryListing,
   type CommunityWebsiteId,
   type BusinessCategory,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
   isDirectoryListingVisible,
-  getActiveOffers,
 } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +23,6 @@ export async function GET(request: NextRequest) {
     const websiteParam = request.nextUrl.searchParams.get('website') || '';
     const categoryParam = request.nextUrl.searchParams.get('category') || '';
     const searchParam = request.nextUrl.searchParams.get('search') || '';
-    const hasOffersParam = request.nextUrl.searchParams.get('hasOffers') === 'true';
     const featuredOnlyParam = request.nextUrl.searchParams.get('featured') === 'true';
     const sortParam = request.nextUrl.searchParams.get('sort') || 'featured';
     const limitParam = parseInt(request.nextUrl.searchParams.get('limit') || '100');
@@ -55,8 +52,6 @@ export async function GET(request: NextRequest) {
       imageUrl?: string;
       logoUrl?: string;
       bannerImageUrl?: string;
-      cardBackgroundColor?: string;
-      cardTextColor?: string;
       facebookUrl?: string;
       instagramUrl?: string;
       linkedinUrl?: string;
@@ -64,16 +59,11 @@ export async function GET(request: NextRequest) {
       youtubeUrl?: string;
       tiktokUrl?: string;
       appointmentUrl?: string;
-      specialOffers?: any[];
       yearEstablished?: number;
-      serviceAreas?: string[];
-      languages?: string[];
       showContactInfo: boolean;
       showSocialLinks: boolean;
       showAddress: boolean;
-      showSpecialOffers: boolean;
       isFeatured: boolean;
-      hasActiveOffers: boolean;
       targetUrl: string;
     }> = [];
 
@@ -114,21 +104,11 @@ export async function GET(request: NextRequest) {
           listing.tagline,
           listing.description,
           listing.category,
-          ...(listing.tags || []),
-          ...(listing.serviceAreas || []),
         ].filter(Boolean).join(' ').toLowerCase();
 
         if (!searchableText.includes(searchLower)) {
           return;
         }
-      }
-
-      // Check for active offers
-      const activeOffers = getActiveOffers(listing as DirectoryListing);
-      const hasActiveOffers = activeOffers.length > 0;
-
-      if (hasOffersParam && !hasActiveOffers) {
-        return;
       }
 
       // Track category counts
@@ -160,8 +140,6 @@ export async function GET(request: NextRequest) {
         imageUrl: ad.imageUrl,
         logoUrl: listing.logoUrl,
         bannerImageUrl: listing.bannerImageUrl,
-        cardBackgroundColor: listing.cardBackgroundColor,
-        cardTextColor: listing.cardTextColor,
         facebookUrl: listing.facebookUrl,
         instagramUrl: listing.instagramUrl,
         linkedinUrl: listing.linkedinUrl,
@@ -169,16 +147,11 @@ export async function GET(request: NextRequest) {
         youtubeUrl: listing.youtubeUrl,
         tiktokUrl: listing.tiktokUrl,
         appointmentUrl: listing.appointmentUrl,
-        specialOffers: hasActiveOffers ? activeOffers : undefined,
         yearEstablished: listing.yearEstablished,
-        serviceAreas: listing.serviceAreas,
-        languages: listing.languages,
         showContactInfo: listing.showContactInfo ?? true,
         showSocialLinks: listing.showSocialLinks ?? true,
         showAddress: listing.showAddress ?? false,
-        showSpecialOffers: listing.showSpecialOffers ?? true,
         isFeatured: !!listing.isFeatured,
-        hasActiveOffers,
         targetUrl: ad.targetUrl,
       });
     });
