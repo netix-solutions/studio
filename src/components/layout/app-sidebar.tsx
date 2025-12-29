@@ -26,6 +26,7 @@ import {
   Settings,
   Calculator,
   Code,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -59,6 +60,7 @@ const adminSettingsItems: NavItem[] = [
 // User navigation (non-admin)
 const userMenuItems: NavItem[] = [
   { href: '/account', label: 'My Account', icon: User },
+  { href: '/directory-listing', label: 'Directory Listing', icon: LayoutGrid },
   { href: '/pricing', label: 'Change Plan', icon: ShoppingBag },
 ];
 

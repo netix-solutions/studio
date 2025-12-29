@@ -962,10 +962,196 @@ export interface LiveAd {
   impressions: number;
   clicks: number;
 
+  // Directory listing settings
+  showInDirectory: boolean;
+  directoryListing?: DirectoryListing;
+
   // Timestamps
   createdAt: any;
   updatedAt?: any;
   createdBy?: string;
+}
+
+// ============================================================================
+// ADVERTISER DIRECTORY TYPES & CONSTANTS
+// ============================================================================
+
+/**
+ * Business categories for directory filtering
+ */
+export const BUSINESS_CATEGORIES = {
+  AUTOMOTIVE: 'automotive',
+  DINING_FOOD: 'dining_food',
+  HEALTHCARE: 'healthcare',
+  HOME_SERVICES: 'home_services',
+  PROFESSIONAL_SERVICES: 'professional_services',
+  RETAIL: 'retail',
+  REAL_ESTATE: 'real_estate',
+  BEAUTY_WELLNESS: 'beauty_wellness',
+  EDUCATION: 'education',
+  ENTERTAINMENT: 'entertainment',
+  FINANCIAL_SERVICES: 'financial_services',
+  FITNESS_SPORTS: 'fitness_sports',
+  PETS_ANIMALS: 'pets_animals',
+  TECHNOLOGY: 'technology',
+  TRAVEL_TOURISM: 'travel_tourism',
+  OTHER: 'other',
+} as const;
+
+export type BusinessCategory = typeof BUSINESS_CATEGORIES[keyof typeof BUSINESS_CATEGORIES];
+
+export const BUSINESS_CATEGORY_LABELS: Record<BusinessCategory, string> = {
+  automotive: 'Automotive',
+  dining_food: 'Dining & Food',
+  healthcare: 'Healthcare',
+  home_services: 'Home Services',
+  professional_services: 'Professional Services',
+  retail: 'Retail & Shopping',
+  real_estate: 'Real Estate',
+  beauty_wellness: 'Beauty & Wellness',
+  education: 'Education',
+  entertainment: 'Entertainment',
+  financial_services: 'Financial Services',
+  fitness_sports: 'Fitness & Sports',
+  pets_animals: 'Pets & Animals',
+  technology: 'Technology',
+  travel_tourism: 'Travel & Tourism',
+  other: 'Other',
+};
+
+export const BUSINESS_CATEGORY_ICONS: Record<BusinessCategory, string> = {
+  automotive: '🚗',
+  dining_food: '🍽️',
+  healthcare: '🏥',
+  home_services: '🏠',
+  professional_services: '💼',
+  retail: '🛍️',
+  real_estate: '🏘️',
+  beauty_wellness: '💆',
+  education: '📚',
+  entertainment: '🎭',
+  financial_services: '💰',
+  fitness_sports: '🏋️',
+  pets_animals: '🐾',
+  technology: '💻',
+  travel_tourism: '✈️',
+  other: '📌',
+};
+
+/**
+ * Directory listing status for moderation
+ */
+export const DIRECTORY_STATUSES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  HIDDEN: 'hidden',
+  REJECTED: 'rejected',
+} as const;
+
+export type DirectoryStatus = typeof DIRECTORY_STATUSES[keyof typeof DIRECTORY_STATUSES];
+
+export const DIRECTORY_STATUS_LABELS: Record<DirectoryStatus, string> = {
+  pending: 'Pending Review',
+  approved: 'Approved',
+  hidden: 'Hidden',
+  rejected: 'Rejected',
+};
+
+export const DIRECTORY_STATUS_COLORS: Record<DirectoryStatus, { bg: string; text: string }> = {
+  pending: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  approved: { bg: 'bg-green-100', text: 'text-green-700' },
+  hidden: { bg: 'bg-slate-100', text: 'text-slate-600' },
+  rejected: { bg: 'bg-red-100', text: 'text-red-700' },
+};
+
+/**
+ * Directory listing customization - stored on LiveAd
+ */
+export interface DirectoryListing {
+  // Business identity
+  businessName: string;
+  tagline?: string; // Short business tagline (max 100 chars)
+  description?: string; // Business description (max 500 chars)
+
+  // Contact information
+  phone?: string;
+  email?: string;
+  websiteUrl?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+
+  // Social media links
+  facebookUrl?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+
+  // Visual customization
+  logoUrl?: string; // Square logo for directory card
+  cardBackgroundColor?: string;
+  cardTextColor?: string;
+
+  // Business categorization
+  category?: BusinessCategory;
+  subcategory?: string;
+  tags?: string[]; // Custom tags for search
+
+  // Display preferences
+  showContactInfo: boolean;
+  showSocialLinks: boolean;
+  showAddress: boolean;
+
+  // Moderation
+  directoryStatus: DirectoryStatus;
+  directoryApprovedAt?: any;
+  directoryApprovedBy?: string;
+  directoryRejectionReason?: string;
+  moderationNotes?: string; // Admin notes about the listing
+
+  // Feature flags
+  isFeatured?: boolean; // Featured listings appear first
+  featuredUntil?: any; // When featured status expires
+
+  // Timestamps
+  directoryListingCreatedAt?: any;
+  directoryListingUpdatedAt?: any;
+  lastSubmittedAt?: any; // When customer last submitted for review
+}
+
+/**
+ * Create default directory listing from advertisement data
+ */
+export function createDefaultDirectoryListing(
+  ad: Partial<Advertisement>,
+  customerName?: string
+): DirectoryListing {
+  return {
+    businessName: ad.businessName || customerName || 'Business Name',
+    tagline: '',
+    description: '',
+    phone: ad.phone || ad.businessPhone || '',
+    email: ad.email || '',
+    websiteUrl: ad.adWebsiteUrl || '',
+    showContactInfo: true,
+    showSocialLinks: true,
+    showAddress: false,
+    directoryStatus: 'pending',
+    logoUrl: ad.logoUrl || '',
+  };
+}
+
+/**
+ * Check if a directory listing is visible (approved and active ad)
+ */
+export function isDirectoryListingVisible(ad: LiveAd): boolean {
+  if (!ad.showInDirectory) return false;
+  if (ad.status !== 'active') return false;
+  if (!ad.directoryListing) return false;
+  if (ad.directoryListing.directoryStatus !== 'approved') return false;
+  return true;
 }
 
 /**
