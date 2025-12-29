@@ -2,46 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import {
   type LiveAd,
-  type DirectoryListing,
   type CommunityWebsiteId,
-  COMMUNITY_WEBSITES,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
   isDirectoryListingVisible,
 } from '@/lib/types';
 
 /**
- * Wix Advertiser Directory Route
+ * Wesley Chapel Community Website Sponsor Directory Route
  *
  * This endpoint serves a complete, self-contained HTML page that displays all
- * active advertisers in a directory format. Designed for a "View Our Sponsors"
- * page on Wix websites.
+ * active advertisers targeting the Wesley Chapel Community Website.
  *
  * Features:
- * - Displays all active advertisers with approved directory listings
- * - Shows enhanced business information (tagline, description, contact, social)
+ * - Wesley Chapel Community Website branding and header
+ * - Navigation links back to WesleyChapelCommunity.com
+ * - Only shows advertisers targeting Wesley Chapel
  * - Featured listings appear first
- * - Category filtering support
- * - Click tracking for each advertiser
- * - Impression tracking when the page loads
- * - Call-to-action to become an advertiser
+ * - Click/impression tracking
  * - Light/dark theme support
- * - Fully responsive for all screen sizes
- *
- * Usage in Wix:
- * 1. Add a "Custom Embed" or "HTML iframe" element
- * 2. Set the iframe to embed this URL
- * 3. Give the iframe enough height (recommended: 600px+ or auto-resize)
+ * - Fully responsive
  */
 
-// CORS headers for Wix cross-origin requests
+// CORS headers for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'text/html; charset=utf-8',
   'Cache-Control': 'public, max-age=300',
-  // Wix-specific headers to allow iframe embedding
   'X-Frame-Options': 'ALLOWALL',
   'Content-Security-Policy': "frame-ancestors *",
 };
@@ -56,23 +45,14 @@ export async function GET(request: NextRequest) {
   const baseUrl = `${protocol}://${host}`;
 
   // Get parameters
-  const websiteParam = request.nextUrl.searchParams.get('website') || '';
-  const themeParam = request.nextUrl.searchParams.get('theme') || 'light'; // auto, light, dark
-  const columnsParam = request.nextUrl.searchParams.get('columns') || 'auto'; // auto, 2, 3, 4
-  const showCtaParam = request.nextUrl.searchParams.get('cta') !== 'false';
-  const ctaUrlParam = request.nextUrl.searchParams.get('ctaUrl') || '';
-  const ctaTextParam = request.nextUrl.searchParams.get('ctaText') || 'Become a Sponsor';
-  const titleParam = request.nextUrl.searchParams.get('title') || 'Our Sponsors';
-  const subtitleParam = request.nextUrl.searchParams.get('subtitle') || 'Thank you to these amazing local businesses for supporting our community!';
-  const showBrandingParam = request.nextUrl.searchParams.get('branding') !== 'false';
+  const themeParam = request.nextUrl.searchParams.get('theme') || 'light';
+  const columnsParam = request.nextUrl.searchParams.get('columns') || 'auto';
   const categoryParam = request.nextUrl.searchParams.get('category') || '';
-  const showContactParam = request.nextUrl.searchParams.get('showContact') !== 'false';
-  const showSocialParam = request.nextUrl.searchParams.get('showSocial') !== 'false';
-  const cardStyleParam = request.nextUrl.searchParams.get('cardStyle') || 'enhanced'; // enhanced, simple, minimal
-  const maxInitialParam = parseInt(request.nextUrl.searchParams.get('maxInitial') || '0', 10); // 0 = show all
-  const viewModeParam = request.nextUrl.searchParams.get('viewMode') || 'scroll'; // scroll, paginated, expandable
 
-  // Fetch ads from database
+  // Wesley Chapel Community Website URLs
+  const wesleyChapelBaseUrl = 'https://www.wesleychapelcommunity.com';
+
+  // Fetch ads targeting Wesley Chapel
   let sponsors: Array<{
     id: string;
     imageUrl: string;
@@ -102,9 +82,7 @@ export async function GET(request: NextRequest) {
   try {
     const db = getAdminFirestore();
     // Query active listings
-    // Note: We don't filter by showInDirectory in Firestore query because documents
-    // without this field won't match. The isDirectoryListingVisible function handles this.
-    let query = db.collection('live_ads')
+    const query = db.collection('live_ads')
       .where('status', '==', 'active');
 
     const snapshot = await query.get();
@@ -117,9 +95,11 @@ export async function GET(request: NextRequest) {
         return;
       }
 
-      // Check website targeting
-      if (websiteParam && ad.targetWebsites && ad.targetWebsites.length > 0) {
-        if (!ad.targetWebsites.includes(websiteParam as CommunityWebsiteId)) {
+      // IMPORTANT: Only include ads targeting Wesley Chapel
+      // If targetWebsites is not set or empty, include the ad (backwards compatibility)
+      // Otherwise, only include if wesley-chapel is in the list
+      if (ad.targetWebsites && ad.targetWebsites.length > 0) {
+        if (!ad.targetWebsites.includes('wesley-chapel' as CommunityWebsiteId)) {
           return;
         }
       }
@@ -153,8 +133,8 @@ export async function GET(request: NextRequest) {
         twitterUrl: listing.twitterUrl,
         youtubeUrl: listing.youtubeUrl,
         logoUrl: listing.logoUrl,
-        showContactInfo: listing.showContactInfo && showContactParam,
-        showSocialLinks: listing.showSocialLinks && showSocialParam,
+        showContactInfo: listing.showContactInfo ?? true,
+        showSocialLinks: listing.showSocialLinks ?? true,
         isFeatured: !!listing.isFeatured,
         clickUrl: `${baseUrl}/api/ads/click?id=${ad.id}`,
         impressionUrl: `${baseUrl}/api/ads/impression?id=${ad.id}`,
@@ -169,13 +149,8 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching sponsors:', error);
-    // Continue with empty sponsors array - will show empty state
+    console.error('Error fetching Wesley Chapel sponsors:', error);
   }
-
-  // Generate category filter options if needed
-  const categoryOptions = Object.entries(BUSINESS_CATEGORY_LABELS)
-    .map(([value, label]) => ({ value, label, icon: BUSINESS_CATEGORY_ICONS[value as keyof typeof BUSINESS_CATEGORY_ICONS] }));
 
   // Generate the HTML directory page
   const directoryHtml = `
@@ -185,7 +160,10 @@ export async function GET(request: NextRequest) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>${escapeHtml(titleParam)}</title>
+  <title>Wesley Chapel Community Sponsor Directory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* Reset and base styles */
     *, *::before, *::after {
@@ -199,92 +177,262 @@ export async function GET(request: NextRequest) {
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
       min-height: 100vh;
-    }
-
-    /* Theme: Light */
-    body.theme-light {
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      background: #f8fafc;
       color: #1e293b;
     }
 
-    /* Theme: Dark */
     body.theme-dark {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      background: #0f172a;
       color: #f1f5f9;
     }
 
-    /* Theme: Auto - inherits from system */
-    body.theme-auto {
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      color: #1e293b;
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #f1f5f9;
-      }
+    /* Wesley Chapel Header */
+    .wc-header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #3d7ab5 100%);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
 
-    /* Container */
-    .directory-container {
-      max-width: 1200px;
+    .wc-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 40px 20px;
     }
 
-    /* Header */
-    .directory-header {
-      text-align: center;
-      margin-bottom: 40px;
+    .wc-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .directory-title {
-      font-size: 2.5rem;
+    .wc-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .wc-logo img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .wc-logo-placeholder {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
       font-weight: 700;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: 20px;
     }
 
-    body.theme-dark .directory-title {
-      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .wc-site-name {
+      color: white;
     }
 
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto .directory-title {
-        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
+    .wc-site-name-main {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
     }
 
-    .directory-subtitle {
+    .wc-site-name-sub {
+      font-size: 1.25rem;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .wc-header-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .wc-signin-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .wc-signin-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.5);
+    }
+
+    .wc-advertise-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .wc-advertise-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Navigation */
+    .wc-nav {
+      background: linear-gradient(135deg, #2d5a87 0%, #3d7ab5 100%);
+    }
+
+    .wc-nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .wc-nav-list {
+      display: flex;
+      list-style: none;
+      gap: 4px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .wc-nav-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .wc-nav-item a {
+      display: block;
+      padding: 14px 20px;
+      color: white;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      white-space: nowrap;
+      transition: background 0.2s;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .wc-nav-item a:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .wc-nav-item.active a {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Page Content */
+    .page-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    /* Page Title */
+    .page-title {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-title h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: #1e3a5f;
+      margin-bottom: 8px;
+    }
+
+    body.theme-dark .page-title h1 {
+      color: #60a5fa;
+    }
+
+    .page-title p {
       font-size: 1.125rem;
-      opacity: 0.8;
+      color: #64748b;
       max-width: 600px;
       margin: 0 auto;
+    }
+
+    body.theme-dark .page-title p {
+      color: #94a3b8;
+    }
+
+    /* Stats */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    body.theme-dark .stats-bar {
+      background: #1e293b;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e3a5f;
+    }
+
+    body.theme-dark .stat-value {
+      color: #60a5fa;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     /* Sponsors Grid */
     .sponsors-grid {
       display: grid;
       gap: 24px;
-      margin-bottom: 48px;
     }
 
-    /* Responsive columns */
     .sponsors-grid.columns-auto {
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     }
@@ -306,6 +454,26 @@ export async function GET(request: NextRequest) {
       .sponsors-grid.columns-4 {
         grid-template-columns: repeat(2, 1fr);
       }
+
+      .wc-header-top {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+      }
+
+      .wc-header-actions {
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .wc-site-name-main {
+        font-size: 1.5rem;
+      }
+
+      .wc-site-name-sub {
+        font-size: 1rem;
+      }
     }
 
     @media (max-width: 480px) {
@@ -317,7 +485,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    /* Enhanced Sponsor Card */
+    /* Sponsor Card */
     .sponsor-card {
       display: flex;
       flex-direction: column;
@@ -336,13 +504,6 @@ export async function GET(request: NextRequest) {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
     }
 
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto .sponsor-card {
-        background: #1e293b;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-      }
-    }
-
     .sponsor-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -350,17 +511,6 @@ export async function GET(request: NextRequest) {
 
     body.theme-dark .sponsor-card:hover {
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto .sponsor-card:hover {
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-      }
-    }
-
-    .sponsor-card:focus {
-      outline: 3px solid #3b82f6;
-      outline-offset: 2px;
     }
 
     /* Featured badge */
@@ -397,19 +547,13 @@ export async function GET(request: NextRequest) {
     .sponsor-image-container {
       position: relative;
       width: 100%;
-      padding-bottom: 33.33%; /* 3:1 aspect ratio */
+      padding-bottom: 33.33%;
       background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
       overflow: hidden;
     }
 
     body.theme-dark .sponsor-image-container {
       background: linear-gradient(135deg, #334155 0%, #475569 100%);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto .sponsor-image-container {
-        background: linear-gradient(135deg, #334155 0%, #475569 100%);
-      }
     }
 
     .sponsor-image {
@@ -427,7 +571,6 @@ export async function GET(request: NextRequest) {
       opacity: 1;
     }
 
-    /* Logo container (when no ad image) */
     .sponsor-logo-container {
       position: absolute;
       top: 0;
@@ -458,30 +601,15 @@ export async function GET(request: NextRequest) {
       flex-direction: column;
     }
 
-    .sponsor-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-
     .sponsor-name {
       font-size: 1.125rem;
       font-weight: 600;
       color: #1e293b;
-      margin: 0;
-      flex: 1;
+      margin: 0 0 4px 0;
     }
 
     body.theme-dark .sponsor-name {
       color: #f1f5f9;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto .sponsor-name {
-        color: #f1f5f9;
-      }
     }
 
     .sponsor-tagline {
@@ -577,81 +705,6 @@ export async function GET(request: NextRequest) {
       height: 14px;
     }
 
-    /* Visit button */
-    .sponsor-visit-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      margin-top: 12px;
-      align-self: flex-start;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .sponsor-visit-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    }
-
-    .sponsor-visit-btn svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    /* CTA Section */
-    .cta-section {
-      text-align: center;
-      padding: 48px 20px;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      border-radius: 24px;
-      margin-bottom: 32px;
-    }
-
-    .cta-title {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 12px;
-    }
-
-    .cta-description {
-      font-size: 1.125rem;
-      color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 24px;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .cta-button {
-      display: inline-block;
-      padding: 14px 32px;
-      background: #ffffff;
-      color: #3b82f6;
-      font-size: 1.125rem;
-      font-weight: 600;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-    }
-
-    .cta-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .cta-button:focus {
-      outline: 3px solid #ffffff;
-      outline-offset: 2px;
-    }
-
     /* Empty State */
     .empty-state {
       text-align: center;
@@ -675,21 +728,70 @@ export async function GET(request: NextRequest) {
       opacity: 0.7;
     }
 
-    /* Branding */
-    .branding {
+    /* CTA Section */
+    .cta-section {
       text-align: center;
-      padding: 16px;
-      font-size: 0.75rem;
-      opacity: 0.5;
+      padding: 48px 20px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      border-radius: 24px;
+      margin-top: 48px;
     }
 
-    .branding a {
-      color: inherit;
+    .cta-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .cta-description {
+      font-size: 1.125rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 24px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 14px 32px;
+      background: #ffffff;
+      color: #1e3a5f;
+      font-size: 1.125rem;
+      font-weight: 600;
+      border-radius: 12px;
       text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
     }
 
-    .branding a:hover {
-      opacity: 0.8;
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Footer */
+    .wc-footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.875rem;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+      margin-top: 48px;
+    }
+
+    body.theme-dark .wc-footer {
+      border-top-color: #334155;
+      color: #94a3b8;
+    }
+
+    .wc-footer a {
+      color: #3b82f6;
+    }
+
+    .wc-footer a:hover {
+      text-decoration: underline;
     }
 
     /* Tracking pixel */
@@ -700,177 +802,91 @@ export async function GET(request: NextRequest) {
       opacity: 0;
       pointer-events: none;
     }
-
-    /* Hidden sponsor cards (expandable mode) */
-    .sponsor-card.hidden {
-      display: none;
-    }
-
-    /* Show More Button */
-    .show-more-container {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .show-more-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 32px;
-      background: transparent;
-      color: #3b82f6;
-      font-size: 1rem;
-      font-weight: 600;
-      border: 2px solid #3b82f6;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .show-more-btn:hover {
-      background: #3b82f6;
-      color: white;
-    }
-
-    body.theme-dark .show-more-btn {
-      color: #60a5fa;
-      border-color: #60a5fa;
-    }
-
-    body.theme-dark .show-more-btn:hover {
-      background: #60a5fa;
-      color: #0f172a;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      body.theme-auto .show-more-btn {
-        color: #60a5fa;
-        border-color: #60a5fa;
-      }
-
-      body.theme-auto .show-more-btn:hover {
-        background: #60a5fa;
-        color: #0f172a;
-      }
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .directory-container {
-        padding: 24px 16px;
-      }
-
-      .directory-title {
-        font-size: 1.75rem;
-      }
-
-      .directory-subtitle {
-        font-size: 1rem;
-      }
-
-      .cta-section {
-        padding: 32px 16px;
-      }
-
-      .cta-title {
-        font-size: 1.5rem;
-      }
-    }
   </style>
 </head>
 <body class="theme-${themeParam}">
-  <div class="directory-container">
-    <header class="directory-header">
-      <h1 class="directory-title">${escapeHtml(titleParam)}</h1>
-      <p class="directory-subtitle">${escapeHtml(subtitleParam)}</p>
-    </header>
+  <!-- Wesley Chapel Community Header -->
+  <header class="wc-header">
+    <div class="wc-header-top">
+      <a href="${wesleyChapelBaseUrl}" class="wc-logo-container" target="_top">
+        <div class="wc-logo">
+          <div class="wc-logo-placeholder">WC</div>
+        </div>
+        <div class="wc-site-name">
+          <div class="wc-site-name-main">Wesley Chapel</div>
+          <div class="wc-site-name-sub">Community.com</div>
+        </div>
+      </a>
+      <div class="wc-header-actions">
+        <a href="${wesleyChapelBaseUrl}/sign-in" class="wc-signin-btn" target="_top">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M20 21a8 8 0 1 0-16 0"/>
+          </svg>
+          Sign In
+        </a>
+        <a href="${wesleyChapelBaseUrl}/advertise" class="wc-advertise-btn" target="_top">
+          Advertise With Us &gt;
+        </a>
+      </div>
+    </div>
+    <nav class="wc-nav">
+      <div class="wc-nav-container">
+        <ul class="wc-nav-list">
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}" target="_top">Home</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/news" target="_top">News</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/pictures" target="_top">Pictures</a></li>
+          <li class="wc-nav-item active"><a href="${wesleyChapelBaseUrl}/sponsors" target="_top">View Our Sponsors</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/neighborhoods" target="_top">Neighborhoods</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/about" target="_top">About</a></li>
+          <li class="wc-nav-item"><a href="${wesleyChapelBaseUrl}/contact" target="_top">Contact</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
 
-    <main id="sponsors-container">
-      ${sponsors.length > 0 ? renderSponsorsGrid(sponsors, columnsParam, cardStyleParam, maxInitialParam, viewModeParam) : renderEmptyState()}
-    </main>
+  <main class="page-container">
+    <div class="page-title">
+      <h1>Our Sponsors</h1>
+      <p>Thank you to these amazing local businesses for supporting the Wesley Chapel community!</p>
+    </div>
 
-    ${showCtaParam ? `
+    ${sponsors.length > 0 ? `
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">${sponsors.length}</div>
+        <div class="stat-label">Local Businesses</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${sponsors.filter(s => s.isFeatured).length}</div>
+        <div class="stat-label">Featured</div>
+      </div>
+    </div>
+
+    <div class="sponsors-grid columns-${columnsParam}">
+      ${sponsors.map(sponsor => renderSponsorCard(sponsor)).join('')}
+    </div>
+    ` : renderEmptyState()}
+
     <section class="cta-section">
-      <h2 class="cta-title">Want to Join Our Sponsors?</h2>
-      <p class="cta-description">Support our community and get your business in front of thousands of local residents.</p>
-      <a href="${escapeHtml(ctaUrlParam || '#')}" class="cta-button" target="_blank" rel="noopener" id="cta-button">${escapeHtml(ctaTextParam)}</a>
+      <h2 class="cta-title">Want to Become a Sponsor?</h2>
+      <p class="cta-description">Support the Wesley Chapel community and get your business in front of thousands of local residents.</p>
+      <a href="${wesleyChapelBaseUrl}/advertise" class="cta-button" target="_top">Learn More</a>
     </section>
-    ` : ''}
+  </main>
 
-    ${showBrandingParam ? `
-    <footer class="branding">
-      <a href="https://community-websites.com" target="_blank" rel="noopener">Powered by Community-Website.com</a>
-    </footer>
-    ` : ''}
-  </div>
+  <footer class="wc-footer">
+    <p>
+      <a href="${wesleyChapelBaseUrl}" target="_top">WesleyChapelCommunity.com</a> &bull;
+      Powered by <a href="https://community-websites.com" target="_blank" rel="noopener">Community-Website.com</a>
+    </p>
+  </footer>
 
   <script>
     (function() {
       'use strict';
 
-      var totalSponsors = ${sponsors.length};
-      var maxInitial = ${maxInitialParam};
-      var viewMode = '${viewModeParam}';
-      var visibleCount = maxInitial > 0 ? Math.min(maxInitial, totalSponsors) : totalSponsors;
-
-      /**
-       * Send message to parent Wix page
-       */
-      function postToParent(type, data) {
-        try {
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({
-              source: 'community-ads-directory',
-              type: type,
-              data: data
-            }, '*');
-          }
-        } catch (e) {
-          // Cross-origin restriction - ignore
-        }
-      }
-
-      /**
-       * Notify parent of height changes
-       */
-      function notifyHeight() {
-        setTimeout(function() {
-          postToParent('resize', {
-            height: document.body.scrollHeight
-          });
-        }, 100);
-      }
-
-      /**
-       * Show more sponsors (expandable mode)
-       */
-      function showMoreSponsors() {
-        var cards = document.querySelectorAll('.sponsor-card.hidden');
-        var showMoreBtn = document.getElementById('show-more-btn');
-        var batchSize = maxInitial > 0 ? maxInitial : 6;
-
-        for (var i = 0; i < Math.min(batchSize, cards.length); i++) {
-          cards[i].classList.remove('hidden');
-          visibleCount++;
-        }
-
-        // Update or hide the button
-        var remaining = totalSponsors - visibleCount;
-        if (remaining <= 0 && showMoreBtn) {
-          showMoreBtn.style.display = 'none';
-        } else if (showMoreBtn) {
-          showMoreBtn.querySelector('.remaining-count').textContent = remaining;
-        }
-
-        notifyHeight();
-      }
-
-      // Expose to global scope for onclick
-      window.showMoreSponsors = showMoreSponsors;
-
-      /**
-       * Handle image loading
-       */
+      // Handle image loading
       document.querySelectorAll('.sponsor-image').forEach(function(img) {
         if (img.complete) {
           img.classList.add('loaded');
@@ -881,54 +897,23 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      /**
-       * Track clicks
-       */
-      document.querySelectorAll('.sponsor-card').forEach(function(card) {
-        card.addEventListener('click', function() {
-          var adId = card.getAttribute('data-ad-id');
-          postToParent('click', { adId: adId });
-        });
-      });
-
-      /**
-       * Track social link clicks (stop propagation)
-       */
+      // Track clicks (stop propagation for social links)
       document.querySelectorAll('.social-link').forEach(function(link) {
         link.addEventListener('click', function(e) {
           e.stopPropagation();
         });
       });
 
-      /**
-       * Handle CTA button click
-       */
-      var ctaButton = document.getElementById('cta-button');
-      if (ctaButton) {
-        ctaButton.addEventListener('click', function() {
-          postToParent('ctaClick', {});
-        });
-      }
-
-      /**
-       * Handle Show More button
-       */
-      var showMoreBtn = document.getElementById('show-more-btn');
-      if (showMoreBtn) {
-        showMoreBtn.addEventListener('click', showMoreSponsors);
-      }
-
-      // Initial height notification
-      notifyHeight();
-
-      // Listen for resize requests from parent
-      window.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'requestHeight') {
-          notifyHeight();
+      // Notify parent of height for iframe resizing
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            source: 'wesley-chapel-directory',
+            type: 'resize',
+            height: document.body.scrollHeight
+          }, '*');
         }
-      });
-
-      postToParent('ready', { version: '2.1.0', sponsorCount: totalSponsors, visibleCount: visibleCount });
+      } catch (e) {}
     })();
   </script>
 </body>
@@ -942,54 +927,19 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Render the sponsors grid
- */
-function renderSponsorsGrid(sponsors: any[], columns: string, cardStyle: string, maxInitial: number, viewMode: string): string {
-  const columnsClass = columns === 'auto' ? 'columns-auto' : `columns-${columns}`;
-  const useExpandable = viewMode === 'expandable' && maxInitial > 0 && sponsors.length > maxInitial;
-
-  let html = `<div class="sponsors-grid ${columnsClass}">`;
-
-  for (let i = 0; i < sponsors.length; i++) {
-    const isHidden = useExpandable && i >= maxInitial;
-    html += renderSponsorCard(sponsors[i], cardStyle, isHidden);
-  }
-
-  html += '</div>';
-
-  // Add "Show More" button for expandable mode
-  if (useExpandable) {
-    const remaining = sponsors.length - maxInitial;
-    html += `
-      <div class="show-more-container">
-        <button type="button" class="show-more-btn" id="show-more-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Show More (<span class="remaining-count">${remaining}</span> more)
-        </button>
-      </div>
-    `;
-  }
-
-  return html;
-}
-
-/**
  * Render a single sponsor card
  */
-function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = false): string {
+function renderSponsorCard(sponsor: any): string {
   const hasSocialLinks = sponsor.showSocialLinks && (
     sponsor.facebookUrl || sponsor.instagramUrl || sponsor.linkedinUrl || sponsor.twitterUrl || sponsor.youtubeUrl
   );
 
   return `
     <a href="${escapeHtml(sponsor.clickUrl)}"
-       class="sponsor-card${isHidden ? ' hidden' : ''}"
+       class="sponsor-card"
        target="_blank"
        rel="noopener sponsored"
-       title="Visit ${escapeHtml(sponsor.businessName)}"
-       data-ad-id="${escapeHtml(sponsor.id)}">
+       title="Visit ${escapeHtml(sponsor.businessName)}">
 
       ${sponsor.isFeatured ? '<span class="featured-badge">Featured</span>' : ''}
       ${sponsor.categoryLabel ? `<span class="category-badge">${escapeHtml(sponsor.categoryIcon || '')} ${escapeHtml(sponsor.categoryLabel)}</span>` : ''}
@@ -1012,10 +962,7 @@ function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = 
       </div>
 
       <div class="sponsor-info">
-        <div class="sponsor-header">
-          <h3 class="sponsor-name">${escapeHtml(sponsor.businessName)}</h3>
-        </div>
-
+        <h3 class="sponsor-name">${escapeHtml(sponsor.businessName)}</h3>
         ${sponsor.tagline ? `<p class="sponsor-tagline">${escapeHtml(sponsor.tagline)}</p>` : ''}
         ${sponsor.description ? `<p class="sponsor-description">${escapeHtml(sponsor.description)}</p>` : ''}
 
@@ -1023,7 +970,7 @@ function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = 
           <div class="sponsor-contact">
             ${sponsor.phone ? `
               <span class="contact-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
                 ${escapeHtml(sponsor.phone)}
@@ -1031,7 +978,7 @@ function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = 
             ` : ''}
             ${sponsor.email ? `
               <span class="contact-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
@@ -1050,7 +997,7 @@ function renderSponsorCard(sponsor: any, cardStyle: string, isHidden: boolean = 
             ` : ''}
             ${sponsor.instagramUrl ? `
               <a href="${escapeHtml(sponsor.instagramUrl)}" class="social-link" target="_blank" rel="noopener" title="Instagram" onclick="event.stopPropagation();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               </a>
             ` : ''}
             ${sponsor.linkedinUrl ? `
