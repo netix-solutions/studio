@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Radio,
   UserPlus,
+  FolderOpen,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -39,10 +40,12 @@ const ADMIN_COMMANDS: CommandItem[] = [
   { id: 'advertisements', label: 'Advertisements', icon: Megaphone, href: '/advertisements', keywords: ['ads', 'list', 'all', 'approve'], group: 'main' },
   { id: 'manual-entry', label: 'Manual Entry', icon: UserPlus, href: '/manual-entry', keywords: ['new', 'customer', 'add', 'create', 'cash', 'check'], group: 'main' },
   { id: 'ad-server', label: 'Ad Server', icon: Radio, href: '/ad-server', keywords: ['live', 'serve', 'embed', 'weights', 'targeting'], group: 'main' },
+  { id: 'directory', label: 'Directory', icon: FolderOpen, href: '/directory', keywords: ['listings', 'sponsors', 'business', 'moderate', 'approve'], group: 'main' },
 
   // Quick filters
   { id: 'action-required', label: 'Ads Needing Approval', icon: Megaphone, href: '/advertisements?status=action_required', keywords: ['action', 'pending', 'review', 'approve'], group: 'quick' },
   { id: 'live-ads', label: 'Live Ads', icon: Megaphone, href: '/advertisements?status=live', keywords: ['active', 'running'], group: 'quick' },
+  { id: 'pending-directory', label: 'Pending Directory Listings', icon: FolderOpen, href: '/directory?status=pending', keywords: ['directory', 'review', 'moderate'], group: 'quick' },
 ];
 
 const USER_COMMANDS: CommandItem[] = [
