@@ -9,9 +9,8 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  Timestamp,
 } from 'firebase/firestore';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -36,11 +35,8 @@ import {
   Eye,
   LogIn,
   Activity,
-  MousePointerClick,
-  Megaphone,
   UserPlus,
   CreditCard,
-  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -62,9 +58,6 @@ type EventType =
   | 'page_visit'
   | 'login'
   | 'sent_email_record'
-  | 'ad_impression'
-  | 'ad_click'
-  | 'ad_status_change'
   | 'lead_created'
   | 'subscription_event';
 
@@ -85,9 +78,6 @@ const eventConfig: Record<EventType, { icon: any; bgColor: string; textColor: st
   page_visit: { icon: Eye, bgColor: 'bg-sky-100', textColor: 'text-sky-600', label: 'Page Visit' },
   login: { icon: LogIn, bgColor: 'bg-teal-100', textColor: 'text-teal-600', label: 'Login' },
   sent_email_record: { icon: Mail, bgColor: 'bg-blue-100', textColor: 'text-blue-600', label: 'Email' },
-  ad_impression: { icon: Eye, bgColor: 'bg-emerald-100', textColor: 'text-emerald-600', label: 'Ad Impression' },
-  ad_click: { icon: MousePointerClick, bgColor: 'bg-rose-100', textColor: 'text-rose-600', label: 'Ad Click' },
-  ad_status_change: { icon: Megaphone, bgColor: 'bg-amber-100', textColor: 'text-amber-600', label: 'Ad Update' },
   lead_created: { icon: UserPlus, bgColor: 'bg-blue-100', textColor: 'text-blue-600', label: 'New Lead' },
   subscription_event: { icon: CreditCard, bgColor: 'bg-green-100', textColor: 'text-green-600', label: 'Subscription' },
 };
@@ -105,7 +95,6 @@ interface UnifiedActivityItem {
   leadName?: string;
   customerId?: string;
   customerName?: string;
-  adId?: string;
   // For expandable email content
   emailHtml?: string;
   emailSubject?: string;
@@ -142,22 +131,12 @@ interface SentEmail {
   recipientName?: string;
 }
 
-interface AdEvent {
-  id: string;
-  adId: string;
-  type: 'impression' | 'click';
-  referrer?: string;
-  timestamp: any;
-}
-
 export function RecentActivity({ className }: { className?: string }) {
   const { firestore } = useFirebase();
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [emails, setEmails] = useState<SentEmail[]>([]);
-  const [adEvents, setAdEvents] = useState<AdEvent[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [loadingEmails, setLoadingEmails] = useState(true);
-  const [loadingAdEvents, setLoadingAdEvents] = useState(true);
 
   // Subscribe to all activities across leads using collection group
   useEffect(() => {
@@ -217,34 +196,6 @@ export function RecentActivity({ className }: { className?: string }) {
     }, (error) => {
       console.error('Error fetching emails:', error);
       setLoadingEmails(false);
-    });
-
-    return () => unsubscribe();
-  }, [firestore]);
-
-  // Subscribe to ad events (impressions & clicks)
-  useEffect(() => {
-    if (!firestore) {
-      setLoadingAdEvents(false);
-      return;
-    }
-
-    const adEventsQuery = query(
-      collection(firestore, 'ad_events'),
-      orderBy('timestamp', 'desc'),
-      limit(50)
-    );
-
-    const unsubscribe = onSnapshot(adEventsQuery, (snapshot) => {
-      const eventsData: AdEvent[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as AdEvent));
-      setAdEvents(eventsData);
-      setLoadingAdEvents(false);
-    }, (error) => {
-      console.error('Error fetching ad events:', error);
-      setLoadingAdEvents(false);
     });
 
     return () => unsubscribe();
@@ -311,33 +262,13 @@ export function RecentActivity({ className }: { className?: string }) {
       });
     });
 
-    // Add ad events (group by ad and show summary)
-    const recentAdEvents = adEvents.slice(0, 20);
-    recentAdEvents.forEach(event => {
-      const timestamp = event.timestamp?.toDate
-        ? event.timestamp.toDate()
-        : event.timestamp
-        ? new Date(event.timestamp)
-        : new Date();
-
-      items.push({
-        id: `ad-event-${event.id}`,
-        type: event.type === 'click' ? 'ad_click' : 'ad_impression',
-        title: event.type === 'click' ? 'Ad Click' : 'Ad Impression',
-        description: event.referrer ? `From: ${new URL(event.referrer).hostname}` : undefined,
-        createdAt: timestamp,
-        createdByName: 'Visitor',
-        adId: event.adId,
-      });
-    });
-
     // Sort by date (newest first) and limit to 50
     items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return items.slice(0, 50);
-  }, [activities, emails, adEvents]);
+  }, [activities, emails]);
 
-  const loading = loadingActivities || loadingEmails || loadingAdEvents;
+  const loading = loadingActivities || loadingEmails;
 
   // Group events by date for better organization
   const groupedByDate = useMemo(() => {
@@ -384,7 +315,7 @@ export function RecentActivity({ className }: { className?: string }) {
               Recent Activity
             </CardTitle>
             <CardDescription>
-              Latest 50 events across leads, customers, and ads
+              Latest 50 events across leads and customers
             </CardDescription>
           </div>
           {!loading && (
