@@ -11,6 +11,18 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+// CORS headers for cross-origin requests (web components, external apps)
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
+
 /**
  * Public Directory API
  * Returns all approved, visible directory listings for public display
@@ -179,13 +191,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: {
-        listings: limitedListings,
-        total: listings.length,
-        categoryCounts,
-      },
+      listings: limitedListings,
+      total: listings.length,
+      categoryCounts,
     }, {
       headers: {
+        ...corsHeaders,
         'Cache-Control': 'public, max-age=60, s-maxage=300',
       },
     });
@@ -194,7 +205,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching public directory:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch directory listings' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
