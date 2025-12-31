@@ -65,7 +65,7 @@ import {
 
 type ThemeOption = 'auto' | 'light' | 'dark';
 type LayoutOption = 'single' | '1x2' | '1x3' | '2x3';
-type ColumnsOption = 'auto' | '2' | '3' | '4';
+type ColumnsOption = 'auto' | '1' | '2' | '3' | '4';
 type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
 
 interface EmbedConfig {
@@ -98,6 +98,23 @@ interface DirectoryConfig {
     widgetLayout: 'grid' | 'carousel' | 'list';
     widgetMax: number;
     viewAllUrl: string;
+}
+
+// Web Component config for universal embedding (Firebase apps, React, Vue, etc.)
+interface WebComponentConfig {
+    website: CommunityWebsiteId | '';
+    theme: ThemeOption;
+    columns: ColumnsOption;
+    title: string;
+    subtitle: string;
+    showCta: boolean;
+    ctaUrl: string;
+    ctaText: string;
+    branding: boolean;
+    showContact: boolean;
+    showSocial: boolean;
+    showCategories: boolean;
+    source: string;
 }
 
 type EmailModeOption = 'dynamic' | 'static';
@@ -157,6 +174,23 @@ export default function EmbedCodesPage() {
         fallbackUrl: '',
         altText: 'Community Sponsor',
         maxWidth: '600',
+    });
+
+    // Web Component Configuration (for Firebase apps, React, Vue, etc.)
+    const [webComponentConfig, setWebComponentConfig] = useState<WebComponentConfig>({
+        website: '',
+        theme: 'auto',
+        columns: 'auto',
+        title: 'Community Directory',
+        subtitle: 'Discover amazing local businesses in our community!',
+        showCta: false,
+        ctaUrl: '',
+        ctaText: 'Join Our Directory',
+        branding: false,
+        showContact: true,
+        showSocial: true,
+        showCategories: true,
+        source: 'community-connect',
     });
 
     // Get base URL
@@ -402,6 +436,78 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
         return `<img src="${emailImageUrl}" alt="${altText}" style="max-width: ${maxWidth}px; width: 100%; height: auto; border: 0; display: block; margin: 0 auto;" />`;
     }, [emailImageUrl, emailConfig.altText, emailConfig.maxWidth]);
 
+    // Generate Web Component embed code
+    const webComponentEmbedCode = useMemo(() => {
+        const attrs: string[] = [];
+        if (webComponentConfig.website) attrs.push(`website="${webComponentConfig.website}"`);
+        attrs.push(`theme="${webComponentConfig.theme}"`);
+        attrs.push(`columns="${webComponentConfig.columns}"`);
+        if (webComponentConfig.title !== 'Community Directory') attrs.push(`title="${webComponentConfig.title}"`);
+        if (webComponentConfig.subtitle !== 'Discover amazing local businesses in our community!') {
+            attrs.push(`subtitle="${webComponentConfig.subtitle}"`);
+        }
+        if (webComponentConfig.showCta && webComponentConfig.ctaUrl) {
+            attrs.push(`show-cta="true"`);
+            attrs.push(`cta-url="${webComponentConfig.ctaUrl}"`);
+            if (webComponentConfig.ctaText !== 'Join Our Directory') attrs.push(`cta-text="${webComponentConfig.ctaText}"`);
+        } else {
+            attrs.push(`show-cta="false"`);
+        }
+        if (webComponentConfig.branding) attrs.push(`show-branding="true"`);
+        attrs.push(`show-contact="${webComponentConfig.showContact}"`);
+        attrs.push(`show-social="${webComponentConfig.showSocial}"`);
+        attrs.push(`show-categories="${webComponentConfig.showCategories}"`);
+        if (webComponentConfig.source !== 'embed_component') attrs.push(`source="${webComponentConfig.source}"`);
+
+        const attrString = attrs.join('\n  ');
+
+        return `<!-- Community Directory Web Component -->
+<script src="${baseUrl}/api/ads/embed-component"></script>
+
+<community-directory
+  ${attrString}
+></community-directory>`;
+    }, [webComponentConfig, baseUrl]);
+
+    // Generate React/Next.js usage code
+    const webComponentReactCode = useMemo(() => {
+        const attrs: string[] = [];
+        if (webComponentConfig.website) attrs.push(`website="${webComponentConfig.website}"`);
+        attrs.push(`theme="${webComponentConfig.theme}"`);
+        if (webComponentConfig.source !== 'embed_component') attrs.push(`source="${webComponentConfig.source}"`);
+
+        return `// Add to your React/Next.js component
+import { useEffect } from 'react';
+
+export default function DirectoryPage() {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = '${baseUrl}/api/ads/embed-component';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
+  return (
+    <community-directory
+      ${attrs.join('\n      ')}
+    />
+  );
+}`;
+    }, [webComponentConfig, baseUrl]);
+
+    // Web Component preview URL (uses the directory public API)
+    const webComponentPreviewUrl = useMemo(() => {
+        const params = new URLSearchParams();
+        if (webComponentConfig.website) params.set('website', webComponentConfig.website);
+        params.set('theme', webComponentConfig.theme);
+        params.set('columns', webComponentConfig.columns);
+        if (webComponentConfig.title !== 'Community Directory') params.set('title', webComponentConfig.title);
+        if (!webComponentConfig.showCta) params.set('cta', 'false');
+        if (!webComponentConfig.branding) params.set('branding', 'false');
+        return `${baseUrl}/api/ads/wix-directory?${params.toString()}`;
+    }, [webComponentConfig, baseUrl]);
+
     const copyToClipboard = (code: string, label: string) => {
         navigator.clipboard.writeText(code);
         setCopiedCode(label);
@@ -442,21 +548,419 @@ ${Array(adCount).fill(null).map((_, i) => `  <div style="flex: 1; min-width: ${m
             </div>
 
             {/* Main Content */}
-            <Tabs defaultValue="rotator" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+            <Tabs defaultValue="webcomponent" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 lg:w-[800px]">
+                    <TabsTrigger value="webcomponent" className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        <span className="hidden sm:inline">Web Component</span>
+                        <span className="sm:hidden">Universal</span>
+                    </TabsTrigger>
                     <TabsTrigger value="rotator" className="flex items-center gap-2">
                         <RefreshCw className="h-4 w-4" />
-                        Ad Rotator
+                        <span className="hidden sm:inline">Ad Rotator</span>
+                        <span className="sm:hidden">Rotator</span>
                     </TabsTrigger>
                     <TabsTrigger value="directory" className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        Sponsor Directory
+                        <span className="hidden sm:inline">Wix Directory</span>
+                        <span className="sm:hidden">Wix</span>
                     </TabsTrigger>
                     <TabsTrigger value="email" className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
-                        Email Embed
+                        <span className="hidden sm:inline">Email Embed</span>
+                        <span className="sm:hidden">Email</span>
                     </TabsTrigger>
                 </TabsList>
+
+                {/* Web Component Tab - Universal Embed for any website */}
+                <TabsContent value="webcomponent" className="space-y-6">
+                    {/* Info Banner */}
+                    <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/30">
+                        <Globe className="h-4 w-4 text-blue-500" />
+                        <AlertTitle className="text-blue-700 dark:text-blue-400">Universal Web Component</AlertTitle>
+                        <AlertDescription className="text-blue-600 dark:text-blue-300">
+                            Works on any website including Firebase apps, React, Vue, Next.js, or plain HTML.
+                            Perfect for Community-Connect and other external integrations.
+                        </AlertDescription>
+                    </Alert>
+
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Configuration Panel */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Settings2 className="h-5 w-5" />
+                                    Configuration
+                                </CardTitle>
+                                <CardDescription>
+                                    Customize the directory component for your website
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Target Website */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Globe className="h-4 w-4" />
+                                        Target Community
+                                    </Label>
+                                    <Select
+                                        value={webComponentConfig.website || 'all'}
+                                        onValueChange={(value) => setWebComponentConfig({
+                                            ...webComponentConfig,
+                                            website: value === 'all' ? '' : value as CommunityWebsiteId,
+                                        })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a community..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Communities</SelectItem>
+                                            {COMMUNITY_WEBSITE_LIST.map((website) => (
+                                                <SelectItem key={website.id} value={website.id}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge className={cn(website.color.bg, website.color.text, "text-xs")}>
+                                                            {website.shortName}
+                                                        </Badge>
+                                                        {website.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Tracking Source */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Zap className="h-4 w-4" />
+                                        Tracking Source
+                                    </Label>
+                                    <Input
+                                        value={webComponentConfig.source}
+                                        onChange={(e) => setWebComponentConfig({ ...webComponentConfig, source: e.target.value })}
+                                        placeholder="community-connect"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Identifies where clicks/impressions come from in analytics
+                                    </p>
+                                </div>
+
+                                {/* Theme */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Palette className="h-4 w-4" />
+                                        Theme
+                                    </Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[
+                                            { value: 'auto', label: 'Auto', desc: 'Match system' },
+                                            { value: 'light', label: 'Light', desc: 'White bg' },
+                                            { value: 'dark', label: 'Dark', desc: 'Dark bg' },
+                                        ].map((theme) => (
+                                            <Button
+                                                key={theme.value}
+                                                variant={webComponentConfig.theme === theme.value ? 'default' : 'outline'}
+                                                className="h-auto py-2 flex-col gap-0.5"
+                                                onClick={() => setWebComponentConfig({ ...webComponentConfig, theme: theme.value as ThemeOption })}
+                                            >
+                                                <span className="font-medium">{theme.label}</span>
+                                                <span className="text-xs opacity-70">{theme.desc}</span>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Grid Columns */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Grid3X3 className="h-4 w-4" />
+                                        Grid Columns
+                                    </Label>
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {[
+                                            { value: 'auto', label: 'Auto' },
+                                            { value: '1', label: '1' },
+                                            { value: '2', label: '2' },
+                                            { value: '3', label: '3' },
+                                            { value: '4', label: '4' },
+                                        ].map((col) => (
+                                            <Button
+                                                key={col.value}
+                                                variant={webComponentConfig.columns === col.value ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => setWebComponentConfig({ ...webComponentConfig, columns: col.value as ColumnsOption })}
+                                            >
+                                                {col.label}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Title & Subtitle */}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Directory Title</Label>
+                                        <Input
+                                            value={webComponentConfig.title}
+                                            onChange={(e) => setWebComponentConfig({ ...webComponentConfig, title: e.target.value })}
+                                            placeholder="Community Directory"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Subtitle</Label>
+                                        <Input
+                                            value={webComponentConfig.subtitle}
+                                            onChange={(e) => setWebComponentConfig({ ...webComponentConfig, subtitle: e.target.value })}
+                                            placeholder="Discover amazing local businesses..."
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Display Toggles */}
+                                <div className="space-y-4 pt-2 border-t">
+                                    <Label>Display Options</Label>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-sm font-normal">Category Filter</Label>
+                                                <p className="text-xs text-muted-foreground">Show category filter buttons</p>
+                                            </div>
+                                            <Switch
+                                                checked={webComponentConfig.showCategories}
+                                                onCheckedChange={(checked) => setWebComponentConfig({ ...webComponentConfig, showCategories: checked })}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-sm font-normal">Contact Info</Label>
+                                                <p className="text-xs text-muted-foreground">Show phone and email</p>
+                                            </div>
+                                            <Switch
+                                                checked={webComponentConfig.showContact}
+                                                onCheckedChange={(checked) => setWebComponentConfig({ ...webComponentConfig, showContact: checked })}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-sm font-normal">Social Links</Label>
+                                                <p className="text-xs text-muted-foreground">Show social media icons</p>
+                                            </div>
+                                            <Switch
+                                                checked={webComponentConfig.showSocial}
+                                                onCheckedChange={(checked) => setWebComponentConfig({ ...webComponentConfig, showSocial: checked })}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-sm font-normal">Branding</Label>
+                                                <p className="text-xs text-muted-foreground">Show powered-by footer</p>
+                                            </div>
+                                            <Switch
+                                                checked={webComponentConfig.branding}
+                                                onCheckedChange={(checked) => setWebComponentConfig({ ...webComponentConfig, branding: checked })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* CTA Section */}
+                                <div className="space-y-4 pt-2 border-t">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label>Call-to-Action</Label>
+                                            <p className="text-xs text-muted-foreground">Add a "Join" button</p>
+                                        </div>
+                                        <Switch
+                                            checked={webComponentConfig.showCta}
+                                            onCheckedChange={(checked) => setWebComponentConfig({ ...webComponentConfig, showCta: checked })}
+                                        />
+                                    </div>
+                                    {webComponentConfig.showCta && (
+                                        <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+                                            <div className="space-y-2">
+                                                <Label className="text-sm">Button Text</Label>
+                                                <Input
+                                                    value={webComponentConfig.ctaText}
+                                                    onChange={(e) => setWebComponentConfig({ ...webComponentConfig, ctaText: e.target.value })}
+                                                    placeholder="Join Our Directory"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-sm">Button URL</Label>
+                                                <Input
+                                                    type="url"
+                                                    value={webComponentConfig.ctaUrl}
+                                                    onChange={(e) => setWebComponentConfig({ ...webComponentConfig, ctaUrl: e.target.value })}
+                                                    placeholder="https://..."
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Preview Panel */}
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Eye className="h-5 w-5" />
+                                            Live Preview
+                                        </CardTitle>
+                                        <CardDescription>
+                                            How the directory will appear
+                                        </CardDescription>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={refreshPreview}>
+                                            <RefreshCw className="h-4 w-4 mr-2" />
+                                            Refresh
+                                        </Button>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <a href={webComponentPreviewUrl} target="_blank" rel="noopener noreferrer">
+                                                <ExternalLink className="h-4 w-4 mr-2" />
+                                                Open
+                                            </a>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-muted/50 rounded-lg overflow-hidden" style={{ height: '450px' }}>
+                                    <iframe
+                                        key={previewKey}
+                                        src={webComponentPreviewUrl}
+                                        className="w-full h-full border-0"
+                                        title="Directory Preview"
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Embed Codes */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* HTML Embed Code */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Code className="h-5 w-5" />
+                                    HTML Embed Code
+                                </CardTitle>
+                                <CardDescription>
+                                    For plain HTML, Firebase Hosting, or any website
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="relative">
+                                    <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto max-h-[300px] overflow-y-auto">
+                                        <code>{webComponentEmbedCode}</code>
+                                    </pre>
+                                    <Button
+                                        size="sm"
+                                        className="absolute top-2 right-2"
+                                        onClick={() => copyToClipboard(webComponentEmbedCode, 'Web Component HTML')}
+                                    >
+                                        {copiedCode === 'Web Component HTML' ? (
+                                            <Check className="h-4 w-4 mr-2" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 mr-2" />
+                                        )}
+                                        {copiedCode === 'Web Component HTML' ? 'Copied!' : 'Copy'}
+                                    </Button>
+                                </div>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                    <p><strong>Step 1:</strong> Add the script tag to your page (once)</p>
+                                    <p><strong>Step 2:</strong> Place the component where you want the directory</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* React/Next.js Code */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Zap className="h-5 w-5" />
+                                    React / Next.js
+                                </CardTitle>
+                                <CardDescription>
+                                    For React, Next.js, or Community-Connect
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="relative">
+                                    <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto max-h-[300px] overflow-y-auto">
+                                        <code>{webComponentReactCode}</code>
+                                    </pre>
+                                    <Button
+                                        size="sm"
+                                        className="absolute top-2 right-2"
+                                        onClick={() => copyToClipboard(webComponentReactCode, 'Web Component React')}
+                                    >
+                                        {copiedCode === 'Web Component React' ? (
+                                            <Check className="h-4 w-4 mr-2" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 mr-2" />
+                                        )}
+                                        {copiedCode === 'Web Component React' ? 'Copied!' : 'Copy'}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Features Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5" />
+                                Component Features
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                                        <Globe className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">Universal</p>
+                                        <p className="text-xs text-muted-foreground">Works on any website</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                        <Layout className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">Shadow DOM</p>
+                                        <p className="text-xs text-muted-foreground">Styles won't conflict</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                                        <RefreshCw className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">Auto-Updates</p>
+                                        <p className="text-xs text-muted-foreground">Always shows latest data</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                                    <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                                        <Zap className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">Analytics</p>
+                                        <p className="text-xs text-muted-foreground">Tracks impressions & clicks</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
                 {/* Ad Rotator Tab */}
                 <TabsContent value="rotator" className="space-y-6">
