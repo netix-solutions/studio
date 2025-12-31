@@ -44,7 +44,7 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   const protocol = request.headers.get('x-forwarded-proto') || 'https';
-  const host = request.headers.get('host') || request.nextUrl.host;
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host;
   const baseUrl = `${protocol}://${host}`;
 
   // Get parameters
