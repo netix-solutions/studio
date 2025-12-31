@@ -205,189 +205,66 @@ export const mergePhoneUserWithExistingAccount = async (
     }
 
     try {
-        // First, check if this user already has a document (returning phone user)
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {
-            // User document exists, just ensure phone is stored
-            const userData = userDocSnap.data();
-            if (!userData.phoneNumber && !userData.phone && !userData.cellPhone) {
-                await updateDoc(userDocRef, {
-                    phoneNumber: normalizedPhone,
-                    updatedAt: serverTimestamp(),
-                });
-            }
             return { success: true, merged: false, message: 'Existing user document found' };
         }
 
-        // No user document exists for this phone user, look for matching accounts
-        const batch = writeBatch(firestore);
+        // No user document for this phone user, look for matching accounts
+        // We prioritize finding a match in 'users', then 'leads'
         let userData: { [key: string]: any } = {
             id: user.uid,
             phoneNumber: normalizedPhone,
             role: 'user',
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
         };
-        let foundExistingUser = false;
-        let existingUserId: string | undefined;
 
-        // Strategy 1: Look for a user document with matching phone number
+        const phoneVariants = [
+            normalizedPhone, // E.164 format
+            normalizedPhone.substring(2), // Without +1
+            `(${normalizedPhone.substring(2, 5)}) ${normalizedPhone.substring(5, 8)}-${normalizedPhone.substring(8)}` // Formatted
+        ];
+
+        // Search in `users` collection first
         const usersRef = collection(firestore, 'users');
-
-        // Check multiple phone fields that might contain the phone number
-        const phoneVariants = [normalizedPhone];
-        // Also check without +1 prefix for legacy data
-        if (normalizedPhone.startsWith('+1')) {
-            phoneVariants.push(normalizedPhone.substring(2)); // Remove +1
-            phoneVariants.push(`(${normalizedPhone.substring(2, 5)}) ${normalizedPhone.substring(5, 8)}-${normalizedPhone.substring(8)}`); // Formatted
-        }
-
-        for (const phoneVariant of phoneVariants) {
-            // Check phoneNumber field
-            let userQuery = query(usersRef, where('phoneNumber', '==', phoneVariant), limit(1));
-            let userSnapshot = await getDocs(userQuery);
-
-            if (userSnapshot.empty) {
-                // Check phone field
-                userQuery = query(usersRef, where('phone', '==', phoneVariant), limit(1));
-                userSnapshot = await getDocs(userQuery);
-            }
-
-            if (userSnapshot.empty) {
-                // Check cellPhone field
-                userQuery = query(usersRef, where('cellPhone', '==', phoneVariant), limit(1));
-                userSnapshot = await getDocs(userQuery);
-            }
-
+        for (const phoneField of ['phone', 'cellPhone', 'phoneNumber']) {
+            const userQuery = query(usersRef, where(phoneField, 'in', phoneVariants), limit(1));
+            const userSnapshot = await getDocs(userQuery);
             if (!userSnapshot.empty) {
-                const existingUserDoc = userSnapshot.docs[0];
-                const existingUserData = existingUserDoc.data();
-                existingUserId = existingUserDoc.id;
-
-                // Merge existing user data into new user
-                userData = {
-                    ...existingUserData,
-                    ...userData,
-                    email: existingUserData.email || user.email,
-                    linkedFromUserId: existingUserId,
-                    linkedAt: serverTimestamp(),
-                };
-
-                // Update the old user document to indicate it's been linked
-                const oldUserRef = doc(firestore, 'users', existingUserId);
-                batch.update(oldUserRef, {
-                    linkedToPhoneUserId: user.uid,
-                    linkedAt: serverTimestamp(),
-                });
-
-                // Copy advertisements from the old user to the new user
-                try {
-                    const oldAdsRef = collection(firestore, 'users', existingUserId, 'advertisements');
-                    const oldAdsSnapshot = await getDocs(oldAdsRef);
-
-                    for (const adDoc of oldAdsSnapshot.docs) {
-                        const adData = adDoc.data();
-                        const newAdRef = doc(firestore, 'users', user.uid, 'advertisements', adDoc.id);
-                        batch.set(newAdRef, {
-                            ...adData,
-                            userId: user.uid,
-                            linkedFromUserId: existingUserId,
-                            linkedAt: serverTimestamp(),
-                        });
-                    }
-                } catch (adError) {
-                    console.warn('Could not copy advertisements:', adError);
-                }
-
-                // Copy subscriptions from the old customer to the new one
-                try {
-                    // First, ensure the customer document exists for the new user
-                    const newCustomerRef = doc(firestore, 'customers', user.uid);
-                    const oldCustomerRef = doc(firestore, 'customers', existingUserId);
-                    const oldCustomerSnap = await getDoc(oldCustomerRef);
-
-                    if (oldCustomerSnap.exists()) {
-                        const oldCustomerData = oldCustomerSnap.data();
-                        batch.set(newCustomerRef, {
-                            ...oldCustomerData,
-                            linkedFromCustomerId: existingUserId,
-                            linkedAt: serverTimestamp(),
-                        }, { merge: true });
-
-                        // Copy subscriptions
-                        const oldSubsRef = collection(firestore, 'customers', existingUserId, 'subscriptions');
-                        const oldSubsSnapshot = await getDocs(oldSubsRef);
-
-                        for (const subDoc of oldSubsSnapshot.docs) {
-                            const subData = subDoc.data();
-                            const newSubRef = doc(firestore, 'customers', user.uid, 'subscriptions', subDoc.id);
-                            batch.set(newSubRef, {
-                                ...subData,
-                                linkedFromCustomerId: existingUserId,
-                                linkedAt: serverTimestamp(),
-                            });
-                        }
-                    }
-                } catch (subError) {
-                    console.warn('Could not copy subscriptions:', subError);
-                }
-
-                foundExistingUser = true;
-                break;
+                const existingUserData = userSnapshot.docs[0].data();
+                userData = { ...existingUserData, ...userData, email: user.email || existingUserData.email };
+                await setDoc(userDocRef, userData);
+                return { success: true, merged: true, message: 'Account merged with existing user.' };
             }
         }
 
-        // Strategy 2: If no user found, look for a lead with matching phone
-        if (!foundExistingUser) {
-            const leadsRef = collection(firestore, 'leads');
+        // If no user found, search in `leads` collection
+        const leadsRef = collection(firestore, 'leads');
+        const leadQuery = query(leadsRef, where('phone', 'in', phoneVariants), limit(1));
+        const leadSnapshot = await getDocs(leadQuery);
 
-            for (const phoneVariant of phoneVariants) {
-                const leadQuery = query(leadsRef, where('phone', '==', phoneVariant), limit(1));
-                const leadSnapshot = await getDocs(leadQuery);
+        if (!leadSnapshot.empty) {
+            const leadData = leadSnapshot.docs[0].data();
+            userData = {
+                ...userData,
+                businessName: leadData.businessName || '',
+                contactName: leadData.contactName || `${leadData.firstName || ''} ${leadData.lastName || ''}`.trim(),
+                email: user.email || leadData.email || '',
+            };
 
-                if (!leadSnapshot.empty) {
-                    const leadDoc = leadSnapshot.docs[0];
-                    const leadData = leadDoc.data();
-
-                    // Merge lead data into user data
-                    userData = {
-                        ...userData,
-                        businessName: leadData.businessName || '',
-                        contactName: leadData.contactName || `${leadData.firstName || ''} ${leadData.lastName || ''}`.trim(),
-                        firstName: leadData.firstName || '',
-                        lastName: leadData.lastName || '',
-                        email: leadData.email || user.email || '',
-                        phone: leadData.phone || normalizedPhone,
-                    };
-
-                    // Mark lead as converted
-                    const leadDocRef = doc(firestore, 'leads', leadDoc.id);
-                    batch.update(leadDocRef, {
-                        convertedToCustomerId: user.uid,
-                        convertedAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
-                    });
-
-                    break;
-                }
-            }
+            const leadDocRef = doc(firestore, 'leads', leadSnapshot.docs[0].id);
+            await updateDoc(leadDocRef, {
+                convertedToCustomerId: user.uid,
+                convertedAt: serverTimestamp(),
+            });
         }
+        
+        await setDoc(userDocRef, userData);
+        return { success: true, merged: false, message: 'New user document created.' };
 
-        // Create the user document
-        batch.set(userDocRef, userData, { merge: true });
-
-        // Commit all changes
-        await batch.commit();
-
-        return {
-            success: true,
-            merged: foundExistingUser,
-            existingUserId,
-            message: foundExistingUser
-                ? `Account merged with existing user ${existingUserId}`
-                : 'New user document created',
-        };
     } catch (error: any) {
         console.error('Error merging phone user with existing account:', error);
         return {

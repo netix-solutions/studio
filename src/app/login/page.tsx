@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -70,11 +70,11 @@ export default function LoginPage() {
 
   // Set up reCAPTCHA on mount when the container is ready
   useEffect(() => {
-    if (auth && recaptchaContainerRef.current) {
+    if (auth && recaptchaContainerRef.current && !recaptchaVerifier) {
         const verifier = setupRecaptcha(auth, recaptchaContainerRef.current);
         setRecaptchaVerifier(verifier);
     }
-  }, [auth]);
+  }, [auth, recaptchaVerifier]);
 
   useEffect(() => {
     if (!isUserLoading && user && firestore) {
@@ -186,28 +186,14 @@ export default function LoginPage() {
     if (!confirmationResult) return;
     setIsSubmitting(true);
     try {
-      // Get the phone number from the form to use for account merging
       const phoneNumber = phoneForm.getValues('phone');
-      const normalizedPhone = normalizePhoneNumber(phoneNumber);
-
-      if (!normalizedPhone) {
-        toast({
-          title: 'Error',
-          description: 'Invalid phone number. Please try again.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Complete phone sign-in with account merging
-      const { credential, mergeResult } = await completePhoneSignIn(
+      
+      const { mergeResult } = await completePhoneSignIn(
         confirmationResult,
         values.code,
-        normalizedPhone
+        phoneNumber
       );
 
-      // Show appropriate message based on merge result
       if (mergeResult.merged) {
         toast({
           title: 'Welcome Back!',
