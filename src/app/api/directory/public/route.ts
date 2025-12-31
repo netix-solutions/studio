@@ -189,23 +189,28 @@ export async function GET(request: NextRequest) {
     // Apply limit
     const limitedListings = listings.slice(0, limitParam);
 
-    return NextResponse.json({
+    return new NextResponse(JSON.stringify({
       success: true,
       listings: limitedListings,
       total: listings.length,
       categoryCounts,
-    }, {
+    }), {
+      status: 200,
       headers: {
         ...corsHeaders,
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=60, s-maxage=300',
       },
     });
 
   } catch (error) {
     console.error('Error fetching public directory:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch directory listings' },
-      { status: 500, headers: corsHeaders }
-    );
+    return new NextResponse(JSON.stringify({ success: false, error: 'Failed to fetch directory listings' }), {
+      status: 500,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }
