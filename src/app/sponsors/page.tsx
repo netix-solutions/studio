@@ -91,9 +91,9 @@ export default function SponsorsPage() {
       if (!response.ok) throw new Error('Failed to fetch listings');
 
       const result = await response.json();
-      setListings(result.data.listings);
-      setCategoryCounts(result.data.categoryCounts);
-      setTotalCount(result.data.total);
+      setListings(result.listings);
+      setCategoryCounts(result.categoryCounts);
+      setTotalCount(result.total);
     } catch (err) {
       console.error('Error fetching listings:', err);
       setError('Failed to load directory. Please try again.');
