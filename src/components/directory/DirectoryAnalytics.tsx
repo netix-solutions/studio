@@ -25,14 +25,14 @@ import {
   Users,
   Sparkles,
 } from 'lucide-react';
-import { type DirectoryListing, calculateCTR } from '@/lib/types';
+import { type LiveAdDirectoryListing, calculateCTR } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface DirectoryAnalyticsProps {
   impressions: number;
   clicks: number;
   viewCount?: number;
-  listing: Partial<DirectoryListing>;
+  listing: Partial<LiveAdDirectoryListing>;
   previousImpressions?: number;
   previousClicks?: number;
   className?: string;
@@ -277,7 +277,7 @@ function StatCard({
 }
 
 // Completeness Checklist
-function CompletenessChecklist({ listing }: { listing: Partial<DirectoryListing> }) {
+function CompletenessChecklist({ listing }: { listing: Partial<LiveAdDirectoryListing> }) {
   const items = [
     { label: 'Business name', done: !!listing.businessName },
     { label: 'Tagline', done: !!listing.tagline },
@@ -366,7 +366,7 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-function calculateCompletenessScore(listing: Partial<DirectoryListing>): number {
+function calculateCompletenessScore(listing: Partial<LiveAdDirectoryListing>): number {
   const fields = [
     { field: listing.businessName, weight: 15 },
     { field: listing.tagline, weight: 10 },
@@ -389,7 +389,7 @@ function calculateCompletenessScore(listing: Partial<DirectoryListing>): number 
 }
 
 function generateOptimizationTips(
-  listing: Partial<DirectoryListing>,
+  listing: Partial<LiveAdDirectoryListing>,
   stats: { impressions: number; clicks: number; ctr: number }
 ): OptimizationTip[] {
   const tips: OptimizationTip[] = [];

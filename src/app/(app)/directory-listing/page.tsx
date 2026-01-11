@@ -34,7 +34,7 @@ import { DirectoryListingForm } from '@/components/directory/DirectoryListingFor
 
 // Types
 import {
-  type DirectoryListing,
+  type LiveAdDirectoryListing,
   type DirectoryStatus,
   DIRECTORY_STATUS_LABELS,
   DIRECTORY_STATUS_COLORS,
@@ -52,7 +52,7 @@ interface DirectoryListingData {
     impressions: number;
     clicks: number;
   } | null;
-  directoryListing: DirectoryListing;
+  directoryListing: LiveAdDirectoryListing;
   hasExistingListing: boolean;
   advertisementStatus?: string;
   message?: string;
@@ -73,7 +73,7 @@ export default function DirectoryListingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<DirectoryListingData | null>(null);
-  const [listing, setListing] = useState<Partial<DirectoryListing>>({});
+  const [listing, setListing] = useState<Partial<LiveAdDirectoryListing>>({});
   const [showInDirectory, setShowInDirectory] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

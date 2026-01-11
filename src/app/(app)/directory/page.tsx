@@ -61,7 +61,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
     type LiveAd,
-    type DirectoryListing,
+    type LiveAdDirectoryListing,
     type DirectoryStatus,
     type BusinessCategory,
     DIRECTORY_STATUS_LABELS,
@@ -75,7 +75,7 @@ import { DirectoryListingForm } from '@/components/directory/DirectoryListingFor
 interface DirectoryListingItem {
     liveAdId: string;
     liveAd: Partial<LiveAd>;
-    directoryListing: DirectoryListing | null;
+    directoryListing: LiveAdDirectoryListing | null;
 }
 
 interface DirectoryStats {

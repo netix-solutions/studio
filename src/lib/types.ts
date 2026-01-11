@@ -19,6 +19,7 @@ export const LEAD_SOURCES = {
   COLD_OUTREACH: 'cold_outreach',
   EVENT: 'event',
   PARTNER: 'partner',
+  DIRECTORY_SIGNUP: 'directory_signup',
   OTHER: 'other',
 } as const;
 
@@ -34,6 +35,7 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   cold_outreach: 'Cold Outreach',
   event: 'Event',
   partner: 'Partner',
+  directory_signup: 'Directory Signup',
   other: 'Other',
 };
 
@@ -748,6 +750,7 @@ export function calculateLeadScore(lead: Partial<Lead>): number {
     partner: 15,
     event: 12,
     cold_outreach: 5,
+    directory_signup: 18, // High intent - they signed up for directory
     other: 5,
   };
   score += sourceScores[lead.source as LeadSource] || 5;
@@ -920,7 +923,7 @@ export interface LiveAd {
 
   // Directory listing settings
   showInDirectory: boolean;
-  directoryListing?: DirectoryListing;
+  directoryListing?: LiveAdDirectoryListing;
 
   // Timestamps
   createdAt: any;
@@ -935,62 +938,54 @@ export interface LiveAd {
 /**
  * Business categories for directory filtering
  */
+/**
+ * Business categories for community directory (max 12)
+ * Consolidated for local community businesses
+ */
 export const BUSINESS_CATEGORIES = {
-  AUTOMOTIVE: 'automotive',
-  DINING_FOOD: 'dining_food',
-  HEALTHCARE: 'healthcare',
+  RESTAURANTS_FOOD: 'restaurants_food',
   HOME_SERVICES: 'home_services',
-  PROFESSIONAL_SERVICES: 'professional_services',
-  RETAIL: 'retail',
-  REAL_ESTATE: 'real_estate',
+  HEALTH_MEDICAL: 'health_medical',
   BEAUTY_WELLNESS: 'beauty_wellness',
-  EDUCATION: 'education',
-  ENTERTAINMENT: 'entertainment',
-  FINANCIAL_SERVICES: 'financial_services',
-  FITNESS_SPORTS: 'fitness_sports',
+  PROFESSIONAL_SERVICES: 'professional_services',
+  AUTOMOTIVE: 'automotive',
+  RETAIL_SHOPPING: 'retail_shopping',
+  REAL_ESTATE: 'real_estate',
+  EDUCATION_CHILDCARE: 'education_childcare',
+  FITNESS_RECREATION: 'fitness_recreation',
   PETS_ANIMALS: 'pets_animals',
-  TECHNOLOGY: 'technology',
-  TRAVEL_TOURISM: 'travel_tourism',
   OTHER: 'other',
 } as const;
 
 export type BusinessCategory = typeof BUSINESS_CATEGORIES[keyof typeof BUSINESS_CATEGORIES];
 
 export const BUSINESS_CATEGORY_LABELS: Record<BusinessCategory, string> = {
-  automotive: 'Automotive',
-  dining_food: 'Dining & Food',
-  healthcare: 'Healthcare',
+  restaurants_food: 'Restaurants & Food',
   home_services: 'Home Services',
-  professional_services: 'Professional Services',
-  retail: 'Retail & Shopping',
-  real_estate: 'Real Estate',
+  health_medical: 'Health & Medical',
   beauty_wellness: 'Beauty & Wellness',
-  education: 'Education',
-  entertainment: 'Entertainment',
-  financial_services: 'Financial Services',
-  fitness_sports: 'Fitness & Sports',
+  professional_services: 'Professional Services',
+  automotive: 'Automotive',
+  retail_shopping: 'Retail & Shopping',
+  real_estate: 'Real Estate',
+  education_childcare: 'Education & Childcare',
+  fitness_recreation: 'Fitness & Recreation',
   pets_animals: 'Pets & Animals',
-  technology: 'Technology',
-  travel_tourism: 'Travel & Tourism',
   other: 'Other',
 };
 
 export const BUSINESS_CATEGORY_ICONS: Record<BusinessCategory, string> = {
-  automotive: '🚗',
-  dining_food: '🍽️',
-  healthcare: '🏥',
+  restaurants_food: '🍽️',
   home_services: '🏠',
-  professional_services: '💼',
-  retail: '🛍️',
-  real_estate: '🏘️',
+  health_medical: '🏥',
   beauty_wellness: '💆',
-  education: '📚',
-  entertainment: '🎭',
-  financial_services: '💰',
-  fitness_sports: '🏋️',
+  professional_services: '💼',
+  automotive: '🚗',
+  retail_shopping: '🛍️',
+  real_estate: '🏘️',
+  education_childcare: '📚',
+  fitness_recreation: '🏋️',
   pets_animals: '🐾',
-  technology: '💻',
-  travel_tourism: '✈️',
   other: '📌',
 };
 
@@ -1168,8 +1163,9 @@ export const BUSINESS_AMENITY_ICONS: Record<BusinessAmenity, string> = {
 
 /**
  * Directory listing customization - stored on LiveAd
+ * This is for the OLD system where directory info is embedded in live_ads
  */
-export interface DirectoryListing {
+export interface LiveAdDirectoryListing {
   // Business identity
   businessName: string;
   tagline?: string; // Short business tagline (max 100 chars)
@@ -1631,27 +1627,25 @@ export function getSubscriptionDisplayInfo(subscription: Subscription): {
 
 /**
  * Directory listing tiers
+ * Note: 'included' is a free listing that comes with any ad subscription
  */
 export const DIRECTORY_TIERS = {
-  BASIC: 'basic',
-  FEATURED: 'featured',
-  PREMIUM: 'premium',
-  LEGACY: 'legacy',
+  FREE: 'free', // Free signup (limited time promotion)
+  INCLUDED: 'included', // Free with ad subscription
+  LEGACY: 'legacy', // Migrated from old system
 } as const;
 
 export type DirectoryTier = typeof DIRECTORY_TIERS[keyof typeof DIRECTORY_TIERS];
 
 export const DIRECTORY_TIER_LABELS: Record<DirectoryTier, string> = {
-  basic: 'Basic Listing',
-  featured: 'Featured Listing',
-  premium: 'Premium Listing',
+  free: 'Free Listing',
+  included: 'Included with Ad',
   legacy: 'Legacy (Free)',
 };
 
 export const DIRECTORY_TIER_COLORS: Record<DirectoryTier, { bg: string; text: string }> = {
-  basic: { bg: 'bg-slate-100', text: 'text-slate-700' },
-  featured: { bg: 'bg-amber-100', text: 'text-amber-700' },
-  premium: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  free: { bg: 'bg-green-100', text: 'text-green-700' },
+  included: { bg: 'bg-blue-100', text: 'text-blue-700' },
   legacy: { bg: 'bg-gray-100', text: 'text-gray-600' },
 };
 
@@ -1687,33 +1681,52 @@ export interface DirectoryListing {
 
   // Business Information
   businessName: string;
-  contactEmail: string;
-  contactName: string;
-  phone: string;
-  websiteUrl: string;
-  description: string;
+  tagline?: string;
+  description?: string;
   category: BusinessCategory;
-  logoUrl: string;
+  yearEstablished?: number;
+
+  // Contact
+  email?: string;
+  contactEmail?: string; // alias for email
+  contactName?: string;
+  phone?: string;
+  websiteUrl?: string;
+
+  // Visual
+  logoUrl?: string;
   bannerImageUrl?: string;
-  
+  galleryImages?: string[];
+
   // Address (optional)
   address?: string;
   city?: string;
   state?: string;
   zipCode?: string;
-  
-  // Social Links (optional)
-  socialLinks?: {
-    facebookUrl?: string;
-    instagramUrl?: string;
-    linkedinUrl?: string;
-    twitterUrl?: string;
-    youtubeUrl?: string;
-    tiktokUrl?: string;
-  };
+  showAddress?: boolean;
+
+  // Social Links (flat for form compatibility)
+  facebookUrl?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
+  tiktokUrl?: string;
+  yelpUrl?: string;
+  googleBusinessUrl?: string;
+
+  // Additional Links
+  secondaryPhone?: string;
+  appointmentUrl?: string;
+  menuUrl?: string;
+
+  // Display Preferences
+  showContactInfo?: boolean;
+  showSocialLinks?: boolean;
 
   // User & Subscription
-  userId: string;
+  userId?: string;
+  leadId?: string; // For free signups
   subscriptionStatus: DirectorySubscriptionStatus;
   subscriptionId?: string;
   stripeCustomerId?: string;
@@ -1736,7 +1749,7 @@ export interface DirectoryListing {
   // Metadata
   createdAt: any; // Firestore Timestamp
   updatedAt?: any;
-  createdBy: string; // userId or 'self-service'
+  createdBy: string; // userId or 'self-service' or 'free_signup'
 }
 
 /**

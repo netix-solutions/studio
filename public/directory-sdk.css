@@ -1,0 +1,381 @@
+/**
+ * Business Directory Embed Styles
+ * Provides beautiful, responsive styling for directory embeds
+ */
+
+/* ===== BASE STYLES ===== */
+.bd-directory {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: var(--bd-text-color, #1e293b);
+  background: var(--bd-bg-color, #ffffff);
+}
+
+.bd-wrapper {
+  max-width: var(--bd-max-width, 1400px);
+  margin: 0 auto;
+  padding: var(--bd-padding, 20px);
+}
+
+/* ===== SEARCH ===== */
+.bd-search {
+  margin-bottom: 30px;
+}
+
+.bd-search-input {
+  width: 100%;
+  max-width: 600px;
+  padding: 12px 20px;
+  font-size: 16px;
+  border: 2px solid var(--bd-border-color, #e2e8f0);
+  border-radius: var(--bd-border-radius, 8px);
+  background: var(--bd-input-bg, #ffffff);
+  color: var(--bd-text-color, #1e293b);
+  transition: border-color 0.2s;
+}
+
+.bd-search-input:focus {
+  outline: none;
+  border-color: var(--bd-primary-color, #3b82f6);
+}
+
+/* ===== FILTERS ===== */
+.bd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 30px;
+}
+
+.bd-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--bd-border-color, #e2e8f0);
+  border-radius: 20px;
+  background: var(--bd-filter-bg, #ffffff);
+  color: var(--bd-text-color, #1e293b);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bd-filter-btn:hover {
+  background: var(--bd-filter-hover-bg, #f1f5f9);
+  border-color: var(--bd-primary-color, #3b82f6);
+}
+
+.bd-filter-btn.bd-filter-active {
+  background: var(--bd-primary-color, #3b82f6);
+  color: white;
+  border-color: var(--bd-primary-color, #3b82f6);
+}
+
+/* ===== SECTIONS ===== */
+.bd-section {
+  margin-bottom: 40px;
+}
+
+.bd-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--bd-heading-color, #1e293b);
+}
+
+/* ===== GRID ===== */
+.bd-grid {
+  display: grid;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.bd-grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.bd-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.bd-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.bd-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .bd-grid-3,
+  .bd-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bd-grid,
+  .bd-grid-2,
+  .bd-grid-3,
+  .bd-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== CARDS ===== */
+.bd-card {
+  position: relative;
+  background: var(--bd-card-bg, #ffffff);
+  border: 1px solid var(--bd-border-color, #e2e8f0);
+  border-radius: var(--bd-border-radius, 12px);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bd-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.bd-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.bd-badge-featured {
+  background: var(--bd-featured-color, #f59e0b);
+  color: white;
+}
+
+.bd-card-banner {
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.bd-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bd-card-content {
+  padding: 20px;
+}
+
+.bd-card-header {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.bd-card-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: contain;
+  border: 1px solid var(--bd-border-color, #e2e8f0);
+  background: white;
+  flex-shrink: 0;
+}
+
+.bd-card-title-section {
+  flex: 1;
+}
+
+.bd-card-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--bd-heading-color, #1e293b);
+}
+
+.bd-category-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bd-category-bg, #e2e8f0);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--bd-category-text, #64748b);
+}
+
+.bd-card-description {
+  color: var(--bd-text-secondary, #64748b);
+  font-size: 14px;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bd-card-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--bd-text-secondary, #64748b);
+  margin-bottom: 12px;
+}
+
+.bd-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bd-social-links {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bd-social-link {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bd-social-bg, #f1f5f9);
+  border-radius: 50%;
+  font-size: 16px;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.bd-social-link:hover {
+  transform: scale(1.1);
+}
+
+/* ===== BUTTONS ===== */
+.bd-btn {
+  width: 100%;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--bd-border-radius, 6px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.bd-btn-primary {
+  background: var(--bd-primary-color, #3b82f6);
+  color: white;
+}
+
+.bd-btn-primary:hover {
+  background: var(--bd-primary-hover, #2563eb);
+}
+
+/* ===== STATES ===== */
+.bd-loading,
+.bd-error,
+.bd-no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--bd-text-secondary, #64748b);
+}
+
+.bd-error {
+  color: #dc2626;
+}
+
+.bd-tracking-pixel {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== DARK THEME ===== */
+.bd-theme-dark {
+  --bd-bg-color: #0f172a;
+  --bd-card-bg: #1e293b;
+  --bd-text-color: #f1f5f9;
+  --bd-heading-color: #f1f5f9;
+  --bd-text-secondary: #94a3b8;
+  --bd-border-color: #334155;
+  --bd-input-bg: #1e293b;
+  --bd-filter-bg: #1e293b;
+  --bd-filter-hover-bg: #334155;
+  --bd-category-bg: #334155;
+  --bd-category-text: #94a3b8;
+  --bd-social-bg: #334155;
+}
+
+/* ===== WESLEY CHAPEL THEME ===== */
+.bd-theme-wesley-chapel {
+  --bd-primary-color: #1e3a5f;
+  --bd-primary-hover: #152e4d;
+  --bd-featured-color: #d97706;
+  --bd-border-radius: 12px;
+}
+
+/* ===== PASCO THEME ===== */
+.bd-theme-pasco {
+  --bd-primary-color: #0f766e;
+  --bd-primary-hover: #0d6460;
+  --bd-featured-color: #ca8a04;
+  --bd-border-radius: 8px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .bd-wrapper {
+    padding: 16px;
+  }
+
+  .bd-section-title {
+    font-size: 24px;
+  }
+
+  .bd-card-title {
+    font-size: 18px;
+  }
+
+  .bd-filters {
+    gap: 6px;
+  }
+
+  .bd-filter-btn {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bd-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .bd-search,
+  .bd-filters,
+  .bd-btn {
+    display: none;
+  }
+
+  .bd-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+}

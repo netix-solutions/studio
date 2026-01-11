@@ -345,13 +345,75 @@ function generateDirectoryHTML(options: {
       color: var(--text-secondary);
     }
     
+    .cta-banner {
+      margin-top: 48px;
+      padding: 32px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 16px;
+      color: white;
+    }
+    
+    .cta-content {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    
+    .cta-text h3 {
+      margin: 8px 0 4px;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .cta-text p {
+      margin: 0;
+      opacity: 0.9;
+    }
+    
+    .cta-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background: white;
+      color: #4f46e5;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
     @media (max-width: 768px) {
       .grid {
         grid-template-columns: 1fr;
       }
-      
+
       .header h1 {
         font-size: 2rem;
+      }
+      
+      .cta-content {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .cta-button {
+        width: 100%;
+        text-align: center;
       }
     }
   </style>
@@ -397,6 +459,20 @@ function generateDirectoryHTML(options: {
     <div class="no-results" id="noResults" style="display: none;">
       <h3>No businesses found</h3>
       <p>Try adjusting your search or filter</p>
+    </div>
+    
+    <!-- CTA Banner -->
+    <div class="cta-banner">
+      <div class="cta-content">
+        <div class="cta-text">
+          <span class="cta-badge">✨ Free for a Limited Time</span>
+          <h3>Own a local business?</h3>
+          <p>Get your business listed in our community directory — it's completely free!</p>
+        </div>
+        <a href="${baseUrl}/directory-signup" target="_blank" rel="noopener" class="cta-button">
+          Add Your Business →
+        </a>
+      </div>
     </div>
   </div>
   

@@ -654,17 +654,17 @@ export const processScheduledLeadEmails = functions.pubsub
 
 /**
  * Cloud Function that triggers when a subscription is created or updated.
- * Handles directory listing subscriptions (identified by product metadata).
+ * Automatically creates a FREE directory listing for any ad subscription.
  * 
- * When a directory product subscription becomes active:
- * - Creates or reactivates the directory listing
- * - Sets tier based on product metadata
- * - Links subscription ID for tracking
+ * When an ad subscription becomes active:
+ * - Creates a directory listing (free benefit)
+ * - Uses user/business data from their account
+ * - Links to the ad subscription
  * 
  * When subscription expires/cancels:
  * - Updates listing status to 'expired'
  */
-export const onDirectorySubscriptionChange = functions.firestore
+export const onAdSubscriptionCreateDirectoryListing = functions.firestore
   .document('customers/{userId}/subscriptions/{subscriptionId}')
   .onWrite(async (change, context) => {
     const userId = context.params.userId;
@@ -673,152 +673,95 @@ export const onDirectorySubscriptionChange = functions.firestore
     // Handle deletion
     if (!change.after.exists) {
       console.log(`Subscription ${subscriptionId} deleted for user ${userId}`);
-      await deactivateDirectoryListing(userId, subscriptionId, 'deleted');
+      await deactivateDirectoryListingForSubscription(userId, subscriptionId, 'deleted');
       return null;
     }
 
     const subscription = change.after.data();
     if (!subscription) return null;
 
+    const status = subscription.status;
+
     try {
-      const db = admin.firestore();
-
-      // Get the product to check if this is a directory listing subscription
-      const productId = subscription.product || subscription.items?.[0]?.price?.product;
-      if (!productId) {
-        console.log(`No product ID found for subscription ${subscriptionId}`);
-        return null;
-      }
-
-      // Fetch product data to check metadata
-      const productDoc = await db.collection('products').doc(productId).get();
-      if (!productDoc.exists) {
-        console.log(`Product ${productId} not found`);
-        return null;
-      }
-
-      const productData = productDoc.data();
-      const metadata = productData?.metadata;
-
-      // Check if this is a directory listing product
-      if (metadata?.type !== 'directory_listing') {
-        // Not a directory listing subscription, ignore
-        return null;
-      }
-
-      const tier = metadata.tier as 'basic' | 'featured' | 'premium';
-      const status = subscription.status;
-
-      console.log(`Directory subscription ${subscriptionId} for user ${userId}: status=${status}, tier=${tier}`);
-
-      // Handle based on subscription status
+      // Create or update directory listing when subscription becomes active
       if (status === 'active' || status === 'trialing') {
-        // Create or reactivate listing
-        await createOrUpdateDirectoryListing(userId, subscriptionId, subscription, tier);
-      } else if (['canceled', 'unpaid', 'past_due', 'incomplete_expired'].includes(status)) {
-        // Deactivate listing
-        await deactivateDirectoryListing(userId, subscriptionId, status);
+        await createDirectoryListingFromSubscription(userId, subscriptionId, subscription);
+      } 
+      // Deactivate listing when subscription becomes inactive
+      else if (['canceled', 'unpaid', 'past_due', 'incomplete_expired'].includes(status)) {
+        await deactivateDirectoryListingForSubscription(userId, subscriptionId, status);
       }
 
       return null;
     } catch (error) {
-      console.error(`Error handling directory subscription ${subscriptionId}:`, error);
+      console.error(`Error handling directory listing for subscription ${subscriptionId}:`, error);
       throw error;
     }
   });
 
 /**
- * Create or update a directory listing when subscription becomes active
+ * Create or update a FREE directory listing from an ad subscription
  */
-async function createOrUpdateDirectoryListing(
+async function createDirectoryListingFromSubscription(
   userId: string,
   subscriptionId: string,
-  subscription: any,
-  tier: 'basic' | 'featured' | 'premium'
+  subscription: any
 ): Promise<void> {
   const db = admin.firestore();
 
   try {
-    // Check if there's a draft with listing data
-    const draftsSnapshot = await db
-      .collection('directory_drafts')
-      .where('contactEmail', '==', subscription.customer_email || '')
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .get();
-
-    let listingData: any = {};
-
-    if (!draftsSnapshot.empty) {
-      const draftData = draftsSnapshot.docs[0].data();
-      listingData = {
-        businessName: draftData.businessName,
-        contactEmail: draftData.contactEmail,
-        contactName: draftData.contactName,
-        phone: draftData.phone,
-        websiteUrl: draftData.websiteUrl,
-        description: draftData.description,
-        category: draftData.category,
-        logoUrl: draftData.logoUrl,
-        bannerImageUrl: draftData.bannerImageUrl,
-        address: draftData.address,
-        city: draftData.city,
-        state: draftData.state,
-        zipCode: draftData.zipCode,
-        socialLinks: draftData.socialLinks,
-      };
-    } else {
-      // Get user data for fallback
-      const userDoc = await db.collection('users').doc(userId).get();
-      const userData = userDoc.data();
-      
-      listingData = {
-        businessName: userData?.businessName || 'Business Name Needed',
-        contactEmail: userData?.email || '',
-        contactName: userData?.contactName || userData?.displayName || '',
-        phone: userData?.phone || '',
-        websiteUrl: '',
-        description: 'Please update your business description',
-        category: 'other',
-        logoUrl: '',
-      };
+    // Get user data
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      console.log(`User ${userId} not found, skipping directory listing creation`);
+      return;
     }
 
-    // Check if listing already exists for this subscription
+    const userData = userDoc.data();
+    
+    // Check if listing already exists for this user
     const existingListingsSnapshot = await db
       .collection('directory_listings')
-      .where('subscriptionId', '==', subscriptionId)
+      .where('userId', '==', userId)
       .limit(1)
       .get();
 
-    const isFeatured = tier === 'featured' || tier === 'premium';
-    const currentPeriodEnd = subscription.current_period_end;
-    const stripeCustomerId = subscription.customer || subscription.stripeCustomerId;
-
-    const listingUpdate = {
-      ...listingData,
+    const listingData = {
+      businessName: userData?.businessName || userData?.displayName || 'Business Name Needed',
+      contactEmail: userData?.email || '',
+      contactName: userData?.contactName || userData?.displayName || '',
+      phone: userData?.phone || '',
+      websiteUrl: userData?.websiteUrl || '',
+      description: userData?.businessDescription || 'Please update your business description',
+      category: userData?.businessCategory || 'other',
+      logoUrl: userData?.logoUrl || '',
+      bannerImageUrl: userData?.bannerImageUrl || '',
+      address: userData?.address || '',
+      city: userData?.city || '',
+      state: userData?.state || '',
+      zipCode: userData?.zipCode || '',
+      socialLinks: userData?.socialLinks || {},
       userId,
       subscriptionStatus: 'active',
       subscriptionId,
-      stripeCustomerId,
-      priceId: subscription.price?.id || subscription.items?.[0]?.price?.id,
-      currentPeriodEnd,
+      stripeCustomerId: subscription.customer || subscription.stripeCustomerId,
+      currentPeriodEnd: subscription.current_period_end,
       status: 'active',
-      tier,
-      isFeatured,
+      tier: 'included', // Free with ad subscription
+      isFeatured: false,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     if (!existingListingsSnapshot.empty) {
       // Update existing listing
       const listingRef = existingListingsSnapshot.docs[0].ref;
-      await listingRef.update(listingUpdate);
-      console.log(`Updated directory listing ${listingRef.id} for subscription ${subscriptionId}`);
+      await listingRef.update(listingData);
+      console.log(`Updated directory listing ${listingRef.id} for user ${userId} with subscription ${subscriptionId}`);
     } else {
       // Create new listing
       const listingRef = db.collection('directory_listings').doc();
       await listingRef.set({
-        ...listingUpdate,
+        ...listingData,
         id: listingRef.id,
         sortOrder: 0,
         analytics: {
@@ -826,26 +769,21 @@ async function createOrUpdateDirectoryListing(
           totalClicks: 0,
         },
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        createdBy: userId,
+        createdBy: 'auto_from_ad_subscription',
       });
-      console.log(`Created directory listing ${listingRef.id} for subscription ${subscriptionId}`);
-    }
-
-    // Clean up draft if it exists
-    if (!draftsSnapshot.empty) {
-      await draftsSnapshot.docs[0].ref.delete();
+      console.log(`Created FREE directory listing ${listingRef.id} for user ${userId} with ad subscription`);
     }
 
   } catch (error) {
-    console.error(`Error creating/updating directory listing for subscription ${subscriptionId}:`, error);
+    console.error(`Error creating/updating directory listing for user ${userId}:`, error);
     throw error;
   }
 }
 
 /**
- * Deactivate a directory listing when subscription expires/cancels
+ * Deactivate a directory listing when the associated subscription expires/cancels
  */
-async function deactivateDirectoryListing(
+async function deactivateDirectoryListingForSubscription(
   userId: string,
   subscriptionId: string,
   reason: string
@@ -853,13 +791,14 @@ async function deactivateDirectoryListing(
   const db = admin.firestore();
 
   try {
+    // Find listing by userId (since one user = one listing)
     const listingsSnapshot = await db
       .collection('directory_listings')
-      .where('subscriptionId', '==', subscriptionId)
+      .where('userId', '==', userId)
       .get();
 
     if (listingsSnapshot.empty) {
-      console.log(`No directory listing found for subscription ${subscriptionId}`);
+      console.log(`No directory listing found for user ${userId}`);
       return;
     }
 
@@ -871,12 +810,12 @@ async function deactivateDirectoryListing(
         subscriptionStatus: reason === 'deleted' ? 'canceled' : reason,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      console.log(`Deactivated directory listing ${listingDoc.id} (reason: ${reason})`);
+      console.log(`Deactivated directory listing ${listingDoc.id} for user ${userId} (reason: ${reason})`);
     }
 
     await batch.commit();
   } catch (error) {
-    console.error(`Error deactivating directory listing for subscription ${subscriptionId}:`, error);
+    console.error(`Error deactivating directory listing for user ${userId}:`, error);
     throw error;
   }
 }

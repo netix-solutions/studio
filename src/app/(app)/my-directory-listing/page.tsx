@@ -122,8 +122,8 @@ export default function MyDirectoryListingPage() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You don't have an active directory listing yet.{' '}
-            <a href="/directory-signup" className="underline">Purchase a listing</a>
+            You don't have a directory listing yet. Directory listings are FREE and automatically included with every ad subscription.{' '}
+            <a href="/pricing" className="underline font-medium">View ad plans</a> to get started.
           </AlertDescription>
         </Alert>
       </div>
@@ -135,8 +135,8 @@ export default function MyDirectoryListingPage() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold">My Directory Listing</h1>
-          <p className="text-muted-foreground">Manage your business information</p>
+          <h1 className="text-2xl font-bold">My Business Directory Listing</h1>
+          <p className="text-muted-foreground">Free listing included with your ad subscription</p>
         </div>
         <Button onClick={handleManageSubscription}>
           <CreditCard className="h-4 w-4 mr-2" />
@@ -156,8 +156,8 @@ export default function MyDirectoryListingPage() {
                 </Badge>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Plan</div>
-                <Badge>{listing.tier}</Badge>
+                <div className="text-sm text-muted-foreground">Type</div>
+                <Badge className="bg-blue-100 text-blue-700">Free with Ad</Badge>
               </div>
             </div>
             <div className="text-right">

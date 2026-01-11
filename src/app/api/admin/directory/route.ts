@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { type LiveAd, type DirectoryListing, type DirectoryStatus } from '@/lib/types';
+import { type LiveAd, type LiveAdDirectoryListing, type DirectoryStatus } from '@/lib/types';
 
 /**
  * GET /api/admin/directory
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const showInDirectory = request.nextUrl.searchParams.get('showInDirectory');
 
     // Query live_ads collection
-    let query = db.collection('live_ads') as FirebaseFirestore.Query;
+    let query: FirebaseFirestore.Query = db.collection('live_ads');
 
     // Filter by showInDirectory
     if (showInDirectory === 'true') {
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     let listings: Array<{
       liveAdId: string;
       liveAd: Partial<LiveAd>;
-      directoryListing: DirectoryListing | null;
+      directoryListing: LiveAdDirectoryListing | null;
     }> = [];
 
     snapshot.forEach((doc) => {
@@ -426,7 +426,7 @@ export async function POST(request: NextRequest) {
     const existingAd = liveAdDoc.data() as LiveAd;
 
     // Create the directory listing
-    const newListing: DirectoryListing = {
+    const newListing: LiveAdDirectoryListing = {
       businessName: directoryListing?.businessName || existingAd.customerName || existingAd.name || 'Business',
       tagline: directoryListing?.tagline || '',
       description: directoryListing?.description || '',

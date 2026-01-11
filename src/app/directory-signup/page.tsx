@@ -1,401 +1,563 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useFirebase } from '@/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { DirectoryPricingTiers } from '@/components/directory/DirectoryPricingTiers';
-import { DirectoryListingForm } from '@/components/directory/DirectoryListingForm';
-import { DirectoryListingPreview } from '@/components/directory/DirectoryListingPreview';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Building2,
+  Phone,
+  Mail,
+  Globe,
+  MapPin,
+  User,
+  CheckCircle,
+  Sparkles,
+  ArrowRight,
+  Gift,
+  Facebook,
+  Instagram,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createCheckout } from '@/lib/stripe';
-import { Loader2, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
-import type { BusinessCategory, DirectoryDraft } from '@/lib/types';
+import {
+  type BusinessCategory,
+  BUSINESS_CATEGORIES,
+  BUSINESS_CATEGORY_LABELS,
+  BUSINESS_CATEGORY_ICONS,
+} from '@/lib/types';
 
-const STEPS = [
-  { id: 1, name: 'Choose Plan', description: 'Select your listing tier' },
-  { id: 2, name: 'Business Info', description: 'Tell us about your business' },
-  { id: 3, name: 'Review & Purchase', description: 'Preview and complete payment' },
-];
+interface FormData {
+  // Contact
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  
+  // Business
+  businessName: string;
+  tagline: string;
+  description: string;
+  category: BusinessCategory | '';
+  websiteUrl: string;
+  
+  // Address
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  
+  // Social
+  facebookUrl: string;
+  instagramUrl: string;
+}
 
 export default function DirectorySignupPage() {
-  const router = useRouter();
-  const { auth, firestore, storage, user } = useFirebase();
   const { toast } = useToast();
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedTier, setSelectedTier] = useState<'basic' | 'featured' | 'premium'>('basic');
-  const [selectedPriceId, setSelectedPriceId] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [listingData, setListingData] = useState<Partial<DirectoryDraft>>({
-    businessName: '',
-    contactEmail: '',
-    contactName: '',
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showSocial, setShowSocial] = useState(false);
+  
+  const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
     phone: '',
-    websiteUrl: '',
+    businessName: '',
+    tagline: '',
     description: '',
-    category: 'other' as BusinessCategory,
-    logoUrl: '',
+    category: '',
+    websiteUrl: '',
+    address: '',
+    city: '',
+    state: 'FL',
+    zipCode: '',
+    facebookUrl: '',
+    instagramUrl: '',
   });
 
-  // Check if user is already logged in
-  useEffect(() => {
-    if (user) {
-      // Pre-fill with user data if available
-      // This will be fetched from Firestore in a real implementation
-    }
-  }, [user]);
+  // UTM tracking
+  const [utmParams, setUtmParams] = useState({
+    utmSource: '',
+    utmMedium: '',
+    utmCampaign: '',
+  });
 
-  const handleTierSelect = (tierId: string, tier: 'basic' | 'featured' | 'premium', priceId?: string) => {
-    setSelectedTier(tier);
-    if (priceId) {
-      setSelectedPriceId(priceId);
-    }
+  useEffect(() => {
+    setUtmParams({
+      utmSource: searchParams.get('utm_source') || '',
+      utmMedium: searchParams.get('utm_medium') || '',
+      utmCampaign: searchParams.get('utm_campaign') || '',
+    });
+  }, [searchParams]);
+
+  const updateField = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setSubmitError(null);
   };
 
-  const handleNext = () => {
-    if (currentStep === 1 && !selectedPriceId) {
-      toast({
-        title: 'Select a plan',
-        description: 'Please select a pricing tier to continue',
-        variant: 'destructive',
-      });
+  const categoryOptions = Object.entries(BUSINESS_CATEGORIES).map(([, value]) => ({
+    value,
+    label: BUSINESS_CATEGORY_LABELS[value as BusinessCategory],
+    icon: BUSINESS_CATEGORY_ICONS[value as BusinessCategory],
+  }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!formData.businessName.trim()) {
+      setSubmitError('Business name is required');
+      return;
+    }
+    if (!formData.email.trim()) {
+      setSubmitError('Email address is required');
+      return;
+    }
+    if (!formData.category) {
+      setSubmitError('Please select a business category');
       return;
     }
 
-    if (currentStep === 2) {
-      // Validate required fields
-      if (!listingData.businessName || !listingData.contactEmail || !listingData.phone) {
-        toast({
-          title: 'Missing information',
-          description: 'Please fill in all required fields',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
-  };
-
-  const handleBack = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-
-  const handlePurchase = async () => {
-    if (!auth || !firestore || !selectedPriceId) return;
-
-    setIsProcessing(true);
-    setError(null);
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
-      // Step 1: Create or sign in user
-      let userId = user?.uid;
-      
-      if (!user) {
-        // Create temporary password for new user
-        const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-        
-        try {
-          const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            listingData.contactEmail!,
-            tempPassword
-          );
-          userId = userCredential.user.uid;
-
-          // Send password reset email so user can set their own password
-          // This will be handled by Firebase automatically
-          
-        } catch (authError: any) {
-          if (authError.code === 'auth/email-already-in-use') {
-            // User exists, ask them to sign in
-            toast({
-              title: 'Account exists',
-              description: 'An account with this email already exists. Please sign in.',
-              variant: 'destructive',
-            });
-            setError('Please sign in with your existing account to continue');
-            return;
-          }
-          throw authError;
-        }
-      }
-
-      if (!userId) {
-        throw new Error('Failed to create or get user ID');
-      }
-
-      // Step 2: Save draft listing data
-      const draftRef = collection(firestore, 'directory_drafts');
-      await addDoc(draftRef, {
-        ...listingData,
-        userId,
-        selectedTier,
-        selectedPriceId,
-        createdAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+      const response = await fetch('/api/directory/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          ...utmParams,
+        }),
       });
 
-      // Step 3: Create user document if new user
-      if (!user) {
-        const userRef = doc(firestore, 'users', userId);
-        await setDoc(userRef, {
-          email: listingData.contactEmail,
-          displayName: listingData.contactName,
-          businessName: listingData.businessName,
-          phone: listingData.phone,
-          createdAt: serverTimestamp(),
-        });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create listing');
       }
 
-      // Step 4: Create Stripe checkout session
-      const successUrl = `${window.location.origin}/directory-signup/success`;
-      const cancelUrl = `${window.location.origin}/directory-signup?step=3`;
-
-      await createCheckout(
-        firestore,
-        userId,
-        listingData.contactEmail!,
-        selectedPriceId,
-        successUrl
-      );
-
-      // createCheckout redirects to Stripe, so if we get here something went wrong
-      
-    } catch (err: any) {
-      console.error('Error initiating purchase:', err);
-      setError(err.message || 'Failed to initiate purchase. Please try again.');
+      setIsSuccess(true);
       toast({
-        title: 'Purchase failed',
-        description: err.message || 'Failed to initiate purchase. Please try again.',
+        title: '🎉 Success!',
+        description: 'Your free business listing has been created!',
+      });
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong';
+      setSubmitError(message);
+      toast({
+        title: 'Error',
+        description: message,
         variant: 'destructive',
       });
     } finally {
-      setIsProcessing(false);
+      setIsSubmitting(false);
     }
   };
 
-  const progress = (currentStep / STEPS.length) * 100;
+  // Success state
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 py-12 px-4">
+        <div className="max-w-lg mx-auto">
+          <Card className="border-blue-200 shadow-xl">
+            <CardContent className="pt-8 pb-8 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-blue-600" />
+              </div>
+              <h1 className="text-2xl font-bold mb-2">Submission Received!</h1>
+              <p className="text-muted-foreground mb-6">
+                Your listing has been submitted for review. Our team will review it 
+                and you'll receive an email once it's approved (usually within 1-2 business days).
+              </p>
+              
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-semibold text-sm mb-2">What happens next?</h3>
+                <ul className="text-sm text-muted-foreground space-y-2">
+                  <li>✓ We'll review your listing for accuracy</li>
+                  <li>✓ Once approved, it goes live in our directory</li>
+                  <li>✓ You'll receive a confirmation email</li>
+                </ul>
+              </div>
+              
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  Want More Visibility?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Upgrade to an advertising plan to get your business featured on our community websites 
+                  and reach thousands of local residents every month.
+                </p>
+                <Button asChild size="sm">
+                  <a href="/pricing">
+                    View Ad Plans <ArrowRight className="w-4 h-4 ml-2" />
+                  </a>
+                </Button>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                Questions? Contact us at support@community-websites.com
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 py-8 px-4">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">List Your Business</h1>
-          <p className="text-lg text-muted-foreground">
-            Get discovered by thousands of local customers
+          <Badge className="bg-green-100 text-green-700 border-green-200 mb-4 text-sm px-4 py-1">
+            <Gift className="w-4 h-4 mr-2 inline" />
+            Limited Time: 100% Free!
+          </Badge>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">
+            Get Your Business Listed
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-md mx-auto">
+            Join our community business directory and get discovered by local residents.
           </p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            {STEPS.map((step, index) => (
-              <div
-                key={step.id}
-                className="flex items-center flex-1"
-              >
-                <div className="flex items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      currentStep >= step.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-slate-200 text-slate-500'
-                    }`}
-                  >
-                    {currentStep > step.id ? (
-                      <CheckCircle className="h-5 w-5" />
-                    ) : (
-                      step.id
-                    )}
-                  </div>
-                  <div className="ml-3 hidden sm:block">
-                    <div className="text-sm font-medium">{step.name}</div>
-                    <div className="text-xs text-muted-foreground">{step.description}</div>
-                  </div>
-                </div>
-                {index < STEPS.length - 1 && (
-                  <div className="flex-1 h-0.5 bg-slate-200 mx-4">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: currentStep > step.id ? '100%' : '0%' }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <Progress value={progress} className="h-2" />
+        {/* Benefits */}
+        <div className="grid sm:grid-cols-3 gap-4 mb-8">
+          {[
+            { icon: CheckCircle, text: 'Instant visibility' },
+            { icon: MapPin, text: 'Reach local customers' },
+            { icon: Globe, text: 'Link to your website' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-2 bg-white/50 dark:bg-black/20 rounded-lg p-3">
+              <item.icon className="w-5 h-5 text-green-600 shrink-0" />
+              <span className="text-sm font-medium">{item.text}</span>
+            </div>
+          ))}
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Step Content */}
-        <div className="mb-8">
-          {/* Step 1: Choose Plan */}
-          {currentStep === 1 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6 text-center">Choose Your Listing Tier</h2>
-              <DirectoryPricingTiers
-                selectedTier={selectedTier}
-                onSelectTier={(tierId, tier, priceId) => {
-                  handleTierSelect(tierId, tier, priceId);
-                  if (priceId) {
-                    // Auto-advance after selection
-                    setTimeout(() => handleNext(), 300);
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {/* Step 2: Business Info */}
-          {currentStep === 2 && (
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Business Information</CardTitle>
-                    <CardDescription>
-                      Tell customers about your business
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <DirectoryListingForm
-                      listing={listingData}
-                      onChange={(updated) => setListingData(updated)}
-                      disabled={isProcessing}
-                      showAdvancedOptions={true}
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            {/* Contact Info */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <User className="w-5 h-5" />
+                  Your Contact Info
+                </CardTitle>
+                <CardDescription>
+                  We'll use this to contact you about your listing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => updateField('firstName', e.target.value)}
+                      placeholder="John"
                     />
-                  </CardContent>
-                </Card>
-              </div>
-              <div>
-                <div className="sticky top-4">
-                  <h3 className="text-lg font-semibold mb-4">Preview</h3>
-                  <DirectoryListingPreview listing={listingData} tier={selectedTier} />
-                  <p className="text-xs text-muted-foreground mt-4 text-center">
-                    This is how your listing will appear in the directory
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => updateField('lastName', e.target.value)}
+                      placeholder="Smith"
+                    />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => updateField('email', e.target.value)}
+                        placeholder="you@example.com"
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => updateField('phone', e.target.value)}
+                        placeholder="(555) 123-4567"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Business Info */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Building2 className="w-5 h-5" />
+                  Business Information
+                </CardTitle>
+                <CardDescription>
+                  Tell us about your business
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="businessName">Business Name *</Label>
+                  <Input
+                    id="businessName"
+                    value={formData.businessName}
+                    onChange={(e) => updateField('businessName', e.target.value)}
+                    placeholder="Your Business Name"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Business Category *</Label>
+                  <Select
+                    value={formData.category || undefined}
+                    onValueChange={(value) => updateField('category', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <span className="flex items-center gap-2">
+                            <span>{option.icon}</span>
+                            <span>{option.label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tagline">Tagline</Label>
+                  <Input
+                    id="tagline"
+                    value={formData.tagline}
+                    onChange={(e) => updateField('tagline', e.target.value)}
+                    placeholder="A short catchy phrase about your business"
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.tagline.length}/100 characters
                   </p>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* Step 3: Review & Purchase */}
-          {currentStep === 3 && (
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Review Your Listing</CardTitle>
-                    <CardDescription>
-                      Make sure everything looks good before purchasing
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div>
-                      <h4 className="font-semibold mb-2">Selected Plan</h4>
-                      <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                        <div>
-                          <div className="font-semibold capitalize">{selectedTier} Listing</div>
-                          <div className="text-sm text-muted-foreground">Billed monthly</div>
-                        </div>
-                        <div className="text-2xl font-bold">
-                          ${selectedTier === 'basic' ? '49' : selectedTier === 'featured' ? '99' : '149'}/mo
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold mb-2">Business Information</h4>
-                      <dl className="space-y-2 text-sm">
-                        <div>
-                          <dt className="text-muted-foreground">Business Name</dt>
-                          <dd className="font-medium">{listingData.businessName}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">Contact Email</dt>
-                          <dd className="font-medium">{listingData.contactEmail}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">Phone</dt>
-                          <dd className="font-medium">{listingData.phone}</dd>
-                        </div>
-                        {listingData.websiteUrl && (
-                          <div>
-                            <dt className="text-muted-foreground">Website</dt>
-                            <dd className="font-medium truncate">{listingData.websiteUrl}</dd>
-                          </div>
-                        )}
-                      </dl>
-                    </div>
-
-                    <Alert>
-                      <AlertDescription>
-                        After payment, you'll receive an email with login credentials to manage your listing.
-                        Your subscription will renew automatically each month.
-                      </AlertDescription>
-                    </Alert>
-                  </CardContent>
-                </Card>
-              </div>
-              <div>
-                <div className="sticky top-4">
-                  <h3 className="text-lg font-semibold mb-4">Final Preview</h3>
-                  <DirectoryListingPreview listing={listingData} tier={selectedTier} />
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => updateField('description', e.target.value)}
+                    placeholder="Tell visitors about your business, what you offer, and what makes you special..."
+                    maxLength={500}
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.description.length}/500 characters
+                  </p>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={currentStep === 1 || isProcessing}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="websiteUrl">Website URL</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="websiteUrl"
+                      value={formData.websiteUrl}
+                      onChange={(e) => updateField('websiteUrl', e.target.value)}
+                      placeholder="https://www.yourbusiness.com"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {currentStep < 3 ? (
-            <Button onClick={handleNext} disabled={isProcessing}>
-              Next
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={handlePurchase} disabled={isProcessing} size="lg">
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Complete Purchase
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
+            {/* Location */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MapPin className="w-5 h-5" />
+                  Location (Optional)
+                </CardTitle>
+                <CardDescription>
+                  Help customers find you
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address">Street Address</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => updateField('address', e.target.value)}
+                    placeholder="123 Main Street"
+                  />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="space-y-2 col-span-2 sm:col-span-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => updateField('city', e.target.value)}
+                      placeholder="Wesley Chapel"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => updateField('state', e.target.value)}
+                      placeholder="FL"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">ZIP</Label>
+                    <Input
+                      id="zipCode"
+                      value={formData.zipCode}
+                      onChange={(e) => updateField('zipCode', e.target.value)}
+                      placeholder="33544"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Social (Optional - Expandable) */}
+            <Card>
+              <CardHeader 
+                className="pb-4 cursor-pointer"
+                onClick={() => setShowSocial(!showSocial)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Instagram className="w-5 h-5" />
+                      Social Media (Optional)
+                    </CardTitle>
+                    <CardDescription>
+                      Connect your social profiles
+                    </CardDescription>
+                  </div>
+                  <Button type="button" variant="ghost" size="sm">
+                    {showSocial ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
+              </CardHeader>
+              {showSocial && (
+                <CardContent className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="facebookUrl" className="flex items-center gap-2">
+                        <Facebook className="w-4 h-4 text-blue-600" />
+                        Facebook
+                      </Label>
+                      <Input
+                        id="facebookUrl"
+                        value={formData.facebookUrl}
+                        onChange={(e) => updateField('facebookUrl', e.target.value)}
+                        placeholder="https://facebook.com/yourbusiness"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="instagramUrl" className="flex items-center gap-2">
+                        <Instagram className="w-4 h-4 text-pink-600" />
+                        Instagram
+                      </Label>
+                      <Input
+                        id="instagramUrl"
+                        value={formData.instagramUrl}
+                        onChange={(e) => updateField('instagramUrl', e.target.value)}
+                        placeholder="https://instagram.com/yourbusiness"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
               )}
-            </Button>
-          )}
-        </div>
+            </Card>
+
+            {/* Error Display */}
+            {submitError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Submit */}
+            <div className="space-y-4">
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full text-lg py-6"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Creating Your Listing...
+                  </>
+                ) : (
+                  <>
+                    Create My Free Listing
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                By signing up, you agree to our{' '}
+                <a href="/terms" className="underline">Terms of Service</a>
+                {' '}and{' '}
+                <a href="/privacy" className="underline">Privacy Policy</a>.
+              </p>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );
