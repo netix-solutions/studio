@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { wrapEmailContent, emailStyles, createEmailSignature } from '@/lib/email-utils';
+import { sendEmailWithSendGrid, isSendGridConfigured, isValidEmail } from '@/lib/sendgrid';
 import { FieldValue } from 'firebase-admin/firestore';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://community-websites.com';
 
 export async function POST(request: NextRequest) {
     try {
+        // Check SendGrid configuration
+        if (!isSendGridConfigured()) {
+            return NextResponse.json(
+                { error: 'Email service is not configured. Please set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL environment variables.' },
+                { status: 500 }
+            );
+        }
+
         const body = await request.json();
         const { email, designUrl, userName, businessName } = body;
 
-        if (!email || !email.includes('@')) {
+        if (!email || !isValidEmail(email)) {
             return NextResponse.json(
                 { error: 'Valid email is required' },
                 { status: 400 }
@@ -118,30 +125,37 @@ ${createEmailSignature()}
         // Wrap in the professional email template
         const wrappedHtml = wrapEmailContent(htmlContent, { headerButton: 'my-account' });
 
-        // Send email via Firestore mail collection (Firebase Extension)
-        const mailRef = db.collection('mail');
-        const mailDoc = await mailRef.add({
-            to: [email],
-            message: {
-                subject,
-                html: wrappedHtml,
-            },
+        // Send email via SendGrid
+        const emailResult = await sendEmailWithSendGrid({
+            to: email,
+            subject,
+            html: wrappedHtml,
+            categories: ['desktop-link', 'transactional'],
         });
+
+        if (!emailResult.success) {
+            return NextResponse.json(
+                { error: emailResult.error || 'Failed to send email' },
+                { status: 500 }
+            );
+        }
 
         // Log the email in sent_emails collection
         await db.collection('sent_emails').add({
-            mailDocId: mailDoc.id,
+            messageId: emailResult.messageId || null,
             recipientEmail: email,
             templateId: 'desktop_link',
             triggerType: 'user_request',
             subject,
             designUrl,
             sentAt: FieldValue.serverTimestamp(),
+            provider: 'sendgrid',
         });
 
         return NextResponse.json({
             success: true,
             message: `Desktop link email sent to ${email}`,
+            messageId: emailResult.messageId,
         });
     } catch (error: any) {
         console.error('Error sending desktop link email:', error);

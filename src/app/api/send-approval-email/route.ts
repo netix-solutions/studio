@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { generateEmailActionUrls } from '@/lib/approval-tokens';
 import { wrapEmailContent } from '@/lib/email-utils';
+import { sendEmailWithSendGrid, isSendGridConfigured } from '@/lib/sendgrid';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
     try {
+        // Check SendGrid configuration
+        if (!isSendGridConfigured()) {
+            return NextResponse.json(
+                { error: 'Email service is not configured. Please set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL environment variables.' },
+                { status: 500 }
+            );
+        }
+
         const body = await request.json();
         const { adId, userId } = body;
 
@@ -135,19 +144,24 @@ export async function POST(request: NextRequest) {
         // Calculate auto-approval deadline (48 hours from now)
         const autoApprovalDeadline = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-        // Send email via Firestore mail collection (Firebase Extension)
-        const mailRef = db.collection('mail');
-        const mailDoc = await mailRef.add({
-            to: [recipientEmail],
-            message: {
-                subject,
-                html: wrappedHtml,
-            },
+        // Send email via SendGrid
+        const emailResult = await sendEmailWithSendGrid({
+            to: recipientEmail,
+            subject,
+            html: wrappedHtml,
+            categories: ['ad-approval', 'transactional'],
         });
+
+        if (!emailResult.success) {
+            return NextResponse.json(
+                { error: emailResult.error || 'Failed to send approval email' },
+                { status: 500 }
+            );
+        }
 
         // Log the email in sent_emails collection
         await db.collection('sent_emails').add({
-            mailDocId: mailDoc.id,
+            messageId: emailResult.messageId || null,
             recipientEmail,
             recipientId: userId,
             templateId: 'ad_proof_approval',
@@ -156,6 +170,7 @@ export async function POST(request: NextRequest) {
             html: wrappedHtml,
             sentAt: FieldValue.serverTimestamp(),
             adId,
+            provider: 'sendgrid',
         });
 
         // Update the advertisement status
@@ -173,6 +188,7 @@ export async function POST(request: NextRequest) {
             success: true,
             message: `Approval email sent to ${recipientEmail}`,
             autoApprovalAt: autoApprovalDeadline.toISOString(),
+            messageId: emailResult.messageId,
         });
     } catch (error: any) {
         console.error('Error sending approval email:', error);
