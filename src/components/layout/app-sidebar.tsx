@@ -34,7 +34,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   DollarSign,
-  Layers,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -55,7 +54,6 @@ const adminMenuItems: NavItem[] = [
   { href: '/manual-entry', label: 'Manual Entry', icon: UserPlus },
   { href: '/ad-server', label: 'Ad Server', icon: Radio },
   { href: '/directory', label: 'Directory', icon: FolderOpen },
-  { href: '/wix-directory', label: 'Wix Directory', icon: Layers },
   { href: '/embed-codes', label: 'Embed Codes', icon: Code },
 ];
 

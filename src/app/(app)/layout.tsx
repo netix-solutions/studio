@@ -16,7 +16,7 @@ import { usePageVisitTracking } from '@/hooks/use-page-visit-tracking';
 import { useLoginTracking } from '@/hooks/use-login-tracking';
 
 // Admin routes - includes main pages and legacy routes for backwards compatibility
-const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard', '/users', '/automated-emails', '/import', '/legal', '/pipeline', '/ad-server', '/directory', '/wix-directory', '/customer-workflow', '/manual-entry', '/discounts', '/reconciliation', '/admin-notifications', '/financials', '/embed-codes'];
+const ADMIN_ROUTES = ['/leads', '/subscriptions', '/advertisements', '/dashboard', '/users', '/automated-emails', '/import', '/legal', '/pipeline', '/ad-server', '/directory', '/directory-listings', '/manual-entry', '/reconciliation', '/admin-notifications', '/financials', '/embed-codes'];
 const USER_DEFAULT_ROUTE = '/account';
 const ADMIN_DEFAULT_ROUTE = '/leads';
 
