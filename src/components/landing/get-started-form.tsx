@@ -46,7 +46,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   phone: z
     .string()
-    .min(10, { message: 'Please enter a valid phone number.' }),
+    .min(10, { message: 'Please enter a valid cell phone number.' }),
   siteCoverage: z.array(z.string()).refine((value) => value && value.length > 0, {
     message: 'Please select at least one site.',
   }),
@@ -381,7 +381,7 @@ export function GetStartedForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-gray-700 font-medium text-sm md:text-base">
-                Phone Number
+                Cell Phone Number
               </FormLabel>
               <FormControl>
                 <Input

@@ -1624,3 +1624,176 @@ export function getSubscriptionDisplayInfo(subscription: Subscription): {
 
   return { planName, priceDisplay, renewalDate };
 }
+
+// ============================================================================
+// DIRECTORY LISTING TYPES (NEW - Paid Business Directory System)
+// ============================================================================
+
+/**
+ * Directory listing tiers
+ */
+export const DIRECTORY_TIERS = {
+  BASIC: 'basic',
+  FEATURED: 'featured',
+  PREMIUM: 'premium',
+  LEGACY: 'legacy',
+} as const;
+
+export type DirectoryTier = typeof DIRECTORY_TIERS[keyof typeof DIRECTORY_TIERS];
+
+export const DIRECTORY_TIER_LABELS: Record<DirectoryTier, string> = {
+  basic: 'Basic Listing',
+  featured: 'Featured Listing',
+  premium: 'Premium Listing',
+  legacy: 'Legacy (Free)',
+};
+
+export const DIRECTORY_TIER_COLORS: Record<DirectoryTier, { bg: string; text: string }> = {
+  basic: { bg: 'bg-slate-100', text: 'text-slate-700' },
+  featured: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  premium: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  legacy: { bg: 'bg-gray-100', text: 'text-gray-600' },
+};
+
+/**
+ * Directory listing subscription status
+ */
+export const DIRECTORY_SUBSCRIPTION_STATUSES = {
+  ACTIVE: 'active',
+  EXPIRED: 'expired',
+  CANCELED: 'canceled',
+  LEGACY: 'legacy',
+} as const;
+
+export type DirectorySubscriptionStatus = typeof DIRECTORY_SUBSCRIPTION_STATUSES[keyof typeof DIRECTORY_SUBSCRIPTION_STATUSES];
+
+/**
+ * Directory listing status
+ */
+export const DIRECTORY_LISTING_STATUSES = {
+  ACTIVE: 'active',
+  PAUSED: 'paused',
+  EXPIRED: 'expired',
+} as const;
+
+export type DirectoryListingStatus = typeof DIRECTORY_LISTING_STATUSES[keyof typeof DIRECTORY_LISTING_STATUSES];
+
+/**
+ * Directory listing interface
+ * Stored in /directory_listings/{listingId}
+ */
+export interface DirectoryListing {
+  id: string;
+
+  // Business Information
+  businessName: string;
+  contactEmail: string;
+  contactName: string;
+  phone: string;
+  websiteUrl: string;
+  description: string;
+  category: BusinessCategory;
+  logoUrl: string;
+  bannerImageUrl?: string;
+  
+  // Address (optional)
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  
+  // Social Links (optional)
+  socialLinks?: {
+    facebookUrl?: string;
+    instagramUrl?: string;
+    linkedinUrl?: string;
+    twitterUrl?: string;
+    youtubeUrl?: string;
+    tiktokUrl?: string;
+  };
+
+  // User & Subscription
+  userId: string;
+  subscriptionStatus: DirectorySubscriptionStatus;
+  subscriptionId?: string;
+  stripeCustomerId?: string;
+  priceId?: string;
+  currentPeriodEnd?: any; // Firestore Timestamp
+
+  // Listing Status & Tier
+  status: DirectoryListingStatus;
+  tier: DirectoryTier;
+  isFeatured: boolean;
+  sortOrder?: number;
+
+  // Analytics (summary)
+  analytics?: {
+    totalViews: number;
+    totalClicks: number;
+    lastViewed?: any; // Firestore Timestamp
+  };
+
+  // Metadata
+  createdAt: any; // Firestore Timestamp
+  updatedAt?: any;
+  createdBy: string; // userId or 'self-service'
+}
+
+/**
+ * Directory listing analytics (daily breakdown)
+ * Stored in /directory_listings/{listingId}/analytics/{date}
+ */
+export interface DirectoryListingAnalytics {
+  date: string; // YYYY-MM-DD
+  views: number;
+  clicks: number;
+  timestamp: any; // Firestore Timestamp
+}
+
+/**
+ * Check if a directory listing is visible (active status)
+ */
+export function isDirectoryListingActive(listing: DirectoryListing): boolean {
+  return listing.status === 'active' 
+    && (listing.subscriptionStatus === 'active' || listing.subscriptionStatus === 'legacy');
+}
+
+/**
+ * Get directory listing display tier name
+ */
+export function getDirectoryTierDisplay(tier: DirectoryTier): string {
+  return DIRECTORY_TIER_LABELS[tier] || 'Unknown';
+}
+
+/**
+ * Draft listing data (stored temporarily before checkout)
+ * Stored in /directory_drafts/{draftId}
+ */
+export interface DirectoryDraft {
+  id: string;
+  businessName: string;
+  contactEmail: string;
+  contactName: string;
+  phone: string;
+  websiteUrl: string;
+  description: string;
+  category: BusinessCategory;
+  logoUrl: string;
+  bannerImageUrl?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  socialLinks?: {
+    facebookUrl?: string;
+    instagramUrl?: string;
+    linkedinUrl?: string;
+    twitterUrl?: string;
+    youtubeUrl?: string;
+    tiktokUrl?: string;
+  };
+  selectedTier: DirectoryTier;
+  selectedPriceId: string;
+  createdAt: any; // Firestore Timestamp
+  expiresAt: any; // Firestore Timestamp (30 min expiry)
+}

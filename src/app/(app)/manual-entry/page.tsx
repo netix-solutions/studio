@@ -364,7 +364,7 @@ export default function ManualEntryPage() {
               <div className="space-y-2">
                 <Label htmlFor="phone">
                   <Phone className="h-4 w-4 inline mr-1" />
-                  Phone Number
+                  Cell Phone Number
                 </Label>
                 <Input
                   id="phone"

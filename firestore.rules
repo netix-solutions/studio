@@ -191,5 +191,59 @@ service cloud.firestore {
     match /scheduledLeadEmails/{emailId} {
       allow read, list, create, update, delete: if isAdmin();
     }
+
+    // DIRECTORY LISTINGS (New - Paid Business Directory)
+    // Public can read active listings. Owners can read/update their own. Admins can do everything.
+    match /directory_listings/{listingId} {
+      // Public read for active listings only
+      allow read: if resource.data.status == 'active';
+      
+      // Admins can do everything
+      allow read, write, list: if isAdmin();
+      
+      // Users can read their own listings (any status)
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Users can update only specific fields of their own listing
+      allow update: if isSignedIn() 
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['businessName', 'description', 'phone', 'websiteUrl', 
+                                'logoUrl', 'bannerImageUrl', 'socialLinks', 'address', 
+                                'city', 'state', 'zipCode', 'updatedAt']);
+      
+      // Create/delete only via Cloud Functions (subscription trigger) or admin
+      allow create, delete: if isAdmin();
+      
+      // Analytics subcollection
+      match /analytics/{date} {
+        // Users can read their own analytics, admins can read all
+        allow read: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/directory_listings/$(listingId)).data.userId == request.auth.uid);
+        // Only Cloud Functions can write analytics
+        allow write: if false;
+      }
+    }
+
+    // DIRECTORY DRAFTS (Temporary storage before checkout)
+    // Anyone can create drafts (for anonymous signup flow)
+    // Only the creator or admin can read/update their drafts
+    match /directory_drafts/{draftId} {
+      allow create: if true;
+      allow read, update: if isSignedIn() && resource.data.contactEmail == request.auth.token.email;
+      allow delete: if isAdmin();
+      allow list: if isAdmin();
+    }
+
+    // DIRECTORY PRODUCTS (Stripe products synced for directory listings)
+    // Public read access for pricing page
+    match /products/{productId} {
+      allow read, list: if true;
+      allow write: if false;
+
+      match /prices/{priceId} {
+        allow read, list: if true;
+        allow write: if false;
+      }
+    }
   }
 }
