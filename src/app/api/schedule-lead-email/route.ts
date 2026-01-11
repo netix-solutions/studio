@@ -158,6 +158,7 @@ export async function GET(request: NextRequest) {
     try {
       decodedToken = await auth.verifyIdToken(token);
     } catch (error) {
+      console.error('Token verification error:', error);
       return NextResponse.json(
         { error: 'Unauthorized: Invalid token' },
         { status: 401 }
@@ -190,13 +191,17 @@ export async function GET(request: NextRequest) {
       .orderBy('scheduledFor', 'asc')
       .get();
 
-    const scheduledEmails = scheduledEmailsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      scheduledFor: doc.data().scheduledFor?.toDate?.()?.toISOString() || doc.data().scheduledFor,
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-      sentAt: doc.data().sentAt?.toDate?.()?.toISOString() || doc.data().sentAt,
-    }));
+    const scheduledEmails = scheduledEmailsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        scheduledFor: data.scheduledFor?.toDate?.()?.toISOString() || data.scheduledFor,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        sentAt: data.sentAt?.toDate?.()?.toISOString() || data.sentAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+      };
+    });
 
     return NextResponse.json({
       success: true,

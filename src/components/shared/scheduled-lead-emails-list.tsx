@@ -44,7 +44,12 @@ export function ScheduledLeadEmailsList({ leadId }: ScheduledLeadEmailsListProps
   const { auth } = useFirebase();
 
   const fetchScheduledEmails = async (showLoading = true) => {
-    if (!auth?.currentUser) return;
+    if (!auth?.currentUser) {
+      console.log('No authenticated user, skipping fetch');
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
 
     if (showLoading) {
       setLoading(true);
@@ -61,18 +66,22 @@ export function ScheduledLeadEmailsList({ leadId }: ScheduledLeadEmailsListProps
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch scheduled emails');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Failed to fetch scheduled emails (${response.status})`);
       }
 
       const data = await response.json();
       setScheduledEmails(data.scheduledEmails || []);
     } catch (error: any) {
       console.error('Error fetching scheduled emails:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to load scheduled emails',
-        variant: 'destructive',
-      });
+      // Only show toast for non-auth errors
+      if (error.message && !error.message.includes('401') && !error.message.includes('403')) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to load scheduled emails',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -80,8 +89,13 @@ export function ScheduledLeadEmailsList({ leadId }: ScheduledLeadEmailsListProps
   };
 
   useEffect(() => {
-    fetchScheduledEmails();
-  }, [leadId, auth]);
+    // Only fetch if we have auth and a leadId
+    if (auth?.currentUser && leadId) {
+      fetchScheduledEmails();
+    } else {
+      setLoading(false);
+    }
+  }, [leadId, auth?.currentUser]);
 
   const handleCancelEmail = async (emailId: string) => {
     if (!auth?.currentUser) return;

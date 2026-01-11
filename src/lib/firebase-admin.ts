@@ -81,4 +81,15 @@ export function getAdminAuth(): Auth {
   return adminAuth;
 }
 
+/**
+ * Initialize and get both Admin Auth and Firestore
+ * Convenience function for API routes
+ */
+export function initAdmin(): { auth: Auth; db: Firestore } {
+  if (!adminAuth || !adminFirestore) {
+    initializeAdminApp();
+  }
+  return { auth: adminAuth, db: adminFirestore };
+}
+
 export { adminApp, adminFirestore, adminAuth };
