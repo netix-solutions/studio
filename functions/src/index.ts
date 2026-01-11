@@ -301,3 +301,353 @@ async function cancelAdsForCustomer(
     throw error;
   }
 }
+
+/**
+ * Cloud Function that triggers when a subscription is created.
+ * This marks the lead as converted to a customer.
+ */
+export const onSubscriptionCreated = functions.firestore
+  .document('customers/{customerId}/subscriptions/{subscriptionId}')
+  .onCreate(async (snap, context) => {
+    const customerId = context.params.customerId;
+    const subscriptionData = snap.data();
+
+    console.log(`New subscription created for customer ${customerId}`);
+
+    try {
+      const db = admin.firestore();
+
+      // Find the lead by checking if there's a lead with this email that hasn't been converted
+      const userDoc = await db.collection('users').doc(customerId).get();
+      if (!userDoc.exists) {
+        console.log(`User document not found for ${customerId}`);
+        return null;
+      }
+
+      const userData = userDoc.data();
+      const userEmail = userData?.email;
+
+      if (!userEmail) {
+        console.log(`No email found for user ${customerId}`);
+        return null;
+      }
+
+      // Find lead by email that hasn't been converted yet
+      const leadsSnapshot = await db
+        .collection('leads')
+        .where('email', '==', userEmail)
+        .where('convertedToCustomerId', '==', null)
+        .limit(1)
+        .get();
+
+      if (leadsSnapshot.empty) {
+        console.log(`No unconverted lead found for email ${userEmail}`);
+        return null;
+      }
+
+      const leadDoc = leadsSnapshot.docs[0];
+      const leadData = leadDoc.data();
+
+      // Mark the lead as converted
+      await leadDoc.ref.update({
+        convertedToCustomerId: customerId,
+        convertedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`Marked lead ${leadDoc.id} as converted for customer ${customerId}`);
+
+      // Log activity in the lead's activities subcollection
+      const activityRef = db
+        .collection('leads')
+        .doc(leadDoc.id)
+        .collection('activities')
+        .doc();
+
+      await activityRef.set({
+        type: 'conversion',
+        title: 'Converted to Customer',
+        description: `Lead converted to customer with subscription ${context.params.subscriptionId}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: customerId,
+        metadata: {
+          subscriptionId: context.params.subscriptionId,
+          subscriptionStatus: subscriptionData.status,
+        },
+      });
+
+      return { success: true, leadId: leadDoc.id };
+    } catch (error) {
+      console.error(`Error marking lead as converted for customer ${customerId}:`, error);
+      throw error;
+    }
+  });
+
+/**
+ * Scheduled function that runs every hour to check for leads that should receive
+ * the 3-hour discount email (TAKE10OFF)
+ */
+export const sendThreeHourDiscountEmails = functions.pubsub
+  .schedule('every 1 hours')
+  .onRun(async (context) => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+    const threeHoursAgo = new Date(now.toMillis() - 3 * 60 * 60 * 1000);
+
+    console.log('Starting 3-hour discount email job...');
+
+    try {
+      // Find leads created 3+ hours ago that haven't converted and haven't received the discount email
+      const leadsSnapshot = await db
+        .collection('leads')
+        .where('convertedToCustomerId', '==', null)
+        .where('createdAt', '<=', admin.firestore.Timestamp.fromDate(threeHoursAgo))
+        .get();
+
+      let emailsSent = 0;
+      let alreadySent = 0;
+      let errors = 0;
+
+      for (const leadDoc of leadsSnapshot.docs) {
+        const leadData = leadDoc.data();
+        const leadId = leadDoc.id;
+
+        // Check if we've already sent the 3-hour discount email
+        if (leadData.discountEmailSent) {
+          alreadySent++;
+          continue;
+        }
+
+        // Get the discount email template
+        const templateDoc = await db.collection('emailTemplates').doc('discount_offer').get();
+        if (!templateDoc.exists) {
+          console.error('Discount email template not found');
+          continue;
+        }
+
+        const template = templateDoc.data();
+
+        try {
+          // Replace placeholders
+          const contactName = leadData.contactName || leadData.firstName || 'there';
+          const businessName = leadData.businessName || 'your business';
+          const pricingLink = `${process.env.APP_URL || 'https://community-websites.com'}/pricing`;
+
+          let emailContent = template.html
+            .replace(/\{\{contactName\}\}/g, contactName)
+            .replace(/\{\{businessName\}\}/g, businessName)
+            .replace(/\{\{pricingLink\}\}/g, pricingLink);
+
+          const subject = template.subject
+            .replace(/\{\{contactName\}\}/g, contactName)
+            .replace(/\{\{businessName\}\}/g, businessName);
+
+          // Send email via API
+          const sendEmailResponse = await fetch(`${process.env.APP_URL || 'https://community-websites.com'}/api/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              to: [leadData.email],
+              subject: subject,
+              html: emailContent,
+              recipientId: leadId,
+              templateId: 'discount_offer',
+              triggerType: 'automated_3hour_discount',
+              categories: ['automated', 'lead_nurture', 'discount_offer'],
+            }),
+          });
+
+          if (!sendEmailResponse.ok) {
+            throw new Error(`Email API returned ${sendEmailResponse.status}`);
+          }
+
+          // Mark that we sent the email
+          await leadDoc.ref.update({
+            discountEmailSent: true,
+            discountEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          // Log activity
+          await db
+            .collection('leads')
+            .doc(leadId)
+            .collection('activities')
+            .add({
+              type: 'email_sent',
+              title: 'Discount Email Sent',
+              description: 'Automated 3-hour discount email sent (TAKE10OFF)',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              createdBy: 'system',
+              metadata: {
+                templateId: 'discount_offer',
+                triggerType: 'automated_3hour_discount',
+              },
+            });
+
+          emailsSent++;
+          console.log(`Sent 3-hour discount email to lead ${leadId} (${leadData.email})`);
+        } catch (emailError) {
+          console.error(`Error sending email to lead ${leadId}:`, emailError);
+          errors++;
+        }
+      }
+
+      console.log(`3-hour discount email job completed: ${emailsSent} sent, ${alreadySent} already sent, ${errors} errors`);
+      return { success: true, emailsSent, alreadySent, errors };
+    } catch (error) {
+      console.error('Error in 3-hour discount email job:', error);
+      throw error;
+    }
+  });
+
+/**
+ * Scheduled function that runs every hour to process scheduled lead emails
+ */
+export const processScheduledLeadEmails = functions.pubsub
+  .schedule('every 1 hours')
+  .onRun(async (context) => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+
+    console.log('Starting scheduled lead emails job...');
+
+    try {
+      // Find scheduled emails that are due to be sent
+      const scheduledEmailsSnapshot = await db
+        .collection('scheduledLeadEmails')
+        .where('status', '==', 'pending')
+        .where('scheduledFor', '<=', now)
+        .get();
+
+      let emailsSent = 0;
+      let errors = 0;
+
+      for (const emailDoc of scheduledEmailsSnapshot.docs) {
+        const emailData = emailDoc.data();
+        const emailId = emailDoc.id;
+
+        try {
+          // Get the lead
+          const leadDoc = await db.collection('leads').doc(emailData.leadId).get();
+          if (!leadDoc.exists) {
+            console.error(`Lead ${emailData.leadId} not found`);
+            await emailDoc.ref.update({
+              status: 'failed',
+              error: 'Lead not found',
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            errors++;
+            continue;
+          }
+
+          const leadData = leadDoc.data();
+
+          // Check if lead has been converted - if so, skip
+          if (leadData.convertedToCustomerId) {
+            console.log(`Lead ${emailData.leadId} has been converted, skipping email`);
+            await emailDoc.ref.update({
+              status: 'skipped',
+              skipReason: 'Lead converted to customer',
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            continue;
+          }
+
+          // Get the email template
+          const templateDoc = await db.collection('emailTemplates').doc(emailData.templateId).get();
+          if (!templateDoc.exists) {
+            console.error(`Template ${emailData.templateId} not found`);
+            await emailDoc.ref.update({
+              status: 'failed',
+              error: 'Template not found',
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            errors++;
+            continue;
+          }
+
+          const template = templateDoc.data();
+
+          // Replace placeholders
+          const contactName = leadData.contactName || leadData.firstName || 'there';
+          const businessName = leadData.businessName || 'your business';
+          const pricingLink = `${process.env.APP_URL || 'https://community-websites.com'}/pricing`;
+
+          let emailContent = template.html
+            .replace(/\{\{contactName\}\}/g, contactName)
+            .replace(/\{\{businessName\}\}/g, businessName)
+            .replace(/\{\{pricingLink\}\}/g, pricingLink);
+
+          const subject = template.subject
+            .replace(/\{\{contactName\}\}/g, contactName)
+            .replace(/\{\{businessName\}\}/g, businessName);
+
+          // Send email via API
+          const sendEmailResponse = await fetch(`${process.env.APP_URL || 'https://community-websites.com'}/api/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              to: [leadData.email],
+              subject: subject,
+              html: emailContent,
+              recipientId: emailData.leadId,
+              templateId: emailData.templateId,
+              triggerType: 'scheduled_lead_email',
+              categories: ['scheduled', 'lead_nurture'],
+            }),
+          });
+
+          if (!sendEmailResponse.ok) {
+            throw new Error(`Email API returned ${sendEmailResponse.status}`);
+          }
+
+          // Mark email as sent
+          await emailDoc.ref.update({
+            status: 'sent',
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          // Log activity
+          await db
+            .collection('leads')
+            .doc(emailData.leadId)
+            .collection('activities')
+            .add({
+              type: 'email_sent',
+              title: 'Scheduled Email Sent',
+              description: `Scheduled email sent: ${template.name}`,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              createdBy: 'system',
+              metadata: {
+                templateId: emailData.templateId,
+                triggerType: 'scheduled_lead_email',
+                scheduledEmailId: emailId,
+              },
+            });
+
+          emailsSent++;
+          console.log(`Sent scheduled email ${emailId} to lead ${emailData.leadId}`);
+        } catch (emailError) {
+          console.error(`Error sending scheduled email ${emailId}:`, emailError);
+          await emailDoc.ref.update({
+            status: 'failed',
+            error: emailError.message,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          errors++;
+        }
+      }
+
+      console.log(`Scheduled lead emails job completed: ${emailsSent} sent, ${errors} errors`);
+      return { success: true, emailsSent, errors };
+    } catch (error) {
+      console.error('Error in scheduled lead emails job:', error);
+      throw error;
+    }
+  });

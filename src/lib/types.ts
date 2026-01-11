@@ -122,6 +122,10 @@ export interface Lead {
   convertedToCustomerId?: string;
   convertedAt?: any; // Firestore Timestamp
 
+  // Email automation tracking
+  discountEmailSent?: boolean;
+  discountEmailSentAt?: any; // Firestore Timestamp
+
   // Assignment
   assignedTo?: string; // User ID
   assignedToName?: string;
@@ -153,6 +157,7 @@ export const ACTIVITY_TYPES = {
   NOTE: 'note',
   EMAIL_SENT: 'email_sent',
   EMAIL_RECEIVED: 'email_received',
+  EMAIL_SCHEDULED: 'email_scheduled',
   CALL: 'call',
   MEETING: 'meeting',
   PRIORITY_CHANGE: 'priority_change',
@@ -171,6 +176,7 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   note: 'Note Added',
   email_sent: 'Email Sent',
   email_received: 'Email Received',
+  email_scheduled: 'Email Scheduled',
   call: 'Phone Call',
   meeting: 'Meeting',
   priority_change: 'Priority Changed',

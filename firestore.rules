@@ -185,5 +185,11 @@ service cloud.firestore {
       allow read, list: if isAdmin();
       allow update, delete: if false;
     }
+
+    // SCHEDULED LEAD EMAILS
+    // Only admins can manage scheduled lead emails
+    match /scheduledLeadEmails/{emailId} {
+      allow read, list, create, update, delete: if isAdmin();
+    }
   }
 }

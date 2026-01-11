@@ -44,6 +44,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { SendEmailDialog } from '@/components/shared/send-email-dialog';
+import { ScheduleLeadEmailDialog } from '@/components/shared/schedule-lead-email-dialog';
+import { ScheduledLeadEmailsList } from '@/components/shared/scheduled-lead-emails-list';
 import { CustomerActivity } from '@/components/customers/customer-activity';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -78,6 +80,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isManualEmailDialogOpen, setIsManualEmailDialogOpen] = useState(false);
+  const [isScheduleEmailDialogOpen, setIsScheduleEmailDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -414,6 +417,9 @@ export default function LeadDetailPage() {
 
           {/* Unified Activity - combines activity timeline with emails */}
           <CustomerActivity leadId={lead.id} />
+
+          {/* Scheduled Emails */}
+          <ScheduledLeadEmailsList leadId={lead.id} />
         </div>
 
         {/* Sidebar - Right Side */}
@@ -427,6 +433,10 @@ export default function LeadDetailPage() {
               <Button className="w-full" onClick={() => setIsManualEmailDialogOpen(true)}>
                 <Mail className="mr-2 h-4 w-4" />
                 Send Email
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => setIsScheduleEmailDialogOpen(true)}>
+                <Clock className="mr-2 h-4 w-4" />
+                Schedule Email
               </Button>
               <Button variant="outline" className="w-full" asChild>
                 <a href={`tel:${lead.phone}`}>
@@ -507,6 +517,18 @@ export default function LeadDetailPage() {
         recipientType="lead"
         isOpen={isManualEmailDialogOpen}
         onOpenChange={setIsManualEmailDialogOpen}
+      />
+
+      {/* Schedule Email Dialog */}
+      <ScheduleLeadEmailDialog
+        lead={{
+          id: lead.id,
+          email: lead.email,
+          contactName: lead.contactName,
+          businessName: lead.businessName,
+        }}
+        isOpen={isScheduleEmailDialogOpen}
+        onOpenChange={setIsScheduleEmailDialogOpen}
       />
 
       {/* Delete Confirmation Dialog */}
