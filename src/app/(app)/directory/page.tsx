@@ -123,8 +123,85 @@ export default function DirectoryPage() {
     const [deletingItem, setDeletingItem] = useState<DirectoryListingItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Visibility reconciliation state
+    const [visibilityIssues, setVisibilityIssues] = useState<{
+        approvedCount: number;
+        visibleCount: number;
+        hiddenCount: number;
+        issues: Array<{
+            liveAdId: string;
+            businessName: string;
+            problems: string[];
+        }>;
+    } | null>(null);
+    const [isReconciling, setIsReconciling] = useState(false);
+    const [checkingVisibility, setCheckingVisibility] = useState(false);
+
     const { firestore, user } = useFirebase();
     const { toast } = useToast();
+
+    // Check for visibility issues
+    const checkVisibilityIssues = async () => {
+        try {
+            setCheckingVisibility(true);
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
+
+            const response = await fetch('/api/admin/directory/reconcile', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!response.ok) throw new Error('Failed to check visibility');
+
+            const result = await response.json();
+            setVisibilityIssues({
+                approvedCount: result.data.approvedListings,
+                visibleCount: result.data.visibleListings,
+                hiddenCount: result.data.hiddenDueToIssues,
+                issues: result.data.issues,
+            });
+        } catch (err) {
+            console.error('Error checking visibility:', err);
+        } finally {
+            setCheckingVisibility(false);
+        }
+    };
+
+    // Reconcile visibility issues
+    const handleReconcile = async () => {
+        try {
+            setIsReconciling(true);
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
+
+            const response = await fetch('/api/admin/directory/reconcile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ fixAll: true }),
+            });
+
+            if (!response.ok) throw new Error('Failed to reconcile');
+
+            const result = await response.json();
+            toast({
+                description: result.data.message,
+            });
+
+            // Refresh both data sources
+            await Promise.all([fetchDirectoryListings(), checkVisibilityIssues()]);
+        } catch (err) {
+            console.error('Error reconciling:', err);
+            toast({
+                variant: 'destructive',
+                description: 'Failed to reconcile visibility issues.',
+            });
+        } finally {
+            setIsReconciling(false);
+        }
+    };
 
     // Update URL when filter changes
     const updateStatusFilter = (newStatusFilter: string) => {
@@ -205,6 +282,7 @@ export default function DirectoryPage() {
     useEffect(() => {
         if (firestore && user) {
             fetchDirectoryListings();
+            checkVisibilityIssues();
         }
     }, [firestore, user, statusFilter]);
 
@@ -495,6 +573,53 @@ export default function DirectoryPage() {
                 )}
             </div>
 
+            {/* Visibility Issues Alert */}
+            {visibilityIssues && visibilityIssues.hiddenCount > 0 && (
+                <Alert variant="destructive" className="mb-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <div className="flex-1">
+                        <div className="font-medium">
+                            {visibilityIssues.hiddenCount} approved listing{visibilityIssues.hiddenCount !== 1 ? 's are' : ' is'} not visible in the public directory
+                        </div>
+                        <AlertDescription className="mt-1">
+                            <div className="text-sm mb-2">
+                                {visibilityIssues.approvedCount} approved, but only {visibilityIssues.visibleCount} visible.
+                                {' '}Issues found:
+                            </div>
+                            <ul className="text-sm list-disc list-inside mb-3 space-y-1">
+                                {visibilityIssues.issues.slice(0, 5).map((issue) => (
+                                    <li key={issue.liveAdId}>
+                                        <strong>{issue.businessName}</strong>: {issue.problems.join(', ')}
+                                    </li>
+                                ))}
+                                {visibilityIssues.issues.length > 5 && (
+                                    <li>...and {visibilityIssues.issues.length - 5} more</li>
+                                )}
+                            </ul>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleReconcile}
+                                disabled={isReconciling}
+                                className="bg-white"
+                            >
+                                {isReconciling ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Fixing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        Fix All Issues
+                                    </>
+                                )}
+                            </Button>
+                        </AlertDescription>
+                    </div>
+                </Alert>
+            )}
+
             {/* Search */}
             <form onSubmit={handleSearch} className="mb-6">
                 <div className="flex gap-2">
@@ -602,6 +727,27 @@ export default function DirectoryPage() {
                                                                 <Star className="h-3 w-3 mr-1 fill-current" />
                                                                 Featured
                                                             </Badge>
+                                                        )}
+                                                        {/* Visibility indicator for approved listings */}
+                                                        {status === 'approved' && (
+                                                            item.liveAd.status === 'active' && item.liveAd.showInDirectory !== false ? (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="bg-green-50 text-green-600 border-green-200"
+                                                                >
+                                                                    <Eye className="h-3 w-3 mr-1" />
+                                                                    Visible
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="bg-red-50 text-red-600 border-red-200"
+                                                                    title={`Issues: ${item.liveAd.status !== 'active' ? `Ad status is '${item.liveAd.status}'` : ''}${item.liveAd.showInDirectory === false ? ' showInDirectory is false' : ''}`}
+                                                                >
+                                                                    <EyeOff className="h-3 w-3 mr-1" />
+                                                                    Not Visible
+                                                                </Badge>
+                                                            )
                                                         )}
                                                     </div>
                                                     {listing?.tagline && (
