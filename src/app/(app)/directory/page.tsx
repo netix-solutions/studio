@@ -138,7 +138,13 @@ export default function DirectoryPage() {
         try {
             setLoading(true);
             const auth = getAuth();
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:140',message:'fetchDirectoryListings entry',data:{hasCurrentUser:!!auth.currentUser,userId:auth.currentUser?.uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             const token = await auth.currentUser?.getIdToken();
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:142',message:'after getIdToken',data:{hasToken:!!token,tokenLength:token?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
 
             const params = new URLSearchParams();
             if (statusFilter !== 'all') {
@@ -148,16 +154,40 @@ export default function DirectoryPage() {
                 params.append('search', searchQuery.trim());
             }
 
-            const response = await fetch(`/api/admin/directory?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const url = `/api/admin/directory?${params.toString()}`;
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:157',message:'before fetch',data:{url,hasToken:!!token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            let response;
+            try {
+                response = await fetch(url, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:164',message:'after fetch',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
+                // #endregion
+            } catch (fetchErr) {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:167',message:'fetch error',data:{errorMessage:fetchErr instanceof Error?fetchErr.message:String(fetchErr),errorName:fetchErr instanceof Error?fetchErr.name:'unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+                // #endregion
+                throw fetchErr;
+            }
 
-            if (!response.ok) throw new Error('Failed to fetch directory listings');
+            if (!response.ok) {
+                const errorText = await response.text();
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:173',message:'response not ok',data:{status:response.status,statusText:response.statusText,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
+                // #endregion
+                throw new Error('Failed to fetch directory listings');
+            }
 
             const result = await response.json();
             setDirectoryListings(result.data.listings);
             setStats(result.data.stats);
         } catch (err) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'directory/page.tsx:182',message:'catch block',data:{errorMessage:err instanceof Error?err.message:String(err),errorName:err instanceof Error?err.name:'unknown',errorStack:err instanceof Error?err.stack?.substring(0,300):'no stack'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D,E'})}).catch(()=>{});
+            // #endregion
             console.error('Error fetching directory listings:', err);
             toast({
                 variant: 'destructive',

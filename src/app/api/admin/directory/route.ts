@@ -18,7 +18,13 @@ import { type LiveAd, type LiveAdDirectoryListing, type DirectoryStatus } from '
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/admin/directory/route.ts:20',message:'API GET entry',data:{hasAuthHeader:!!authHeader,authHeaderPrefix:authHeader?.substring(0,20)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B'})}).catch(()=>{});
+    // #endregion
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/admin/directory/route.ts:22',message:'missing auth header',data:{hasAuthHeader:!!authHeader},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return NextResponse.json(
         { error: 'Missing or invalid authorization header' },
         { status: 401 }
@@ -32,7 +38,13 @@ export async function GET(request: NextRequest) {
     let decodedToken;
     try {
       decodedToken = await auth.verifyIdToken(idToken);
-    } catch {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/admin/directory/route.ts:34',message:'token verified',data:{uid:decodedToken.uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    } catch (tokenError) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/admin/directory/route.ts:36',message:'token verification failed',data:{errorMessage:tokenError instanceof Error?tokenError.message:String(tokenError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -41,6 +53,9 @@ export async function GET(request: NextRequest) {
 
     // Check if user is admin
     const adminDoc = await db.collection('roles_admin').doc(decodedToken.uid).get();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/admin/directory/route.ts:44',message:'admin check',data:{uid:decodedToken.uid,isAdmin:adminDoc.exists},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     if (!adminDoc.exists) {
       return NextResponse.json(
         { error: 'Unauthorized - admin access required' },
@@ -186,6 +201,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/admin/directory/route.ts:189',message:'API catch block',data:{errorMessage:error?.message,errorName:error?.name,errorStack:error?.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     console.error('Error fetching directory listings:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },

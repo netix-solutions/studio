@@ -54,16 +54,40 @@ function initializeAdminApp() {
   if (getApps().length === 0) {
     const projectId = process.env.FIREBASE_PROJECT_ID || 'studio-4614023416-d45cd';
 
-    adminApp = initializeApp({
-      credential: getCredential(),
-      projectId,
-    });
+    try {
+      adminApp = initializeApp({
+        credential: getCredential(),
+        projectId,
+      });
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error';
+      if (errorMessage.includes('default credentials') || errorMessage.includes('Could not load')) {
+        throw new Error(
+          'Firebase Admin SDK initialization failed: Application Default Credentials are not available. ' +
+          'Please set GOOGLE_SERVICE_ACCOUNT_KEY environment variable with your service account JSON key. ' +
+          'In Cloud Workstations, ensure the environment variable is configured.'
+        );
+      }
+      throw error;
+    }
   } else {
     adminApp = getApps()[0];
   }
 
-  adminFirestore = getFirestore(adminApp);
-  adminAuth = getAuth(adminApp);
+  try {
+    adminFirestore = getFirestore(adminApp);
+    adminAuth = getAuth(adminApp);
+  } catch (error: any) {
+    const errorMessage = error?.message || 'Unknown error';
+    if (errorMessage.includes('default credentials') || errorMessage.includes('Could not load')) {
+      throw new Error(
+        'Firebase Admin SDK initialization failed: Application Default Credentials are not available. ' +
+        'Please set GOOGLE_SERVICE_ACCOUNT_KEY environment variable with your service account JSON key. ' +
+        'In Cloud Workstations, ensure the environment variable is configured.'
+      );
+    }
+    throw error;
+  }
   return { adminApp, adminFirestore, adminAuth };
 }
 
