@@ -90,12 +90,23 @@ export default function DirectoryListingsPage() {
   }, [listings, searchTerm, statusFilter]);
 
   const fetchListings = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user, skipping fetch');
+      return;
+    }
 
     try {
       setIsLoading(true);
       const auth = getAuth();
-      const token = await auth.currentUser?.getIdToken();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+
+      console.log('Fetching token...');
+      const token = await currentUser.getIdToken();
+      console.log('Token obtained, length:', token.length);
 
       const params = new URLSearchParams();
       if (statusFilter !== 'all') {
@@ -104,16 +115,31 @@ export default function DirectoryListingsPage() {
       // Search is handled client-side for immediate feedback
       // Server-side search is available via the API if needed for large datasets
 
-      const response = await fetch(`/api/admin/directory?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const url = `/api/admin/directory?${params.toString()}`;
+      console.log('Fetching from:', url);
+
+      const response = await fetch(url, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+
+      console.log('Response status:', response.status, response.statusText);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         let errorMessage = `Failed to fetch listings: ${response.status} ${response.statusText}`;
+        let errorData = null;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
+          const text = await response.text();
+          console.log('Error response text:', text);
+          if (text) {
+            errorData = JSON.parse(text);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          }
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
           // Response is not JSON, use status text
         }
         throw new Error(errorMessage);
@@ -121,13 +147,20 @@ export default function DirectoryListingsPage() {
 
       let result;
       try {
-        result = await response.json();
+        const text = await response.text();
+        console.log('Response text:', text.substring(0, 500)); // Log first 500 chars
+        result = JSON.parse(text);
       } catch (parseError) {
         console.error('Failed to parse API response:', parseError);
-        throw new Error('Invalid response from server');
+        throw new Error('Invalid response from server - not valid JSON');
       }
       
-      console.log('API Response:', result);
+      console.log('API Response parsed successfully:', {
+        hasSuccess: 'success' in result,
+        hasData: 'data' in result,
+        hasError: 'error' in result,
+        keys: Object.keys(result),
+      });
       
       // Handle both response formats: { success: true, data: {...} } and { data: {...} }
       if (result.error) {
@@ -144,6 +177,7 @@ export default function DirectoryListingsPage() {
         featured: 0,
       };
 
+      console.log('Setting listings:', listings.length, 'stats:', stats);
       setListings(listings);
       setStats(stats);
     } catch (error: any) {
@@ -153,6 +187,7 @@ export default function DirectoryListingsPage() {
         message: errorMessage,
         stack: error.stack,
         name: error.name,
+        cause: error.cause,
       });
       toast({
         title: 'Error',
