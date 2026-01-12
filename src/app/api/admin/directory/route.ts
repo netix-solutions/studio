@@ -75,46 +75,56 @@ export async function GET(request: NextRequest) {
     }> = [];
 
     snapshot.forEach((doc) => {
-      const data = doc.data() as LiveAd;
-      const listing = data.directoryListing;
+      try {
+        const data = doc.data() as LiveAd;
+        const listing = data.directoryListing;
 
-      // Filter by directory status if specified
-      if (status && listing?.directoryStatus !== status) {
-        return;
-      }
+        // Filter by directory status if specified
+        // If status is specified and there's no listing, skip it
+        // If status is specified and listing status doesn't match, skip it
+        if (status) {
+          const listingStatus = listing?.directoryStatus || 'pending';
+          if (listingStatus !== status) {
+            return;
+          }
+        }
 
-      // Filter by featured status if specified
-      if (featured === 'true' && !listing?.isFeatured) {
-        return;
-      }
-
-      // Filter by search term
-      if (search) {
-        const searchLower = search.toLowerCase();
-        const businessName = (listing?.businessName || data.customerName || data.name || '').toLowerCase();
-        if (!businessName.includes(searchLower)) {
+        // Filter by featured status if specified
+        if (featured === 'true' && !listing?.isFeatured) {
           return;
         }
-      }
 
-      listings.push({
-        liveAdId: doc.id,
-        liveAd: {
-          id: doc.id,
-          name: data.name,
-          imageUrl: data.imageUrl,
-          targetUrl: data.targetUrl,
-          status: data.status,
-          showInDirectory: data.showInDirectory ?? true,
-          customerId: data.customerId,
-          customerName: data.customerName,
-          impressions: data.impressions || 0,
-          clicks: data.clicks || 0,
-          targetWebsites: data.targetWebsites,
-          createdAt: data.createdAt,
-        },
-        directoryListing: listing || null,
-      });
+        // Filter by search term
+        if (search) {
+          const searchLower = search.toLowerCase();
+          const businessName = (listing?.businessName || data.customerName || data.name || '').toLowerCase();
+          if (!businessName.includes(searchLower)) {
+            return;
+          }
+        }
+
+        listings.push({
+          liveAdId: doc.id,
+          liveAd: {
+            id: doc.id,
+            name: data.name,
+            imageUrl: data.imageUrl,
+            targetUrl: data.targetUrl,
+            status: data.status,
+            showInDirectory: data.showInDirectory ?? true,
+            customerId: data.customerId,
+            customerName: data.customerName,
+            impressions: data.impressions || 0,
+            clicks: data.clicks || 0,
+            targetWebsites: data.targetWebsites,
+            createdAt: data.createdAt,
+          },
+          directoryListing: listing || null,
+        });
+      } catch (docError) {
+        console.error(`Error processing document ${doc.id}:`, docError);
+        // Continue processing other documents
+      }
     });
 
     // Sort by status priority: pending first, then by name

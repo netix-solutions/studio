@@ -108,25 +108,55 @@ export default function DirectoryListingsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setListings(result.data.listings || []);
-        setStats(result.data.stats || {
-          total: 0,
-          pending: 0,
-          approved: 0,
-          hidden: 0,
-          rejected: 0,
-          featured: 0,
-        });
-      } else {
-        throw new Error('Failed to fetch listings');
+      if (!response.ok) {
+        let errorMessage = `Failed to fetch listings: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Response is not JSON, use status text
+        }
+        throw new Error(errorMessage);
       }
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse API response:', parseError);
+        throw new Error('Invalid response from server');
+      }
+      
+      console.log('API Response:', result);
+      
+      // Handle both response formats: { success: true, data: {...} } and { data: {...} }
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      const listings = result.data?.listings || result.listings || [];
+      const stats = result.data?.stats || result.stats || {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        hidden: 0,
+        rejected: 0,
+        featured: 0,
+      };
+
+      setListings(listings);
+      setStats(stats);
     } catch (error: any) {
       console.error('Error fetching listings:', error);
+      const errorMessage = error.message || 'Failed to fetch directory listings';
+      console.error('Full error details:', {
+        message: errorMessage,
+        stack: error.stack,
+        name: error.name,
+      });
       toast({
         title: 'Error',
-        description: error.message || 'Failed to fetch directory listings',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
