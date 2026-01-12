@@ -304,7 +304,7 @@ export async function POST(request: NextRequest) {
       
       // Mark as directory signup
       source: LEAD_SOURCES.DIRECTORY_SIGNUP,
-      sourceDetail: 'Free directory listing signup (pending approval)',
+      sourceDetail: 'Directory advertising inquiry',
       
       // UTM tracking
       utmSource: data.utmSource || null,
@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
     // Add activity to the lead
     await db.collection('leads').doc(leadRef.id).collection('activities').add({
       type: 'directory_listing_created',
-      title: 'Free Directory Listing Submitted',
+      title: 'New Directory Advertising Inquiry',
       description: `Submitted directory listing for approval: ${normalizedBusinessName}`,
       listingId: listingRef.id,
       createdAt: FieldValue.serverTimestamp(),

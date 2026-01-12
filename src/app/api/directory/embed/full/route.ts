@@ -290,8 +290,81 @@ function generateDirectoryHTML(options: {
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
     
-    .category-filters {
+    /* ===== MOBILE CATEGORY GRID ===== */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    
+    @media (min-width: 768px) {
+      .category-grid { display: none; }
+    }
+    
+    .category-tile {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 8px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      min-height: 90px;
+    }
+    
+    .category-tile:active { transform: scale(0.96); }
+    
+    .category-tile.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    
+    .category-tile.active .category-tile-count {
+      background: rgba(255,255,255,0.25);
+      color: white;
+    }
+    
+    .category-tile-icon {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+    
+    .category-tile-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    
+    .category-tile-count {
+      font-size: 0.65rem;
+      font-weight: 700;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    
+    .category-tile-all {
+      background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+      border-color: transparent;
+      color: white;
+    }
+    
+    .category-tile-all .category-tile-count {
+      background: rgba(255,255,255,0.25);
+      color: white;
+    }
+    
+    /* ===== DESKTOP CATEGORY FILTERS ===== */
+    .category-filters {
+      display: none;
       gap: 8px;
       margin-bottom: 24px;
       overflow-x: auto;
@@ -304,6 +377,7 @@ function generateDirectoryHTML(options: {
     
     @media (min-width: 768px) {
       .category-filters {
+        display: flex;
         flex-wrap: wrap;
         justify-content: center;
         overflow-x: visible;
@@ -546,6 +620,75 @@ function generateDirectoryHTML(options: {
     
     .no-results h3 { margin-bottom: 8px; }
     
+    /* ===== INLINE CTA ===== */
+    .inline-cta {
+      grid-column: 1 / -1;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+      border: 2px dashed rgba(59, 130, 246, 0.3);
+      border-radius: 12px;
+      margin: 8px 0;
+    }
+    
+    .inline-cta-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    @media (min-width: 640px) {
+      .inline-cta-content { flex-wrap: nowrap; }
+    }
+    
+    .inline-cta-icon {
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+    
+    .inline-cta-text {
+      flex: 1;
+      min-width: 150px;
+    }
+    
+    .inline-cta-text strong {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    
+    .inline-cta-text span {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    .inline-cta-button {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .inline-cta-button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 639px) {
+      .inline-cta-button {
+        width: 100%;
+        text-align: center;
+        margin-top: 8px;
+      }
+    }
+    
     .cta-banner {
       margin-top: 48px;
       padding: 28px 20px;
@@ -618,6 +761,23 @@ function generateDirectoryHTML(options: {
     </div>
     
     ${categoriesWithCount.length > 0 ? `
+    <!-- Mobile Category Grid (3 columns) -->
+    <div class="category-grid">
+      <div class="category-tile category-tile-all active" data-category="all">
+        <span class="category-tile-icon">🏢</span>
+        <span class="category-tile-name">View All</span>
+        <span class="category-tile-count">${listings.length}</span>
+      </div>
+      ${categoriesWithCount.map(cat => `
+        <div class="category-tile" data-category="${cat.id}">
+          <span class="category-tile-icon">${cat.icon}</span>
+          <span class="category-tile-name">${cat.label}</span>
+          <span class="category-tile-count">${cat.count}</span>
+        </div>
+      `).join('')}
+    </div>
+    
+    <!-- Desktop Category Filters -->
     <div class="category-filters">
       <div class="category-chip active" data-category="all">All (${listings.length})</div>
       ${categoriesWithCount.map(cat => `
@@ -641,7 +801,7 @@ function generateDirectoryHTML(options: {
       ${featuredListings.length > 0 ? 'All Businesses' : 'Our Businesses'}
     </div>
     <div class="grid" id="businessGrid">
-      ${listings.map(listing => renderListingCard(listing, baseUrl)).join('')}
+      ${renderListingsWithCTAs(listings, baseUrl)}
     </div>
     
     <div class="no-results" id="noResults" style="display: none;">
@@ -653,12 +813,12 @@ function generateDirectoryHTML(options: {
     <div class="cta-banner">
       <div class="cta-content">
         <div class="cta-text">
-          <span class="cta-badge">✨ Free for a Limited Time</span>
-          <h3>Own a local business?</h3>
-          <p>Get your business listed in our community directory — it's completely free!</p>
+          <span class="cta-badge">📢 Advertise With Us</span>
+          <h3>Want your business here?</h3>
+          <p>Get discovered by thousands in our community. Reach local customers with a directory listing.</p>
         </div>
         <a href="${baseUrl}/directory-signup" target="_blank" rel="noopener" class="cta-button">
-          Add Your Business →
+          Get Started →
         </a>
       </div>
     </div>
@@ -667,6 +827,7 @@ function generateDirectoryHTML(options: {
   <script>
     const searchInput = document.getElementById('searchInput');
     const categoryChips = document.querySelectorAll('.category-chip');
+    const categoryTiles = document.querySelectorAll('.category-tile');
     const businessGrid = document.getElementById('businessGrid');
     const featuredGrid = document.getElementById('featuredGrid');
     const noResults = document.getElementById('noResults');
@@ -680,12 +841,29 @@ function generateDirectoryHTML(options: {
       filterListings();
     });
     
+    // Helper to set active category and sync both mobile tiles and desktop chips
+    function setActiveCategory(category) {
+      currentCategory = category;
+      categoryChips.forEach(c => {
+        c.classList.toggle('active', c.dataset.category === category);
+      });
+      categoryTiles.forEach(t => {
+        t.classList.toggle('active', t.dataset.category === category);
+      });
+      filterListings();
+    }
+    
+    // Desktop category chips
     categoryChips.forEach(chip => {
       chip.addEventListener('click', () => {
-        categoryChips.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        currentCategory = chip.dataset.category;
-        filterListings();
+        setActiveCategory(chip.dataset.category);
+      });
+    });
+    
+    // Mobile category tiles
+    categoryTiles.forEach(tile => {
+      tile.addEventListener('click', () => {
+        setActiveCategory(tile.dataset.category);
       });
     });
     
@@ -809,6 +987,39 @@ function renderListingCard(listing: DirectoryListing, baseUrl: string): string {
       </div>
       
       <img class="tracking-pixel" data-src="${baseUrl}/api/directory/track/impression?id=${listing.id}" style="position:absolute;width:1px;height:1px;opacity:0" alt="">
+    </div>
+  `;
+}
+
+function renderListingsWithCTAs(listings: DirectoryListing[], baseUrl: string): string {
+  const CTA_INTERVAL = 4; // Show CTA every 4 listings
+  let html = '';
+  
+  listings.forEach((listing, index) => {
+    html += renderListingCard(listing, baseUrl);
+    
+    // Add inline CTA after every CTA_INTERVAL listings (but not after the last one)
+    if ((index + 1) % CTA_INTERVAL === 0 && index < listings.length - 1) {
+      html += renderInlineCTA(baseUrl);
+    }
+  });
+  
+  return html;
+}
+
+function renderInlineCTA(baseUrl: string): string {
+  return `
+    <div class="inline-cta" data-cta="true">
+      <div class="inline-cta-content">
+        <span class="inline-cta-icon">🏪</span>
+        <div class="inline-cta-text">
+          <strong>Own a local business?</strong>
+          <span>Get listed in our directory and reach local customers!</span>
+        </div>
+        <a href="${baseUrl}/directory-signup" class="inline-cta-button" target="_blank" rel="noopener">
+          Learn More
+        </a>
+      </div>
     </div>
   `;
 }

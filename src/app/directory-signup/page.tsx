@@ -166,8 +166,8 @@ export default function DirectorySignupPage() {
 
       setIsSuccess(true);
       toast({
-        title: '🎉 Success!',
-        description: 'Your free business listing has been created!',
+        title: '🎉 Information Received!',
+        description: 'We\'ll be in touch about your directory listing.',
       });
 
     } catch (error) {
@@ -209,27 +209,27 @@ export default function DirectorySignupPage() {
           <div className="max-w-2xl mx-auto">
             {/* Success Message */}
             <div className="text-center mb-10">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-blue-600" />
               </div>
-              <h1 className="text-3xl font-bold mb-3">🎉 You're In!</h1>
+              <h1 className="text-3xl font-bold mb-3">Thanks for Your Interest!</h1>
               <p className="text-muted-foreground text-lg">
-                Your free listing has been submitted and is pending review.
+                We&apos;ve received your business information.
               </p>
             </div>
 
             {/* What's Next */}
-            <Card className="mb-8 border-green-200 bg-green-50/50">
+            <Card className="mb-8 border-blue-200 bg-blue-50/50">
               <CardContent className="pt-6">
                 <h3 className="font-semibold mb-4">What happens next?</h3>
                 <div className="space-y-3">
                   {[
-                    { step: '1', text: 'Our team reviews your listing (1-2 business days)' },
-                    { step: '2', text: 'Once approved, you appear in our directory' },
-                    { step: '3', text: 'Local residents can discover your business!' },
+                    { step: '1', text: 'Our team will review your information' },
+                    { step: '2', text: 'We\'ll reach out to discuss advertising options' },
+                    { step: '3', text: 'Choose a plan and start reaching local customers!' },
                   ].map((item) => (
                     <div key={item.step} className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">
+                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
                         {item.step}
                       </div>
                       <span className="text-sm">{item.text}</span>
@@ -269,7 +269,7 @@ export default function DirectorySignupPage() {
 
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                   <p className="text-sm">
-                    <strong>🎁 Special Offer:</strong> Since you just signed up, get <strong>your first month FREE</strong> when you start advertising today!
+                    <strong>🎁 Special Offer:</strong> Get <strong>20% off your first month</strong> when you start advertising today!
                   </p>
                 </div>
 
@@ -335,15 +335,15 @@ export default function DirectorySignupPage() {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <Badge className="bg-green-100 text-green-700 border-green-200 mb-4 text-sm px-4 py-1">
-              <Gift className="w-4 h-4 mr-2 inline" />
-              Limited Time: 100% Free!
+            <Badge className="bg-blue-100 text-blue-700 border-blue-200 mb-4 text-sm px-4 py-1">
+              <Megaphone className="w-4 h-4 mr-2 inline" />
+              Advertise Your Business
             </Badge>
             <h1 className="text-3xl md:text-4xl font-bold mb-3 text-gray-900">
               Get Your Business Listed
             </h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              Join our community business directory and get discovered by local residents.
+              Tell us about your business and we&apos;ll help you reach thousands of local residents.
             </p>
           </div>
 
@@ -666,11 +666,11 @@ export default function DirectorySignupPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Creating Your Listing...
+                    Submitting...
                   </>
                 ) : (
                   <>
-                    Create My Free Listing
+                    Get Started
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </>
                 )}

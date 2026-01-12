@@ -254,9 +254,92 @@ export async function GET(request: NextRequest) {
           height: 20px;
         }
 
-        /* ===== FILTERS - HORIZONTAL SCROLL ON MOBILE ===== */
-        .filters-container {
+        /* ===== MOBILE CATEGORY GRID ===== */
+        .category-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+          .category-grid {
+            display: none;
+          }
+        }
+
+        .category-tile {
           display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 14px 8px;
+          background: var(--card-bg);
+          border: 2px solid var(--card-border);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          -webkit-tap-highlight-color: transparent;
+          text-align: center;
+          min-height: 90px;
+        }
+
+        .category-tile:active {
+          transform: scale(0.96);
+        }
+
+        .category-tile.active {
+          background: var(--accent);
+          border-color: var(--accent);
+          color: white;
+        }
+
+        .category-tile.active .category-tile-count {
+          background: rgba(255,255,255,0.25);
+          color: white;
+        }
+
+        .category-tile-icon {
+          font-size: 1.5rem;
+          margin-bottom: 4px;
+        }
+
+        .category-tile-name {
+          font-size: 0.7rem;
+          font-weight: 600;
+          line-height: 1.2;
+          margin-bottom: 4px;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+
+        .category-tile-count {
+          font-size: 0.65rem;
+          font-weight: 700;
+          background: rgba(var(--accent-rgb), 0.15);
+          color: var(--accent);
+          padding: 2px 8px;
+          border-radius: 10px;
+        }
+
+        .category-tile-all {
+          background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+          border-color: transparent;
+          color: white;
+        }
+
+        .category-tile-all .category-tile-count {
+          background: rgba(255,255,255,0.25);
+          color: white;
+        }
+
+        /* ===== DESKTOP FILTERS - HORIZONTAL SCROLL ===== */
+        .filters-container {
+          display: none;
           gap: 8px;
           margin-bottom: 20px;
           overflow-x: auto;
@@ -264,6 +347,14 @@ export async function GET(request: NextRequest) {
           scrollbar-width: none;
           -ms-overflow-style: none;
           padding: 4px 0;
+        }
+
+        @media (min-width: 768px) {
+          .filters-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+          }
         }
 
         .filters-container::-webkit-scrollbar {
@@ -694,6 +785,77 @@ export async function GET(request: NextRequest) {
           font-size: 2.5rem;
           margin-bottom: 12px;
         }
+
+        /* ===== INLINE CTA ===== */
+        .inline-cta {
+          grid-column: 1 / -1;
+          padding: 16px;
+          background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+          border: 2px dashed rgba(var(--accent-rgb), 0.3);
+          border-radius: 12px;
+          margin: 8px 0;
+        }
+
+        .inline-cta-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        @media (min-width: 640px) {
+          .inline-cta-content {
+            flex-wrap: nowrap;
+          }
+        }
+
+        .inline-cta-icon {
+          font-size: 1.5rem;
+          flex-shrink: 0;
+        }
+
+        .inline-cta-text {
+          flex: 1;
+          min-width: 150px;
+        }
+
+        .inline-cta-text strong {
+          display: block;
+          font-size: 0.9rem;
+          color: var(--text);
+          margin-bottom: 2px;
+        }
+
+        .inline-cta-text span {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .inline-cta-button {
+          flex-shrink: 0;
+          padding: 8px 16px;
+          background: var(--accent);
+          color: white;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-decoration: none;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .inline-cta-button:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        @media (max-width: 639px) {
+          .inline-cta-button {
+            width: 100%;
+            text-align: center;
+            margin-top: 8px;
+          }
+        }
       \`;
     }
 
@@ -792,20 +954,48 @@ export async function GET(request: NextRequest) {
     }
 
     renderFilters() {
-      let html = '<div class="filters-container">';
-      html += \`<button class="filter-btn \${this.currentCategory === 'all' ? 'active' : ''}" data-category="all">
+      // Mobile category grid (3 columns)
+      let mobileGrid = '<div class="category-grid">';
+      
+      // "View All" tile first
+      mobileGrid += \`
+        <div class="category-tile category-tile-all \${this.currentCategory === 'all' ? 'active' : ''}" data-category="all">
+          <span class="category-tile-icon">🏢</span>
+          <span class="category-tile-name">View All</span>
+          <span class="category-tile-count">\${this.listings.length}</span>
+        </div>
+      \`;
+
+      // Category tiles
+      for (const [category, count] of Object.entries(this.categories)) {
+        const cat = CATEGORIES[category] || { label: category, icon: '📍' };
+        mobileGrid += \`
+          <div class="category-tile \${this.currentCategory === category ? 'active' : ''}" data-category="\${category}">
+            <span class="category-tile-icon">\${cat.icon}</span>
+            <span class="category-tile-name">\${cat.label}</span>
+            <span class="category-tile-count">\${count}</span>
+          </div>
+        \`;
+      }
+
+      mobileGrid += '</div>';
+
+      // Desktop horizontal filter buttons
+      let desktopFilters = '<div class="filters-container">';
+      desktopFilters += \`<button class="filter-btn \${this.currentCategory === 'all' ? 'active' : ''}" data-category="all">
         All <span class="filter-count">(\${this.listings.length})</span>
       </button>\`;
 
       for (const [category, count] of Object.entries(this.categories)) {
         const cat = CATEGORIES[category] || { label: category, icon: '📍' };
-        html += \`<button class="filter-btn \${this.currentCategory === category ? 'active' : ''}" data-category="\${category}">
+        desktopFilters += \`<button class="filter-btn \${this.currentCategory === category ? 'active' : ''}" data-category="\${category}">
           \${cat.icon} \${cat.label} <span class="filter-count">(\${count})</span>
         </button>\`;
       }
 
-      html += '</div>';
-      return html;
+      desktopFilters += '</div>';
+
+      return mobileGrid + desktopFilters;
     }
 
     renderListingsHTML() {
@@ -813,12 +1003,26 @@ export async function GET(request: NextRequest) {
         return \`
           <div class="empty-container" style="grid-column: 1 / -1;">
             <div class="state-title">🏪 No Businesses Yet</div>
-            <div class="state-description">Be the first to join our directory!</div>
+            <div class="state-description">Advertise your business here!</div>
+            \${this.renderInlineCTA()}
           </div>
         \`;
       }
 
-      return this.filteredListings.map(listing => this.renderCard(listing)).join('');
+      // Inject inline CTAs every 4 listings
+      const CTA_INTERVAL = 4;
+      let html = '';
+      
+      this.filteredListings.forEach((listing, index) => {
+        html += this.renderCard(listing);
+        
+        // Add inline CTA after every CTA_INTERVAL listings (but not after the last one)
+        if ((index + 1) % CTA_INTERVAL === 0 && index < this.filteredListings.length - 1) {
+          html += this.renderInlineCTA();
+        }
+      });
+
+      return html;
     }
 
     renderCard(listing) {
@@ -897,12 +1101,29 @@ export async function GET(request: NextRequest) {
     renderCTA() {
       return \`
         <div class="cta-banner">
-          <div class="cta-badge">✨ Free Listing</div>
-          <h2 class="cta-title">Own a Local Business?</h2>
-          <p class="cta-description">Get discovered by the community. Join our directory — it's free!</p>
+          <div class="cta-badge">📢 Advertise With Us</div>
+          <h2 class="cta-title">Want Your Business Here?</h2>
+          <p class="cta-description">Get discovered by thousands in our community. Reach local customers with a directory listing.</p>
           <a href="\${this.escapeHtml(this.signupUrl)}" class="cta-button" target="_blank" rel="noopener">
-            Add Your Business →
+            Get Started →
           </a>
+        </div>
+      \`;
+    }
+
+    renderInlineCTA() {
+      return \`
+        <div class="inline-cta">
+          <div class="inline-cta-content">
+            <span class="inline-cta-icon">🏪</span>
+            <div class="inline-cta-text">
+              <strong>Own a local business?</strong>
+              <span>Get listed in our directory!</span>
+            </div>
+            <a href="\${this.escapeHtml(this.signupUrl)}" class="inline-cta-button" target="_blank" rel="noopener">
+              Learn More
+            </a>
+          </div>
         </div>
       \`;
     }
@@ -929,14 +1150,33 @@ export async function GET(request: NextRequest) {
         });
       }
 
+      // Get all filter elements (both mobile tiles and desktop buttons)
       const filterBtns = this.shadowRoot.querySelectorAll('.filter-btn');
+      const categoryTiles = this.shadowRoot.querySelectorAll('.category-tile');
+
+      // Helper to sync active state across both mobile and desktop
+      const setActiveCategory = (category) => {
+        this.currentCategory = category;
+        filterBtns.forEach(b => {
+          b.classList.toggle('active', b.dataset.category === category);
+        });
+        categoryTiles.forEach(t => {
+          t.classList.toggle('active', t.dataset.category === category);
+        });
+        this.filterListings();
+      };
+
+      // Desktop filter buttons
       filterBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const category = e.currentTarget.dataset.category;
-          this.currentCategory = category;
-          filterBtns.forEach(b => b.classList.remove('active'));
-          e.currentTarget.classList.add('active');
-          this.filterListings();
+          setActiveCategory(e.currentTarget.dataset.category);
+        });
+      });
+
+      // Mobile category tiles
+      categoryTiles.forEach(tile => {
+        tile.addEventListener('click', (e) => {
+          setActiveCategory(e.currentTarget.dataset.category);
         });
       });
 
