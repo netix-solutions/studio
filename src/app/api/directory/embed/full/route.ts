@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import {
   type DirectoryListing,
+  type LiveAd,
   type BusinessCategory,
   BUSINESS_CATEGORY_LABELS,
   BUSINESS_CATEGORY_ICONS,
   isDirectoryListingActive,
+  isDirectoryListingVisible,
 } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -34,18 +36,78 @@ export async function GET(request: NextRequest) {
   const featuredParam = request.nextUrl.searchParams.get('featured') === 'true';
   const columnsParam = request.nextUrl.searchParams.get('columns') || 'auto';
 
-  // Fetch listings
+  // Fetch listings from both sources
   let listings: DirectoryListing[] = [];
   const categoryStats: Record<string, number> = {};
 
   try {
     const db = getAdminFirestore();
-    const query = db.collection('directory_listings')
-      .where('status', '==', 'active');
 
-    const snapshot = await query.get();
+    // 1. Fetch approved listings from live_ads collection
+    const liveAdsSnapshot = await db.collection('live_ads')
+      .where('status', '==', 'active')
+      .get();
 
-    snapshot.forEach((doc) => {
+    liveAdsSnapshot.forEach((doc) => {
+      const ad = { id: doc.id, ...doc.data() } as LiveAd;
+
+      // Check if directory listing is visible (approved, active, showInDirectory not false)
+      if (!isDirectoryListingVisible(ad)) {
+        return;
+      }
+
+      const dirListing = ad.directoryListing!;
+
+      // Category filter
+      if (categoryParam && dirListing.category !== categoryParam) {
+        return;
+      }
+
+      // Featured filter
+      if (featuredParam && !dirListing.isFeatured) {
+        return;
+      }
+
+      // Track category stats
+      if (dirListing.category) {
+        categoryStats[dirListing.category] = (categoryStats[dirListing.category] || 0) + 1;
+      }
+
+      // Convert to DirectoryListing format for rendering
+      listings.push({
+        id: ad.id,
+        businessName: dirListing.businessName || ad.customerName || 'Business',
+        tagline: dirListing.tagline,
+        description: dirListing.description,
+        category: dirListing.category,
+        phone: dirListing.phone,
+        email: dirListing.email,
+        websiteUrl: dirListing.websiteUrl || ad.targetUrl,
+        logoUrl: dirListing.logoUrl,
+        bannerImageUrl: dirListing.bannerImageUrl || ad.imageUrl,
+        city: dirListing.city,
+        state: dirListing.state,
+        zipCode: dirListing.zipCode,
+        facebookUrl: dirListing.facebookUrl,
+        instagramUrl: dirListing.instagramUrl,
+        linkedinUrl: dirListing.linkedinUrl,
+        twitterUrl: dirListing.twitterUrl,
+        youtubeUrl: dirListing.youtubeUrl,
+        tiktokUrl: dirListing.tiktokUrl,
+        isFeatured: dirListing.isFeatured,
+        showContactInfo: dirListing.showContactInfo ?? true,
+        showSocialLinks: dirListing.showSocialLinks ?? true,
+        showAddress: dirListing.showAddress ?? false,
+        sortOrder: dirListing.sortOrder,
+      } as DirectoryListing);
+    });
+
+    // 2. Fetch active listings from directory_listings collection (free/standalone listings)
+    const directoryListingsSnapshot = await db.collection('directory_listings')
+      .where('status', '==', 'active')
+      .get();
+
+    directoryListingsSnapshot.forEach((doc) => {
       const listing = { id: doc.id, ...doc.data() } as DirectoryListing;
 
       // Check if listing is truly active
@@ -68,10 +130,14 @@ export async function GET(request: NextRequest) {
         categoryStats[listing.category] = (categoryStats[listing.category] || 0) + 1;
       }
 
-      listings.push(listing);
+      // Mark as free listing
+      listings.push({
+        ...listing,
+        id: `free_${listing.id}`,
+      });
     });
 
-    // Sort: featured first, then by business name
+    // Sort: featured first, then by sort order, then by business name
     listings.sort((a, b) => {
       if (a.isFeatured && !b.isFeatured) return -1;
       if (!a.isFeatured && b.isFeatured) return 1;
