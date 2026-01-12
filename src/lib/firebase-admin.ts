@@ -25,15 +25,24 @@ let adminAuth: Auth;
 function getCredential(): Credential {
   // Check for service account key in environment variable
   const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase-admin.ts:27',message:'checking GOOGLE_SERVICE_ACCOUNT_KEY',data:{hasServiceAccountKey:!!serviceAccountKey,keyLength:serviceAccountKey?.length,firstChars:serviceAccountKey?.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+  // #endregion
 
   if (serviceAccountKey) {
     try {
       // Parse the JSON service account key
       const serviceAccount = JSON.parse(serviceAccountKey);
       console.log('Using GOOGLE_SERVICE_ACCOUNT_KEY for Firebase Admin initialization');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase-admin.ts:33',message:'using service account key',data:{hasProjectId:!!serviceAccount.project_id,projectId:serviceAccount.project_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion
       return cert(serviceAccount);
     } catch (error) {
       console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY:', error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase-admin.ts:36',message:'failed to parse service account key',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion
       // Fall through to ADC
     }
   }
@@ -47,6 +56,9 @@ function getCredential(): Credential {
   }
 
   console.log('Using Application Default Credentials for Firebase Admin initialization');
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/28408f54-ed6d-4857-8d2e-fe187756ca8d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase-admin.ts:49',message:'falling back to ADC',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+  // #endregion
   return applicationDefault();
 }
 

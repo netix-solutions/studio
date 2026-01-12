@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import {
   type LiveAd,
+  type DirectoryListing,
   type CommunityWebsiteId,
   type BusinessCategory,
   BUSINESS_CATEGORY_LABELS,
@@ -167,6 +168,84 @@ export async function GET(request: NextRequest) {
         showAddress: listing.showAddress ?? false,
         isFeatured: !!listing.isFeatured,
         targetUrl: ad.targetUrl,
+      });
+    });
+
+    // Also fetch approved free listings from directory_listings collection
+    const freeListingsSnapshot = await db.collection('directory_listings')
+      .where('status', '==', 'active')
+      .get();
+
+    freeListingsSnapshot.forEach((doc) => {
+      const freeListing = { id: doc.id, ...doc.data() } as DirectoryListing;
+
+      // Category filter
+      if (categoryParam && freeListing.category !== categoryParam) {
+        return;
+      }
+
+      // Featured only filter
+      if (featuredOnlyParam && !freeListing.isFeatured) {
+        return;
+      }
+
+      // Search filter
+      if (searchParam) {
+        const searchLower = searchParam.toLowerCase();
+        const searchableText = [
+          freeListing.businessName,
+          freeListing.tagline,
+          freeListing.description,
+          freeListing.category,
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        if (!searchableText.includes(searchLower)) {
+          return;
+        }
+      }
+
+      // Track category counts
+      if (freeListing.category) {
+        categoryCounts[freeListing.category] = (categoryCounts[freeListing.category] || 0) + 1;
+      }
+
+      const categoryLabel = freeListing.category
+        ? BUSINESS_CATEGORY_LABELS[freeListing.category as BusinessCategory]
+        : undefined;
+      const categoryIcon = freeListing.category
+        ? BUSINESS_CATEGORY_ICONS[freeListing.category as BusinessCategory]
+        : undefined;
+
+      listings.push({
+        id: `free_${freeListing.id}`,
+        businessName: freeListing.businessName || 'Business',
+        tagline: freeListing.tagline,
+        description: freeListing.description,
+        category: freeListing.category,
+        categoryLabel,
+        categoryIcon,
+        phone: freeListing.phone,
+        email: freeListing.email || freeListing.contactEmail,
+        websiteUrl: freeListing.websiteUrl,
+        address: freeListing.address,
+        city: freeListing.city,
+        state: freeListing.state,
+        imageUrl: freeListing.bannerImageUrl || freeListing.logoUrl,
+        logoUrl: freeListing.logoUrl,
+        bannerImageUrl: freeListing.bannerImageUrl,
+        facebookUrl: freeListing.facebookUrl,
+        instagramUrl: freeListing.instagramUrl,
+        linkedinUrl: freeListing.linkedinUrl,
+        twitterUrl: freeListing.twitterUrl,
+        youtubeUrl: freeListing.youtubeUrl,
+        tiktokUrl: freeListing.tiktokUrl,
+        appointmentUrl: freeListing.appointmentUrl,
+        yearEstablished: freeListing.yearEstablished,
+        showContactInfo: freeListing.showContactInfo ?? true,
+        showSocialLinks: freeListing.showSocialLinks ?? true,
+        showAddress: freeListing.showAddress ?? false,
+        isFeatured: !!freeListing.isFeatured,
+        targetUrl: freeListing.websiteUrl || '',
       });
     });
 

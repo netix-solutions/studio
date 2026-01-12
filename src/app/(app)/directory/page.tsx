@@ -56,6 +56,7 @@ import {
     Save,
     User,
     Settings2,
+    Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -76,6 +77,8 @@ interface DirectoryListingItem {
     liveAdId: string;
     liveAd: Partial<LiveAd>;
     directoryListing: LiveAdDirectoryListing | null;
+    source?: 'live_ads' | 'directory_listings';
+    freeListingId?: string;
 }
 
 interface DirectoryStats {
@@ -85,6 +88,7 @@ interface DirectoryStats {
     hidden: number;
     rejected: number;
     featured: number;
+    freeListings?: number;
 }
 
 export default function DirectoryPage() {
@@ -414,7 +418,7 @@ export default function DirectoryPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
                 <Card
                     className={cn(
                         'cursor-pointer transition-all hover:shadow-md',
@@ -481,6 +485,14 @@ export default function DirectoryPage() {
                         <div className="text-sm text-muted-foreground">Featured</div>
                     </CardContent>
                 </Card>
+                {stats.freeListings !== undefined && stats.freeListings > 0 && (
+                    <Card className="border-blue-200 bg-blue-50">
+                        <CardContent className="p-4 text-center">
+                            <div className="text-3xl font-bold text-blue-600">{stats.freeListings}</div>
+                            <div className="text-sm text-muted-foreground">Free Signups</div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Search */}
@@ -573,6 +585,15 @@ export default function DirectoryPage() {
                                                                 item.liveAd.customerName ||
                                                                 'Unknown Business'}
                                                         </h4>
+                                                        {item.source === 'directory_listings' && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="bg-blue-50 text-blue-600 border-blue-200"
+                                                            >
+                                                                <Gift className="h-3 w-3 mr-1" />
+                                                                Free Listing
+                                                            </Badge>
+                                                        )}
                                                         {listing?.isFeatured && (
                                                             <Badge
                                                                 variant="outline"
