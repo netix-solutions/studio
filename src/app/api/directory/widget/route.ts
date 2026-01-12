@@ -17,7 +17,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/javascript; charset=utf-8',
-  'Cache-Control': 'public, max-age=3600',
+  'Cache-Control': 'public, max-age=60',
 };
 
 export async function OPTIONS() {
@@ -254,7 +254,7 @@ export async function GET(request: NextRequest) {
           height: 20px;
         }
 
-        /* ===== MOBILE CATEGORY GRID ===== */
+        /* ===== CATEGORY GRID (Mobile: 3 cols, Desktop: flexible) ===== */
         .category-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -264,7 +264,8 @@ export async function GET(request: NextRequest) {
 
         @media (min-width: 768px) {
           .category-grid {
-            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
           }
         }
 
@@ -337,24 +338,9 @@ export async function GET(request: NextRequest) {
           color: white;
         }
 
-        /* ===== DESKTOP FILTERS - HORIZONTAL SCROLL ===== */
+        /* ===== DESKTOP FILTERS - HIDDEN (using category grid instead) ===== */
         .filters-container {
           display: none;
-          gap: 8px;
-          margin-bottom: 20px;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-          padding: 4px 0;
-        }
-
-        @media (min-width: 768px) {
-          .filters-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-          }
         }
 
         .filters-container::-webkit-scrollbar {

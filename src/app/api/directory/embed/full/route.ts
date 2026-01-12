@@ -18,7 +18,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'text/html; charset=utf-8',
-  'Cache-Control': 'public, max-age=300',
+  'Cache-Control': 'public, max-age=60',
 };
 
 export async function OPTIONS() {
@@ -290,7 +290,7 @@ function generateDirectoryHTML(options: {
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
     
-    /* ===== MOBILE CATEGORY GRID ===== */
+    /* ===== CATEGORY GRID (Mobile: 3 cols, Desktop: flexible) ===== */
     .category-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -299,7 +299,10 @@ function generateDirectoryHTML(options: {
     }
     
     @media (min-width: 768px) {
-      .category-grid { display: none; }
+      .category-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
     }
     
     .category-tile {
@@ -362,26 +365,9 @@ function generateDirectoryHTML(options: {
       color: white;
     }
     
-    /* ===== DESKTOP CATEGORY FILTERS ===== */
+    /* ===== DESKTOP CATEGORY FILTERS - HIDDEN (using category grid instead) ===== */
     .category-filters {
       display: none;
-      gap: 8px;
-      margin-bottom: 24px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding: 4px 0;
-    }
-    
-    .category-filters::-webkit-scrollbar { display: none; }
-    
-    @media (min-width: 768px) {
-      .category-filters {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        overflow-x: visible;
-      }
     }
     
     .category-chip {
