@@ -31,7 +31,16 @@ import {
   Instagram,
   Loader2,
   AlertCircle,
+  Star,
+  TrendingUp,
+  Eye,
+  MousePointerClick,
+  Megaphone,
+  Crown,
+  User as UserIcon,
 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
   type BusinessCategory,
@@ -174,86 +183,182 @@ export default function DirectorySignupPage() {
     }
   };
 
-  // Success state
+  // Success state with strong ad upsell
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 py-12 px-4">
-        <div className="max-w-lg mx-auto">
-          <Card className="border-blue-200 shadow-xl">
-            <CardContent className="pt-8 pb-8 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-8 h-8 text-blue-600" />
+      <div className="min-h-screen bg-white">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+          <div className="container mx-auto px-4">
+            <div className="flex h-16 items-center justify-between">
+              <Link href="/" className="flex items-center gap-2">
+                <Image src="/logo.png" alt="Community-Websites.com" width={40} height={24} className="h-7 w-auto" />
+                <span className="font-bold text-blue-900 text-sm sm:text-base">Community-Websites.com</span>
+              </Link>
+              <div className="flex items-center gap-3">
+                <a href="tel:813-544-8383" className="hidden sm:flex items-center gap-1.5 text-blue-900 hover:text-blue-700">
+                  <Phone className="h-4 w-4" />
+                  <span className="text-sm font-medium">813-544-8383</span>
+                </a>
               </div>
-              <h1 className="text-2xl font-bold mb-2">Submission Received!</h1>
-              <p className="text-muted-foreground mb-6">
-                Your listing has been submitted for review. Our team will review it 
-                and you'll receive an email once it's approved (usually within 1-2 business days).
+            </div>
+          </div>
+        </header>
+
+        <div className="py-12 px-4">
+          <div className="max-w-2xl mx-auto">
+            {/* Success Message */}
+            <div className="text-center mb-10">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h1 className="text-3xl font-bold mb-3">🎉 You're In!</h1>
+              <p className="text-muted-foreground text-lg">
+                Your free listing has been submitted and is pending review.
               </p>
-              
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg p-4 mb-6 text-left">
-                <h3 className="font-semibold text-sm mb-2">What happens next?</h3>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li>✓ We'll review your listing for accuracy</li>
-                  <li>✓ Once approved, it goes live in our directory</li>
-                  <li>✓ You'll receive a confirmation email</li>
-                </ul>
+            </div>
+
+            {/* What's Next */}
+            <Card className="mb-8 border-green-200 bg-green-50/50">
+              <CardContent className="pt-6">
+                <h3 className="font-semibold mb-4">What happens next?</h3>
+                <div className="space-y-3">
+                  {[
+                    { step: '1', text: 'Our team reviews your listing (1-2 business days)' },
+                    { step: '2', text: 'Once approved, you appear in our directory' },
+                    { step: '3', text: 'Local residents can discover your business!' },
+                  ].map((item) => (
+                    <div key={item.step} className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">
+                        {item.step}
+                      </div>
+                      <span className="text-sm">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* UPSELL: Featured Advertising */}
+            <Card className="mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-5 h-5" />
+                  <span className="font-bold">Want 10x More Visibility?</span>
+                </div>
               </div>
-              
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 rounded-lg p-4 mb-6 text-left">
-                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  Want More Visibility?
-                </h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Upgrade to an advertising plan to get your business featured on our community websites 
-                  and reach thousands of local residents every month.
+              <CardContent className="pt-6">
+                <p className="text-muted-foreground mb-6">
+                  A directory listing is great, but <strong>advertising</strong> puts your business 
+                  in front of <strong>thousands of local residents every single day</strong>.
                 </p>
-                <Button asChild size="sm">
-                  <a href="/pricing">
-                    View Ad Plans <ArrowRight className="w-4 h-4 ml-2" />
-                  </a>
-                </Button>
-              </div>
-              
-              <p className="text-xs text-muted-foreground">
-                Questions? Contact us at support@community-websites.com
-              </p>
-            </CardContent>
-          </Card>
+
+                <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                  {[
+                    { icon: Eye, text: '50,000+ monthly impressions', color: 'text-blue-600' },
+                    { icon: MousePointerClick, text: 'Direct clicks to your website', color: 'text-green-600' },
+                    { icon: Star, text: 'Featured placement on sites', color: 'text-amber-600' },
+                    { icon: TrendingUp, text: 'Measurable ROI & analytics', color: 'text-purple-600' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-white rounded-lg p-3 border">
+                      <item.icon className={`w-5 h-5 ${item.color} shrink-0`} />
+                      <span className="text-sm font-medium">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm">
+                    <strong>🎁 Special Offer:</strong> Since you just signed up, get <strong>your first month FREE</strong> when you start advertising today!
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button asChild size="lg" className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <Link href="/pricing">
+                      <Megaphone className="w-5 h-5 mr-2" />
+                      View Advertising Plans
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="flex-1">
+                    <a href="tel:813-544-8383">
+                      <Phone className="w-4 h-4 mr-2" />
+                      Call Us: 813-544-8383
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Questions about your listing? Email us at support@community-websites.com
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Badge className="bg-green-100 text-green-700 border-green-200 mb-4 text-sm px-4 py-1">
-            <Gift className="w-4 h-4 mr-2 inline" />
-            Limited Time: 100% Free!
-          </Badge>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            Get Your Business Listed
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Join our community business directory and get discovered by local residents.
-          </p>
-        </div>
-
-        {/* Benefits */}
-        <div className="grid sm:grid-cols-3 gap-4 mb-8">
-          {[
-            { icon: CheckCircle, text: 'Instant visibility' },
-            { icon: MapPin, text: 'Reach local customers' },
-            { icon: Globe, text: 'Link to your website' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white/50 dark:bg-black/20 rounded-lg p-3">
-              <item.icon className="w-5 h-5 text-green-600 shrink-0" />
-              <span className="text-sm font-medium">{item.text}</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header - Matches Landing Page */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/logo.png" alt="Community-Websites.com" width={40} height={24} className="h-7 w-auto" />
+              <span className="font-bold text-blue-900 text-sm sm:text-base">Community-Websites.com</span>
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <a href="tel:813-544-8383" className="hidden md:flex items-center gap-1.5 text-blue-900 hover:text-blue-700">
+                <Phone className="h-4 w-4" />
+                <span className="text-sm font-medium">813-544-8383</span>
+              </a>
+              <Button variant="ghost" size="sm" asChild className="h-9 w-9 sm:w-auto sm:px-3">
+                <Link href="/login">
+                  <UserIcon className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Login</span>
+                </Link>
+              </Button>
+              <Button size="sm" asChild className="h-10 px-4 bg-blue-600 hover:bg-blue-700">
+                <Link href="/pricing">
+                  View Ad Plans
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Link>
+              </Button>
             </div>
-          ))}
+          </div>
+        </div>
+      </header>
+
+      <div className="py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <Badge className="bg-green-100 text-green-700 border-green-200 mb-4 text-sm px-4 py-1">
+              <Gift className="w-4 h-4 mr-2 inline" />
+              Limited Time: 100% Free!
+            </Badge>
+            <h1 className="text-3xl md:text-4xl font-bold mb-3 text-gray-900">
+              Get Your Business Listed
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-md mx-auto">
+              Join our community business directory and get discovered by local residents.
+            </p>
+          </div>
+
+          {/* Benefits */}
+          <div className="grid sm:grid-cols-3 gap-4 mb-8">
+            {[
+              { icon: CheckCircle, text: 'Instant visibility' },
+              { icon: MapPin, text: 'Reach local customers' },
+              { icon: Globe, text: 'Link to your website' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 bg-white/80 rounded-lg p-3 border border-gray-100">
+                <item.icon className="w-5 h-5 text-green-600 shrink-0" />
+                <span className="text-sm font-medium">{item.text}</span>
+              </div>
+            ))}
         </div>
 
         {/* Form */}
@@ -528,12 +633,34 @@ export default function DirectorySignupPage() {
               </Alert>
             )}
 
+            {/* Upsell Banner Before Submit */}
+            <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+              <CardContent className="pt-5 pb-5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-sm flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-blue-600" />
+                      Want Even More Customers?
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Upgrade to advertising and get your business featured to 50,000+ local residents every month.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild className="shrink-0">
+                    <Link href="/pricing">
+                      See Ad Plans <ArrowRight className="w-3 h-3 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Submit */}
             <div className="space-y-4">
               <Button
                 type="submit"
                 size="lg"
-                className="w-full text-lg py-6"
+                className="w-full text-lg py-6 bg-green-600 hover:bg-green-700"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -551,13 +678,14 @@ export default function DirectorySignupPage() {
               
               <p className="text-xs text-center text-muted-foreground">
                 By signing up, you agree to our{' '}
-                <a href="/terms" className="underline">Terms of Service</a>
+                <a href="/terms-of-service" className="underline">Terms of Service</a>
                 {' '}and{' '}
-                <a href="/privacy" className="underline">Privacy Policy</a>.
+                <a href="/privacy-policy" className="underline">Privacy Policy</a>.
               </p>
             </div>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

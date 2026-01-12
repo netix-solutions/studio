@@ -4,19 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
  * Business Directory Widget
  * 
  * A self-contained web component that renders a full-featured business directory.
- * Designed to feel like a native part of any website.
+ * Designed with transparent background to blend seamlessly into any website.
+ * Mobile-first responsive design optimized for touch devices.
  * 
  * Usage:
  *   <script src="https://community-websites.com/api/directory/widget"></script>
  *   <community-directory></community-directory>
- * 
- * With options:
- *   <community-directory 
- *     theme="light"
- *     accent-color="#3b82f6"
- *     signup-url="https://community-websites.com/directory-signup"
- *     show-cta="true"
- *   ></community-directory>
  */
 
 const corsHeaders = {
@@ -40,7 +33,6 @@ export async function GET(request: NextRequest) {
 (function() {
   'use strict';
 
-  // Prevent double initialization
   if (customElements.get('community-directory')) return;
 
   const API_BASE = '${baseUrl}';
@@ -49,7 +41,6 @@ export async function GET(request: NextRequest) {
   const TRACK_IMPRESSION_API = API_BASE + '/api/directory/track/impression';
   const DEFAULT_SIGNUP_URL = API_BASE + '/directory-signup';
 
-  // Category data
   const CATEGORIES = {
     'retail': { label: 'Retail', icon: '🛍️' },
     'food_beverage': { label: 'Food & Beverage', icon: '🍽️' },
@@ -83,7 +74,7 @@ export async function GET(request: NextRequest) {
     }
 
     static get observedAttributes() {
-      return ['theme', 'accent-color', 'signup-url', 'show-cta', 'show-search', 'show-filters', 'columns'];
+      return ['theme', 'accent-color', 'signup-url', 'show-cta', 'show-search', 'show-filters', 'columns', 'show-header'];
     }
 
     get theme() { return this.getAttribute('theme') || 'light'; }
@@ -92,6 +83,7 @@ export async function GET(request: NextRequest) {
     get showCta() { return this.getAttribute('show-cta') !== 'false'; }
     get showSearch() { return this.getAttribute('show-search') !== 'false'; }
     get showFilters() { return this.getAttribute('show-filters') !== 'false'; }
+    get showHeader() { return this.getAttribute('show-header') !== 'false'; }
     get columns() { return this.getAttribute('columns') || 'auto'; }
 
     connectedCallback() {
@@ -156,75 +148,95 @@ export async function GET(request: NextRequest) {
     getStyles() {
       const isDark = this.theme === 'dark';
       return \`
+        /* ===== MOBILE-FIRST DESIGN ===== */
         :host {
           display: block;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          line-height: 1.6;
-          color: \${isDark ? '#f1f5f9' : '#1e293b'};
+          line-height: 1.5;
+          color: \${isDark ? '#f1f5f9' : 'inherit'};
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          
+          /* CSS Variables */
           --accent: \${this.accentColor};
+          --accent-rgb: \${this.hexToRgb(this.accentColor)};
           --accent-hover: \${this.accentColor}dd;
-          --bg: \${isDark ? '#0f172a' : '#ffffff'};
-          --card-bg: \${isDark ? '#1e293b' : '#ffffff'};
-          --border: \${isDark ? '#334155' : '#e2e8f0'};
-          --text: \${isDark ? '#f1f5f9' : '#1e293b'};
+          --card-bg: \${isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.98)'};
+          --card-border: \${isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.8)'};
+          --text: \${isDark ? '#f1f5f9' : 'inherit'};
           --text-secondary: \${isDark ? '#94a3b8' : '#64748b'};
-          --input-bg: \${isDark ? '#1e293b' : '#ffffff'};
+          --input-bg: \${isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)'};
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ===== CONTAINER - TRANSPARENT ===== */
         .directory-container {
+          width: 100%;
           max-width: 1400px;
           margin: 0 auto;
-          padding: 40px 20px;
-          background: var(--bg);
+          padding: 16px;
+          background: transparent;
         }
 
-        /* Header */
+        @media (min-width: 768px) {
+          .directory-container {
+            padding: 24px;
+          }
+        }
+
+        /* ===== HEADER ===== */
         .directory-header {
           text-align: center;
-          margin-bottom: 40px;
+          margin-bottom: 24px;
         }
 
         .directory-title {
-          font-size: 2.5rem;
+          font-size: 1.75rem;
           font-weight: 800;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
           background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
 
+        @media (min-width: 768px) {
+          .directory-title {
+            font-size: 2.25rem;
+          }
+        }
+
         .directory-subtitle {
-          font-size: 1.125rem;
+          font-size: 0.95rem;
           color: var(--text-secondary);
-          max-width: 600px;
+          max-width: 500px;
           margin: 0 auto;
         }
 
-        /* Search */
+        /* ===== SEARCH - MOBILE OPTIMIZED ===== */
         .search-container {
-          max-width: 600px;
-          margin: 0 auto 30px;
+          margin: 0 0 20px;
           position: relative;
         }
 
         .search-input {
           width: 100%;
-          padding: 16px 20px 16px 50px;
-          font-size: 1rem;
-          border: 2px solid var(--border);
+          padding: 14px 16px 14px 46px;
+          font-size: 16px; /* Prevents zoom on iOS */
+          border: 2px solid var(--card-border);
           border-radius: 12px;
           background: var(--input-bg);
           color: var(--text);
           transition: all 0.2s;
           outline: none;
+          -webkit-appearance: none;
+          appearance: none;
         }
 
         .search-input:focus {
           border-color: var(--accent);
-          box-shadow: 0 0 0 3px \${this.accentColor}20;
+          box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
         }
 
         .search-input::placeholder {
@@ -233,40 +245,51 @@ export async function GET(request: NextRequest) {
 
         .search-icon {
           position: absolute;
-          left: 18px;
+          left: 14px;
           top: 50%;
           transform: translateY(-50%);
           color: var(--text-secondary);
           pointer-events: none;
+          width: 20px;
+          height: 20px;
         }
 
-        /* Filters */
+        /* ===== FILTERS - HORIZONTAL SCROLL ON MOBILE ===== */
         .filters-container {
           display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          justify-content: center;
-          margin-bottom: 40px;
+          gap: 8px;
+          margin-bottom: 20px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          padding: 4px 0;
+        }
+
+        .filters-container::-webkit-scrollbar {
+          display: none;
         }
 
         .filter-btn {
-          padding: 10px 20px;
-          border: 2px solid var(--border);
-          border-radius: 25px;
+          flex-shrink: 0;
+          padding: 10px 16px;
+          border: 2px solid var(--card-border);
+          border-radius: 24px;
           background: var(--card-bg);
           color: var(--text);
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
           align-items: center;
           gap: 6px;
+          white-space: nowrap;
+          -webkit-tap-highlight-color: transparent;
         }
 
-        .filter-btn:hover {
-          border-color: var(--accent);
-          background: \${this.accentColor}10;
+        .filter-btn:active {
+          transform: scale(0.97);
         }
 
         .filter-btn.active {
@@ -276,19 +299,20 @@ export async function GET(request: NextRequest) {
         }
 
         .filter-count {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           opacity: 0.8;
         }
 
-        /* Stats Banner */
+        /* ===== STATS - COMPACT ON MOBILE ===== */
         .stats-banner {
-          display: flex;
-          justify-content: center;
-          gap: 40px;
-          margin-bottom: 40px;
-          padding: 20px;
-          background: linear-gradient(135deg, \${this.accentColor}10 0%, #8b5cf610 100%);
-          border-radius: 16px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 24px;
+          padding: 16px;
+          background: rgba(var(--accent-rgb), 0.08);
+          border-radius: 12px;
+          border: 1px solid rgba(var(--accent-rgb), 0.15);
         }
 
         .stat-item {
@@ -296,74 +320,98 @@ export async function GET(request: NextRequest) {
         }
 
         .stat-number {
-          font-size: 2rem;
+          font-size: 1.5rem;
           font-weight: 700;
           color: var(--accent);
+          line-height: 1.2;
+        }
+
+        @media (min-width: 768px) {
+          .stat-number {
+            font-size: 2rem;
+          }
         }
 
         .stat-label {
-          font-size: 0.875rem;
+          font-size: 0.7rem;
           color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
-        /* Grid */
+        @media (min-width: 768px) {
+          .stat-label {
+            font-size: 0.8rem;
+          }
+        }
+
+        /* ===== GRID - SINGLE COLUMN MOBILE ===== */
         .listings-grid {
           display: grid;
-          gap: 24px;
-          margin-bottom: 50px;
+          gap: 16px;
+          margin-bottom: 32px;
         }
 
-        .listings-grid.columns-auto {
-          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        }
-
-        .listings-grid.columns-2 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .listings-grid.columns-3 {
-          grid-template-columns: repeat(3, 1fr);
-        }
-
+        /* Mobile: Single column */
+        .listings-grid.columns-auto,
+        .listings-grid.columns-2,
+        .listings-grid.columns-3,
         .listings-grid.columns-4 {
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: 1fr;
         }
 
-        @media (max-width: 768px) {
-          .listings-grid,
-          .listings-grid.columns-2,
-          .listings-grid.columns-3,
+        /* Tablet: 2 columns */
+        @media (min-width: 640px) {
+          .listings-grid.columns-auto {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .listings-grid.columns-2 {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* Desktop: Responsive */
+        @media (min-width: 1024px) {
+          .listings-grid.columns-auto {
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          }
+          .listings-grid.columns-3 {
+            grid-template-columns: repeat(3, 1fr);
+          }
           .listings-grid.columns-4 {
-            grid-template-columns: 1fr;
-          }
-          .stats-banner {
-            flex-direction: column;
-            gap: 20px;
+            grid-template-columns: repeat(4, 1fr);
           }
         }
 
-        /* Card */
+        /* ===== CARD - TOUCH OPTIMIZED ===== */
         .listing-card {
           position: relative;
           background: var(--card-bg);
-          border: 1px solid var(--border);
+          border: 1px solid var(--card-border);
           border-radius: 16px;
           overflow: hidden;
-          transition: all 0.3s ease;
+          transition: transform 0.2s, box-shadow 0.2s;
+          -webkit-tap-highlight-color: transparent;
         }
 
-        .listing-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        @media (hover: hover) {
+          .listing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+          }
+        }
+
+        .listing-card:active {
+          transform: scale(0.99);
         }
 
         .card-badge {
           position: absolute;
-          top: 16px;
-          right: 16px;
-          padding: 6px 14px;
-          border-radius: 20px;
-          font-size: 0.75rem;
+          top: 12px;
+          right: 12px;
+          padding: 5px 10px;
+          border-radius: 16px;
+          font-size: 0.7rem;
           font-weight: 600;
           z-index: 10;
         }
@@ -375,67 +423,75 @@ export async function GET(request: NextRequest) {
 
         .card-banner {
           width: 100%;
-          height: 160px;
+          height: 140px;
           overflow: hidden;
-          background: linear-gradient(135deg, \${this.accentColor}20 0%, #8b5cf620 100%);
+          background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+        }
+
+        @media (min-width: 768px) {
+          .card-banner {
+            height: 160px;
+          }
         }
 
         .card-banner img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s;
-        }
-
-        .listing-card:hover .card-banner img {
-          transform: scale(1.05);
         }
 
         .card-content {
-          padding: 24px;
+          padding: 16px;
+        }
+
+        @media (min-width: 768px) {
+          .card-content {
+            padding: 20px;
+          }
         }
 
         .card-header {
           display: flex;
           align-items: flex-start;
-          gap: 16px;
-          margin-bottom: 16px;
+          gap: 12px;
+          margin-bottom: 12px;
         }
 
         .card-logo {
-          width: 56px;
-          height: 56px;
-          border-radius: 12px;
+          width: 48px;
+          height: 48px;
+          border-radius: 10px;
           object-fit: contain;
-          border: 2px solid var(--border);
+          border: 1px solid var(--card-border);
           background: white;
           flex-shrink: 0;
         }
 
         .card-title {
-          font-size: 1.25rem;
+          font-size: 1.1rem;
           font-weight: 700;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
           color: var(--text);
+          line-height: 1.3;
         }
 
         .card-category {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 4px 12px;
-          background: \${this.accentColor}15;
+          gap: 4px;
+          padding: 3px 8px;
+          background: rgba(var(--accent-rgb), 0.1);
           border-radius: 6px;
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           color: var(--accent);
           font-weight: 500;
         }
 
         .card-description {
           color: var(--text-secondary);
-          font-size: 0.9rem;
-          line-height: 1.6;
-          margin-bottom: 16px;
+          font-size: 0.875rem;
+          line-height: 1.5;
+          margin-bottom: 12px;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -445,22 +501,22 @@ export async function GET(request: NextRequest) {
         .card-contact {
           display: flex;
           flex-wrap: wrap;
-          gap: 12px;
-          font-size: 0.85rem;
+          gap: 8px 16px;
+          font-size: 0.8rem;
           color: var(--text-secondary);
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
 
         .contact-item {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
         }
 
         .card-social {
           display: flex;
-          gap: 10px;
-          margin-bottom: 20px;
+          gap: 8px;
+          margin-bottom: 16px;
         }
 
         .social-link {
@@ -469,7 +525,7 @@ export async function GET(request: NextRequest) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--border);
+          background: rgba(var(--accent-rgb), 0.1);
           border-radius: 50%;
           color: var(--text-secondary);
           text-decoration: none;
@@ -477,15 +533,22 @@ export async function GET(request: NextRequest) {
           font-size: 1rem;
         }
 
-        .social-link:hover {
+        .social-link:active {
+          transform: scale(0.9);
           background: var(--accent);
           color: white;
-          transform: scale(1.1);
+        }
+
+        @media (hover: hover) {
+          .social-link:hover {
+            background: var(--accent);
+            color: white;
+          }
         }
 
         .card-button {
           width: 100%;
-          padding: 14px 24px;
+          padding: 14px 20px;
           background: var(--accent);
           color: white;
           border: none;
@@ -497,129 +560,141 @@ export async function GET(request: NextRequest) {
           text-decoration: none;
           display: block;
           text-align: center;
+          -webkit-tap-highlight-color: transparent;
         }
 
-        .card-button:hover {
-          background: var(--accent-hover);
-          transform: scale(1.02);
+        .card-button:active {
+          transform: scale(0.98);
+          opacity: 0.9;
         }
 
-        /* CTA Banner */
+        @media (hover: hover) {
+          .card-button:hover {
+            opacity: 0.9;
+          }
+        }
+
+        /* ===== CTA BANNER - MOBILE FRIENDLY ===== */
         .cta-banner {
           background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
-          border-radius: 20px;
-          padding: 48px;
+          border-radius: 16px;
+          padding: 28px 20px;
           text-align: center;
           color: white;
-          margin-top: 20px;
+        }
+
+        @media (min-width: 768px) {
+          .cta-banner {
+            padding: 40px;
+          }
         }
 
         .cta-badge {
           display: inline-block;
           background: rgba(255,255,255,0.2);
-          padding: 8px 20px;
-          border-radius: 25px;
-          font-size: 0.9rem;
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 0.8rem;
           font-weight: 600;
-          margin-bottom: 16px;
-        }
-
-        .cta-title {
-          font-size: 2rem;
-          font-weight: 800;
           margin-bottom: 12px;
         }
 
+        .cta-title {
+          font-size: 1.5rem;
+          font-weight: 800;
+          margin-bottom: 8px;
+        }
+
+        @media (min-width: 768px) {
+          .cta-title {
+            font-size: 1.75rem;
+          }
+        }
+
         .cta-description {
-          font-size: 1.1rem;
+          font-size: 0.95rem;
           opacity: 0.9;
-          max-width: 500px;
-          margin: 0 auto 24px;
+          max-width: 400px;
+          margin: 0 auto 20px;
+          line-height: 1.5;
         }
 
         .cta-button {
           display: inline-block;
           background: white;
           color: var(--accent);
-          padding: 16px 40px;
-          border-radius: 12px;
-          font-size: 1.1rem;
+          padding: 14px 32px;
+          border-radius: 10px;
+          font-size: 1rem;
           font-weight: 700;
           text-decoration: none;
           transition: all 0.2s;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          -webkit-tap-highlight-color: transparent;
         }
 
-        .cta-button:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        .cta-button:active {
+          transform: scale(0.97);
         }
 
-        /* States */
+        @media (hover: hover) {
+          .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+          }
+        }
+
+        /* ===== LOADING/ERROR STATES ===== */
         .loading-container,
         .error-container,
         .empty-container {
           text-align: center;
-          padding: 80px 20px;
+          padding: 48px 20px;
         }
 
         .loading-spinner {
-          width: 50px;
-          height: 50px;
-          border: 4px solid var(--border);
+          width: 40px;
+          height: 40px;
+          border: 3px solid var(--card-border);
           border-top-color: var(--accent);
           border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 20px;
+          animation: spin 0.8s linear infinite;
+          margin: 0 auto 16px;
         }
 
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
 
-        .error-icon, .empty-icon {
-          font-size: 4rem;
-          margin-bottom: 20px;
-        }
-
         .state-title {
-          font-size: 1.5rem;
+          font-size: 1.2rem;
           font-weight: 700;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           color: var(--text);
         }
 
         .state-description {
           color: var(--text-secondary);
+          font-size: 0.9rem;
         }
 
-        /* No results */
         .no-results {
           text-align: center;
-          padding: 60px 20px;
+          padding: 40px 20px;
           color: var(--text-secondary);
         }
 
         .no-results-icon {
-          font-size: 3rem;
-          margin-bottom: 16px;
-        }
-
-        /* Featured section */
-        .section-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin-bottom: 24px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: var(--text);
-        }
-
-        .section-title-icon {
-          font-size: 1.3rem;
+          font-size: 2.5rem;
+          margin-bottom: 12px;
         }
       \`;
+    }
+
+    hexToRgb(hex) {
+      const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+      return result 
+        ? parseInt(result[1], 16) + ', ' + parseInt(result[2], 16) + ', ' + parseInt(result[3], 16)
+        : '59, 130, 246';
     }
 
     render() {
@@ -632,7 +707,7 @@ export async function GET(request: NextRequest) {
             <div class="loading-container">
               <div class="loading-spinner"></div>
               <div class="state-title">Loading Directory...</div>
-              <div class="state-description">Please wait while we fetch the latest listings</div>
+              <div class="state-description">Finding local businesses</div>
             </div>
           </div>
         \`;
@@ -644,8 +719,7 @@ export async function GET(request: NextRequest) {
           <style>\${styles}</style>
           <div class="directory-container">
             <div class="error-container">
-              <div class="error-icon">⚠️</div>
-              <div class="state-title">Oops! Something went wrong</div>
+              <div class="state-title">⚠️ Oops!</div>
               <div class="state-description">\${this.error}</div>
             </div>
           </div>
@@ -659,15 +733,17 @@ export async function GET(request: NextRequest) {
       this.shadowRoot.innerHTML = \`
         <style>\${styles}</style>
         <div class="directory-container">
-          <div class="directory-header">
-            <h1 class="directory-title">Business Directory</h1>
-            <p class="directory-subtitle">Discover amazing local businesses serving our community</p>
-          </div>
+          \${this.showHeader ? \`
+            <div class="directory-header">
+              <h1 class="directory-title">Business Directory</h1>
+              <p class="directory-subtitle">Discover local businesses in our community</p>
+            </div>
+          \` : ''}
 
           <div class="stats-banner">
             <div class="stat-item">
               <div class="stat-number">\${this.listings.length}</div>
-              <div class="stat-label">Local Businesses</div>
+              <div class="stat-label">Businesses</div>
             </div>
             <div class="stat-item">
               <div class="stat-number">\${featuredCount}</div>
@@ -681,11 +757,11 @@ export async function GET(request: NextRequest) {
 
           \${this.showSearch ? \`
             <div class="search-container">
-              <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="M21 21l-4.35-4.35"/>
               </svg>
-              <input type="text" class="search-input" id="search-input" placeholder="Search businesses by name, category, or description...">
+              <input type="text" class="search-input" id="search-input" placeholder="Search businesses...">
             </div>
           \` : ''}
 
@@ -699,7 +775,7 @@ export async function GET(request: NextRequest) {
             <div class="no-results">
               <div class="no-results-icon">🔍</div>
               <div class="state-title">No businesses found</div>
-              <div class="state-description">Try adjusting your search or filter criteria</div>
+              <div class="state-description">Try a different search or category</div>
             </div>
           \` : ''}
 
@@ -729,9 +805,8 @@ export async function GET(request: NextRequest) {
       if (this.filteredListings.length === 0 && this.listings.length === 0) {
         return \`
           <div class="empty-container" style="grid-column: 1 / -1;">
-            <div class="empty-icon">🏪</div>
-            <div class="state-title">No Businesses Yet</div>
-            <div class="state-description">Be the first to join our community directory!</div>
+            <div class="state-title">🏪 No Businesses Yet</div>
+            <div class="state-description">Be the first to join our directory!</div>
           </div>
         \`;
       }
@@ -753,20 +828,16 @@ export async function GET(request: NextRequest) {
         <div class="listing-card" data-id="\${listing.id}">
           \${listing.isFeatured ? '<div class="card-badge badge-featured">⭐ Featured</div>' : ''}
           
-          \${listing.bannerImageUrl ? \`
+          \${listing.bannerImageUrl || listing.imageUrl ? \`
             <div class="card-banner">
-              <img src="\${this.escapeHtml(listing.bannerImageUrl)}" alt="\${this.escapeHtml(listing.businessName)}" loading="lazy">
-            </div>
-          \` : listing.imageUrl ? \`
-            <div class="card-banner">
-              <img src="\${this.escapeHtml(listing.imageUrl)}" alt="\${this.escapeHtml(listing.businessName)}" loading="lazy">
+              <img src="\${this.escapeHtml(listing.bannerImageUrl || listing.imageUrl)}" alt="\${this.escapeHtml(listing.businessName)}" loading="lazy">
             </div>
           \` : ''}
           
           <div class="card-content">
             <div class="card-header">
               \${listing.logoUrl ? \`
-                <img src="\${this.escapeHtml(listing.logoUrl)}" alt="Logo" class="card-logo">
+                <img src="\${this.escapeHtml(listing.logoUrl)}" alt="Logo" class="card-logo" loading="lazy">
               \` : ''}
               <div>
                 <h3 class="card-title">\${this.escapeHtml(listing.businessName)}</h3>
@@ -806,9 +877,9 @@ export async function GET(request: NextRequest) {
     renderCTA() {
       return \`
         <div class="cta-banner">
-          <div class="cta-badge">✨ Free Listing Available</div>
+          <div class="cta-badge">✨ Free Listing</div>
           <h2 class="cta-title">Own a Local Business?</h2>
-          <p class="cta-description">Get your business discovered by the community. Join our directory today — it's free!</p>
+          <p class="cta-description">Get discovered by the community. Join our directory — it's free!</p>
           <a href="\${this.escapeHtml(this.signupUrl)}" class="cta-button" target="_blank" rel="noopener">
             Add Your Business →
           </a>
@@ -823,7 +894,6 @@ export async function GET(request: NextRequest) {
         this.attachCardListeners();
       }
 
-      // Update no results visibility
       const noResults = this.shadowRoot.querySelector('.no-results');
       if (noResults) {
         noResults.style.display = this.filteredListings.length === 0 && this.listings.length > 0 ? 'block' : 'none';
@@ -831,7 +901,6 @@ export async function GET(request: NextRequest) {
     }
 
     attachEventListeners() {
-      // Search
       const searchInput = this.shadowRoot.getElementById('search-input');
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -840,17 +909,13 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Filters
       const filterBtns = this.shadowRoot.querySelectorAll('.filter-btn');
       filterBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
           const category = e.currentTarget.dataset.category;
           this.currentCategory = category;
-          
-          // Update active state
           filterBtns.forEach(b => b.classList.remove('active'));
           e.currentTarget.classList.add('active');
-          
           this.filterListings();
         });
       });
@@ -859,7 +924,6 @@ export async function GET(request: NextRequest) {
     }
 
     attachCardListeners() {
-      // Visit website buttons
       const buttons = this.shadowRoot.querySelectorAll('.card-button');
       buttons.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -879,10 +943,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Register the custom element
   customElements.define('community-directory', CommunityDirectory);
-
-  // Also expose as global for programmatic access
   window.CommunityDirectory = CommunityDirectory;
 
 })();
