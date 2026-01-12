@@ -423,15 +423,9 @@ export async function GET(request: NextRequest) {
 
         .card-banner {
           width: 100%;
-          height: 140px;
+          aspect-ratio: 3 / 1;
           overflow: hidden;
           background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
-        }
-
-        @media (min-width: 768px) {
-          .card-banner {
-            height: 160px;
-          }
         }
 
         .card-banner img {
@@ -467,12 +461,25 @@ export async function GET(request: NextRequest) {
           flex-shrink: 0;
         }
 
+        .card-header-info {
+          flex: 1;
+          min-width: 0;
+        }
+
         .card-title {
           font-size: 1.1rem;
           font-weight: 700;
           margin-bottom: 4px;
           color: var(--text);
           line-height: 1.3;
+        }
+
+        .card-tagline {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          font-style: italic;
+          margin: 0 0 6px 0;
+          line-height: 1.4;
         }
 
         .card-category {
@@ -823,6 +830,15 @@ export async function GET(request: NextRequest) {
       if (listing.linkedinUrl) socialLinks.push({ url: listing.linkedinUrl, icon: '💼', label: 'LinkedIn' });
       if (listing.twitterUrl) socialLinks.push({ url: listing.twitterUrl, icon: '🐦', label: 'Twitter' });
       if (listing.youtubeUrl) socialLinks.push({ url: listing.youtubeUrl, icon: '🎬', label: 'YouTube' });
+      if (listing.tiktokUrl) socialLinks.push({ url: listing.tiktokUrl, icon: '🎵', label: 'TikTok' });
+      if (listing.yelpUrl) socialLinks.push({ url: listing.yelpUrl, icon: '⭐', label: 'Yelp' });
+      if (listing.googleBusinessUrl) socialLinks.push({ url: listing.googleBusinessUrl, icon: '📍', label: 'Google' });
+
+      const showSocial = listing.showSocialLinks !== false && socialLinks.length > 0;
+      const showContact = listing.showContactInfo !== false;
+      
+      // Use track/click API for proper redirect and analytics
+      const clickUrl = TRACK_CLICK_API + '?id=' + listing.id;
 
       return \`
         <div class="listing-card" data-id="\${listing.id}">
@@ -839,8 +855,9 @@ export async function GET(request: NextRequest) {
               \${listing.logoUrl ? \`
                 <img src="\${this.escapeHtml(listing.logoUrl)}" alt="Logo" class="card-logo" loading="lazy">
               \` : ''}
-              <div>
+              <div class="card-header-info">
                 <h3 class="card-title">\${this.escapeHtml(listing.businessName)}</h3>
+                \${listing.tagline ? \`<p class="card-tagline">\${this.escapeHtml(listing.tagline)}</p>\` : ''}
                 \${cat ? \`<span class="card-category">\${cat.icon} \${cat.label}</span>\` : ''}
               </div>
             </div>
@@ -849,12 +866,15 @@ export async function GET(request: NextRequest) {
               <p class="card-description">\${this.escapeHtml(listing.description)}</p>
             \` : ''}
             
-            <div class="card-contact">
-              \${listing.phone ? \`<span class="contact-item">📞 \${this.escapeHtml(listing.phone)}</span>\` : ''}
-              \${listing.city && listing.state ? \`<span class="contact-item">📍 \${this.escapeHtml(listing.city)}, \${this.escapeHtml(listing.state)}</span>\` : ''}
-            </div>
+            \${showContact ? \`
+              <div class="card-contact">
+                \${listing.phone ? \`<span class="contact-item">📞 \${this.escapeHtml(listing.phone)}</span>\` : ''}
+                \${listing.email ? \`<span class="contact-item">✉️ \${this.escapeHtml(listing.email)}</span>\` : ''}
+                \${listing.city && listing.state ? \`<span class="contact-item">📍 \${this.escapeHtml(listing.city)}, \${this.escapeHtml(listing.state)}</span>\` : ''}
+              </div>
+            \` : ''}
             
-            \${socialLinks.length > 0 ? \`
+            \${showSocial ? \`
               <div class="card-social">
                 \${socialLinks.map(s => \`
                   <a href="\${s.url}" class="social-link" target="_blank" rel="noopener" title="\${s.label}">\${s.icon}</a>
@@ -862,7 +882,7 @@ export async function GET(request: NextRequest) {
               </div>
             \` : ''}
             
-            <a href="\${this.escapeHtml(listing.websiteUrl || listing.targetUrl || '#')}" 
+            <a href="\${clickUrl}" 
                class="card-button" 
                target="_blank" 
                rel="noopener"

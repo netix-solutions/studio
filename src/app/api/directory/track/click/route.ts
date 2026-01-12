@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { type LiveAd } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,33 +16,68 @@ export async function GET(request: NextRequest) {
     const db = getAdminFirestore();
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Get listing
-    const listingDoc = await db.collection('directory_listings').doc(listingId).get();
-    
-    if (!listingDoc.exists) {
-      return new NextResponse('Listing not found', { status: 404 });
-    }
+    let targetUrl: string | undefined;
+    let docRef: FirebaseFirestore.DocumentReference | null = null;
 
-    const listing = listingDoc.data();
-    const targetUrl = listing?.websiteUrl;
+    // Check if this is a free listing (prefixed with "free_")
+    if (listingId.startsWith('free_')) {
+      const actualId = listingId.replace('free_', '');
+      const listingDoc = await db.collection('directory_listings').doc(actualId).get();
+      
+      if (listingDoc.exists) {
+        const listing = listingDoc.data();
+        targetUrl = listing?.websiteUrl;
+        docRef = listingDoc.ref;
+      }
+    } else {
+      // First try live_ads collection (for approved advertiser listings)
+      const liveAdDoc = await db.collection('live_ads').doc(listingId).get();
+      
+      if (liveAdDoc.exists) {
+        const liveAd = liveAdDoc.data() as LiveAd;
+        targetUrl = liveAd.directoryListing?.websiteUrl || liveAd.targetUrl;
+        docRef = liveAdDoc.ref;
+      } else {
+        // Fallback to directory_listings collection
+        const listingDoc = await db.collection('directory_listings').doc(listingId).get();
+        
+        if (listingDoc.exists) {
+          const listing = listingDoc.data();
+          targetUrl = listing?.websiteUrl;
+          docRef = listingDoc.ref;
+        }
+      }
+    }
 
     if (!targetUrl) {
-      return new NextResponse('No website URL', { status: 404 });
+      return new NextResponse('No website URL found', { status: 404 });
     }
 
-    // Update main listing analytics
-    await listingDoc.ref.update({
-      'analytics.totalClicks': FieldValue.increment(1),
-    });
+    // Ensure URL has protocol
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl;
+    }
 
-    // Update daily analytics
-    const analyticsRef = listingDoc.ref.collection('analytics').doc(today);
-    await analyticsRef.set({
-      date: today,
-      views: FieldValue.increment(0),
-      clicks: FieldValue.increment(1),
-      timestamp: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    // Update analytics if we have a document reference
+    if (docRef) {
+      try {
+        await docRef.update({
+          'analytics.totalClicks': FieldValue.increment(1),
+        });
+
+        // Update daily analytics
+        const analyticsRef = docRef.collection('analytics').doc(today);
+        await analyticsRef.set({
+          date: today,
+          views: FieldValue.increment(0),
+          clicks: FieldValue.increment(1),
+          timestamp: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (analyticsError) {
+        // Don't fail the redirect if analytics update fails
+        console.error('Error updating analytics:', analyticsError);
+      }
+    }
 
     // Redirect to business website
     return NextResponse.redirect(targetUrl, 302);

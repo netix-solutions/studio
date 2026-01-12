@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
         websiteUrl: dirListing.websiteUrl || ad.targetUrl,
         logoUrl: dirListing.logoUrl,
         bannerImageUrl: dirListing.bannerImageUrl || ad.imageUrl,
+        address: dirListing.address,
         city: dirListing.city,
         state: dirListing.state,
         zipCode: dirListing.zipCode,
@@ -94,6 +95,8 @@ export async function GET(request: NextRequest) {
         twitterUrl: dirListing.twitterUrl,
         youtubeUrl: dirListing.youtubeUrl,
         tiktokUrl: dirListing.tiktokUrl,
+        yelpUrl: dirListing.yelpUrl,
+        googleBusinessUrl: dirListing.googleBusinessUrl,
         isFeatured: dirListing.isFeatured,
         showContactInfo: dirListing.showContactInfo ?? true,
         showSocialLinks: dirListing.showSocialLinks ?? true,
@@ -207,12 +210,13 @@ function generateDirectoryHTML(options: {
     :root {
       --primary: #3b82f6;
       --primary-dark: #2563eb;
-      --bg: #ffffff;
+      --bg: #f8fafc;
       --card-bg: #ffffff;
       --text: #1e293b;
       --text-secondary: #64748b;
       --border: #e2e8f0;
       --featured: #f59e0b;
+      --social-bg: #f1f5f9;
     }
     
     body.theme-dark {
@@ -221,61 +225,102 @@ function generateDirectoryHTML(options: {
       --text: #f1f5f9;
       --text-secondary: #94a3b8;
       --border: #334155;
+      --social-bg: #334155;
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      padding: 20px;
+      padding: 16px;
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    @media (min-width: 768px) {
+      body { padding: 24px; }
     }
     
     .container { max-width: 1400px; margin: 0 auto; }
     
     .header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
     }
     
     .header h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
+      font-size: 1.75rem;
+      font-weight: 800;
       margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    @media (min-width: 768px) {
+      .header h1 { font-size: 2.5rem; }
+    }
+    
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
     }
     
     .search-box {
       max-width: 600px;
-      margin: 30px auto;
+      margin: 24px auto;
       position: relative;
     }
     
     .search-input {
       width: 100%;
-      padding: 12px 20px;
-      font-size: 1rem;
+      padding: 14px 20px;
+      font-size: 16px;
       border: 2px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       background: var(--card-bg);
       color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
     
     .category-filters {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 30px;
-      justify-content: center;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 4px 0;
+    }
+    
+    .category-filters::-webkit-scrollbar { display: none; }
+    
+    @media (min-width: 768px) {
+      .category-filters {
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow-x: visible;
+      }
     }
     
     .category-chip {
-      padding: 8px 16px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
+      flex-shrink: 0;
+      padding: 10px 18px;
+      border: 2px solid var(--border);
+      border-radius: 24px;
       background: var(--card-bg);
       cursor: pointer;
       font-size: 0.875rem;
+      font-weight: 500;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     
     .category-chip:hover,
@@ -287,78 +332,121 @@ function generateDirectoryHTML(options: {
     
     .grid {
       display: grid;
-      grid-template-columns: ${gridCols};
-      gap: 24px;
+      grid-template-columns: 1fr;
+      gap: 20px;
       margin-bottom: 40px;
+    }
+    
+    @media (min-width: 640px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (min-width: 1024px) {
+      .grid { grid-template-columns: ${gridCols}; gap: 24px; }
     }
     
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 16px;
       overflow: hidden;
       transition: transform 0.2s, box-shadow 0.2s;
       position: relative;
+      display: flex;
+      flex-direction: column;
     }
     
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    @media (hover: hover) {
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      }
     }
     
     .card-badge {
       position: absolute;
       top: 12px;
       right: 12px;
-      background: var(--featured);
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: white;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 16px;
+      font-size: 0.7rem;
       font-weight: 600;
       z-index: 10;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    
+    .card-image-container {
+      width: 100%;
+      aspect-ratio: 3 / 1;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
     }
     
     .card-image {
       width: 100%;
-      height: 150px;
+      height: 100%;
       object-fit: cover;
-      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
     }
     
     .card-content {
-      padding: 20px;
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    @media (min-width: 768px) {
+      .card-content { padding: 20px; }
     }
     
     .card-header {
       display: flex;
-      align-items: start;
+      align-items: flex-start;
       gap: 12px;
       margin-bottom: 12px;
     }
     
     .card-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
       object-fit: contain;
       border: 1px solid var(--border);
       background: white;
+      flex-shrink: 0;
+    }
+    
+    .card-header-text {
+      flex: 1;
+      min-width: 0;
     }
     
     .card-title {
-      font-size: 1.25rem;
-      font-weight: 600;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    
+    .card-tagline {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-style: italic;
       margin-bottom: 4px;
     }
     
     .card-category {
-      display: inline-block;
-      padding: 2px 8px;
-      background: var(--border);
-      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 6px;
       font-size: 0.75rem;
-      color: var(--text-secondary);
+      color: var(--primary);
+      font-weight: 500;
     }
     
     .card-description {
@@ -369,62 +457,112 @@ function generateDirectoryHTML(options: {
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      line-height: 1.5;
     }
     
     .card-contact {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 0.875rem;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      font-size: 0.8rem;
       color: var(--text-secondary);
       margin-bottom: 12px;
     }
     
+    .card-contact-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .card-social {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .card-social-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      background: var(--social-bg);
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    
+    .card-social-link:hover {
+      background: var(--primary);
+      transform: translateY(-2px);
+    }
+    
+    .card-actions {
+      margin-top: auto;
+    }
+    
     .card-button {
+      display: block;
       width: 100%;
-      padding: 10px;
+      padding: 12px 16px;
       background: var(--primary);
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      text-decoration: none;
+      text-align: center;
     }
     
     .card-button:hover {
       background: var(--primary-dark);
+      transform: translateY(-1px);
     }
     
     .section-title {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
     
+    @media (min-width: 768px) {
+      .section-title { font-size: 1.75rem; margin-bottom: 24px; }
+    }
+    
     .no-results {
       text-align: center;
-      padding: 60px 20px;
+      padding: 48px 20px;
       color: var(--text-secondary);
     }
     
+    .no-results h3 { margin-bottom: 8px; }
+    
     .cta-banner {
       margin-top: 48px;
-      padding: 32px;
+      padding: 28px 20px;
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       border-radius: 16px;
       color: white;
+      text-align: center;
     }
     
-    .cta-content {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
+    @media (min-width: 768px) {
+      .cta-banner { padding: 40px; }
+      .cta-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: left;
+      }
     }
     
     .cta-text h3 {
@@ -434,16 +572,20 @@ function generateDirectoryHTML(options: {
     }
     
     .cta-text p {
-      margin: 0;
+      margin: 0 0 20px;
       opacity: 0.9;
+    }
+    
+    @media (min-width: 768px) {
+      .cta-text p { margin-bottom: 0; }
     }
     
     .cta-badge {
       display: inline-block;
       background: rgba(255,255,255,0.2);
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 20px;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       font-weight: 600;
     }
     
@@ -451,36 +593,16 @@ function generateDirectoryHTML(options: {
       display: inline-block;
       background: white;
       color: #4f46e5;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-weight: 700;
       text-decoration: none;
       transition: transform 0.2s, box-shadow 0.2s;
     }
     
     .cta-button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    
-    @media (max-width: 768px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .header h1 {
-        font-size: 2rem;
-      }
-      
-      .cta-content {
-        flex-direction: column;
-        text-align: center;
-      }
-      
-      .cta-button {
-        width: 100%;
-        text-align: center;
-      }
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
     }
   </style>
 </head>
@@ -615,24 +737,41 @@ function renderListingCard(listing: DirectoryListing, baseUrl: string): string {
   const categoryLabel = listing.category ? BUSINESS_CATEGORY_LABELS[listing.category as BusinessCategory] : '';
   const categoryIcon = listing.category ? BUSINESS_CATEGORY_ICONS[listing.category as BusinessCategory] : '';
   
+  // Build social links array
+  const socialLinks: Array<{ url: string; icon: string; label: string }> = [];
+  if (listing.facebookUrl) socialLinks.push({ url: listing.facebookUrl, icon: '📘', label: 'Facebook' });
+  if (listing.instagramUrl) socialLinks.push({ url: listing.instagramUrl, icon: '📷', label: 'Instagram' });
+  if (listing.linkedinUrl) socialLinks.push({ url: listing.linkedinUrl, icon: '💼', label: 'LinkedIn' });
+  if (listing.twitterUrl) socialLinks.push({ url: listing.twitterUrl, icon: '🐦', label: 'Twitter' });
+  if (listing.youtubeUrl) socialLinks.push({ url: listing.youtubeUrl, icon: '🎬', label: 'YouTube' });
+  if (listing.tiktokUrl) socialLinks.push({ url: listing.tiktokUrl, icon: '🎵', label: 'TikTok' });
+  if (listing.yelpUrl) socialLinks.push({ url: listing.yelpUrl, icon: '⭐', label: 'Yelp' });
+  if (listing.googleBusinessUrl) socialLinks.push({ url: listing.googleBusinessUrl, icon: '📍', label: 'Google' });
+  
+  const showSocial = listing.showSocialLinks !== false && socialLinks.length > 0;
+  const showContact = listing.showContactInfo !== false;
+  
   return `
     <div class="card" 
-         data-category="${listing.category}" 
+         data-category="${listing.category || ''}" 
          data-name="${escapeHtml(listing.businessName)}"
          data-description="${escapeHtml(listing.description || '')}">
       ${listing.isFeatured ? '<div class="card-badge">⭐ Featured</div>' : ''}
       
       ${listing.bannerImageUrl ? `
-        <img src="${escapeHtml(listing.bannerImageUrl)}" class="card-image" alt="${escapeHtml(listing.businessName)}">
+        <div class="card-image-container">
+          <img src="${escapeHtml(listing.bannerImageUrl)}" class="card-image" alt="${escapeHtml(listing.businessName)}" loading="lazy">
+        </div>
       ` : ''}
       
       <div class="card-content">
         <div class="card-header">
           ${listing.logoUrl ? `
-            <img src="${escapeHtml(listing.logoUrl)}" class="card-logo" alt="Logo">
+            <img src="${escapeHtml(listing.logoUrl)}" class="card-logo" alt="Logo" loading="lazy">
           ` : ''}
-          <div>
+          <div class="card-header-text">
             <div class="card-title">${escapeHtml(listing.businessName)}</div>
+            ${listing.tagline ? `<div class="card-tagline">${escapeHtml(listing.tagline)}</div>` : ''}
             ${categoryLabel ? `
               <span class="card-category">${categoryIcon} ${categoryLabel}</span>
             ` : ''}
@@ -643,14 +782,30 @@ function renderListingCard(listing: DirectoryListing, baseUrl: string): string {
           <div class="card-description">${escapeHtml(listing.description)}</div>
         ` : ''}
         
-        <div class="card-contact">
-          ${listing.phone ? `<div>📞 ${escapeHtml(listing.phone)}</div>` : ''}
-          ${listing.city && listing.state ? `<div>📍 ${escapeHtml(listing.city)}, ${escapeHtml(listing.state)}</div>` : ''}
-        </div>
+        ${showContact ? `
+          <div class="card-contact">
+            ${listing.phone ? `<span class="card-contact-item">📞 ${escapeHtml(listing.phone)}</span>` : ''}
+            ${listing.email ? `<span class="card-contact-item">✉️ ${escapeHtml(listing.email)}</span>` : ''}
+            ${listing.city && listing.state ? `<span class="card-contact-item">📍 ${escapeHtml(listing.city)}, ${escapeHtml(listing.state)}</span>` : ''}
+            ${listing.showAddress && listing.address ? `<span class="card-contact-item">🏠 ${escapeHtml(listing.address)}</span>` : ''}
+          </div>
+        ` : ''}
         
-        <a href="${baseUrl}/api/directory/track/click?id=${listing.id}" target="_blank" rel="noopener">
-          <button class="card-button">Visit Website</button>
-        </a>
+        ${showSocial ? `
+          <div class="card-social">
+            ${socialLinks.map(link => `
+              <a href="${escapeHtml(link.url)}" class="card-social-link" target="_blank" rel="noopener" title="${link.label}">
+                ${link.icon}
+              </a>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        <div class="card-actions">
+          <a href="${baseUrl}/api/directory/track/click?id=${listing.id}" target="_blank" rel="noopener" class="card-button">
+            Visit Website →
+          </a>
+        </div>
       </div>
       
       <img class="tracking-pixel" data-src="${baseUrl}/api/directory/track/impression?id=${listing.id}" style="position:absolute;width:1px;height:1px;opacity:0" alt="">
