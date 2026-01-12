@@ -122,13 +122,17 @@ interface SectionProps {
 
 function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
   const [previewKey, setPreviewKey] = useState(0);
-  const [embedMethod, setEmbedMethod] = useState<'iframe' | 'sdk'>('iframe');
+  const [embedMethod, setEmbedMethod] = useState<'widget' | 'iframe' | 'sdk'>('widget');
 
   const [config, setConfig] = useState({
     theme: 'light' as ThemeOption,
     columns: 'auto' as ColumnsOption,
     category: '' as BusinessCategory | '',
     featuredOnly: false,
+    accentColor: '#3b82f6',
+    showCta: true,
+    showSearch: true,
+    showFilters: true,
   });
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -152,7 +156,7 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
 </iframe>`;
   }, [config, baseUrl]);
 
-  // Generate SDK embed code
+  // Generate SDK embed code (legacy)
   const sdkCode = useMemo(() => {
     let initOptions = `{
       container: '#business-directory',
@@ -186,6 +190,24 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
 </script>`;
   }, [config, baseUrl]);
 
+  // Generate Widget embed code (NEW - recommended)
+  const widgetCode = useMemo(() => {
+    const attrs: string[] = [];
+    
+    if (config.theme !== 'light') attrs.push(`theme="${config.theme}"`);
+    if (config.accentColor !== '#3b82f6') attrs.push(`accent-color="${config.accentColor}"`);
+    if (config.columns !== 'auto') attrs.push(`columns="${config.columns}"`);
+    if (!config.showCta) attrs.push('show-cta="false"');
+    if (!config.showSearch) attrs.push('show-search="false"');
+    if (!config.showFilters) attrs.push('show-filters="false"');
+    
+    const attrsString = attrs.length > 0 ? '\n  ' + attrs.join('\n  ') + '\n' : '';
+    
+    return `<!-- Community Business Directory Widget -->
+<script src="${baseUrl}/api/directory/widget"></script>
+<community-directory${attrsString}></community-directory>`;
+  }, [config, baseUrl]);
+
   // Preview URL
   const previewUrl = useMemo(() => {
     const params = new URLSearchParams();
@@ -207,7 +229,7 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
     return `${baseUrl}/api/directory/public/listings?${params.toString()}`;
   }, [config, baseUrl]);
 
-  const currentCode = embedMethod === 'iframe' ? iframeCode : sdkCode;
+  const currentCode = embedMethod === 'widget' ? widgetCode : embedMethod === 'iframe' ? iframeCode : sdkCode;
 
   return (
     <div className="space-y-6">
@@ -215,10 +237,26 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
       <Card>
         <CardHeader>
           <CardTitle>Choose Embed Method</CardTitle>
-          <CardDescription>Select how you want to embed the directory</CardDescription>
+          <CardDescription>Select how you want to embed the directory on your website</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div
+              className={cn(
+                'p-4 border-2 rounded-lg cursor-pointer transition-all',
+                embedMethod === 'widget' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+              )}
+              onClick={() => setEmbedMethod('widget')}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={cn('w-4 h-4 rounded-full border-2', embedMethod === 'widget' ? 'border-primary bg-primary' : 'border-muted-foreground')} />
+                <h3 className="font-semibold">Web Component</h3>
+                <Badge className="bg-green-100 text-green-700">Best</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground ml-7">
+                Native, full-featured directory that feels like part of your website. 2 lines of code!
+              </p>
+            </div>
             <div
               className={cn(
                 'p-4 border-2 rounded-lg cursor-pointer transition-all',
@@ -229,10 +267,10 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
               <div className="flex items-center gap-3 mb-2">
                 <div className={cn('w-4 h-4 rounded-full border-2', embedMethod === 'iframe' ? 'border-primary bg-primary' : 'border-muted-foreground')} />
                 <h3 className="font-semibold">iframe Embed</h3>
-                <Badge variant="secondary">Recommended</Badge>
+                <Badge variant="secondary">Simple</Badge>
               </div>
               <p className="text-sm text-muted-foreground ml-7">
-                Simple, one-line embed. Works on any website. Just paste and go.
+                Traditional iframe. Works everywhere but may not match your site styling.
               </p>
             </div>
             <div
@@ -244,11 +282,11 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className={cn('w-4 h-4 rounded-full border-2', embedMethod === 'sdk' ? 'border-primary bg-primary' : 'border-muted-foreground')} />
-                <h3 className="font-semibold">JavaScript SDK</h3>
-                <Badge variant="outline">Advanced</Badge>
+                <h3 className="font-semibold">Legacy SDK</h3>
+                <Badge variant="outline">Legacy</Badge>
               </div>
               <p className="text-sm text-muted-foreground ml-7">
-                Native rendering with full styling control. Best for matching your site's design.
+                Older JS SDK. Use Web Component instead for best results.
               </p>
             </div>
           </div>
@@ -330,6 +368,64 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
                 onCheckedChange={(checked) => setConfig({ ...config, featuredOnly: checked })}
               />
             </div>
+
+            {/* Widget-specific options */}
+            {embedMethod === 'widget' && (
+              <>
+                <div className="border-t pt-4 mt-2">
+                  <Label className="text-muted-foreground text-xs uppercase tracking-wide">Widget Options</Label>
+                </div>
+
+                {/* Accent Color */}
+                <div className="space-y-2">
+                  <Label>Accent Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={config.accentColor}
+                      onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                      className="w-12 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={config.accentColor}
+                      onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                      placeholder="#3b82f6"
+                      className="flex-1 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Show CTA */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Show Signup CTA</Label>
+                    <p className="text-xs text-muted-foreground">Bottom banner inviting businesses to join</p>
+                  </div>
+                  <Switch
+                    checked={config.showCta}
+                    onCheckedChange={(checked) => setConfig({ ...config, showCta: checked })}
+                  />
+                </div>
+
+                {/* Show Search */}
+                <div className="flex items-center justify-between">
+                  <Label>Show Search Bar</Label>
+                  <Switch
+                    checked={config.showSearch}
+                    onCheckedChange={(checked) => setConfig({ ...config, showSearch: checked })}
+                  />
+                </div>
+
+                {/* Show Filters */}
+                <div className="flex items-center justify-between">
+                  <Label>Show Category Filters</Label>
+                  <Switch
+                    checked={config.showFilters}
+                    onCheckedChange={(checked) => setConfig({ ...config, showFilters: checked })}
+                  />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -371,10 +467,10 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Code className="h-5 w-5" />
-            {embedMethod === 'iframe' ? 'iframe Embed Code' : 'JavaScript SDK Code'}
+            {embedMethod === 'widget' ? 'Web Component Embed Code' : embedMethod === 'iframe' ? 'iframe Embed Code' : 'JavaScript SDK Code'}
           </CardTitle>
           <CardDescription>
-            Copy this code to your Wesley Chapel or Pasco website
+            Copy this code to your Wesley Chapel or Pasco community website
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -396,6 +492,17 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
             </Button>
           </div>
 
+          {embedMethod === 'widget' && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">Recommended for Best Results</AlertTitle>
+              <AlertDescription className="text-green-700">
+                This web component renders natively in your page with full search, filters, and call-to-action. 
+                Just paste the code where you want the directory to appear — no iframe needed!
+              </AlertDescription>
+            </Alert>
+          )}
+
           {embedMethod === 'iframe' && (
             <Alert>
               <Info className="h-4 w-4" />
@@ -409,10 +516,9 @@ function DirectoryEmbedSection({ copyToClipboard, copiedCode }: SectionProps) {
           {embedMethod === 'sdk' && (
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertTitle>SDK Benefits</AlertTitle>
+              <AlertTitle>Legacy SDK</AlertTitle>
               <AlertDescription>
-                The SDK provides native rendering, full CSS control, and better performance. 
-                Customize using CSS variables like <code>--bd-primary-color</code>.
+                This is the older SDK method. We recommend using the new Web Component for best results.
               </AlertDescription>
             </Alert>
           )}
