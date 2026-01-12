@@ -41,44 +41,84 @@ import {
   XCircle,
 } from 'lucide-react';
 import {
-  type DirectoryListing,
-  DIRECTORY_TIER_LABELS,
-  DIRECTORY_TIER_COLORS,
+  type LiveAd,
+  type LiveAdDirectoryListing,
+  type DirectoryStatus,
 } from '@/lib/types';
 import Link from 'next/link';
+
+interface DirectoryListingItem {
+  liveAdId: string;
+  liveAd: Partial<LiveAd>;
+  directoryListing: LiveAdDirectoryListing | null;
+}
+
+interface DirectoryStats {
+  total: number;
+  pending: number;
+  approved: number;
+  hidden: number;
+  rejected: number;
+  featured: number;
+}
 
 export default function DirectoryListingsPage() {
   const { user } = useFirebase();
   const { toast } = useToast();
-  const [listings, setListings] = useState<DirectoryListing[]>([]);
-  const [filteredListings, setFilteredListings] = useState<DirectoryListing[]>([]);
+  const [listings, setListings] = useState<DirectoryListingItem[]>([]);
+  const [filteredListings, setFilteredListings] = useState<DirectoryListingItem[]>([]);
+  const [stats, setStats] = useState<DirectoryStats>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    hidden: 0,
+    rejected: 0,
+    featured: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [tierFilter, setTierFilter] = useState('all');
 
   useEffect(() => {
-    fetchListings();
-  }, [user]);
+    if (user) {
+      fetchListings();
+    }
+  }, [user, statusFilter]);
 
   useEffect(() => {
     filterListings();
-  }, [listings, searchTerm, statusFilter, tierFilter]);
+  }, [listings, searchTerm, statusFilter]);
 
   const fetchListings = async () => {
     if (!user) return;
 
     try {
+      setIsLoading(true);
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
 
-      const response = await fetch('/api/admin/directory-listings', {
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+      // Search is handled client-side for immediate feedback
+      // Server-side search is available via the API if needed for large datasets
+
+      const response = await fetch(`/api/admin/directory?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         const result = await response.json();
-        setListings(result.listings || []);
+        setListings(result.data.listings || []);
+        setStats(result.data.stats || {
+          total: 0,
+          pending: 0,
+          approved: 0,
+          hidden: 0,
+          rejected: 0,
+          featured: 0,
+        });
       } else {
         throw new Error('Failed to fetch listings');
       }
@@ -99,44 +139,50 @@ export default function DirectoryListingsPage() {
 
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(l =>
-        l.businessName?.toLowerCase().includes(search) ||
-        l.contactEmail?.toLowerCase().includes(search) ||
-        l.phone?.includes(search)
-      );
+      filtered = filtered.filter(item => {
+        const listing = item.directoryListing;
+        const businessName = listing?.businessName || item.liveAd.customerName || '';
+        const email = listing?.email || '';
+        const phone = listing?.phone || '';
+        return (
+          businessName.toLowerCase().includes(search) ||
+          email.toLowerCase().includes(search) ||
+          phone.includes(search)
+        );
+      });
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(l => l.status === statusFilter);
-    }
-
-    if (tierFilter !== 'all') {
-      filtered = filtered.filter(l => l.tier === tierFilter);
+      filtered = filtered.filter(item => {
+        const status = item.directoryListing?.directoryStatus || 'pending';
+        return status === statusFilter;
+      });
     }
 
     setFilteredListings(filtered);
   };
 
-  const toggleStatus = async (listingId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+  const toggleStatus = async (liveAdId: string, currentStatus: DirectoryStatus) => {
+    const action = currentStatus === 'approved' ? 'hide' : 'approve';
 
     try {
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
 
-      const response = await fetch(`/api/admin/directory-listings/${listingId}`, {
-        method: 'PATCH',
+      const response = await fetch('/api/admin/directory', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ liveAdId, action }),
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast({
           title: 'Success',
-          description: `Listing ${newStatus === 'active' ? 'activated' : 'paused'}`,
+          description: result.data?.message || `Listing ${action === 'approve' ? 'approved' : 'hidden'}`,
         });
         fetchListings();
       } else {
@@ -151,56 +197,43 @@ export default function DirectoryListingsPage() {
     }
   };
 
-  const getTierBadge = (listing: DirectoryListing) => {
-    const colors = DIRECTORY_TIER_COLORS[listing.tier] || { bg: 'bg-gray-100', text: 'text-gray-700' };
-    const label = DIRECTORY_TIER_LABELS[listing.tier] || listing.tier;
-    
-    return (
-      <Badge className={`${colors.bg} ${colors.text}`}>
-        {listing.tier === 'free' && <Gift className="h-3 w-3 mr-1" />}
-        {listing.tier === 'included' && <Star className="h-3 w-3 mr-1" />}
-        {listing.tier === 'premium' && <Crown className="h-3 w-3 mr-1" />}
-        {label}
-      </Badge>
-    );
-  };
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: DirectoryStatus | undefined) => {
+    const actualStatus = status || 'pending';
     const variants: Record<string, { bg: string; text: string }> = {
       pending: { bg: 'bg-amber-100', text: 'text-amber-700' },
-      active: { bg: 'bg-green-100', text: 'text-green-700' },
-      paused: { bg: 'bg-slate-100', text: 'text-slate-700' },
+      approved: { bg: 'bg-green-100', text: 'text-green-700' },
+      hidden: { bg: 'bg-slate-100', text: 'text-slate-700' },
       rejected: { bg: 'bg-red-100', text: 'text-red-700' },
-      expired: { bg: 'bg-red-100', text: 'text-red-700' },
     };
 
-    const variant = variants[status] || variants.expired;
+    const variant = variants[actualStatus] || variants.pending;
     
     return (
       <Badge className={`${variant.bg} ${variant.text}`}>
-        {status === 'pending' ? '⏳ Pending' : status}
+        {actualStatus === 'pending' ? '⏳ Pending' : actualStatus}
       </Badge>
     );
   };
 
-  const approveListing = async (listingId: string) => {
+  const approveListing = async (liveAdId: string) => {
     try {
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
 
-      const response = await fetch(`/api/admin/directory-listings/${listingId}`, {
-        method: 'PATCH',
+      const response = await fetch('/api/admin/directory', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: 'active' }),
+        body: JSON.stringify({ liveAdId, action: 'approve' }),
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast({
           title: 'Approved!',
-          description: 'Listing is now live in the directory',
+          description: result.data?.message || 'Listing is now live in the directory',
         });
         fetchListings();
       } else {
@@ -215,24 +248,25 @@ export default function DirectoryListingsPage() {
     }
   };
 
-  const rejectListing = async (listingId: string) => {
+  const rejectListing = async (liveAdId: string) => {
     try {
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
 
-      const response = await fetch(`/api/admin/directory-listings/${listingId}`, {
-        method: 'PATCH',
+      const response = await fetch('/api/admin/directory', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: 'rejected' }),
+        body: JSON.stringify({ liveAdId, action: 'reject', rejectionReason: 'Rejected by admin' }),
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast({
           title: 'Rejected',
-          description: 'Listing has been rejected',
+          description: result.data?.message || 'Listing has been rejected',
         });
         fetchListings();
       } else {
@@ -282,7 +316,7 @@ export default function DirectoryListingsPage() {
       </div>
 
       {/* Pending Approval Alert */}
-      {listings.filter(l => l.status === 'pending').length > 0 && (
+      {stats.pending > 0 && (
         <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
@@ -292,7 +326,7 @@ export default function DirectoryListingsPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-amber-800 dark:text-amber-200">
-                    {listings.filter(l => l.status === 'pending').length} listing(s) pending approval
+                    {stats.pending} listing(s) pending approval
                   </p>
                   <p className="text-sm text-amber-600 dark:text-amber-400">
                     Review and approve new submissions
@@ -318,52 +352,52 @@ export default function DirectoryListingsPage() {
             <CardTitle className="text-sm font-medium">Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{listings.length}</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground mt-1">All listings</p>
           </CardContent>
         </Card>
-        <Card className={listings.filter(l => l.status === 'pending').length > 0 ? 'border-amber-200' : ''}>
+        <Card className={stats.pending > 0 ? 'border-amber-200' : ''}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {listings.filter(l => l.status === 'pending').length}
+              {stats.pending}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Needs review</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
+            <CardTitle className="text-sm font-medium">Approved</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {listings.filter(l => l.status === 'active').length}
+              {stats.approved}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Live now</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Free</CardTitle>
+            <CardTitle className="text-sm font-medium">Hidden</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {listings.filter(l => l.tier === 'free').length}
+            <div className="text-2xl font-bold text-slate-600">
+              {stats.hidden}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Leads</p>
+            <p className="text-xs text-muted-foreground mt-1">Hidden</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Subscribers</CardTitle>
+            <CardTitle className="text-sm font-medium">Featured</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {listings.filter(l => l.tier === 'included').length}
+              {stats.featured}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">With ads</p>
+            <p className="text-xs text-muted-foreground mt-1">Featured</p>
           </CardContent>
         </Card>
       </div>
@@ -377,7 +411,7 @@ export default function DirectoryListingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Search</label>
               <div className="relative">
@@ -399,23 +433,9 @@ export default function DirectoryListingsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">⏳ Pending Approval</SelectItem>
-                  <SelectItem value="active">✓ Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="approved">✓ Approved</SelectItem>
+                  <SelectItem value="hidden">Hidden</SelectItem>
                   <SelectItem value="rejected">✗ Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tier</label>
-              <Select value={tierFilter} onValueChange={setTierFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tiers</SelectItem>
-                  <SelectItem value="free">Free Listing</SelectItem>
-                  <SelectItem value="included">Included with Ad</SelectItem>
-                  <SelectItem value="legacy">Legacy</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -426,7 +446,7 @@ export default function DirectoryListingsPage() {
                 onClick={() => {
                   setSearchTerm('');
                   setStatusFilter('all');
-                  setTierFilter('all');
+                  fetchListings();
                 }}
               >
                 Clear Filters
@@ -468,88 +488,104 @@ export default function DirectoryListingsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredListings.map((listing) => (
-                    <TableRow key={listing.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {listing.logoUrl && (
-                            <img
-                              src={listing.logoUrl}
-                              alt={listing.businessName}
-                              className="w-10 h-10 rounded object-contain border"
-                            />
-                          )}
-                          <div>
-                            <div className="font-medium">{listing.businessName}</div>
-                            <div className="text-xs text-muted-foreground">{listing.category}</div>
+                  filteredListings.map((item) => {
+                    const listing = item.directoryListing;
+                    const businessName = listing?.businessName || item.liveAd.customerName || 'Unknown Business';
+                    const status = listing?.directoryStatus || 'pending';
+                    const logoUrl = listing?.logoUrl || item.liveAd.imageUrl;
+                    const category = listing?.category || 'other';
+                    const email = listing?.email || '';
+                    const phone = listing?.phone || '';
+                    const viewCount = listing?.viewCount || 0;
+                    const clickCount = listing?.clickCount || 0;
+
+                    return (
+                      <TableRow key={item.liveAdId}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {logoUrl && (
+                              <img
+                                src={logoUrl}
+                                alt={businessName}
+                                className="w-10 h-10 rounded object-contain border"
+                              />
+                            )}
+                            <div>
+                              <div className="font-medium">{businessName}</div>
+                              <div className="text-xs text-muted-foreground">{category}</div>
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getTierBadge(listing)}</TableCell>
-                      <TableCell>{getStatusBadge(listing.status)}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{listing.contactEmail}</div>
-                          <div className="text-muted-foreground">{listing.phone}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>👁️ {listing.analytics?.totalViews || 0} views</div>
-                          <div>🖱️ {listing.analytics?.totalClicks || 0} clicks</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {listing.status === 'pending' ? (
-                            <>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {item.liveAd.showInDirectory ? 'In Directory' : 'Not Listed'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(status)}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{email || 'N/A'}</div>
+                            <div className="text-muted-foreground">{phone || 'N/A'}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>👁️ {viewCount} views</div>
+                            <div>🖱️ {clickCount} clicks</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {status === 'pending' ? (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => approveListing(item.liveAdId)}
+                                  title="Approve"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => rejectListing(item.liveAdId)}
+                                  title="Reject"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() => approveListing(listing.id)}
-                                title="Approve"
+                                onClick={() => toggleStatus(item.liveAdId, status)}
+                                title={status === 'approved' ? 'Hide' : 'Approve'}
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                {status === 'approved' ? (
+                                  <Pause className="h-4 w-4" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => rejectListing(listing.id)}
-                                title="Reject"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </>
-                          ) : (
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => toggleStatus(listing.id, listing.status)}
-                              title={listing.status === 'active' ? 'Pause' : 'Activate'}
+                              asChild
+                              title="View Details"
                             >
-                              {listing.status === 'active' ? (
-                                <Pause className="h-4 w-4" />
-                              ) : (
-                                <Play className="h-4 w-4" />
-                              )}
+                              <Link href={`/directory?liveAdId=${item.liveAdId}`}>
+                                <Edit className="h-4 w-4" />
+                              </Link>
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            title="Edit"
-                          >
-                            <Link href={`/directory-listings/${listing.id}`}>
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
