@@ -52,6 +52,9 @@ import {
     XCircle,
     Star,
     Check,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -145,6 +148,8 @@ export default function AdServerPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sortField, setSortField] = useState<'name' | 'impressions' | 'clicks' | 'ctr' | 'status' | null>(null);
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
     // Dialog states
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -221,9 +226,9 @@ export default function AdServerPage() {
         return { totalImpressions, totalClicks, activeAds, pausedAds };
     }, [ads]);
 
-    // Filtered ads
+    // Filtered and sorted ads
     const filteredAds = useMemo(() => {
-        return ads.filter(ad => {
+        let result = ads.filter(ad => {
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 const matchesSearch =
@@ -239,7 +244,71 @@ export default function AdServerPage() {
 
             return true;
         });
-    }, [ads, searchQuery, statusFilter]);
+
+        // Sort if a sort field is selected
+        if (sortField) {
+            result = [...result].sort((a, b) => {
+                let aVal: number | string;
+                let bVal: number | string;
+
+                switch (sortField) {
+                    case 'name':
+                        aVal = (a.name || '').toLowerCase();
+                        bVal = (b.name || '').toLowerCase();
+                        break;
+                    case 'impressions':
+                        aVal = a.impressions || 0;
+                        bVal = b.impressions || 0;
+                        break;
+                    case 'clicks':
+                        aVal = a.clicks || 0;
+                        bVal = b.clicks || 0;
+                        break;
+                    case 'ctr':
+                        aVal = (a.impressions || 0) > 0 ? ((a.clicks || 0) / (a.impressions || 1)) * 100 : 0;
+                        bVal = (b.impressions || 0) > 0 ? ((b.clicks || 0) / (b.impressions || 1)) * 100 : 0;
+                        break;
+                    case 'status':
+                        aVal = a.status || '';
+                        bVal = b.status || '';
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return result;
+    }, [ads, searchQuery, statusFilter, sortField, sortDirection]);
+
+    // Handle column sort
+    const handleSort = (field: 'name' | 'impressions' | 'clicks' | 'ctr' | 'status') => {
+        if (sortField === field) {
+            // Toggle direction or clear sort
+            if (sortDirection === 'desc') {
+                setSortDirection('asc');
+            } else {
+                setSortField(null);
+            }
+        } else {
+            setSortField(field);
+            setSortDirection('desc');
+        }
+    };
+
+    // Get sort icon for a column
+    const getSortIcon = (field: 'name' | 'impressions' | 'clicks' | 'ctr' | 'status') => {
+        if (sortField !== field) {
+            return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
+        }
+        return sortDirection === 'desc'
+            ? <ArrowDown className="ml-1 h-3 w-3" />
+            : <ArrowUp className="ml-1 h-3 w-3" />;
+    };
 
     const handleOpenCreate = () => {
         setEditingAd(null);
@@ -828,13 +897,53 @@ export default function AdServerPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="w-20">Preview</TableHead>
-                                        <TableHead>Name</TableHead>
+                                        <TableHead>
+                                            <button
+                                                className="flex items-center hover:text-foreground transition-colors"
+                                                onClick={() => handleSort('name')}
+                                            >
+                                                Name
+                                                {getSortIcon('name')}
+                                            </button>
+                                        </TableHead>
                                         <TableHead>Websites</TableHead>
                                         <TableHead>Placement</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Impressions</TableHead>
-                                        <TableHead className="text-right">Clicks</TableHead>
-                                        <TableHead className="text-right">CTR</TableHead>
+                                        <TableHead>
+                                            <button
+                                                className="flex items-center hover:text-foreground transition-colors"
+                                                onClick={() => handleSort('status')}
+                                            >
+                                                Status
+                                                {getSortIcon('status')}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            <button
+                                                className="flex items-center justify-end w-full hover:text-foreground transition-colors"
+                                                onClick={() => handleSort('impressions')}
+                                            >
+                                                Impressions
+                                                {getSortIcon('impressions')}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            <button
+                                                className="flex items-center justify-end w-full hover:text-foreground transition-colors"
+                                                onClick={() => handleSort('clicks')}
+                                            >
+                                                Clicks
+                                                {getSortIcon('clicks')}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            <button
+                                                className="flex items-center justify-end w-full hover:text-foreground transition-colors"
+                                                onClick={() => handleSort('ctr')}
+                                            >
+                                                CTR
+                                                {getSortIcon('ctr')}
+                                            </button>
+                                        </TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
