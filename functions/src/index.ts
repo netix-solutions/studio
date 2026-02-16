@@ -346,7 +346,6 @@ export const onSubscriptionCreated = functions.firestore
       }
 
       const leadDoc = leadsSnapshot.docs[0];
-      const leadData = leadDoc.data();
 
       // Mark the lead as converted
       await leadDoc.ref.update({
@@ -425,7 +424,7 @@ export const sendThreeHourDiscountEmails = functions.pubsub
           continue;
         }
 
-        const template = templateDoc.data();
+        const template = templateDoc.data()!;
 
         try {
           // Replace placeholders
@@ -433,12 +432,12 @@ export const sendThreeHourDiscountEmails = functions.pubsub
           const businessName = leadData.businessName || 'your business';
           const pricingLink = `${process.env.APP_URL || 'https://community-websites.com'}/pricing`;
 
-          let emailContent = template.html
+          let emailContent = (template.html as string)
             .replace(/\{\{contactName\}\}/g, contactName)
             .replace(/\{\{businessName\}\}/g, businessName)
             .replace(/\{\{pricingLink\}\}/g, pricingLink);
 
-          const subject = template.subject
+          const subject = (template.subject as string)
             .replace(/\{\{contactName\}\}/g, contactName)
             .replace(/\{\{businessName\}\}/g, businessName);
 
@@ -489,7 +488,7 @@ export const sendThreeHourDiscountEmails = functions.pubsub
 
           emailsSent++;
           console.log(`Sent 3-hour discount email to lead ${leadId} (${leadData.email})`);
-        } catch (emailError) {
+        } catch (emailError: any) {
           console.error(`Error sending email to lead ${leadId}:`, emailError);
           errors++;
         }
@@ -543,7 +542,7 @@ export const processScheduledLeadEmails = functions.pubsub
             continue;
           }
 
-          const leadData = leadDoc.data();
+          const leadData = leadDoc.data()!;
 
           // Check if lead has been converted - if so, skip
           if (leadData.convertedToCustomerId) {
@@ -569,19 +568,19 @@ export const processScheduledLeadEmails = functions.pubsub
             continue;
           }
 
-          const template = templateDoc.data();
+          const template = templateDoc.data()!;
 
           // Replace placeholders
           const contactName = leadData.contactName || leadData.firstName || 'there';
           const businessName = leadData.businessName || 'your business';
           const pricingLink = `${process.env.APP_URL || 'https://community-websites.com'}/pricing`;
 
-          let emailContent = template.html
+          let emailContent = (template.html as string)
             .replace(/\{\{contactName\}\}/g, contactName)
             .replace(/\{\{businessName\}\}/g, businessName)
             .replace(/\{\{pricingLink\}\}/g, pricingLink);
 
-          const subject = template.subject
+          const subject = (template.subject as string)
             .replace(/\{\{contactName\}\}/g, contactName)
             .replace(/\{\{businessName\}\}/g, businessName);
 
@@ -633,7 +632,7 @@ export const processScheduledLeadEmails = functions.pubsub
 
           emailsSent++;
           console.log(`Sent scheduled email ${emailId} to lead ${emailData.leadId}`);
-        } catch (emailError) {
+        } catch (emailError: any) {
           console.error(`Error sending scheduled email ${emailId}:`, emailError);
           await emailDoc.ref.update({
             status: 'failed',

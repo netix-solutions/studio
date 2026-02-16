@@ -27,7 +27,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, trigger, triggerStage, steps, userId, userName } = body;
+    const { name, description, trigger, steps, userId, userName } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       description: description?.trim() || '',
       trigger,
-      triggerStage: triggerStage || null,
       steps: steps || [],
       isActive: true,
       enrollmentCount: 0,

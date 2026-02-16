@@ -87,59 +87,6 @@ export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; text: string; 
   inactive: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' },
 };
 
-// ============================================================================
-// LEAD PIPELINE STAGES
-// ============================================================================
-
-/**
- * Lead pipeline stages - discrete stages instead of binary active/inactive
- */
-export const LEAD_STAGES = {
-  NEW: 'new',
-  CONTACTED: 'contacted',
-  QUALIFIED: 'qualified',
-  PROPOSAL: 'proposal',
-  NEGOTIATION: 'negotiation',
-  WON: 'won',
-  LOST: 'lost',
-} as const;
-
-export type LeadStage = typeof LEAD_STAGES[keyof typeof LEAD_STAGES];
-
-export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  qualified: 'Qualified',
-  proposal: 'Proposal',
-  negotiation: 'Negotiation',
-  won: 'Won',
-  lost: 'Lost',
-};
-
-export const LEAD_STAGE_COLORS: Record<LeadStage, { bg: string; text: string; border: string }> = {
-  new: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
-  contacted: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
-  qualified: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
-  proposal: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
-  negotiation: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
-  won: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
-  lost: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
-};
-
-/** Order of stages in the pipeline (for progress visualization) */
-export const LEAD_STAGE_ORDER: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won'];
-
-/** Active pipeline stages (not won/lost) */
-export const ACTIVE_PIPELINE_STAGES: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'negotiation'];
-
-/**
- * Derive backward-compatible status from stage
- */
-export function getStatusFromStage(stage: LeadStage): LeadStatus {
-  if (stage === 'won' || stage === 'lost') return 'inactive';
-  return 'active';
-}
-
 /**
  * Enhanced Lead interface with all tracking fields
  */
@@ -159,10 +106,7 @@ export interface Lead {
 
   // Pipeline & Status
   priority: LeadPriority;
-  status: LeadStatus; // active or inactive - computed from stage for backward compat
-  stage: LeadStage; // Pipeline stage
-  stageChangedAt?: any; // Firestore Timestamp - when stage last changed
-  lostReason?: string; // Reason if stage is 'lost'
+  status: LeadStatus;
 
   // Lead Scoring
   leadScore?: number; // 0-100
@@ -229,8 +173,6 @@ export const ACTIVITY_TYPES = {
   CALL: 'call',
   MEETING: 'meeting',
   PRIORITY_CHANGE: 'priority_change',
-  STAGE_CHANGE: 'stage_change',
-
   CONVERSION: 'conversion',
   TASK_CREATED: 'task_created',
   TASK_COMPLETED: 'task_completed',
@@ -255,8 +197,6 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   call: 'Phone Call',
   meeting: 'Meeting',
   priority_change: 'Priority Changed',
-  stage_change: 'Stage Changed',
-
   conversion: 'Converted to Customer',
   task_created: 'Task Created',
   task_completed: 'Task Completed',
@@ -286,9 +226,6 @@ export interface Activity {
   metadata?: {
     fromPriority?: LeadPriority;
     toPriority?: LeadPriority;
-    fromStage?: LeadStage;
-    toStage?: LeadStage;
-    lostReason?: string;
     oldScore?: number;
     newScore?: number;
     emailSubject?: string;
@@ -845,7 +782,6 @@ export interface Task {
  * Sequence trigger types
  */
 export const SEQUENCE_TRIGGERS = {
-  STAGE_ENTER: 'stage_enter',
   LEAD_CREATED: 'lead_created',
   MANUAL: 'manual',
 } as const;
@@ -871,7 +807,6 @@ export interface LeadSequence {
   name: string;
   description?: string;
   trigger: SequenceTrigger;
-  triggerStage?: LeadStage; // For stage_enter trigger
   steps: SequenceStep[];
   isActive: boolean;
   enrollmentCount?: number;

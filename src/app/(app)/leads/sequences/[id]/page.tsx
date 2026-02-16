@@ -28,14 +28,13 @@ import {
 import { Loader2, ArrowLeft, Plus, Trash2, GripVertical, Mail, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
-import { LEAD_STAGE_LABELS, type LeadStage, type SequenceStep } from '@/lib/types';
+import { type SequenceStep } from '@/lib/types';
 
 interface SequenceData {
   id: string;
   name: string;
   description?: string;
   trigger: string;
-  triggerStage?: LeadStage;
   steps: SequenceStep[];
   isActive: boolean;
   enrollmentCount?: number;
@@ -169,7 +168,7 @@ export default function SequenceDetailPage() {
             </div>
             <div>
               <span className="text-muted-foreground">Trigger:</span>{' '}
-              {sequence.trigger === 'stage_enter' ? `Stage Enter (${LEAD_STAGE_LABELS[sequence.triggerStage!] || sequence.triggerStage})` : sequence.trigger === 'lead_created' ? 'Lead Created' : 'Manual'}
+              {sequence.trigger === 'lead_created' ? 'Lead Created' : 'Manual'}
             </div>
             {sequence.enrollmentsByStatus && (
               <div>

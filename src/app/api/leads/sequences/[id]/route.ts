@@ -55,7 +55,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, trigger, triggerStage, steps, isActive } = body;
+    const { name, description, trigger, steps, isActive } = body;
 
     const db = getAdminFirestore();
     const docRef = db.collection('leadSequences').doc(id);
@@ -75,7 +75,6 @@ export async function PUT(
     if (name !== undefined) updateData.name = name.trim();
     if (description !== undefined) updateData.description = description.trim();
     if (trigger !== undefined) updateData.trigger = trigger;
-    if (triggerStage !== undefined) updateData.triggerStage = triggerStage;
     if (steps !== undefined) updateData.steps = steps;
     if (isActive !== undefined) updateData.isActive = isActive;
 

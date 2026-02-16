@@ -313,8 +313,6 @@ export async function POST(request: NextRequest) {
       // Pipeline status
       priority: LEAD_PRIORITIES.HIGH,
       status: LEAD_STATUSES.ACTIVE,
-      stage: 'new' as const,
-      stageChangedAt: FieldValue.serverTimestamp(),
       
       // Sites they're interested in
       siteCoverage: ['wesley-chapel', 'pasco'],

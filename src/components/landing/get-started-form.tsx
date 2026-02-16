@@ -147,8 +147,6 @@ export function GetStartedForm() {
         // Pipeline status
         priority: LEAD_PRIORITIES.MEDIUM,
         status: LEAD_STATUSES.ACTIVE,
-        stage: 'new' as const,
-        stageChangedAt: serverTimestamp(),
 
         // Source tracking from UTM parameters
         source: utmParams.source,

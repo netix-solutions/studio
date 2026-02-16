@@ -4,35 +4,35 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, RefreshCw, TrendingUp, Users, DollarSign, Clock, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowLeft, RefreshCw, TrendingUp, Users, DollarSign, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { LEAD_STAGE_LABELS, LEAD_STAGE_COLORS, LEAD_SOURCE_LABELS, type LeadStage, type LeadSource } from '@/lib/types';
-import { cn } from '@/lib/utils';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { LEAD_SOURCE_LABELS, type LeadSource } from '@/lib/types';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface LeadMetrics {
-  funnelCounts: Record<string, number>;
-  conversionRates: { from: string; to: string; rate: number }[];
-  weeklyVelocity: { week: string; new: number; won: number; lost: number }[];
+  totalLeads: number;
+  convertedCount: number;
+  totalPipelineValue: number;
+  weeklyVelocity: { week: string; new: number; converted: number }[];
   sourcePerformance: {
     source: string;
     total: number;
-    won: number;
+    converted: number;
     conversionRate: number;
-    avgDaysToWin: number | null;
+    avgDaysToConvert: number | null;
     totalValue: number;
   }[];
-  pipelineValue: Record<string, number>;
   responseTime: {
     avgFirstResponseHours: number | null;
     contactedWithin24hPercent: number | null;
   };
-  totalLeads: number;
   calculatedAt: string;
+  // Legacy fields (ignored if present)
+  funnelCounts?: Record<string, number>;
+  conversionRates?: any[];
+  pipelineValue?: Record<string, number>;
 }
-
-const FUNNEL_STAGES: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won'];
 
 export default function LeadDashboardPage() {
   const [metrics, setMetrics] = useState<LeadMetrics | null>(null);
@@ -73,15 +73,6 @@ export default function LeadDashboardPage() {
     }
   };
 
-  const totalPipelineValue = metrics ? Object.values(metrics.pipelineValue).reduce((a, b) => a + b, 0) : 0;
-
-  // Funnel chart data
-  const funnelData = metrics ? FUNNEL_STAGES.map(stage => ({
-    stage: LEAD_STAGE_LABELS[stage],
-    count: metrics.funnelCounts[stage] || 0,
-    color: LEAD_STAGE_COLORS[stage].text.replace('text-', '').replace('-700', ''),
-  })) : [];
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -91,7 +82,7 @@ export default function LeadDashboardPage() {
           </Button>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">Lead Analytics</h1>
-            <p className="text-muted-foreground text-sm">Pipeline performance and conversion metrics</p>
+            <p className="text-muted-foreground text-sm">Lead performance and conversion metrics</p>
           </div>
         </div>
         <Button variant="outline" onClick={handleRecalculate} disabled={isRecalculating}>
@@ -136,8 +127,8 @@ export default function LeadDashboardPage() {
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-green-500" />
                   <div>
-                    <p className="text-2xl font-bold text-green-600">{metrics.funnelCounts.won || 0}</p>
-                    <p className="text-xs text-muted-foreground">Won</p>
+                    <p className="text-2xl font-bold text-green-600">{metrics.convertedCount || 0}</p>
+                    <p className="text-xs text-muted-foreground">Converted</p>
                   </div>
                 </div>
               </CardContent>
@@ -147,7 +138,7 @@ export default function LeadDashboardPage() {
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-amber-500" />
                   <div>
-                    <p className="text-2xl font-bold">${totalPipelineValue.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">${(metrics.totalPipelineValue || 0).toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">Pipeline Value</p>
                   </div>
                 </div>
@@ -170,102 +161,25 @@ export default function LeadDashboardPage() {
             </Card>
           </div>
 
-          {/* Funnel Chart */}
+          {/* Lead Velocity Chart */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Pipeline Funnel</CardTitle>
-              <CardDescription>Lead count by stage with conversion rates</CardDescription>
+              <CardTitle className="text-base">Lead Velocity (12 Weeks)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {FUNNEL_STAGES.map((stage, index) => {
-                  const count = metrics.funnelCounts[stage] || 0;
-                  const maxCount = Math.max(...FUNNEL_STAGES.map(s => metrics.funnelCounts[s] || 0), 1);
-                  const width = (count / maxCount) * 100;
-                  const colors = LEAD_STAGE_COLORS[stage];
-                  const convRate = metrics.conversionRates.find(c => c.from === stage);
-
-                  return (
-                    <div key={stage}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium w-24">{LEAD_STAGE_LABELS[stage]}</span>
-                        <div className="flex-1">
-                          <div
-                            className={cn('h-8 rounded flex items-center px-3 transition-all cursor-pointer hover:opacity-80', colors.bg)}
-                            style={{ width: `${Math.max(width, 8)}%` }}
-                            onClick={() => router.push(`/leads?stage=${stage}`)}
-                          >
-                            <span className={cn('text-sm font-semibold', colors.text)}>{count}</span>
-                          </div>
-                        </div>
-                        {convRate && index < FUNNEL_STAGES.length - 1 && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground w-16 text-right">
-                            <ArrowRight className="h-3 w-3" />
-                            {convRate.rate}%
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {/* Lost count */}
-                <div className="flex items-center gap-3 pt-2 border-t">
-                  <span className="text-sm font-medium w-24">Lost</span>
-                  <Badge variant="outline" className="text-red-600">{metrics.funnelCounts.lost || 0}</Badge>
-                </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={metrics.weeklyVelocity}>
+                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="new" stackId="1" stroke="#3b82f6" fill="#93c5fd" name="New" />
+                    <Area type="monotone" dataKey="converted" stackId="2" stroke="#16a34a" fill="#86efac" name="Converted" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Lead Velocity Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Lead Velocity (12 Weeks)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics.weeklyVelocity}>
-                      <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Area type="monotone" dataKey="new" stackId="1" stroke="#3b82f6" fill="#93c5fd" name="New" />
-                      <Area type="monotone" dataKey="won" stackId="2" stroke="#16a34a" fill="#86efac" name="Won" />
-                      <Area type="monotone" dataKey="lost" stackId="3" stroke="#dc2626" fill="#fca5a5" name="Lost" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pipeline Value by Stage */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Pipeline Value by Stage</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {['new', 'contacted', 'qualified', 'proposal', 'negotiation'].map(stage => {
-                    const value = metrics.pipelineValue[stage] || 0;
-                    const colors = LEAD_STAGE_COLORS[stage as LeadStage];
-                    return (
-                      <div key={stage} className="flex items-center justify-between">
-                        <span className="text-sm">{LEAD_STAGE_LABELS[stage as LeadStage]}</span>
-                        <span className={cn('text-sm font-semibold', colors.text)}>
-                          ${value.toLocaleString()}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  <div className="flex items-center justify-between pt-2 border-t font-semibold">
-                    <span className="text-sm">Total</span>
-                    <span className="text-sm">${totalPipelineValue.toLocaleString()}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Source ROI Table */}
           <Card>
@@ -280,7 +194,7 @@ export default function LeadDashboardPage() {
                     <tr className="border-b">
                       <th className="text-left py-2 font-medium">Source</th>
                       <th className="text-right py-2 font-medium">Leads</th>
-                      <th className="text-right py-2 font-medium">Won</th>
+                      <th className="text-right py-2 font-medium">Converted</th>
                       <th className="text-right py-2 font-medium">Conv. Rate</th>
                       <th className="text-right py-2 font-medium hidden md:table-cell">Avg Days</th>
                       <th className="text-right py-2 font-medium hidden md:table-cell">Total Value</th>
@@ -295,14 +209,14 @@ export default function LeadDashboardPage() {
                             {LEAD_SOURCE_LABELS[source.source as LeadSource] || source.source}
                           </td>
                           <td className="text-right py-2">{source.total}</td>
-                          <td className="text-right py-2 text-green-600">{source.won}</td>
+                          <td className="text-right py-2 text-green-600">{source.converted}</td>
                           <td className="text-right py-2">
                             <Badge variant={source.conversionRate >= 30 ? 'default' : 'outline'} className="text-xs">
                               {source.conversionRate}%
                             </Badge>
                           </td>
                           <td className="text-right py-2 hidden md:table-cell">
-                            {source.avgDaysToWin !== null ? `${source.avgDaysToWin}d` : '--'}
+                            {source.avgDaysToConvert !== null ? `${source.avgDaysToConvert}d` : '--'}
                           </td>
                           <td className="text-right py-2 hidden md:table-cell">
                             ${source.totalValue.toLocaleString()}

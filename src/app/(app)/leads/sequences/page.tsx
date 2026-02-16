@@ -27,14 +27,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { LEAD_STAGE_LABELS, type LeadStage, type SequenceTrigger } from '@/lib/types';
+import { type SequenceTrigger } from '@/lib/types';
 
 interface Sequence {
   id: string;
   name: string;
   description?: string;
   trigger: SequenceTrigger;
-  triggerStage?: LeadStage;
   steps: any[];
   isActive: boolean;
   enrollmentCount?: number;
@@ -48,7 +47,6 @@ export default function SequencesPage() {
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newTrigger, setNewTrigger] = useState<SequenceTrigger>('manual');
-  const [newTriggerStage, setNewTriggerStage] = useState<LeadStage>('contacted');
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
@@ -94,7 +92,6 @@ export default function SequencesPage() {
           name: newName.trim(),
           description: newDescription.trim(),
           trigger: newTrigger,
-          triggerStage: newTrigger === 'stage_enter' ? newTriggerStage : undefined,
           steps: [],
           userId: user?.uid,
           userName: user?.displayName || user?.email || 'Unknown',
@@ -116,7 +113,6 @@ export default function SequencesPage() {
   };
 
   const triggerLabels: Record<SequenceTrigger, string> = {
-    stage_enter: 'Stage Enter',
     lead_created: 'Lead Created',
     manual: 'Manual',
   };
@@ -169,7 +165,7 @@ export default function SequencesPage() {
                     <p className="text-sm text-muted-foreground mt-1">{seq.description}</p>
                   )}
                   <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span>Trigger: {triggerLabels[seq.trigger]}{seq.triggerStage ? ` (${LEAD_STAGE_LABELS[seq.triggerStage]})` : ''}</span>
+                    <span>Trigger: {triggerLabels[seq.trigger] || seq.trigger}</span>
                     <span><Mail className="inline h-3 w-3 mr-1" />{seq.steps?.length || 0} steps</span>
                     <span>{seq.enrollmentCount || 0} enrolled</span>
                   </div>
@@ -209,23 +205,9 @@ export default function SequencesPage() {
                 <SelectContent>
                   <SelectItem value="manual">Manual Enrollment</SelectItem>
                   <SelectItem value="lead_created">Lead Created</SelectItem>
-                  <SelectItem value="stage_enter">Stage Enter</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {newTrigger === 'stage_enter' && (
-              <div className="space-y-2">
-                <Label>Trigger Stage</Label>
-                <Select value={newTriggerStage} onValueChange={(v) => setNewTriggerStage(v as LeadStage)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(LEAD_STAGE_LABELS).filter(([k]) => k !== 'won' && k !== 'lost').map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>

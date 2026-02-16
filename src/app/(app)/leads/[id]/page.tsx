@@ -33,11 +33,7 @@ import {
   Tag,
   User,
   Trash2,
-  ChevronRight,
-  XCircle,
   Zap,
-  Pause,
-  Play,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -54,9 +50,7 @@ import { SendEmailDialog } from '@/components/shared/send-email-dialog';
 import { ScheduleLeadEmailDialog } from '@/components/shared/schedule-lead-email-dialog';
 import { ScheduledLeadEmailsList } from '@/components/shared/scheduled-lead-emails-list';
 import { CustomerActivity } from '@/components/customers/customer-activity';
-import { LeadPipelineBar } from '@/components/leads/lead-pipeline-bar';
 import { LeadScoreGauge } from '@/components/leads/lead-score-gauge';
-import { StageChangeDialog } from '@/components/leads/stage-change-dialog';
 import { TaskListCard } from '@/components/leads/task-list-card';
 import { TaskCreateDialog } from '@/components/leads/task-create-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -65,11 +59,6 @@ import {
   Lead,
   LeadPriority,
   LeadSource,
-  LeadStage,
-  LEAD_STAGES,
-  LEAD_STAGE_LABELS,
-  LEAD_STAGE_COLORS,
-  LEAD_STAGE_ORDER,
   LEAD_STATUSES,
   LEAD_PRIORITIES,
   LEAD_PRIORITY_LABELS,
@@ -77,8 +66,6 @@ import {
   LEAD_SOURCE_LABELS,
   ACTIVITY_TYPES,
   getTimeSinceLastContact,
-  getStatusFromStage,
-  type LeadSequenceEnrollment,
 } from '@/lib/types';
 
 export default function LeadDetailPage() {
@@ -98,8 +85,6 @@ export default function LeadDetailPage() {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showStageDialog, setShowStageDialog] = useState(false);
-  const [showLostDialog, setShowLostDialog] = useState(false);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [sequences, setSequences] = useState<any[]>([]);
@@ -131,9 +116,6 @@ export default function LeadDetailPage() {
         priority: data.priority || LEAD_PRIORITIES.MEDIUM,
         source: data.source || 'website',
         status: data.status || LEAD_STATUSES.ACTIVE,
-        stage: data.stage || 'new',
-        stageChangedAt: data.stageChangedAt,
-        lostReason: data.lostReason,
         leadScore: data.leadScore,
         leadScoreUpdatedAt: data.leadScoreUpdatedAt,
         scoreBreakdown: data.scoreBreakdown,
@@ -158,26 +140,11 @@ export default function LeadDetailPage() {
 
   // Fetch enrollments
   useEffect(() => {
-    const fetchEnrollments = async () => {
-      if (!leadId) return;
-      try {
-        const res = await fetch(`/api/leads/sequences?leadId=${leadId}`);
-        // Enrollments are in leadSequenceEnrollments collection; fetch via API or directly
-      } catch (err) { /* handled below */ }
-    };
-
     if (!firestore || !leadId) return;
 
-    // Listen for enrollments in real-time via Firestore
-    const q = query(
-      collection(firestore, 'leadSequenceEnrollments' as string),
-    );
-    // Firestore client queries may not support this collection directly,
-    // so we'll fetch via REST
     const fetchData = async () => {
       try {
-        // Simple approach: use API or direct collection query
-        const enrollSnap = await getDoc(doc(firestore, '__dummy__', 'dummy')).catch(() => null);
+        await getDoc(doc(firestore, '__dummy__', 'dummy')).catch(() => null);
       } catch (e) {}
     };
     fetchData();
@@ -219,42 +186,6 @@ export default function LeadDetailPage() {
       toast({ title: 'Error', description: 'Failed to add note.', variant: 'destructive' });
     } finally {
       setIsAddingNote(false);
-    }
-  };
-
-  // Handle stage change
-  const handleStageChange = async (stage: LeadStage, note?: string, lostReason?: string) => {
-    if (!user || !lead) return;
-    try {
-      const res = await fetch(`/api/leads/${lead.id}/stage`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stage,
-          lostReason,
-          note,
-          userId: user.uid,
-          userName: user.displayName || user.email || 'Unknown',
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      toast({ title: 'Stage Updated', description: `Moved to ${LEAD_STAGE_LABELS[stage]}` });
-
-      // Recalculate score
-      fetch(`/api/leads/${lead.id}/score`, { method: 'POST' }).catch(() => {});
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to update stage', variant: 'destructive' });
-    }
-  };
-
-  // Move to next stage
-  const handleNextStage = () => {
-    if (!lead) return;
-    const currentIndex = LEAD_STAGE_ORDER.indexOf(lead.stage as LeadStage);
-    if (currentIndex >= 0 && currentIndex < LEAD_STAGE_ORDER.length - 1) {
-      const nextStage = LEAD_STAGE_ORDER[currentIndex + 1];
-      handleStageChange(nextStage);
     }
   };
 
@@ -308,11 +239,7 @@ export default function LeadDetailPage() {
     );
   }
 
-  const stage = (lead.stage || 'new') as LeadStage;
-  const stageColors = LEAD_STAGE_COLORS[stage];
   const priorityColors = LEAD_PRIORITY_COLORS[lead.priority as LeadPriority] || LEAD_PRIORITY_COLORS.medium;
-  const currentStageIndex = LEAD_STAGE_ORDER.indexOf(stage);
-  const canAdvance = currentStageIndex >= 0 && currentStageIndex < LEAD_STAGE_ORDER.length - 1 && stage !== 'lost';
 
   return (
     <div className="space-y-6">
@@ -321,23 +248,13 @@ export default function LeadDetailPage() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>
 
-      {/* Header Card with Pipeline Bar */}
+      {/* Header Card */}
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <CardTitle className="text-xl md:text-2xl">{lead.businessName}</CardTitle>
-                  <Badge className={cn(stageColors.bg, stageColors.text, 'border', stageColors.border)}>
-                    {LEAD_STAGE_LABELS[stage]}
-                  </Badge>
-                  {lead.lostReason && stage === 'lost' && (
-                    <Badge variant="outline" className="text-red-600">
-                      {lead.lostReason.replace(/_/g, ' ')}
-                    </Badge>
-                  )}
-                </div>
+                <CardTitle className="text-xl md:text-2xl">{lead.businessName}</CardTitle>
                 <CardDescription>
                   {lead.contactName} &bull; Created {lead.createdAt ? format(lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt), 'PPP') : 'N/A'}
                 </CardDescription>
@@ -348,32 +265,6 @@ export default function LeadDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Pipeline Progress Bar */}
-          <LeadPipelineBar currentStage={stage} />
-
-          {/* Stage Action Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {canAdvance && (
-              <Button onClick={handleNextStage}>
-                <ChevronRight className="mr-1 h-4 w-4" />
-                Move to {LEAD_STAGE_LABELS[LEAD_STAGE_ORDER[currentStageIndex + 1]]}
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setShowStageDialog(true)}>
-              Change Stage
-            </Button>
-            {stage !== 'lost' && stage !== 'won' && (
-              <Button variant="outline" className="text-red-600" onClick={() => setShowLostDialog(true)}>
-                <XCircle className="mr-1 h-4 w-4" /> Mark as Lost
-              </Button>
-            )}
-            {stage !== 'won' && stage !== 'lost' && (
-              <Button variant="outline" className="text-green-600" onClick={() => handleStageChange('won')}>
-                Mark as Won
-              </Button>
-            )}
-          </div>
-
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-3">
@@ -566,20 +457,6 @@ export default function LeadDetailPage() {
         lead={{ id: lead.id, email: lead.email, contactName: lead.contactName, businessName: lead.businessName }}
         isOpen={isScheduleEmailDialogOpen}
         onOpenChange={setIsScheduleEmailDialogOpen}
-      />
-      <StageChangeDialog
-        isOpen={showStageDialog}
-        onOpenChange={setShowStageDialog}
-        currentStage={stage}
-        onConfirm={handleStageChange}
-        mode="change"
-      />
-      <StageChangeDialog
-        isOpen={showLostDialog}
-        onOpenChange={setShowLostDialog}
-        currentStage={stage}
-        onConfirm={handleStageChange}
-        mode="lost"
       />
       <TaskCreateDialog
         isOpen={showTaskDialog}
