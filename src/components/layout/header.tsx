@@ -37,6 +37,7 @@ const pathToTitle: { [key: string]: string } = {
   '/leads': 'Leads',
   '/import': 'Import Customers',
   '/legal': 'Legal Documents',
+  '/spotlight-article': 'Spotlight Article',
 };
 
 export default function Header({ isAdmin }: { isAdmin: boolean }) {

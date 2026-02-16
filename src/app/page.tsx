@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, Clock, Award, Building2, Utensils, Briefcase, Home, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon, Palette, Sparkles, MousePointerClick, Monitor, BookOpen, Globe, Search, MapPin, Dumbbell, CreditCard, X, Check } from 'lucide-react';
+import { ArrowRight, CheckCircle, Phone, Users, TrendingUp, Zap, PenTool, Shield, ChevronRight, Star, Clock, Award, Building2, Utensils, Briefcase, Home, Car, Scissors, ShoppingBag, Stethoscope, User as UserIcon, Palette, Sparkles, MousePointerClick, Monitor, BookOpen, Globe, Search, MapPin, Dumbbell, CreditCard, X, Check, Gift, Newspaper } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -97,16 +97,16 @@ export default function LandingPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
                 </span>
-                <span className="font-medium">Reaching 1,000+ local residents daily</span>
+                <span className="font-medium">1,000+ local customers reached daily</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-headline leading-[1.1]">
-                Get Your Business in Front of
-                <span className="text-success"> Local Customers</span>
+                Your Neighbors Are Looking for a
+                <span className="text-success"> Business Like Yours</span>
               </h1>
 
               <p className="text-base md:text-lg lg:text-xl text-white/90 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Stop wasting money on ads that reach people 50 miles away. Advertise where your neighbors actually look—Pasco County's most visited community websites. Plans from just <span className="font-bold text-success">$16/month</span>.
+                Every day, thousands of Pasco County residents visit our community websites looking for local services. Put your business in front of them for less than <span className="font-bold text-success">$1 a day</span>.
               </p>
 
               {/* Mobile: Single prominent CTA */}
@@ -151,8 +151,8 @@ export default function LandingPage() {
               <Card className="bg-white backdrop-blur-md shadow-2xl border-0 rounded-2xl overflow-hidden ring-1 ring-white/20">
                 <CardContent className="p-6 md:p-8">
                   <div className="text-center mb-6 md:mb-7">
-                    <h2 className="text-xl md:text-2xl font-bold text-brand-primary font-headline">See Our Pricing</h2>
-                    <p className="text-gray-600 mt-1.5 text-sm md:text-base">Fill out the form to view current rates</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-brand-primary font-headline">Get Your Free Quote</h2>
+                    <p className="text-gray-600 mt-1.5 text-sm md:text-base">See how affordable it is to reach your neighbors</p>
                   </div>
                   <GetStartedForm />
                 </CardContent>
@@ -164,12 +164,12 @@ export default function LandingPage() {
                   <span>No credit card required</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-success" />
-                  <span>Join 50+ local businesses</span>
+                  <Gift className="h-4 w-4 text-success" />
+                  <span>Free spotlight article with yearly plans</span>
                 </div>
               </div>
               <p className="mt-3 text-center text-white/70 text-xs italic">
-                "Best decision we made for our restaurant!" — Maria S.
+                "We got 23 new customers in our first month alone." — Maria S., Local Restaurant Owner
               </p>
             </div>
           </div>
@@ -191,10 +191,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-8 md:mb-10">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Perfect for Local Businesses Like Yours
+              Built for Every Kind of Local Business
             </h2>
             <p className="text-gray-600 mt-3 text-base md:text-lg max-w-2xl mx-auto">
-              From restaurants to repair shops, we help all types of local businesses connect with nearby customers.
+              Whether you run a restaurant, a dental practice, or a home repair company—if your customers live nearby, we'll help them find you.
             </p>
           </div>
 
@@ -241,7 +241,7 @@ export default function LandingPage() {
                 Your Ad on Pasco County's Top Community Sites
               </h2>
               <p className="text-gray-600 text-base md:text-lg mb-6 md:mb-8 leading-relaxed">
-                Reach engaged local residents on the websites they trust for community news and information.
+                Your ad runs on the same pages residents visit daily for local news, events, and school updates. They already trust these sites—and they'll trust your business too.
               </p>
 
               <div className="space-y-4 md:space-y-5">
@@ -539,27 +539,69 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Yearly Plan Bonus - Free Spotlight Article */}
+      <section className="py-14 md:py-20 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-y border-amber-200/60">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 rounded-full px-5 py-2 text-xs md:text-sm font-bold mb-6 border border-amber-200">
+              <Gift className="h-4 w-4" />
+              YEARLY PLAN EXCLUSIVE BONUS
+            </div>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary mb-4">
+              Get a Free Spotlight Article About Your Business
+            </h2>
+            <p className="text-gray-700 text-base md:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+              Sign up for any yearly plan and we'll write and publish a dedicated feature article about your business on our community websites—a <span className="font-bold text-amber-700">$250+ value</span>, yours free.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4 md:gap-6 max-w-3xl mx-auto mb-8">
+              <div className="flex flex-col items-center p-5 bg-white rounded-xl shadow-sm border border-amber-100">
+                <Newspaper className="h-7 w-7 text-amber-600 mb-3" />
+                <span className="text-sm font-semibold text-gray-800">Professionally Written</span>
+                <span className="text-xs text-gray-500 mt-1">Our writers craft your story</span>
+              </div>
+              <div className="flex flex-col items-center p-5 bg-white rounded-xl shadow-sm border border-amber-100">
+                <Users className="h-7 w-7 text-amber-600 mb-3" />
+                <span className="text-sm font-semibold text-gray-800">Seen by Thousands</span>
+                <span className="text-xs text-gray-500 mt-1">Published across our community sites</span>
+              </div>
+              <div className="flex flex-col items-center p-5 bg-white rounded-xl shadow-sm border border-amber-100">
+                <TrendingUp className="h-7 w-7 text-amber-600 mb-3" />
+                <span className="text-sm font-semibold text-gray-800">Builds Trust & SEO</span>
+                <span className="text-xs text-gray-500 mt-1">Boosts your online credibility</span>
+              </div>
+            </div>
+            <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-7 md:px-8 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/25">
+              <Link href="#get-started">
+                Claim Your Free Article <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <p className="text-xs text-gray-500 mt-3">Choose yearly billing at checkout to receive your free spotlight article</p>
+          </div>
+        </div>
+      </section>
+
       {/* What's Included - Compact Grid */}
       <section className="py-14 md:py-20 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-2xl mx-auto mb-10 md:mb-12">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Everything Included
+              Everything You Get—No Surprises
             </h2>
             <p className="mt-3 text-gray-600 text-base md:text-lg">
-              No hidden fees. Simple, transparent pricing.
+              No hidden fees, no upsells. Every feature is included from day one.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-5 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-5xl mx-auto">
             {[
-              { icon: PenTool, label: 'Free Design' },
+              { icon: PenTool, label: 'Free Ad Design' },
               { icon: TrendingUp, label: 'Clickable Ads' },
-              { icon: Zap, label: 'Free Updates' },
+              { icon: Zap, label: 'Unlimited Updates' },
               { icon: Shield, label: 'No Contracts' },
-              { icon: Users, label: 'Local Reach' },
+              { icon: Users, label: '100% Local Reach' },
               { icon: Clock, label: '48hr Launch' },
               { icon: BookOpen, label: 'Directory Listing' },
+              { icon: Newspaper, label: 'Spotlight Article*' },
             ].map((item, i) => (
               <div key={i} className="text-center p-4 md:p-5 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md hover:border-brand-primary/20 transition-all duration-200">
                 <item.icon className="h-6 w-6 md:h-7 md:w-7 text-brand-primary mx-auto mb-2.5" />
@@ -567,6 +609,7 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <p className="text-center text-xs text-gray-400 mt-3 max-w-5xl mx-auto">*Spotlight article included free with yearly plans (a $250+ value)</p>
         </div>
       </section>
 
@@ -575,10 +618,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-2xl mx-auto mb-10 md:mb-12">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline text-brand-primary">
-              Why Local Advertising Works
+              Why Smart Business Owners Choose Us
             </h2>
             <p className="mt-3 text-gray-600 text-base md:text-lg">
-              See how community website advertising compares to other options.
+              See how community website advertising stacks up against the alternatives.
             </p>
           </div>
 
@@ -640,11 +683,11 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700 font-medium">Set it and forget it</span>
+                  <span className="text-sm text-gray-700 font-medium">Set it and forget it—we handle everything</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700 font-medium">From just $16/month</span>
+                  <span className="text-sm text-gray-700 font-medium">From just $16/month + free spotlight article</span>
                 </div>
               </CardContent>
             </Card>
@@ -676,10 +719,10 @@ export default function LandingPage() {
         <div className="relative z-10 container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto md:mx-0">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold font-headline text-white mb-6">
-              Connect with Your Community
+              Your Customers Are Already Here
             </h2>
             <p className="text-lg md:text-xl text-white/85 mb-8 leading-relaxed">
-              Our community websites are where Pasco County residents go for local news, events, and recommendations. Put your business right in front of neighbors who are ready to shop local.
+              These aren't random internet users—they're your neighbors. People who drive past your business every day, who are actively looking for local services, and who prefer to spend their money close to home.
             </p>
             <div className="flex flex-wrap gap-8 md:gap-12">
               <div className="text-center">
@@ -709,7 +752,7 @@ export default function LandingPage() {
               ))}
             </div>
             <h2 className="text-2xl md:text-3xl font-bold font-headline text-brand-primary">
-              Trusted by Local Businesses
+              Real Results from Real Local Businesses
             </h2>
           </div>
 
@@ -746,10 +789,10 @@ export default function LandingPage() {
               <CardContent className="p-6 md:p-8 lg:p-10">
                 <div className="text-center mb-7 md:mb-8">
                   <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-brand-primary font-headline">
-                    Ready to Grow Your Business?
+                    Start Reaching Local Customers Today
                   </h2>
                   <p className="text-gray-600 mt-2 text-sm md:text-base">
-                    Fill out the form to see our pricing plans.
+                    Plans built for small business budgets—see pricing instantly.
                   </p>
                 </div>
 
@@ -799,6 +842,7 @@ export default function LandingPage() {
               { q: 'How quickly will my ad go live?', a: 'Most ads go live within 48 hours of approval. We\'ll send you a preview to approve first.' },
               { q: 'Can I update my ad later?', a: 'Yes! Update your ad anytime at no extra charge. Design it yourself using our online tool, or just email us your changes.' },
               { q: 'What is the directory listing?', a: 'While your ad is live, you get a free business profile in our community sponsor directory. Add your logo, description, contact info, and social links so local residents can find and learn about your business.' },
+              { q: 'What do I get with a yearly plan?', a: 'Yearly plan subscribers save up to 20% on monthly pricing AND receive a free professionally written spotlight article about their business, published on our community websites. That\'s a $250+ value—included at no extra cost. It\'s our way of rewarding businesses that commit to growing locally.' },
               { q: 'Can I cancel anytime?', a: 'Absolutely. No contracts, no cancellation fees. Cancel anytime through your portal.' },
             ].map((item, i) => (
               <AccordionItem key={i} value={`item-${i}`} className="bg-gray-50 rounded-xl px-5 md:px-6 border border-gray-100">
@@ -828,10 +872,10 @@ export default function LandingPage() {
       <section className="py-12 md:py-16 bg-brand-dark text-white">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold font-headline mb-4 md:mb-5">
-            Ready to Reach More Local Customers?
+            Don't Let Your Competition Get There First
           </h2>
           <p className="text-white/70 text-base md:text-lg mb-7 md:mb-8 max-w-2xl mx-auto">
-            Join local businesses already advertising on Pasco County's most visited community websites.
+            Ad space is limited. Secure your spot on Pasco County's most visited community websites before another business in your industry does.
           </p>
           <Button size="lg" asChild variant="success" className="h-12 md:h-14 px-8 md:px-10 text-base md:text-lg w-full sm:w-auto touch-manipulation shadow-lg shadow-success/30">
             <Link href="#get-started">

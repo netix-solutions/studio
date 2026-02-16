@@ -29,6 +29,8 @@ import {
   Smartphone,
   Globe,
   HeartHandshake,
+  Gift,
+  Newspaper,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -213,17 +215,23 @@ function PricingCard({
           <span className="text-gray-500 text-sm md:text-base font-medium">/month</span>
         </div>
         {billingCycle === 'yearly' && yearlyPrice ? (
-          <p className="text-sm text-gray-500 mt-1.5 flex items-center gap-2">
-            <span className="font-semibold text-success-dark">${(yearlyPrice.unit_amount / 100).toFixed(0)}</span> billed annually
-            {savings > 0 && (
-              <Badge variant="secondary" className="bg-success-light text-success-dark text-xs font-semibold">
-                Save {savings}%
-              </Badge>
-            )}
-          </p>
+          <div className="mt-1.5 space-y-1.5">
+            <p className="text-sm text-gray-500 flex items-center gap-2">
+              <span className="font-semibold text-success-dark">${(yearlyPrice.unit_amount / 100).toFixed(0)}</span> billed annually
+              {savings > 0 && (
+                <Badge variant="secondary" className="bg-success-light text-success-dark text-xs font-semibold">
+                  Save {savings}%
+                </Badge>
+              )}
+            </p>
+            <p className="text-xs text-amber-700 font-medium flex items-center gap-1.5">
+              <Gift className="h-3.5 w-3.5" />
+              + Free spotlight article ($250+ value)
+            </p>
+          </div>
         ) : (
           <p className="text-sm text-gray-500 mt-1.5">
-            Billed monthly • Switch to yearly to save
+            Billed monthly • Switch to yearly for savings + free spotlight article
           </p>
         )}
       </div>
@@ -304,6 +312,12 @@ function BillingToggle({
           ? 'Save more with annual billing'
           : 'Flexible month-to-month'}
       </p>
+      {value === 'yearly' && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-2 text-xs md:text-sm font-medium text-amber-800">
+          <Gift className="h-4 w-4 text-amber-600" />
+          <span>Yearly plans include a <strong>free spotlight article</strong> about your business (a $250+ value)</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -468,6 +482,10 @@ function PricingFAQ() {
     {
       q: "What's the difference between Single-Site and Multi-Site?",
       a: "Single-Site displays your ad on one community website of your choice. Multi-Site displays your ad on ALL our community websites, giving you maximum exposure across Pasco County."
+    },
+    {
+      q: "What is the free spotlight article?",
+      a: "When you choose a yearly plan, our writing team creates a professionally written feature article about your business and publishes it on our community websites. It's like a mini-profile that introduces you to the community—covering your story, your services, and what makes you stand out. It's a $250+ value, included free with any yearly plan."
     }
   ];
 
@@ -727,7 +745,7 @@ function PricingPageContent() {
               </h1>
 
               <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed mb-8">
-                Affordable advertising on Pasco County's most visited community websites. Design your own ad or let us create one for you.
+                Affordable advertising on Pasco County's most visited community websites. Choose yearly and get a free spotlight article about your business—a $250+ value.
               </p>
 
               {/* Key Benefits Pills */}

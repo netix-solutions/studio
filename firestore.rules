@@ -234,6 +234,14 @@ service cloud.firestore {
       allow list: if isAdmin();
     }
 
+    // SPOTLIGHT ARTICLE SUBMISSIONS
+    // Signed-in users can create and read their own submissions. Admins can manage all.
+    match /spotlightSubmissions/{submissionId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, list, update, delete: if isAdmin();
+    }
+
     // DIRECTORY PRODUCTS (Stripe products synced for directory listings)
     // Public read access for pricing page
     match /products/{productId} {

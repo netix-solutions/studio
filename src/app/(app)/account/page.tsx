@@ -46,6 +46,7 @@ import {
     Wallet,
     AlertTriangle,
     Rocket,
+    Newspaper,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -556,6 +557,23 @@ export default function AccountPage() {
                 buttonText: 'Edit Listing',
                 href: '/directory-listing',
                 variant: 'default' as const,
+            });
+        }
+
+        // If yearly subscriber, show spotlight article card
+        const isYearlySubscriber =
+            activeSubscription?.items?.[0]?.price?.recurring?.interval === 'year' ||
+            activeSubscription?.billingPeriod === 'yearly';
+        if (isYearlySubscriber) {
+            cards.push({
+                key: 'spotlight',
+                title: 'Free Spotlight Article',
+                description: 'You\'re eligible for a free feature article! Tell us your story and we\'ll publish it on our community websites.',
+                icon: <Newspaper className="h-5 w-5" />,
+                buttonText: 'Submit Your Story',
+                href: '/spotlight-article',
+                variant: 'default' as const,
+                badge: { text: 'YEARLY PERK', variant: 'default' as const },
             });
         }
 
