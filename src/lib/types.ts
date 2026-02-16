@@ -87,6 +87,59 @@ export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; text: string; 
   inactive: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' },
 };
 
+// ============================================================================
+// LEAD PIPELINE STAGES
+// ============================================================================
+
+/**
+ * Lead pipeline stages - discrete stages instead of binary active/inactive
+ */
+export const LEAD_STAGES = {
+  NEW: 'new',
+  CONTACTED: 'contacted',
+  QUALIFIED: 'qualified',
+  PROPOSAL: 'proposal',
+  NEGOTIATION: 'negotiation',
+  WON: 'won',
+  LOST: 'lost',
+} as const;
+
+export type LeadStage = typeof LEAD_STAGES[keyof typeof LEAD_STAGES];
+
+export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  qualified: 'Qualified',
+  proposal: 'Proposal',
+  negotiation: 'Negotiation',
+  won: 'Won',
+  lost: 'Lost',
+};
+
+export const LEAD_STAGE_COLORS: Record<LeadStage, { bg: string; text: string; border: string }> = {
+  new: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  contacted: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
+  qualified: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+  proposal: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  negotiation: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  won: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  lost: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+};
+
+/** Order of stages in the pipeline (for progress visualization) */
+export const LEAD_STAGE_ORDER: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won'];
+
+/** Active pipeline stages (not won/lost) */
+export const ACTIVE_PIPELINE_STAGES: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'negotiation'];
+
+/**
+ * Derive backward-compatible status from stage
+ */
+export function getStatusFromStage(stage: LeadStage): LeadStatus {
+  if (stage === 'won' || stage === 'lost') return 'inactive';
+  return 'active';
+}
+
 /**
  * Enhanced Lead interface with all tracking fields
  */
@@ -106,10 +159,23 @@ export interface Lead {
 
   // Pipeline & Status
   priority: LeadPriority;
-  status: LeadStatus; // active or inactive - whether lead is worth pursuing
+  status: LeadStatus; // active or inactive - computed from stage for backward compat
+  stage: LeadStage; // Pipeline stage
+  stageChangedAt?: any; // Firestore Timestamp - when stage last changed
+  lostReason?: string; // Reason if stage is 'lost'
 
-  // Scoring (0-100)
-  score: number;
+  // Lead Scoring
+  leadScore?: number; // 0-100
+  leadScoreUpdatedAt?: any; // Firestore Timestamp
+  scoreBreakdown?: {
+    engagement: number;
+    profile: number;
+    recency: number;
+    source: number;
+  };
+
+  // Snooze
+  snoozedUntil?: any; // Firestore Timestamp
 
   // Source tracking
   source: LeadSource;
@@ -163,13 +229,20 @@ export const ACTIVITY_TYPES = {
   CALL: 'call',
   MEETING: 'meeting',
   PRIORITY_CHANGE: 'priority_change',
-  SCORE_CHANGE: 'score_change',
+  STAGE_CHANGE: 'stage_change',
+
   CONVERSION: 'conversion',
   TASK_CREATED: 'task_created',
   TASK_COMPLETED: 'task_completed',
   ASSIGNMENT_CHANGE: 'assignment_change',
   PAGE_VISIT: 'page_visit',
   LOGIN: 'login',
+
+  // Sequence-related
+  SEQUENCE_ENROLLED: 'sequence_enrolled',
+  SEQUENCE_EMAIL_SENT: 'sequence_email_sent',
+  SEQUENCE_COMPLETED: 'sequence_completed',
+  SEQUENCE_CANCELLED: 'sequence_cancelled',
 } as const;
 
 export type ActivityType = typeof ACTIVITY_TYPES[keyof typeof ACTIVITY_TYPES];
@@ -182,13 +255,19 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   call: 'Phone Call',
   meeting: 'Meeting',
   priority_change: 'Priority Changed',
-  score_change: 'Score Updated',
+  stage_change: 'Stage Changed',
+
   conversion: 'Converted to Customer',
   task_created: 'Task Created',
   task_completed: 'Task Completed',
   assignment_change: 'Assignment Changed',
   page_visit: 'Website Visit',
   login: 'Logged In',
+
+  sequence_enrolled: 'Enrolled in Sequence',
+  sequence_email_sent: 'Sequence Email Sent',
+  sequence_completed: 'Sequence Completed',
+  sequence_cancelled: 'Sequence Cancelled',
 };
 
 /**
@@ -207,6 +286,9 @@ export interface Activity {
   metadata?: {
     fromPriority?: LeadPriority;
     toPriority?: LeadPriority;
+    fromStage?: LeadStage;
+    toStage?: LeadStage;
+    lostReason?: string;
     oldScore?: number;
     newScore?: number;
     emailSubject?: string;
@@ -217,6 +299,9 @@ export interface Activity {
     taskTitle?: string;
     pageUrl?: string; // for page_visit activity type
     pageTitle?: string; // for page_visit activity type
+    sequenceId?: string;
+    sequenceName?: string;
+    stepIndex?: number;
   };
 
   // Who performed the action
@@ -700,6 +785,29 @@ export const TASK_STATUSES = {
 export type TaskStatus = typeof TASK_STATUSES[keyof typeof TASK_STATUSES];
 
 /**
+ * Task type for categorization
+ */
+export const TASK_TYPES = {
+  FOLLOW_UP: 'follow_up',
+  CALL: 'call',
+  EMAIL: 'email',
+  MEETING: 'meeting',
+  REVIEW: 'review',
+  CUSTOM: 'custom',
+} as const;
+
+export type TaskType = typeof TASK_TYPES[keyof typeof TASK_TYPES];
+
+export const TASK_TYPE_LABELS: Record<TaskType, string> = {
+  follow_up: 'Follow Up',
+  call: 'Call',
+  email: 'Email',
+  meeting: 'Meeting',
+  review: 'Review',
+  custom: 'Custom',
+};
+
+/**
  * Task interface for follow-up reminders
  */
 export interface Task {
@@ -711,9 +819,14 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  type?: TaskType;
 
   dueAt?: any;
   completedAt?: any;
+  snoozedUntil?: any;
+
+  isRecurring?: boolean;
+  recurrencePattern?: string; // e.g., 'daily', 'weekly', 'monthly'
 
   assignedTo?: string;
   assignedToName?: string;
@@ -725,43 +838,104 @@ export interface Task {
 }
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// LEAD SEQUENCE TYPES
 // ============================================================================
 
 /**
- * Calculate lead score based on various factors
+ * Sequence trigger types
  */
-export function calculateLeadScore(lead: Partial<Lead>): number {
-  let score = 0;
+export const SEQUENCE_TRIGGERS = {
+  STAGE_ENTER: 'stage_enter',
+  LEAD_CREATED: 'lead_created',
+  MANUAL: 'manual',
+} as const;
 
-  // Base score for having contact info
-  if (lead.email) score += 10;
-  if (lead.phone) score += 10;
-  if (lead.businessName) score += 10;
+export type SequenceTrigger = typeof SEQUENCE_TRIGGERS[keyof typeof SEQUENCE_TRIGGERS];
 
-  // Source quality scoring
-  const sourceScores: Partial<Record<LeadSource, number>> = {
-    referral: 20,
-    website: 15,
-    google_ads: 12,
-    facebook_ads: 10,
-    social_media: 8,
-    email_campaign: 8,
-    partner: 15,
-    event: 12,
-    cold_outreach: 5,
-    directory_signup: 18, // High intent - they signed up for directory
-    other: 5,
-  };
-  score += sourceScores[lead.source as LeadSource] || 5;
-
-  // Site coverage (more sites = higher value)
-  const siteCoverageScore = (lead.siteCoverage?.length || 0) * 10;
-  score += Math.min(siteCoverageScore, 20);
-
-  // Cap at 100
-  return Math.min(Math.max(score, 0), 100);
+/**
+ * Sequence step definition
+ */
+export interface SequenceStep {
+  order: number;
+  delayDays: number;
+  templateId: string;
+  templateName?: string;
+  skipIfContacted?: boolean;
 }
+
+/**
+ * Lead sequence definition
+ */
+export interface LeadSequence {
+  id: string;
+  name: string;
+  description?: string;
+  trigger: SequenceTrigger;
+  triggerStage?: LeadStage; // For stage_enter trigger
+  steps: SequenceStep[];
+  isActive: boolean;
+  enrollmentCount?: number;
+  createdBy: string;
+  createdByName: string;
+  createdAt: any;
+  updatedAt?: any;
+}
+
+/**
+ * Enrollment status
+ */
+export const ENROLLMENT_STATUSES = {
+  ACTIVE: 'active',
+  COMPLETED: 'completed',
+  PAUSED: 'paused',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type EnrollmentStatus = typeof ENROLLMENT_STATUSES[keyof typeof ENROLLMENT_STATUSES];
+
+/**
+ * Lead sequence enrollment - tracks a lead's progress through a sequence
+ */
+export interface LeadSequenceEnrollment {
+  id: string;
+  sequenceId: string;
+  sequenceName: string;
+  leadId: string;
+  leadName: string;
+  currentStepIndex: number;
+  status: EnrollmentStatus;
+  nextStepScheduledAt?: any; // Firestore Timestamp
+  enrolledAt: any;
+  completedAt?: any;
+  cancelledAt?: any;
+  pausedAt?: any;
+  createdBy: string;
+  createdByName: string;
+}
+
+// ============================================================================
+// LEAD SCORING CONSTANTS
+// ============================================================================
+
+export const LEAD_SCORING_RULES = {
+  FORM_FILL: { points: 10, max: 10 },
+  PAGE_VISIT: { points: 2, max: 20 },
+  LOGIN: { points: 5, max: 25 },
+  EMAIL_OPENED: { points: 5, max: 25 },
+  EMAIL_LINK_CLICKED: { points: 10, max: 30 },
+  CALL_LOGGED: { points: 10, max: 30 },
+  MEETING_LOGGED: { points: 15, max: 30 },
+  SOURCE_REFERRAL: { points: 15, max: 15 },
+  SOURCE_GOOGLE_ADS: { points: 10, max: 10 },
+  HAS_PHONE: { points: 5, max: 5 },
+  HAS_ESTIMATED_VALUE: { points: 5, max: 5 },
+  RECENCY_DECAY_PER_DAY: -1, // After 14 days inactive
+  RECENCY_GRACE_DAYS: 14,
+} as const;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
 /**
  * Get time since last contact (human readable)

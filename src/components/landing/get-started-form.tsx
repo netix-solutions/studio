@@ -28,7 +28,6 @@ import {
   LEAD_STATUSES,
   LEAD_SOURCES,
   LEAD_PRIORITIES,
-  calculateLeadScore,
   type LeadSource,
 } from '@/lib/types';
 import {
@@ -147,7 +146,9 @@ export function GetStartedForm() {
 
         // Pipeline status
         priority: LEAD_PRIORITIES.MEDIUM,
-        status: LEAD_STATUSES.ACTIVE, // New leads are active by default
+        status: LEAD_STATUSES.ACTIVE,
+        stage: 'new' as const,
+        stageChangedAt: serverTimestamp(),
 
         // Source tracking from UTM parameters
         source: utmParams.source,
@@ -156,15 +157,6 @@ export function GetStartedForm() {
         utmCampaign: utmParams.utmCampaign || null,
         utmTerm: utmParams.utmTerm || null,
         utmContent: utmParams.utmContent || null,
-
-        // Calculate initial lead score
-        score: calculateLeadScore({
-          email: values.email,
-          phone: values.phone,
-          businessName: values.businessName,
-          siteCoverage: values.siteCoverage,
-          source: utmParams.source,
-        }),
 
         // Timestamps
         createdAt: serverTimestamp(),
@@ -181,7 +173,6 @@ export function GetStartedForm() {
         phone: values.phone,
         siteCoverage: values.siteCoverage,
         source: utmParams.source as AnalyticsLeadSource,
-        leadScore: leadData.score,
         utm: {
           source: utmParams.utmSource,
           medium: utmParams.utmMedium,
@@ -194,7 +185,6 @@ export function GetStartedForm() {
       // Set user properties for future tracking
       setLeadProperties({
         source: utmParams.source as AnalyticsLeadSource,
-        score: leadData.score,
         siteCoverage: values.siteCoverage,
       });
 

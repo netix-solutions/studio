@@ -113,7 +113,6 @@ export function trackLeadFormSubmission(params: {
   phone: string;
   siteCoverage: string[];
   source: AnalyticsLeadSource;
-  leadScore: number;
   utm?: AnalyticsUtmParams;
 }): void {
   trackEvent('generate_lead', {
@@ -124,7 +123,6 @@ export function trackLeadFormSubmission(params: {
     // Custom parameters
     business_name: params.businessName,
     lead_source: params.source,
-    lead_score: params.leadScore,
     site_coverage: params.siteCoverage.join(', '),
     sites_count: params.siteCoverage.length,
 
@@ -556,12 +554,10 @@ export function setCustomerType(params: {
  */
 export function setLeadProperties(params: {
   source: AnalyticsLeadSource;
-  score: number;
   siteCoverage: string[];
 }): void {
   setUserProperties({
     lead_source: params.source,
-    lead_score: params.score,
     sites_interested: params.siteCoverage.join(', '),
   });
 }

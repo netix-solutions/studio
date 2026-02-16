@@ -8,7 +8,6 @@ import {
   LEAD_PRIORITIES,
   LEAD_STATUSES,
   DIRECTORY_TIERS,
-  calculateLeadScore,
 } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -314,15 +313,8 @@ export async function POST(request: NextRequest) {
       // Pipeline status
       priority: LEAD_PRIORITIES.HIGH,
       status: LEAD_STATUSES.ACTIVE,
-      
-      // Calculate lead score
-      score: calculateLeadScore({
-        email: data.email,
-        phone: data.phone || '',
-        businessName: normalizedBusinessName,
-        siteCoverage: ['wesley-chapel', 'pasco'],
-        source: LEAD_SOURCES.DIRECTORY_SIGNUP,
-      }),
+      stage: 'new' as const,
+      stageChangedAt: FieldValue.serverTimestamp(),
       
       // Sites they're interested in
       siteCoverage: ['wesley-chapel', 'pasco'],
