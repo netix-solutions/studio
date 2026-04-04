@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirebase, useUser } from '@/firebase';
 import { collection, onSnapshot, query, orderBy, doc, writeBatch, deleteDoc } from 'firebase/firestore';
-import { Loader2, AlertCircle, MoreHorizontal, Search, Trash2, Mail, BarChart3, ListTodo, Zap, MessageSquare, Clock } from 'lucide-react';
+import { Loader2, AlertCircle, MoreHorizontal, Search, Trash2, Mail, BarChart3, ListTodo, Zap, MessageSquare, Clock, Download } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,7 @@ import {
     LEAD_PRIORITY_LABELS,
     LEAD_SOURCE_LABELS,
 } from '@/lib/types';
+import { exportLeadsZip } from '@/lib/export-data';
 
 export default function LeadsPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -62,6 +63,7 @@ export default function LeadsPage() {
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const { firestore } = useFirebase();
     const { user } = useUser();
     const router = useRouter();
@@ -174,6 +176,19 @@ export default function LeadsPage() {
         }));
     }, [leads, selectedLeads]);
 
+    const handleExportLeads = async () => {
+        setIsExporting(true);
+        try {
+            await exportLeadsZip(filteredLeads);
+            toast({ title: 'Export Complete', description: `${filteredLeads.length} leads exported.` });
+        } catch (err) {
+            console.error('Export failed:', err);
+            toast({ title: 'Export Failed', description: 'Could not generate export file.', variant: 'destructive' });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const clearFilters = () => { setSearchQuery(''); setSelectedSource('all'); setSelectedPriority('all'); };
     const hasActiveFilters = searchQuery || selectedSource !== 'all' || selectedPriority !== 'all';
 
@@ -186,6 +201,10 @@ export default function LeadsPage() {
                     <p className="text-muted-foreground text-sm">Manage and track all potential customers</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportLeads} disabled={isExporting || leads.length === 0}>
+                        {isExporting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}
+                        Export
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => router.push('/leads/dashboard')}>
                         <BarChart3 className="mr-1 h-4 w-4" /> Analytics
                     </Button>

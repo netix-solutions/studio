@@ -26,6 +26,7 @@ import {
     Archive,
     Trash2,
     MessageSquare,
+    Download,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -70,6 +71,7 @@ import {
     type AdStatus,
     type Advertisement
 } from '@/lib/types';
+import { exportAdvertisementsZip } from '@/lib/export-data';
 
 type AdWithMeta = Advertisement & {
     shouldAutoApprove?: boolean;
@@ -105,12 +107,14 @@ const STATUS_FILTERS = [
 
 export default function AdvertisementsPage() {
     const [advertisements, setAdvertisements] = useState<AdWithMeta[]>([]);
+    const [rawAdDocs, setRawAdDocs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [deleteConfirmAd, setDeleteConfirmAd] = useState<AdWithMeta | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const { firestore } = useFirebase();
     const router = useRouter();
     const { toast } = useToast();
@@ -197,6 +201,10 @@ export default function AdvertisementsPage() {
                 return aTime - bTime;
             });
 
+            // Store raw Firestore data for export (all fields preserved)
+            const rawDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setRawAdDocs(rawDocs);
+
             setAdvertisements(adsData);
             setLoading(false);
             setError(null);
@@ -250,6 +258,19 @@ export default function AdvertisementsPage() {
                 description: 'Failed to update status',
                 variant: 'destructive',
             });
+        }
+    };
+
+    const handleExportAds = async () => {
+        setIsExporting(true);
+        try {
+            await exportAdvertisementsZip(rawAdDocs);
+            toast({ title: 'Export Complete', description: `${rawAdDocs.length} advertisements exported.` });
+        } catch (err) {
+            console.error('Export failed:', err);
+            toast({ title: 'Export Failed', description: 'Could not generate export file.', variant: 'destructive' });
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -384,6 +405,12 @@ export default function AdvertisementsPage() {
                     <p className="text-muted-foreground text-sm md:text-base">
                         View, manage, and approve customer advertisements
                     </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportAds} disabled={isExporting || advertisements.length === 0}>
+                        {isExporting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}
+                        Export
+                    </Button>
                 </div>
             </div>
 
